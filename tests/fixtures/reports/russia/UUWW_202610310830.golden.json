@@ -1,0 +1,150 @@
+{
+  "raw": "METAR UUWW 310830Z 13003MPS CAVOK 07/M01 Q1024 R24/000062 NOSIG",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "UUWW",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310830Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "13003MPS",
+      "start": 19,
+      "end": 27,
+      "kind": "WIND"
+    },
+    {
+      "text": "CAVOK",
+      "start": 28,
+      "end": 33,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "07/M01",
+      "start": 34,
+      "end": 40,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1024",
+      "start": 41,
+      "end": 46,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "R24/000062",
+      "start": 47,
+      "end": 57,
+      "kind": "RUNWAY_STATE"
+    },
+    {
+      "text": "NOSIG",
+      "start": 58,
+      "end": 63,
+      "kind": "TREND"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "UUWW",
+  "observed": "2026-10-31T08:30:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 130,
+    "speed": {
+      "value": 3,
+      "unit": "MPS"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": null,
+    "prefix": null,
+    "cavok": true,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [],
+  "temperature": {
+    "value": 7,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": -1,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1024,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 7,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "trends": [
+    {
+      "kind": "NOSIG",
+      "times": [],
+      "elements": {
+        "wind": null,
+        "visibility": null,
+        "weather": [],
+        "sky": [],
+        "color_state": null
+      }
+    }
+  ],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [
+    {
+      "runway": "24",
+      "all_runways": false,
+      "repeated": false,
+      "snoclo": false,
+      "cleared": false,
+      "deposit": "CLEAR_DRY",
+      "extent": "NONE",
+      "depth": {
+        "kind": "LESS_THAN_1",
+        "mm": null
+      },
+      "braking": {
+        "coefficient": 0.62,
+        "action": null,
+        "unreliable": false
+      }
+    }
+  ],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [],
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "CLEAR",
+  "relative_humidity": 56.8,
+  "warnings": []
+}

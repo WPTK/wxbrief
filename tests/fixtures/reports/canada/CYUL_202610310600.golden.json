@@ -1,0 +1,178 @@
+{
+  "raw": "METAR CYUL 310600Z 32008KT 15SM FEW070 05/M00 A3031 RMK AC1 AC TR SLP268",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "CYUL",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310600Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "32008KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "15SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "FEW070",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "05/M00",
+      "start": 39,
+      "end": 45,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3031",
+      "start": 46,
+      "end": 51,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 52,
+      "end": 55,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AC1",
+      "start": 56,
+      "end": 59,
+      "kind": "SKY"
+    },
+    {
+      "text": "AC",
+      "start": 60,
+      "end": 62,
+      "kind": "SKY"
+    },
+    {
+      "text": "TR",
+      "start": 63,
+      "end": 65,
+      "kind": "SKY"
+    },
+    {
+      "text": "SLP268",
+      "start": 66,
+      "end": 72,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "CYUL",
+  "observed": "2026-10-31T06:00:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 320,
+    "speed": {
+      "value": 8,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 15.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "FEW",
+      "base": {
+        "value": 7000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 5,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 0,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.31,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 8,
+  "remarks_raw": "AC1 AC TR SLP268",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "CloudOpacity",
+      "layers": [
+        {
+          "cloud": "AC",
+          "eighths": 1,
+          "trace": false
+        },
+        {
+          "cloud": "AC",
+          "eighths": null,
+          "trace": true
+        }
+      ]
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1026.8,
+        "unit": "HPA"
+      }
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "PARTLY_CLOUDY",
+  "relative_humidity": 70.1,
+  "warnings": []
+}

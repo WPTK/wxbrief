@@ -65,31 +65,31 @@
       "text": "LTG",
       "start": 59,
       "end": 62,
-      "kind": "REMARK"
+      "kind": "WEATHER"
     },
     {
       "text": "DSNT",
       "start": 63,
       "end": 67,
-      "kind": "REMARK"
+      "kind": "WEATHER"
     },
     {
       "text": "SW",
       "start": 68,
       "end": 70,
-      "kind": "REMARK"
+      "kind": "WEATHER"
     },
     {
       "text": "SLP258",
       "start": 71,
       "end": 77,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "T01110033",
       "start": 78,
       "end": 87,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     },
     {
       "text": "$",
@@ -154,6 +154,49 @@
   "tail_index": null,
   "remarks_index": 8,
   "remarks_raw": "AO2 LTG DSNT SW SLP258 T01110033 $",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "Lightning",
+      "frequency": null,
+      "types": [],
+      "location": [
+        "DSNT",
+        "SW"
+      ]
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1025.8,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 11.1,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 3.3,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaintenanceIndicator"
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {
@@ -161,7 +204,9 @@
     "unit": "FT"
   },
   "flight_category": "MVFR",
-  "flags": [],
+  "flags": [
+    "MAINTENANCE"
+  ],
   "condition": "OVERCAST",
   "relative_humidity": 57.8,
   "warnings": []

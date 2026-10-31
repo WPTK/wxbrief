@@ -83,19 +83,19 @@
       "text": "SLP215",
       "start": 78,
       "end": 84,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "P0002",
       "start": 85,
       "end": 90,
-      "kind": "REMARK"
+      "kind": "WEATHER"
     },
     {
       "text": "T10831100",
       "start": 91,
       "end": 100,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     }
   ],
   "report_type": "METAR",
@@ -188,6 +188,42 @@
   "tail_index": null,
   "remarks_index": 11,
   "remarks_raw": "AO2 SLP215 P0002 T10831100",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1021.5,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "HourlyPrecipitation",
+      "inches": 0.02,
+      "trace": false
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": -8.3,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": -10.0,
+        "unit": "C"
+      }
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

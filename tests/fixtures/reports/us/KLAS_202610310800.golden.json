@@ -1,0 +1,279 @@
+{
+  "raw": "METAR KLAS 310756Z 00000KT 10SM FEW046 SCT070 BKN120 BKN200 15/13 A2993 RMK AO2 RAB37E54 SLP122 P0000 T01500128 402220150",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KLAS",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310756Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "00000KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "FEW046",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "SCT070",
+      "start": 39,
+      "end": 45,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN120",
+      "start": 46,
+      "end": 52,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN200",
+      "start": 53,
+      "end": 59,
+      "kind": "SKY"
+    },
+    {
+      "text": "15/13",
+      "start": 60,
+      "end": 65,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2993",
+      "start": 66,
+      "end": 71,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 72,
+      "end": 75,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 76,
+      "end": 79,
+      "kind": "REMARK"
+    },
+    {
+      "text": "RAB37E54",
+      "start": 80,
+      "end": 88,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SLP122",
+      "start": 89,
+      "end": 95,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "P0000",
+      "start": 96,
+      "end": 101,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "T01500128",
+      "start": 102,
+      "end": 111,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "402220150",
+      "start": 112,
+      "end": 121,
+      "kind": "TEMPERATURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KLAS",
+  "observed": "2026-10-31T07:56:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 0,
+    "speed": {
+      "value": 0,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "FEW",
+      "base": {
+        "value": 4600,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 7000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 12000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 20000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 15,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 13,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.93,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 11,
+  "remarks_raw": "AO2 RAB37E54 SLP122 P0000 T01500128 402220150",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "WeatherTiming",
+      "segments": [
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "RA"
+          ],
+          "events": [
+            {
+              "began": true,
+              "time": {
+                "minute": 37,
+                "hour": null
+              }
+            },
+            {
+              "began": false,
+              "time": {
+                "minute": 54,
+                "hour": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1012.2,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "HourlyPrecipitation",
+      "inches": 0.0,
+      "trace": true
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 15.0,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 12.8,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "DailyTemperatureExtremes",
+      "maximum": {
+        "value": 22.2,
+        "unit": "C"
+      },
+      "minimum": {
+        "value": 15.0,
+        "unit": "C"
+      }
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 12000,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "BROKEN",
+  "relative_humidity": 87.8,
+  "warnings": []
+}

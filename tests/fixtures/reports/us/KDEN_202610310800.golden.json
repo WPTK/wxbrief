@@ -71,13 +71,13 @@
       "text": "SLP129",
       "start": 66,
       "end": 72,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "T00890061",
       "start": 73,
       "end": 82,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     }
   ],
   "report_type": "METAR",
@@ -144,6 +144,37 @@
   "tail_index": null,
   "remarks_index": 9,
   "remarks_raw": "AO2 SLP129 T00890061",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1012.9,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 8.9,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 6.1,
+        "unit": "C"
+      }
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

@@ -1,0 +1,253 @@
+{
+  "raw": "METAR PAFA 310553Z 04004KT 10SM FEW090 BKN120 BKN180 M02/M03 A2912 RMK AO2 SLP868 60000 T10171028 10039 21017 56002",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "PAFA",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310553Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "04004KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "FEW090",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN120",
+      "start": 39,
+      "end": 45,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN180",
+      "start": 46,
+      "end": 52,
+      "kind": "SKY"
+    },
+    {
+      "text": "M02/M03",
+      "start": 53,
+      "end": 60,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2912",
+      "start": 61,
+      "end": 66,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 67,
+      "end": 70,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 71,
+      "end": 74,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP868",
+      "start": 75,
+      "end": 81,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "60000",
+      "start": 82,
+      "end": 87,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "T10171028",
+      "start": 88,
+      "end": 97,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "10039",
+      "start": 98,
+      "end": 103,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "21017",
+      "start": 104,
+      "end": 109,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "56002",
+      "start": 110,
+      "end": 115,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "PAFA",
+  "observed": "2026-10-31T05:53:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 40,
+    "speed": {
+      "value": 4,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "FEW",
+      "base": {
+        "value": 9000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 12000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 18000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": -2,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": -3,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.12,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 10,
+  "remarks_raw": "AO2 SLP868 60000 T10171028 10039 21017 56002",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 986.8,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PeriodPrecipitation",
+      "inches": 0.0,
+      "hours": 6,
+      "trace": true
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": -1.7,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": -2.8,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaxTemperature6Hour",
+      "temperature": {
+        "value": 3.9,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MinTemperature6Hour",
+      "temperature": {
+        "value": -1.7,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "PressureTendency",
+      "character": 6,
+      "direction": "LOWER",
+      "change_hpa": 0.2
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 12000,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "BROKEN",
+  "relative_humidity": 92.9,
+  "warnings": []
+}

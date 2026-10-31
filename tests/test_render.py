@@ -57,6 +57,29 @@ def test_style_names_follow_the_plan() -> None:
     assert style_name(SemanticKind.UNKNOWN) == "wx.unknown"
 
 
+def test_highlight_spans_use_the_finer_tail_and_remark_kinds() -> None:
+    raw = "METAR EGLL 311050Z 24010KT 9999 FEW040 12/08 Q1013 BECMG FM1200 25015G25KT -RA RMK SLP177 T01200080 FOO"
+    spans = {raw[s.start : s.end]: s.kind for s in highlight_spans(decode(raw).tokens)}
+    assert spans["BECMG"] is SemanticKind.TREND
+    assert spans["25015G25KT"] is SemanticKind.WIND
+    assert spans["-RA"] is SemanticKind.WEATHER
+    assert spans["SLP177"] is SemanticKind.PRESSURE
+    assert spans["T01200080"] is SemanticKind.TEMPERATURE
+    assert spans["FOO"] is SemanticKind.REMARK
+
+
+def test_rich_text_styles_a_trend_body_and_remarks_like_the_body() -> None:
+    from wxbrief.render.richtext import highlighted_raw
+
+    raw = "METAR EGLL 311050Z 24010KT 9999 FEW040 12/08 Q1013 BECMG 25015G25KT RMK SLP177 FOO"
+    text = highlighted_raw(decode(raw))
+    styles = {raw[span.start : span.end]: str(span.style) for span in text.spans}
+    assert styles["25015G25KT"] == "wx.wind"
+    assert styles["SLP177"] == "wx.pressure"
+    assert styles["BECMG"] == "wx.trend"
+    assert styles["FOO"] == "wx.remark"
+
+
 # --- plain ----------------------------------------------------------------------------------------------------
 
 
@@ -76,7 +99,8 @@ def test_plain_decode_in_us_units() -> None:
         f"Dew point:           46 {DEG}F (8 {DEG}C)",
         "Relative humidity:   94%",
         "Pressure:            30.01 inHg",
-        "Remarks (raw):       AO2 SFC",
+        "Remark:              Automated station with a precipitation discriminator",
+        "Remark:              Surface",
         "Flags:               Low ceiling, Low visibility",
         "Summary:             KDEN is reporting LIFR (low instrument flight rules): mist, ceiling 300 ft, "
         f"visibility 3/4 SM, wind from 060{DEG} (ENE) at 7 kt.",
@@ -87,17 +111,16 @@ def test_plain_decode_of_an_icao_report_shows_metres_and_hpa_with_conversions() 
     raw = "METAR EGLL 311050Z AUTO 24010KT 200V280 CAVOK 12/08 Q1013 NOSIG"
     text = render_plain(decode(raw, datetime(2026, 10, 31, 11, 0, tzinfo=UTC)), T, UnitsMode.MIXED)
     assert (
-        f"Wind:                         From 240{DEG} (WSW) at 10 kt (19 km/h); direction varies between 200{DEG} and 280{DEG}"
+        f"Wind:              From 240{DEG} (WSW) at 10 kt (19 km/h); direction varies between 200{DEG} and 280{DEG}"
         in text
     )
     assert (
-        "Visibility:                   CAVOK: visibility at least 10 km (6.2 SM), no cloud below 5,000 ft (1,524 m)"
-        in text
+        "Visibility:        CAVOK: visibility at least 10 km (6.2 SM), no cloud below 5,000 ft (1,524 m)" in text
     )
-    assert "Pressure:                     1013 hPa (29.91 inHg)" in text
-    assert f"Temperature:                  12 {DEG}C (54 {DEG}F)" in text
-    assert "Trend and other groups (raw): NOSIG" in text
-    assert "Flags:                        Automated observation" in text
+    assert "Pressure:          1013 hPa (29.91 inHg)" in text
+    assert f"Temperature:       12 {DEG}C (54 {DEG}F)" in text
+    assert "Trend:             No significant change expected in the next 2 hours" in text
+    assert "Flags:             Automated observation" in text
 
 
 def test_plain_decode_in_metric_units() -> None:

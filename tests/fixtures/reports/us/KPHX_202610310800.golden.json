@@ -83,7 +83,7 @@
       "text": "SLP119",
       "start": 80,
       "end": 86,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "TCU",
@@ -119,7 +119,7 @@
       "text": "T01830150",
       "start": 108,
       "end": 117,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     }
   ],
   "report_type": "METAR",
@@ -202,6 +202,41 @@
   "tail_index": null,
   "remarks_index": 11,
   "remarks_raw": "AO2 SLP119 TCU DSNT NE-E AND NW T01830150",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1011.9,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "FreeText",
+      "text": "TCU DSNT NE-E AND NW"
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 18.3,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 15.0,
+        "unit": "C"
+      }
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

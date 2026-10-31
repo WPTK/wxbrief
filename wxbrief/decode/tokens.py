@@ -85,6 +85,9 @@ class Cursor:
     def kind_at(self, index: int) -> SemanticKind:
         return self._kinds[index]
 
+    def token_at(self, index: int) -> Token:
+        return self._tokens[index]
+
     def tagged(self) -> tuple[Token, ...]:
         """All tokens with the kinds assigned so far."""
         return tuple(replace(tok, kind=kind) for tok, kind in zip(self._tokens, self._kinds, strict=True))

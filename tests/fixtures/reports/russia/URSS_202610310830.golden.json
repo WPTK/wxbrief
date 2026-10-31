@@ -1,0 +1,284 @@
+{
+  "raw": "METAR URSS 310830Z 29003MPS 9999 -SHRA SCT022 OVC060CB 16/15 Q1020 R02/290060 R06/290060 NOSIG RMK R06/31003MPS MT OBSC QFE763",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "URSS",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310830Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "29003MPS",
+      "start": 19,
+      "end": 27,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 28,
+      "end": 32,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-SHRA",
+      "start": 33,
+      "end": 38,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT022",
+      "start": 39,
+      "end": 45,
+      "kind": "SKY"
+    },
+    {
+      "text": "OVC060CB",
+      "start": 46,
+      "end": 54,
+      "kind": "SKY"
+    },
+    {
+      "text": "16/15",
+      "start": 55,
+      "end": 60,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1020",
+      "start": 61,
+      "end": 66,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "R02/290060",
+      "start": 67,
+      "end": 77,
+      "kind": "RUNWAY_STATE"
+    },
+    {
+      "text": "R06/290060",
+      "start": 78,
+      "end": 88,
+      "kind": "RUNWAY_STATE"
+    },
+    {
+      "text": "NOSIG",
+      "start": 89,
+      "end": 94,
+      "kind": "TREND"
+    },
+    {
+      "text": "RMK",
+      "start": 95,
+      "end": 98,
+      "kind": "REMARK"
+    },
+    {
+      "text": "R06/31003MPS",
+      "start": 99,
+      "end": 111,
+      "kind": "WIND"
+    },
+    {
+      "text": "MT",
+      "start": 112,
+      "end": 114,
+      "kind": "REMARK"
+    },
+    {
+      "text": "OBSC",
+      "start": 115,
+      "end": 119,
+      "kind": "REMARK"
+    },
+    {
+      "text": "QFE763",
+      "start": 120,
+      "end": 126,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "URSS",
+  "observed": "2026-10-31T08:30:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 290,
+    "speed": {
+      "value": 3,
+      "unit": "MPS"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10000,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": true,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "LIGHT",
+      "descriptor": "SH",
+      "phenomena": [
+        "RA"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 2200,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 6000,
+        "unit": "FT"
+      },
+      "cloud_type": "CB"
+    }
+  ],
+  "temperature": {
+    "value": 16,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 15,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1020,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 10,
+  "remarks_index": 13,
+  "remarks_raw": "R06/31003MPS MT OBSC QFE763",
+  "trends": [
+    {
+      "kind": "NOSIG",
+      "times": [],
+      "elements": {
+        "wind": null,
+        "visibility": null,
+        "weather": [],
+        "sky": [],
+        "color_state": null
+      }
+    }
+  ],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [
+    {
+      "runway": "02",
+      "all_runways": false,
+      "repeated": false,
+      "snoclo": false,
+      "cleared": false,
+      "deposit": "WET",
+      "extent": "FROM_51_TO_100",
+      "depth": {
+        "kind": "LESS_THAN_1",
+        "mm": null
+      },
+      "braking": {
+        "coefficient": 0.6,
+        "action": null,
+        "unreliable": false
+      }
+    },
+    {
+      "runway": "06",
+      "all_runways": false,
+      "repeated": false,
+      "snoclo": false,
+      "cleared": false,
+      "deposit": "WET",
+      "extent": "FROM_51_TO_100",
+      "depth": {
+        "kind": "LESS_THAN_1",
+        "mm": null
+      },
+      "braking": {
+        "coefficient": 0.6,
+        "action": null,
+        "unreliable": false
+      }
+    }
+  ],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "RunwayWind",
+      "runway": "06",
+      "wind": {
+        "direction": 310,
+        "speed": {
+          "value": 3,
+          "unit": "MPS"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "variation": null
+    },
+    {
+      "variant": "FreeText",
+      "text": "MT OBSC"
+    },
+    {
+      "variant": "StationPressure",
+      "kind": "QFE",
+      "mmhg": 763,
+      "hpa": null
+    }
+  ],
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": {
+    "value": 6000,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [
+    "CB"
+  ],
+  "condition": "RAIN",
+  "relative_humidity": 93.8,
+  "warnings": []
+}

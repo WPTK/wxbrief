@@ -1,0 +1,183 @@
+{
+  "raw": "METAR KMCO 310653Z 03007KT 10SM BKN050 OVC250 23/22 A3009 RMK RAB05E35",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KMCO",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310653Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "03007KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BKN050",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "OVC250",
+      "start": 39,
+      "end": 45,
+      "kind": "SKY"
+    },
+    {
+      "text": "23/22",
+      "start": 46,
+      "end": 51,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3009",
+      "start": 52,
+      "end": 57,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 58,
+      "end": 61,
+      "kind": "REMARK"
+    },
+    {
+      "text": "RAB05E35",
+      "start": 62,
+      "end": 70,
+      "kind": "WEATHER"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KMCO",
+  "observed": "2026-10-31T06:53:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 30,
+    "speed": {
+      "value": 7,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 5000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 25000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 23,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 22,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.09,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 9,
+  "remarks_raw": "RAB05E35",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "WeatherTiming",
+      "segments": [
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "RA"
+          ],
+          "events": [
+            {
+              "began": true,
+              "time": {
+                "minute": 5,
+                "hour": null
+              }
+            },
+            {
+              "began": false,
+              "time": {
+                "minute": 35,
+                "hour": null
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 5000,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "OVERCAST",
+  "relative_humidity": 94.1,
+  "warnings": []
+}

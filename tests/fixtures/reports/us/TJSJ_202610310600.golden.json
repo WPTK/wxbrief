@@ -1,0 +1,230 @@
+{
+  "raw": "METAR TJSJ 310556Z 17003KT 10SM CLR 26/23 A2994 RMK AO2 SLP138 60000 T02610233 10278 20261 58011 $",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "TJSJ",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310556Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "17003KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "CLR",
+      "start": 32,
+      "end": 35,
+      "kind": "SKY"
+    },
+    {
+      "text": "26/23",
+      "start": 36,
+      "end": 41,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2994",
+      "start": 42,
+      "end": 47,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 48,
+      "end": 51,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 52,
+      "end": 55,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP138",
+      "start": 56,
+      "end": 62,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "60000",
+      "start": 63,
+      "end": 68,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "T02610233",
+      "start": 69,
+      "end": 78,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "10278",
+      "start": 79,
+      "end": 84,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "20261",
+      "start": 85,
+      "end": 90,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "58011",
+      "start": 91,
+      "end": 96,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "$",
+      "start": 97,
+      "end": 98,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "TJSJ",
+  "observed": "2026-10-31T05:56:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 170,
+    "speed": {
+      "value": 3,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "CLR",
+      "base": null,
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 26,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 23,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.94,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 8,
+  "remarks_raw": "AO2 SLP138 60000 T02610233 10278 20261 58011 $",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1013.8,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PeriodPrecipitation",
+      "inches": 0.0,
+      "hours": 6,
+      "trace": true
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 26.1,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 23.3,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaxTemperature6Hour",
+      "temperature": {
+        "value": 27.8,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MinTemperature6Hour",
+      "temperature": {
+        "value": 26.1,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "PressureTendency",
+      "character": 8,
+      "direction": "LOWER",
+      "change_hpa": 1.1
+    },
+    {
+      "variant": "MaintenanceIndicator"
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [
+    "MAINTENANCE"
+  ],
+  "condition": "CLEAR",
+  "relative_humidity": 83.6,
+  "warnings": []
+}

@@ -83,49 +83,49 @@
       "text": "RAB54",
       "start": 76,
       "end": 81,
-      "kind": "REMARK"
+      "kind": "WEATHER"
     },
     {
       "text": "SLP125",
       "start": 82,
       "end": 88,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "P0000",
       "start": 89,
       "end": 94,
-      "kind": "REMARK"
+      "kind": "WEATHER"
     },
     {
       "text": "60000",
       "start": 95,
       "end": 100,
-      "kind": "REMARK"
+      "kind": "WEATHER"
     },
     {
       "text": "T02830244",
       "start": 101,
       "end": 110,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     },
     {
       "text": "10306",
       "start": 111,
       "end": 116,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     },
     {
       "text": "20283",
       "start": 117,
       "end": 122,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     },
     {
       "text": "55001",
       "start": 123,
       "end": 128,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "$",
@@ -217,6 +217,92 @@
   "tail_index": null,
   "remarks_index": 11,
   "remarks_raw": "AO2 RAB54 SLP125 P0000 60000 T02830244 10306 20283 55001 $",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "WeatherTiming",
+      "segments": [
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "RA"
+          ],
+          "events": [
+            {
+              "began": true,
+              "time": {
+                "minute": 54,
+                "hour": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1012.5,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "HourlyPrecipitation",
+      "inches": 0.0,
+      "trace": true
+    },
+    {
+      "variant": "PeriodPrecipitation",
+      "inches": 0.0,
+      "hours": 6,
+      "trace": true
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 28.3,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 24.4,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaxTemperature6Hour",
+      "temperature": {
+        "value": 30.6,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MinTemperature6Hour",
+      "temperature": {
+        "value": 28.3,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "PressureTendency",
+      "character": 5,
+      "direction": "LOWER",
+      "change_hpa": 0.1
+    },
+    {
+      "variant": "MaintenanceIndicator"
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {
@@ -224,7 +310,9 @@
     "unit": "FT"
   },
   "flight_category": "MVFR",
-  "flags": [],
+  "flags": [
+    "MAINTENANCE"
+  ],
   "condition": "RAIN",
   "relative_humidity": 78.9,
   "warnings": []

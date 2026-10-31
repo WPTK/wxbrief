@@ -83,7 +83,7 @@
       "text": "SLP119",
       "start": 82,
       "end": 88,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "CB",
@@ -143,13 +143,13 @@
       "text": "T01890150",
       "start": 124,
       "end": 133,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     },
     {
       "text": "402330183",
       "start": 134,
       "end": 143,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     }
   ],
   "report_type": "METAR",
@@ -232,6 +232,52 @@
   "tail_index": null,
   "remarks_index": 11,
   "remarks_raw": "AO2 SLP119 CB NW MOV N TCU DSNT NE-SE SHRA NW T01890150 402330183",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1011.9,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "FreeText",
+      "text": "CB NW MOV N TCU DSNT NE-SE SHRA NW"
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 18.9,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 15.0,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "DailyTemperatureExtremes",
+      "maximum": {
+        "value": 23.3,
+        "unit": "C"
+      },
+      "minimum": {
+        "value": 18.3,
+        "unit": "C"
+      }
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

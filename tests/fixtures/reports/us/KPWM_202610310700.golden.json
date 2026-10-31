@@ -1,0 +1,223 @@
+{
+  "raw": "METAR KPWM 310651Z AUTO 33015G25KT 10SM CLR 07/M03 A3019 RMK AO2 PK WND 32027/0556 SLP222 T00721033 $",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KPWM",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310651Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "AUTO",
+      "start": 19,
+      "end": 23,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "33015G25KT",
+      "start": 24,
+      "end": 34,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "CLR",
+      "start": 40,
+      "end": 43,
+      "kind": "SKY"
+    },
+    {
+      "text": "07/M03",
+      "start": 44,
+      "end": 50,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3019",
+      "start": 51,
+      "end": 56,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 57,
+      "end": 60,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 61,
+      "end": 64,
+      "kind": "REMARK"
+    },
+    {
+      "text": "PK",
+      "start": 65,
+      "end": 67,
+      "kind": "WIND"
+    },
+    {
+      "text": "WND",
+      "start": 68,
+      "end": 71,
+      "kind": "WIND"
+    },
+    {
+      "text": "32027/0556",
+      "start": 72,
+      "end": 82,
+      "kind": "WIND"
+    },
+    {
+      "text": "SLP222",
+      "start": 83,
+      "end": 89,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "T00721033",
+      "start": 90,
+      "end": 99,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "$",
+      "start": 100,
+      "end": 101,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KPWM",
+  "observed": "2026-10-31T06:51:00+00:00",
+  "modifiers": [
+    "AUTO"
+  ],
+  "wind": {
+    "direction": 330,
+    "speed": {
+      "value": 15,
+      "unit": "KT"
+    },
+    "gust": {
+      "value": 25,
+      "unit": "KT"
+    },
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "CLR",
+      "base": null,
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 7,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": -3,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.19,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 9,
+  "remarks_raw": "AO2 PK WND 32027/0556 SLP222 T00721033 $",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "PeakWind",
+      "direction": 320,
+      "speed": {
+        "value": 27,
+        "unit": "KT"
+      },
+      "time": {
+        "minute": 56,
+        "hour": 5
+      }
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1022.2,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 7.2,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": -3.3,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaintenanceIndicator"
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [
+    "GUSTS",
+    "AUTOMATED",
+    "MAINTENANCE"
+  ],
+  "condition": "CLEAR",
+  "relative_humidity": 49.0,
+  "warnings": []
+}

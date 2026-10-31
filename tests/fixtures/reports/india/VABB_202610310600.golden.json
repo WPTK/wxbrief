@@ -1,0 +1,210 @@
+{
+  "raw": "METAR VABB 310600Z 11005KT 2500 HZ FEW020 SCT100 31/23 Q1015 BECMG 3000 HZ",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "VABB",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310600Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "11005KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "2500",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "HZ",
+      "start": 32,
+      "end": 34,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "FEW020",
+      "start": 35,
+      "end": 41,
+      "kind": "SKY"
+    },
+    {
+      "text": "SCT100",
+      "start": 42,
+      "end": 48,
+      "kind": "SKY"
+    },
+    {
+      "text": "31/23",
+      "start": 49,
+      "end": 54,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1015",
+      "start": 55,
+      "end": 60,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "BECMG",
+      "start": 61,
+      "end": 66,
+      "kind": "TREND"
+    },
+    {
+      "text": "3000",
+      "start": 67,
+      "end": 71,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "HZ",
+      "start": 72,
+      "end": 74,
+      "kind": "WEATHER"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "VABB",
+  "observed": "2026-10-31T06:00:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 110,
+    "speed": {
+      "value": 5,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 2500,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "HZ"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "FEW",
+      "base": {
+        "value": 2000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 10000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 31,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 23,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1015,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 10,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "trends": [
+    {
+      "kind": "BECMG",
+      "times": [],
+      "elements": {
+        "wind": null,
+        "visibility": {
+          "distance": {
+            "value": 3000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": null,
+            "phenomena": [
+              "HZ"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [],
+        "color_state": null
+      }
+    }
+  ],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [],
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "IFR",
+  "flags": [
+    "LOW_VISIBILITY"
+  ],
+  "condition": "OBSCURATION",
+  "relative_humidity": 62.5,
+  "warnings": []
+}

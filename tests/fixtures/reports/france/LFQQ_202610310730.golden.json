@@ -89,7 +89,7 @@
       "text": "CAVOK",
       "start": 89,
       "end": 94,
-      "kind": "TREND"
+      "kind": "VISIBILITY"
     }
   ],
   "report_type": "METAR",
@@ -189,13 +189,42 @@
   "tail_index": 13,
   "remarks_index": null,
   "remarks_raw": null,
+  "trends": [
+    {
+      "kind": "BECMG",
+      "times": [],
+      "elements": {
+        "wind": null,
+        "visibility": {
+          "distance": null,
+          "prefix": null,
+          "cavok": true,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [],
+        "sky": [],
+        "color_state": null
+      }
+    }
+  ],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [],
   "flavor": "ICAO",
   "military": false,
   "ceiling": null,
   "flight_category": "LIFR",
   "flags": [
     "LOW_VISIBILITY",
-    "AUTOMATED"
+    "AUTOMATED",
+    "MISSING_DATA"
   ],
   "condition": "OBSCURATION",
   "relative_humidity": 100.0,

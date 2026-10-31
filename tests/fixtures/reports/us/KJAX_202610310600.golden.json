@@ -1,0 +1,282 @@
+{
+  "raw": "METAR KJAX 310556Z 01005KT 10SM OVC007 21/20 A3015 RMK AO2 DZB24E40 SLP208 P0000 60000 T02110200 10211 20206 58003 $",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KJAX",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310556Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "01005KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "OVC007",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "21/20",
+      "start": 39,
+      "end": 44,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3015",
+      "start": 45,
+      "end": 50,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 51,
+      "end": 54,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 55,
+      "end": 58,
+      "kind": "REMARK"
+    },
+    {
+      "text": "DZB24E40",
+      "start": 59,
+      "end": 67,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SLP208",
+      "start": 68,
+      "end": 74,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "P0000",
+      "start": 75,
+      "end": 80,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "60000",
+      "start": 81,
+      "end": 86,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "T02110200",
+      "start": 87,
+      "end": 96,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "10211",
+      "start": 97,
+      "end": 102,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "20206",
+      "start": 103,
+      "end": 108,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "58003",
+      "start": 109,
+      "end": 114,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "$",
+      "start": 115,
+      "end": 116,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KJAX",
+  "observed": "2026-10-31T05:56:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 10,
+    "speed": {
+      "value": 5,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 700,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 21,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 20,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.15,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 8,
+  "remarks_raw": "AO2 DZB24E40 SLP208 P0000 60000 T02110200 10211 20206 58003 $",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "WeatherTiming",
+      "segments": [
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "DZ"
+          ],
+          "events": [
+            {
+              "began": true,
+              "time": {
+                "minute": 24,
+                "hour": null
+              }
+            },
+            {
+              "began": false,
+              "time": {
+                "minute": 40,
+                "hour": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1020.8,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "HourlyPrecipitation",
+      "inches": 0.0,
+      "trace": true
+    },
+    {
+      "variant": "PeriodPrecipitation",
+      "inches": 0.0,
+      "hours": 6,
+      "trace": true
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 21.1,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 20.0,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaxTemperature6Hour",
+      "temperature": {
+        "value": 21.1,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MinTemperature6Hour",
+      "temperature": {
+        "value": 20.6,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "PressureTendency",
+      "character": 8,
+      "direction": "LOWER",
+      "change_hpa": 0.3
+    },
+    {
+      "variant": "MaintenanceIndicator"
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 700,
+    "unit": "FT"
+  },
+  "flight_category": "IFR",
+  "flags": [
+    "LOW_CEILING",
+    "MAINTENANCE"
+  ],
+  "condition": "OVERCAST",
+  "relative_humidity": 94.0,
+  "warnings": []
+}

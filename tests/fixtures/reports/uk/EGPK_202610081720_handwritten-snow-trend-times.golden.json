@@ -77,7 +77,7 @@
       "text": "4000",
       "start": 81,
       "end": 85,
-      "kind": "TREND"
+      "kind": "VISIBILITY"
     }
   ],
   "report_type": "METAR",
@@ -147,6 +147,50 @@
   "tail_index": 9,
   "remarks_index": null,
   "remarks_raw": null,
+  "trends": [
+    {
+      "kind": "BECMG",
+      "times": [
+        {
+          "kind": "FROM",
+          "hour": 18,
+          "minute": 0,
+          "moment": "2026-10-08T18:00:00+00:00"
+        },
+        {
+          "kind": "UNTIL",
+          "hour": 19,
+          "minute": 0,
+          "moment": "2026-10-08T19:00:00+00:00"
+        }
+      ],
+      "elements": {
+        "wind": null,
+        "visibility": {
+          "distance": {
+            "value": 4000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [],
+        "sky": [],
+        "color_state": null
+      }
+    }
+  ],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [],
   "flavor": "ICAO",
   "military": false,
   "ceiling": null,

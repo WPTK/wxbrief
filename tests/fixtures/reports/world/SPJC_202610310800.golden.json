@@ -1,0 +1,192 @@
+{
+  "raw": "METAR SPJC 310800Z 16009KT 9999 SCT010 OVC040 24/21 Q1011 TEMPO BKN012 RMK PP000",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "SPJC",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310800Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "16009KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "SCT010",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "OVC040",
+      "start": 39,
+      "end": 45,
+      "kind": "SKY"
+    },
+    {
+      "text": "24/21",
+      "start": 46,
+      "end": 51,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1011",
+      "start": 52,
+      "end": 57,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "TEMPO",
+      "start": 58,
+      "end": 63,
+      "kind": "TREND"
+    },
+    {
+      "text": "BKN012",
+      "start": 64,
+      "end": 70,
+      "kind": "SKY"
+    },
+    {
+      "text": "RMK",
+      "start": 71,
+      "end": 74,
+      "kind": "REMARK"
+    },
+    {
+      "text": "PP000",
+      "start": 75,
+      "end": 80,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "SPJC",
+  "observed": "2026-10-31T08:00:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 160,
+    "speed": {
+      "value": 9,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10000,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": true,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 1000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 4000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 24,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 21,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1011,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 9,
+  "remarks_index": 11,
+  "remarks_raw": "PP000",
+  "trends": [
+    {
+      "kind": "TEMPO",
+      "times": [],
+      "elements": {
+        "wind": null,
+        "visibility": null,
+        "weather": [],
+        "sky": [
+          {
+            "cover": "BKN",
+            "base": {
+              "value": 1200,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null
+      }
+    }
+  ],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "FreeText",
+      "text": "PP000"
+    }
+  ],
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": {
+    "value": 4000,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "OVERCAST",
+  "relative_humidity": 83.3,
+  "warnings": []
+}

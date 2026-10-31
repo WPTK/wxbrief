@@ -1,0 +1,248 @@
+{
+  "raw": "METAR KBIL 151756Z 33012KT 1/2SM SN FZFG VV002 M03/M04 A2994 RMK AO2 SNINCR 2/10 SLP152 4/012 933008 T10281039",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KBIL",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "151756Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "33012KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "1/2SM",
+      "start": 27,
+      "end": 32,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "SN",
+      "start": 33,
+      "end": 35,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "FZFG",
+      "start": 36,
+      "end": 40,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "VV002",
+      "start": 41,
+      "end": 46,
+      "kind": "SKY"
+    },
+    {
+      "text": "M03/M04",
+      "start": 47,
+      "end": 54,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2994",
+      "start": 55,
+      "end": 60,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 61,
+      "end": 64,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 65,
+      "end": 68,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SNINCR",
+      "start": 69,
+      "end": 75,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "2/10",
+      "start": 76,
+      "end": 80,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SLP152",
+      "start": 81,
+      "end": 87,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "4/012",
+      "start": 88,
+      "end": 93,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "933008",
+      "start": 94,
+      "end": 100,
+      "kind": "REMARK"
+    },
+    {
+      "text": "T10281039",
+      "start": 101,
+      "end": 110,
+      "kind": "TEMPERATURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KBIL",
+  "observed": "2026-10-15T17:56:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 330,
+    "speed": {
+      "value": 12,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 0.5,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "SN"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    },
+    {
+      "intensity": "MODERATE",
+      "descriptor": "FZ",
+      "phenomena": [
+        "FG"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "VV",
+      "base": {
+        "value": 200,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": -3,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": -4,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.94,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 10,
+  "remarks_raw": "AO2 SNINCR 2/10 SLP152 4/012 933008 T10281039",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SnowIncrease",
+      "last_hour_inches": 2.0,
+      "total_inches": 10.0
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1015.2,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "SnowDepth",
+      "inches": 12.0
+    },
+    {
+      "variant": "FreeText",
+      "text": "933008"
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": -2.8,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": -3.9,
+        "unit": "C"
+      }
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 200,
+    "unit": "FT"
+  },
+  "flight_category": "LIFR",
+  "flags": [
+    "LOW_CEILING",
+    "LOW_VISIBILITY"
+  ],
+  "condition": "SNOW",
+  "relative_humidity": 92.8,
+  "warnings": []
+}

@@ -1,0 +1,220 @@
+{
+  "raw": "METAR PANC 310653Z 14016G28KT 10SM BKN070 05/M01 A2917 RMK AO2 PK WND 12033/0608 SLP879 T00501006 $",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "PANC",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310653Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "14016G28KT",
+      "start": 19,
+      "end": 29,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 30,
+      "end": 34,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BKN070",
+      "start": 35,
+      "end": 41,
+      "kind": "SKY"
+    },
+    {
+      "text": "05/M01",
+      "start": 42,
+      "end": 48,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2917",
+      "start": 49,
+      "end": 54,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 55,
+      "end": 58,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 59,
+      "end": 62,
+      "kind": "REMARK"
+    },
+    {
+      "text": "PK",
+      "start": 63,
+      "end": 65,
+      "kind": "WIND"
+    },
+    {
+      "text": "WND",
+      "start": 66,
+      "end": 69,
+      "kind": "WIND"
+    },
+    {
+      "text": "12033/0608",
+      "start": 70,
+      "end": 80,
+      "kind": "WIND"
+    },
+    {
+      "text": "SLP879",
+      "start": 81,
+      "end": 87,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "T00501006",
+      "start": 88,
+      "end": 97,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "$",
+      "start": 98,
+      "end": 99,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "PANC",
+  "observed": "2026-10-31T06:53:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 140,
+    "speed": {
+      "value": 16,
+      "unit": "KT"
+    },
+    "gust": {
+      "value": 28,
+      "unit": "KT"
+    },
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 7000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 5,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": -1,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.17,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 8,
+  "remarks_raw": "AO2 PK WND 12033/0608 SLP879 T00501006 $",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "PeakWind",
+      "direction": 120,
+      "speed": {
+        "value": 33,
+        "unit": "KT"
+      },
+      "time": {
+        "minute": 8,
+        "hour": 6
+      }
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 987.9,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 5.0,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": -0.6,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaintenanceIndicator"
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 7000,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [
+    "GUSTS",
+    "MAINTENANCE"
+  ],
+  "condition": "BROKEN",
+  "relative_humidity": 65.2,
+  "warnings": []
+}

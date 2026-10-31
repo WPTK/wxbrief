@@ -7,16 +7,25 @@ tables point into the translation catalog, which is where the words live.
 from __future__ import annotations
 
 from wxbrief.decode.model import (
+    BrakingAction,
     CloudType,
+    ColorCode,
     Descriptor,
     Flag,
     FlightCategory,
     Intensity,
+    LightningFrequency,
+    LightningType,
     Modifier,
     Phenomenon,
     ReportType,
+    RunwayDeposit,
+    RunwayDepthKind,
+    RunwayExtent,
     RvrTrend,
+    SensorKind,
     SkyCondition,
+    TrendTimeKind,
 )
 from wxbrief.i18n.keys import K
 
@@ -33,9 +42,6 @@ RVR_TREND_CODES: dict[str, RvrTrend] = {member.value: member for member in RvrTr
 CLEAR_SKY_CODES: frozenset[SkyCondition] = frozenset(
     {SkyCondition.SKC, SkyCondition.CLR, SkyCondition.NSC, SkyCondition.NCD}
 )
-
-# NATO colour-state codes that appear on military reports; decoded in a later session, recognised here.
-COLOR_STATE_BASE_CODES: frozenset[str] = frozenset({"BLU", "WHT", "GRN", "YLO", "YLO1", "YLO2", "AMB", "RED"})
 
 # --- enums -> catalog keys (used by the renderers) ---------------------------------------------------------------
 
@@ -183,3 +189,234 @@ FLAG_KEYS: dict[Flag, str] = {
 def compass_point(degrees: float) -> str:
     """The 16-point compass abbreviation (``"ENE"``) nearest to a bearing in degrees."""
     return COMPASS_POINTS[round((degrees % 360) / 22.5) % 16]
+
+FLAG_KEYS.update(
+    {
+        Flag.COLOR_BELOW_GRN: K.FLAG_COLOR_BELOW_GRN,
+        Flag.RAPID_PRESSURE_CHANGE: K.FLAG_RAPID_PRESSURE_CHANGE,
+        Flag.RUNWAY_CONTAMINATED: K.FLAG_RUNWAY_CONTAMINATED,
+        Flag.MAINTENANCE: K.FLAG_MAINTENANCE,
+        Flag.VOLCANIC_ASH: K.FLAG_VOLCANIC_ASH,
+        Flag.MISSING_DATA: K.FLAG_MISSING_DATA,
+    }
+)
+
+# --- tail groups -----------------------------------------------------------------------------------------------
+
+COLOR_NAME_KEYS: dict[ColorCode, str] = {
+    ColorCode.BLU: K.COLOR_NAME_BLU,
+    ColorCode.WHT: K.COLOR_NAME_WHT,
+    ColorCode.GRN: K.COLOR_NAME_GRN,
+    ColorCode.YLO1: K.COLOR_NAME_YLO1,
+    ColorCode.YLO2: K.COLOR_NAME_YLO2,
+    ColorCode.YLO: K.COLOR_NAME_YLO,
+    ColorCode.AMB: K.COLOR_NAME_AMB,
+    ColorCode.RED: K.COLOR_NAME_RED,
+}
+
+TREND_TIME_KEYS: dict[TrendTimeKind, str] = {
+    TrendTimeKind.FROM: K.TREND_TIME_FM,
+    TrendTimeKind.UNTIL: K.TREND_TIME_TL,
+    TrendTimeKind.AT: K.TREND_TIME_AT,
+}
+
+RUNWAY_DEPOSIT_KEYS: dict[RunwayDeposit, str] = {
+    RunwayDeposit.CLEAR_DRY: K.RWY_DEPOSIT_CLEAR_DRY,
+    RunwayDeposit.DAMP: K.RWY_DEPOSIT_DAMP,
+    RunwayDeposit.WET: K.RWY_DEPOSIT_WET,
+    RunwayDeposit.FROST: K.RWY_DEPOSIT_FROST,
+    RunwayDeposit.DRY_SNOW: K.RWY_DEPOSIT_DRY_SNOW,
+    RunwayDeposit.WET_SNOW: K.RWY_DEPOSIT_WET_SNOW,
+    RunwayDeposit.SLUSH: K.RWY_DEPOSIT_SLUSH,
+    RunwayDeposit.ICE: K.RWY_DEPOSIT_ICE,
+    RunwayDeposit.COMPACTED_SNOW: K.RWY_DEPOSIT_COMPACTED_SNOW,
+    RunwayDeposit.FROZEN_RUTS: K.RWY_DEPOSIT_FROZEN_RUTS,
+}
+
+RUNWAY_EXTENT_KEYS: dict[RunwayExtent, str] = {
+    RunwayExtent.NONE: K.RWY_EXTENT_NONE,
+    RunwayExtent.UP_TO_10: K.RWY_EXTENT_UP_TO_10,
+    RunwayExtent.FROM_11_TO_25: K.RWY_EXTENT_FROM_11_TO_25,
+    RunwayExtent.FROM_26_TO_50: K.RWY_EXTENT_FROM_26_TO_50,
+    RunwayExtent.FROM_51_TO_100: K.RWY_EXTENT_FROM_51_TO_100,
+    RunwayExtent.OTHER: K.RWY_EXTENT_OTHER,
+}
+
+RUNWAY_DEPTH_KEYS: dict[RunwayDepthKind, str] = {
+    RunwayDepthKind.MILLIMETERS: K.RWY_DEPTH_MILLIMETERS,
+    RunwayDepthKind.LESS_THAN_1: K.RWY_DEPTH_LESS_THAN_1,
+    RunwayDepthKind.AT_LEAST: K.RWY_DEPTH_AT_LEAST,
+    RunwayDepthKind.NOT_OPERATIONAL: K.RWY_DEPTH_NOT_OPERATIONAL,
+    RunwayDepthKind.NOT_SIGNIFICANT: K.RWY_DEPTH_NOT_SIGNIFICANT,
+    RunwayDepthKind.RESERVED: K.RWY_DEPTH_RESERVED,
+}
+
+BRAKING_ACTION_KEYS: dict[BrakingAction, str] = {
+    BrakingAction.POOR: K.RWY_ACTION_POOR,
+    BrakingAction.MEDIUM_POOR: K.RWY_ACTION_MEDIUM_POOR,
+    BrakingAction.MEDIUM: K.RWY_ACTION_MEDIUM,
+    BrakingAction.MEDIUM_GOOD: K.RWY_ACTION_MEDIUM_GOOD,
+    BrakingAction.GOOD: K.RWY_ACTION_GOOD,
+}
+
+# State of the sea, WMO code table 3700.
+SEA_STATE_KEYS: dict[int, str] = {
+    0: K.SEA_NAME_0,
+    1: K.SEA_NAME_1,
+    2: K.SEA_NAME_2,
+    3: K.SEA_NAME_3,
+    4: K.SEA_NAME_4,
+    5: K.SEA_NAME_5,
+    6: K.SEA_NAME_6,
+    7: K.SEA_NAME_7,
+    8: K.SEA_NAME_8,
+    9: K.SEA_NAME_9,
+}
+
+# --- remarks ---------------------------------------------------------------------------------------------------
+
+SENSOR_KEYS: dict[SensorKind, str] = {
+    SensorKind.RVR: K.REMARK_SENSOR_RVR,
+    SensorKind.PRESENT_WEATHER: K.REMARK_SENSOR_PRESENT_WEATHER,
+    SensorKind.PRECIPITATION: K.REMARK_SENSOR_PRECIPITATION,
+    SensorKind.FREEZING_RAIN: K.REMARK_SENSOR_FREEZING_RAIN,
+    SensorKind.THUNDERSTORM: K.REMARK_SENSOR_THUNDERSTORM,
+    SensorKind.VISIBILITY: K.REMARK_SENSOR_VISIBILITY,
+    SensorKind.CEILING: K.REMARK_SENSOR_CEILING,
+}
+
+LIGHTNING_FREQUENCY_KEYS: dict[LightningFrequency, str] = {
+    LightningFrequency.OCCASIONAL: K.REMARK_FREQUENCY_OCCASIONAL,
+    LightningFrequency.FREQUENT: K.REMARK_FREQUENCY_FREQUENT,
+    LightningFrequency.CONTINUOUS: K.REMARK_FREQUENCY_CONTINUOUS,
+}
+
+LIGHTNING_TYPE_KEYS: dict[LightningType, str] = {
+    LightningType.IN_CLOUD: K.REMARK_LIGHTNING_TYPE_IN_CLOUD,
+    LightningType.CLOUD_TO_CLOUD: K.REMARK_LIGHTNING_TYPE_CLOUD_TO_CLOUD,
+    LightningType.CLOUD_TO_GROUND: K.REMARK_LIGHTNING_TYPE_CLOUD_TO_GROUND,
+    LightningType.CLOUD_TO_AIR: K.REMARK_LIGHTNING_TYPE_CLOUD_TO_AIR,
+}
+
+# Character of the 3-hour pressure change (WMO code table 0200): 0-3 net higher, 4 same, 5-8 net lower.
+TENDENCY_NAME_KEYS: dict[int, str] = {
+    0: K.REMARK_TENDENCY_NAME_0,
+    1: K.REMARK_TENDENCY_NAME_1,
+    2: K.REMARK_TENDENCY_NAME_2,
+    3: K.REMARK_TENDENCY_NAME_3,
+    4: K.REMARK_TENDENCY_NAME_4,
+    5: K.REMARK_TENDENCY_NAME_5,
+    6: K.REMARK_TENDENCY_NAME_6,
+    7: K.REMARK_TENDENCY_NAME_7,
+    8: K.REMARK_TENDENCY_NAME_8,
+}
+
+# Cloud type codes of the 8/CLCMCH group (WMO code tables 0513, 0515 and 0509).
+CLOUD_LOW_KEYS: dict[int, str] = {
+    0: K.REMARK_CLOUD_LOW_0,
+    1: K.REMARK_CLOUD_LOW_1,
+    2: K.REMARK_CLOUD_LOW_2,
+    3: K.REMARK_CLOUD_LOW_3,
+    4: K.REMARK_CLOUD_LOW_4,
+    5: K.REMARK_CLOUD_LOW_5,
+    6: K.REMARK_CLOUD_LOW_6,
+    7: K.REMARK_CLOUD_LOW_7,
+    8: K.REMARK_CLOUD_LOW_8,
+    9: K.REMARK_CLOUD_LOW_9,
+}
+CLOUD_MIDDLE_KEYS: dict[int, str] = {
+    0: K.REMARK_CLOUD_MIDDLE_0,
+    1: K.REMARK_CLOUD_MIDDLE_1,
+    2: K.REMARK_CLOUD_MIDDLE_2,
+    3: K.REMARK_CLOUD_MIDDLE_3,
+    4: K.REMARK_CLOUD_MIDDLE_4,
+    5: K.REMARK_CLOUD_MIDDLE_5,
+    6: K.REMARK_CLOUD_MIDDLE_6,
+    7: K.REMARK_CLOUD_MIDDLE_7,
+    8: K.REMARK_CLOUD_MIDDLE_8,
+    9: K.REMARK_CLOUD_MIDDLE_9,
+}
+CLOUD_HIGH_KEYS: dict[int, str] = {
+    0: K.REMARK_CLOUD_HIGH_0,
+    1: K.REMARK_CLOUD_HIGH_1,
+    2: K.REMARK_CLOUD_HIGH_2,
+    3: K.REMARK_CLOUD_HIGH_3,
+    4: K.REMARK_CLOUD_HIGH_4,
+    5: K.REMARK_CLOUD_HIGH_5,
+    6: K.REMARK_CLOUD_HIGH_6,
+    7: K.REMARK_CLOUD_HIGH_7,
+    8: K.REMARK_CLOUD_HIGH_8,
+    9: K.REMARK_CLOUD_HIGH_9,
+}
+
+# Cloud abbreviations of the Canadian opacity remark.
+OPACITY_CLOUD_KEYS: dict[str, str] = {
+    "CU": K.REMARK_CLOUD_CU,
+    "TCU": K.REMARK_CLOUD_TCU,
+    "CB": K.REMARK_CLOUD_CB,
+    "SC": K.REMARK_CLOUD_SC,
+    "ST": K.REMARK_CLOUD_ST,
+    "SF": K.REMARK_CLOUD_SF,
+    "CF": K.REMARK_CLOUD_CF,
+    "AC": K.REMARK_CLOUD_AC,
+    "ACC": K.REMARK_CLOUD_ACC,
+    "AS": K.REMARK_CLOUD_AS,
+    "NS": K.REMARK_CLOUD_NS,
+    "CI": K.REMARK_CLOUD_CI,
+    "CC": K.REMARK_CLOUD_CC,
+    "CS": K.REMARK_CLOUD_CS,
+}
+
+# Words of plain-language remarks that the catalog can say in words; anything else is shown as written.
+FREE_TEXT_WORD_KEYS: dict[str, str] = {
+    "N": K.REMARK_WORD_N,
+    "NE": K.REMARK_WORD_NE,
+    "E": K.REMARK_WORD_E,
+    "SE": K.REMARK_WORD_SE,
+    "S": K.REMARK_WORD_S,
+    "SW": K.REMARK_WORD_SW,
+    "W": K.REMARK_WORD_W,
+    "NW": K.REMARK_WORD_NW,
+    "AND": K.REMARK_WORD_AND,
+    "TO": K.REMARK_WORD_TO,
+    "DSNT": K.REMARK_WORD_DSNT,
+    "VC": K.REMARK_WORD_VC,
+    "OHD": K.REMARK_WORD_OHD,
+    "OVHD": K.REMARK_WORD_OVHD,
+    "OVR": K.REMARK_WORD_OVR,
+    "ALQDS": K.REMARK_WORD_ALQDS,
+    "MOV": K.REMARK_WORD_MOV,
+    "MOVG": K.REMARK_WORD_MOVG,
+    "CB": K.REMARK_WORD_CB,
+    "TCU": K.REMARK_WORD_TCU,
+    "CVCTV": K.REMARK_WORD_CVCTV,
+    "CLD": K.REMARK_WORD_CLD,
+    "CLOUD": K.REMARK_WORD_CLOUD,
+    "EMBD": K.REMARK_WORD_EMBD,
+    "OBSC": K.REMARK_WORD_OBSC,
+    "OBST": K.REMARK_WORD_OBST,
+    "MTNS": K.REMARK_WORD_MTNS,
+    "MT": K.REMARK_WORD_MT,
+    "HZY": K.REMARK_WORD_HZY,
+    "VIRGA": K.REMARK_WORD_VIRGA,
+    "FROPA": K.REMARK_WORD_FROPA,
+    "TORNADO": K.REMARK_WORD_TORNADO,
+    "FUNNEL": K.REMARK_WORD_FUNNEL,
+    "WATERSPOUT": K.REMARK_WORD_WATERSPOUT,
+    "ACFT": K.REMARK_WORD_ACFT,
+    "MSHP": K.REMARK_WORD_MSHP,
+    "FIRST": K.REMARK_WORD_FIRST,
+    "LAST": K.REMARK_WORD_LAST,
+    "VCSH": K.REMARK_WORD_VCSH,
+    "SHRA": K.REMARK_WORD_SHRA,
+    "CLN": K.REMARK_WORD_CLN,
+    "AIR": K.REMARK_WORD_AIR,
+    "ALL": K.REMARK_WORD_ALL,
+    "WNDS": K.REMARK_WORD_WNDS,
+    "GRID": K.REMARK_WORD_GRID,
+    "LTG": K.REMARK_WORD_LTG,
+    "RWY": K.REMARK_WORD_RWY,
+    "TWR": K.REMARK_WORD_TWR,
+    "SFC": K.REMARK_WORD_SFC,
+    "VIS": K.REMARK_WORD_VIS,
+}

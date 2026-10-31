@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from wxbrief.decode.model import FlightCategory, Metar, Modifier, SemanticKind
+from wxbrief.decode.colorstate import reported_matches_computed
+from wxbrief.decode.model import ColorState, FlightCategory, Metar, Modifier, SemanticKind
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import Translator
 from wxbrief.i18n.keys import K
@@ -24,8 +25,47 @@ class DecodeRow:
     category: FlightCategory | None = None  # set on the flight-category row so a renderer can draw a badge
 
 
-def _joined(texts: list[str]) -> str:
-    return " ".join(texts)
+def _tail_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRow]:
+    """Runway state, wind shear, recent weather, sea state, colour state and trends, decoded."""
+    rows: list[DecodeRow] = []
+
+    def add(label_key: str, value: str, kind: SemanticKind) -> None:
+        rows.append(DecodeRow(t.t(label_key), value, style_name(kind)))
+
+    for state in metar.runway_states:
+        add(K.LABEL_RUNWAY_STATE, phrases.describe_runway_state(t, state, units), SemanticKind.RUNWAY_STATE)
+    if metar.wind_shear:
+        add(K.LABEL_WIND_SHEAR, phrases.describe_wind_shear(t, metar.wind_shear), SemanticKind.WIND_SHEAR)
+    for recent in metar.recent_weather:
+        add(K.LABEL_RECENT_WEATHER, phrases.describe_recent_weather(t, recent), SemanticKind.RECENT_WEATHER)
+    if metar.sea_state is not None:
+        add(K.LABEL_SEA_STATE, phrases.describe_sea_state(t, metar.sea_state, units), SemanticKind.SEA_STATE)
+    if metar.color_state is not None:
+        add(K.LABEL_COLOR_STATE, phrases.describe_color_state(t, metar.color_state), SemanticKind.COLOR_STATE)
+        computed = metar.computed_color_state
+        if computed is not None and reported_matches_computed(_reported_color(metar), computed) is not True:
+            shown = phrases.describe_color_code(t, ColorState(computed))
+            add(K.LABEL_COLOR_STATE_COMPUTED, shown, SemanticKind.COLOR_STATE)
+    for trend in metar.trends:
+        add(K.LABEL_TREND, phrases.describe_trend(t, trend, units), SemanticKind.TREND)
+    return rows
+
+
+def _reported_color(metar: Metar) -> ColorState | None:
+    return metar.color_state.current if metar.color_state is not None else None
+
+
+def _remark_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRow]:
+    """One row per decoded remark, then the free text that still contains words nobody could decode."""
+    if metar.remarks_index is None:
+        return []
+    style = style_name(SemanticKind.REMARK)
+    label = t.t(K.LABEL_REMARK)
+    rows = [DecodeRow(label, phrases.describe_remark(t, remark, units), style) for remark in metar.remarks]
+    undecoded = phrases.undecoded_free_text(t, metar)
+    if undecoded:
+        rows.append(DecodeRow(t.t(K.LABEL_REMARKS), " ".join(undecoded), style))
+    return rows
 
 
 def decode_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRow]:
@@ -73,13 +113,8 @@ def decode_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRow
         add(K.LABEL_HUMIDITY, phrases.describe_humidity(t, metar.relative_humidity), SemanticKind.TEMPERATURE)
     for pressure in metar.altimeters:
         add(K.LABEL_ALTIMETER, phrases.describe_pressure(t, pressure, units), SemanticKind.PRESSURE)
-    tail = _joined([token.text for token in metar.tail_tokens])
-    if tail:
-        add(K.LABEL_TAIL, tail, SemanticKind.TREND)
-    if metar.remarks_index is not None:
-        remarks = _joined([token.text for token in metar.remarks_tokens])
-        if remarks:
-            add(K.LABEL_REMARKS, remarks, SemanticKind.REMARK)
+    rows.extend(_tail_rows(metar, t, units))
+    rows.extend(_remark_rows(metar, t, units))
     if metar.flags:
         add(K.LABEL_FLAGS, ", ".join(phrases.describe_flag(t, flag) for flag in metar.flags))
     add(K.LABEL_SUMMARY, phrases.summary_line(t, metar, units))

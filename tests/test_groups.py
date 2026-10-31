@@ -11,7 +11,6 @@ from wxbrief.decode.groups.header import parse_modifier, parse_station, parse_ti
 from wxbrief.decode.groups.pressure import parse_pressure
 from wxbrief.decode.groups.rvr import parse_rvr
 from wxbrief.decode.groups.sky import parse_sky
-from wxbrief.decode.groups.tail import is_color_state, parse_tail_group
 from wxbrief.decode.groups.tempdew import parse_tempdew
 from wxbrief.decode.groups.visibility import parse_visibility
 from wxbrief.decode.groups.weather import parse_weather
@@ -21,7 +20,6 @@ from wxbrief.decode.model import (
     CloudLayer,
     CloudType,
     Descriptor,
-    Flavor,
     Intensity,
     Modifier,
     Phenomenon,
@@ -432,86 +430,3 @@ def test_pressure_not_available() -> None:
 @pytest.mark.parametrize("text", ["A30", "Q101", "B3001", "3001", "A30011"])
 def test_pressure_rejects(text: str) -> None:
     assert run(parse_pressure, text)[0] is None
-
-
-# --- tail ------------------------------------------------------------------------------------------------------
-
-
-def tail(text: str, flavor: Flavor = Flavor.ICAO) -> tuple[SemanticKind | None, list[SemanticKind], int]:
-    cur = Cursor(tokenize(text))
-    kind = parse_tail_group(cur, flavor)
-    return kind, [t.kind for t in cur.tagged()], cur.pos
-
-
-def test_tail_nosig() -> None:
-    assert tail("NOSIG RMK") == (SemanticKind.TREND, [SemanticKind.TREND, SemanticKind.UNKNOWN], 1)
-
-
-def test_tail_trend_body_runs_to_the_next_trend_or_remark() -> None:
-    kind, kinds, used = tail("BECMG FM1130 TL1230 0350 TEMPO 3000 RMK X")
-    assert kind is SemanticKind.TREND
-    assert used == 4
-    assert set(kinds[:4]) == {SemanticKind.TREND}
-    assert kinds[4] is SemanticKind.UNKNOWN  # TEMPO starts the next group, untouched here
-
-
-def test_tail_trend_stops_at_remarks() -> None:
-    _, _, used = tail("TEMPO 2500 BKN003 RMK AO2")
-    assert used == 3
-
-
-def test_tail_colour_state_inside_a_trend() -> None:
-    kind, kinds, used = tail("TEMPO YLO2 4000")
-    assert kind is SemanticKind.TREND
-    assert used == 3
-    assert kinds == [SemanticKind.TREND, SemanticKind.COLOR_STATE, SemanticKind.TREND]
-
-
-@pytest.mark.parametrize(
-    "text", ["BLU", "WHT", "GRN", "YLO", "YLO1", "YLO2", "AMB", "RED", "BLACK", "BLACKRED", "BLU+"]
-)
-def test_colour_states(text: str) -> None:
-    assert is_color_state(text)
-    assert tail(text)[0] is SemanticKind.COLOR_STATE
-
-
-@pytest.mark.parametrize("text", ["BLUE", "RE", "REDD", "GREEN", "BL", "YLO3"])
-def test_not_colour_states(text: str) -> None:
-    assert not is_color_state(text)
-
-
-@pytest.mark.parametrize("text", ["RERA", "RETSRA", "RESHRA", "REFZRA", "REBLSN", "RETS", "RERASN"])
-def test_tail_recent_weather(text: str) -> None:
-    assert tail(text)[0] is SemanticKind.RECENT_WEATHER
-
-
-def test_tail_wind_shear() -> None:
-    kind, kinds, used = tail("WS ALL RWY NOSIG")
-    assert kind is SemanticKind.WIND_SHEAR
-    assert used == 3
-    assert kinds[:3] == [SemanticKind.WIND_SHEAR] * 3
-    assert tail("WS R24L")[2] == 2
-    assert tail("WS RWY24L")[2] == 2
-
-
-@pytest.mark.parametrize("text", ["W15/S3", "W15/H10", "WM02/S4", "W///S/"])
-def test_tail_sea_state(text: str) -> None:
-    assert tail(text)[0] is SemanticKind.SEA_STATE
-
-
-@pytest.mark.parametrize(
-    "text", ["88290192", "8849//91", "R24L/290255", "R06R/CLRD62", "R88/CLRD//", "R/SNOCLO", "SNOCLO"]
-)
-def test_tail_runway_state(text: str) -> None:
-    assert tail(text)[0] is SemanticKind.RUNWAY_STATE
-
-
-def test_runway_state_is_not_looked_for_in_us_reports() -> None:
-    assert tail("88290192", Flavor.US)[0] is None
-
-
-@pytest.mark.parametrize("text", ["9999", "FOO", "BKN010", "A3001", "RMK", "R35L/P6000FT"])
-def test_tail_rejects(text: str) -> None:
-    kind, _, used = tail(text)
-    assert kind is None
-    assert used == 0

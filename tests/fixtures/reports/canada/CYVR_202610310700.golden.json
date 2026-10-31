@@ -1,0 +1,202 @@
+{
+  "raw": "METAR CYVR 310700Z 00000KT 20SM FEW014 BKN038 OVC053 08/08 A2998 RMK SC1SC5SC2 SLP156",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "CYVR",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310700Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "00000KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "20SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "FEW014",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN038",
+      "start": 39,
+      "end": 45,
+      "kind": "SKY"
+    },
+    {
+      "text": "OVC053",
+      "start": 46,
+      "end": 52,
+      "kind": "SKY"
+    },
+    {
+      "text": "08/08",
+      "start": 53,
+      "end": 58,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2998",
+      "start": 59,
+      "end": 64,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 65,
+      "end": 68,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SC1SC5SC2",
+      "start": 69,
+      "end": 78,
+      "kind": "SKY"
+    },
+    {
+      "text": "SLP156",
+      "start": 79,
+      "end": 85,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "CYVR",
+  "observed": "2026-10-31T07:00:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 0,
+    "speed": {
+      "value": 0,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 20.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "FEW",
+      "base": {
+        "value": 1400,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 3800,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 5300,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 8,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 8,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.98,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 10,
+  "remarks_raw": "SC1SC5SC2 SLP156",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "CloudOpacity",
+      "layers": [
+        {
+          "cloud": "SC",
+          "eighths": 1,
+          "trace": false
+        },
+        {
+          "cloud": "SC",
+          "eighths": 5,
+          "trace": false
+        },
+        {
+          "cloud": "SC",
+          "eighths": 2,
+          "trace": false
+        }
+      ]
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1015.6,
+        "unit": "HPA"
+      }
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 3800,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "OVERCAST",
+  "relative_humidity": 100.0,
+  "warnings": []
+}

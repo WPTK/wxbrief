@@ -1,0 +1,325 @@
+{
+  "raw": "METAR KPHX 310551Z 10006KT 10SM FEW049 SCT060 BKN100 BKN180 19/15 A2991 RMK AO2 SLP118 CB DSNT NW TCU DSNT E SHRA DSNT NW 60001 T01890150 10217 20183 50008",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KPHX",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310551Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "10006KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "FEW049",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "SCT060",
+      "start": 39,
+      "end": 45,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN100",
+      "start": 46,
+      "end": 52,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN180",
+      "start": 53,
+      "end": 59,
+      "kind": "SKY"
+    },
+    {
+      "text": "19/15",
+      "start": 60,
+      "end": 65,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2991",
+      "start": 66,
+      "end": 71,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 72,
+      "end": 75,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 76,
+      "end": 79,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP118",
+      "start": 80,
+      "end": 86,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "CB",
+      "start": 87,
+      "end": 89,
+      "kind": "REMARK"
+    },
+    {
+      "text": "DSNT",
+      "start": 90,
+      "end": 94,
+      "kind": "REMARK"
+    },
+    {
+      "text": "NW",
+      "start": 95,
+      "end": 97,
+      "kind": "REMARK"
+    },
+    {
+      "text": "TCU",
+      "start": 98,
+      "end": 101,
+      "kind": "REMARK"
+    },
+    {
+      "text": "DSNT",
+      "start": 102,
+      "end": 106,
+      "kind": "REMARK"
+    },
+    {
+      "text": "E",
+      "start": 107,
+      "end": 108,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SHRA",
+      "start": 109,
+      "end": 113,
+      "kind": "REMARK"
+    },
+    {
+      "text": "DSNT",
+      "start": 114,
+      "end": 118,
+      "kind": "REMARK"
+    },
+    {
+      "text": "NW",
+      "start": 119,
+      "end": 121,
+      "kind": "REMARK"
+    },
+    {
+      "text": "60001",
+      "start": 122,
+      "end": 127,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "T01890150",
+      "start": 128,
+      "end": 137,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "10217",
+      "start": 138,
+      "end": 143,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "20183",
+      "start": 144,
+      "end": 149,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "50008",
+      "start": 150,
+      "end": 155,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KPHX",
+  "observed": "2026-10-31T05:51:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 100,
+    "speed": {
+      "value": 6,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "FEW",
+      "base": {
+        "value": 4900,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 6000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 10000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 18000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 19,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 15,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.91,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 11,
+  "remarks_raw": "AO2 SLP118 CB DSNT NW TCU DSNT E SHRA DSNT NW 60001 T01890150 10217 20183 50008",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1011.8,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "FreeText",
+      "text": "CB DSNT NW TCU DSNT E SHRA DSNT NW"
+    },
+    {
+      "variant": "PeriodPrecipitation",
+      "inches": 0.01,
+      "hours": 6,
+      "trace": false
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 18.9,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 15.0,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaxTemperature6Hour",
+      "temperature": {
+        "value": 21.7,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MinTemperature6Hour",
+      "temperature": {
+        "value": 18.3,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "PressureTendency",
+      "character": 0,
+      "direction": "HIGHER",
+      "change_hpa": 0.8
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 10000,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "BROKEN",
+  "relative_humidity": 77.6,
+  "warnings": []
+}

@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from wxbrief.decode.model import CloudLayer, FlightCategory, Visibility
+from wxbrief.decode.model import CloudLayer, FlightCategory, SkyCondition, Visibility
 
 LIFR_CEILING_FT = 500
 IFR_CEILING_FT = 1000
@@ -47,16 +47,16 @@ def lowest_ceiling(sky: Sequence[CloudLayer]) -> CloudLayer | None:
     return min(candidates, key=lambda layer: layer.base.feet if layer.base is not None else math.inf)
 
 
-def _ceiling_feet(sky: Sequence[CloudLayer], cavok: bool) -> float | None:
+def ceiling_for_classification(sky: Sequence[CloudLayer], cavok: bool) -> float | None:
     """Ceiling for classification: feet, ``inf`` for a sky known to have none, ``None`` when unknown."""
     layer = lowest_ceiling(sky)
     if layer is not None and layer.base is not None:
         return layer.base.feet
     if any(candidate.is_ceiling_layer for candidate in sky):
         return None  # an obscured or broken sky of unknown height
-    if cavok or sky:
-        return math.inf
-    return None
+    if cavok or any(candidate.cover is not SkyCondition.UNKNOWN for candidate in sky):
+        return math.inf  # CAVOK, or layers/clear-sky codes that leave no ceiling
+    return None  # no sky group, or only "//////" placeholders: the sensor reported nothing
 
 
 def classify(ceiling_ft: float | None, visibility: float | None) -> FlightCategory | None:
@@ -77,4 +77,4 @@ def classify(ceiling_ft: float | None, visibility: float | None) -> FlightCatego
 def flight_category(visibility: Visibility | None, sky: Sequence[CloudLayer]) -> FlightCategory | None:
     """Flight category of a decoded body, or ``None`` when neither visibility nor sky is available."""
     cavok = visibility is not None and visibility.cavok
-    return classify(_ceiling_feet(sky, cavok), visibility_sm(visibility))
+    return classify(ceiling_for_classification(sky, cavok), visibility_sm(visibility))

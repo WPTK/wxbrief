@@ -77,7 +77,7 @@
       "text": "T00780078",
       "start": 67,
       "end": 76,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     },
     {
       "text": "RVRNO",
@@ -161,6 +161,38 @@
   "tail_index": null,
   "remarks_index": 10,
   "remarks_raw": "AO2 T00780078 RVRNO $",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 7.8,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 7.8,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "SensorStatus",
+      "sensor": "RVR",
+      "location": null
+    },
+    {
+      "variant": "MaintenanceIndicator"
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {
@@ -172,7 +204,9 @@
     "LOW_CEILING",
     "LOW_VISIBILITY",
     "AUTOMATED",
-    "SPECIAL_REPORT"
+    "SPECIAL_REPORT",
+    "MAINTENANCE",
+    "MISSING_DATA"
   ],
   "condition": "OBSCURATION",
   "relative_humidity": 100.0,

@@ -1,0 +1,144 @@
+{
+  "raw": "METAR MMUN 310741Z 32002KT 7SM SCT020 24/23 A2993 RMK 8/100",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "MMUN",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310741Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "32002KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "7SM",
+      "start": 27,
+      "end": 30,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "SCT020",
+      "start": 31,
+      "end": 37,
+      "kind": "SKY"
+    },
+    {
+      "text": "24/23",
+      "start": 38,
+      "end": 43,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2993",
+      "start": 44,
+      "end": 49,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 50,
+      "end": 53,
+      "kind": "REMARK"
+    },
+    {
+      "text": "8/100",
+      "start": 54,
+      "end": 59,
+      "kind": "SKY"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "MMUN",
+  "observed": "2026-10-31T07:41:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 320,
+    "speed": {
+      "value": 2,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 7.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 2000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 24,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 23,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.93,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 8,
+  "remarks_raw": "8/100",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "CloudTypes",
+      "low": 1,
+      "middle": 0,
+      "high": 0
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "PARTLY_CLOUDY",
+  "relative_humidity": 94.1,
+  "warnings": []
+}

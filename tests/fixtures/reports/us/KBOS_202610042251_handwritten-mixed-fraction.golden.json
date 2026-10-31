@@ -89,7 +89,7 @@
       "text": "P0012",
       "start": 79,
       "end": 84,
-      "kind": "REMARK"
+      "kind": "WEATHER"
     }
   ],
   "report_type": "SPECI",
@@ -180,6 +180,24 @@
   "tail_index": null,
   "remarks_index": 12,
   "remarks_raw": "AO2 P0012",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "HourlyPrecipitation",
+      "inches": 0.12,
+      "trace": false
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

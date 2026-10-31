@@ -1,0 +1,164 @@
+{
+  "raw": "METAR CYYZ 310600Z 28008KT 15SM BKN045 08/04 A3040 RMK SC7 SLP298",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "CYYZ",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310600Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "28008KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "15SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BKN045",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "08/04",
+      "start": 39,
+      "end": 44,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3040",
+      "start": 45,
+      "end": 50,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 51,
+      "end": 54,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SC7",
+      "start": 55,
+      "end": 58,
+      "kind": "SKY"
+    },
+    {
+      "text": "SLP298",
+      "start": 59,
+      "end": 65,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "CYYZ",
+  "observed": "2026-10-31T06:00:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 280,
+    "speed": {
+      "value": 8,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 15.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 4500,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 8,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 4,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.4,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 8,
+  "remarks_raw": "SC7 SLP298",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "CloudOpacity",
+      "layers": [
+        {
+          "cloud": "SC",
+          "eighths": 7,
+          "trace": false
+        }
+      ]
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1029.8,
+        "unit": "HPA"
+      }
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 4500,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "BROKEN",
+  "relative_humidity": 75.9,
+  "warnings": []
+}
