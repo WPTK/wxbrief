@@ -246,6 +246,7 @@ def test_to_dict_is_json_serialisable_and_uses_names() -> None:
         "gust": None,
         "variable": False,
         "speed_above": False,
+        "gust_above": False,
     }
     assert data["rvr"][0]["prefix"] == "GREATER_THAN"
     assert data["flags"] == ["LOW_CEILING", "LOW_VISIBILITY"]

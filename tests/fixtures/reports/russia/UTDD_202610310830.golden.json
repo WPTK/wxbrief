@@ -110,7 +110,8 @@
     },
     "gust": null,
     "variable": false,
-    "speed_above": false
+    "speed_above": false,
+    "gust_above": false
   },
   "wind_variation": {
     "start": 300,
@@ -192,7 +193,8 @@
             "unit": "MPS"
           },
           "variable": false,
-          "speed_above": false
+          "speed_above": false,
+          "gust_above": false
         },
         "visibility": null,
         "weather": [],

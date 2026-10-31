@@ -205,6 +205,9 @@ FLAG_KEYS.update(
         Flag.AMENDED: K.FLAG_AMENDED,
         Flag.ICING: K.FLAG_ICING,
         Flag.TURBULENCE: K.FLAG_TURBULENCE,
+        Flag.TORNADO: K.FLAG_TORNADO,
+        Flag.FUNNEL_CLOUD: K.FLAG_FUNNEL_CLOUD,
+        Flag.SQUALL: K.FLAG_SQUALL,
     }
 )
 

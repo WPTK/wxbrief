@@ -152,7 +152,8 @@
     },
     "gust": null,
     "variable": false,
-    "speed_above": false
+    "speed_above": false,
+    "gust_above": false
   },
   "wind_variation": {
     "start": 350,
@@ -255,7 +256,8 @@
         },
         "gust": null,
         "variable": false,
-        "speed_above": false
+        "speed_above": false,
+        "gust_above": false
       },
       "variation": null
     },
@@ -270,7 +272,8 @@
         },
         "gust": null,
         "variable": false,
-        "speed_above": false
+        "speed_above": false,
+        "gust_above": false
       },
       "variation": null
     },
@@ -285,7 +288,8 @@
         },
         "gust": null,
         "variable": false,
-        "speed_above": false
+        "speed_above": false,
+        "gust_above": false
       },
       "variation": null
     },
@@ -300,7 +304,8 @@
         },
         "gust": null,
         "variable": false,
-        "speed_above": false
+        "speed_above": false,
+        "gust_above": false
       },
       "variation": null
     },
@@ -315,7 +320,8 @@
         },
         "gust": null,
         "variable": false,
-        "speed_above": false
+        "speed_above": false,
+        "gust_above": false
       },
       "variation": null
     }

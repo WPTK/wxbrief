@@ -154,6 +154,7 @@ def test_describe_wind() -> None:
     assert wind_of("/////KT") == "Not reported"
     assert wind_of("///05KT") == "Direction not reported, 5 kt"
     assert wind_of("270P49MPS", units=METRIC) == "From 270° (W) at more than 49 m/s"
+    assert wind_of("27015GP99KT") == "From 270° (W) at 15 kt, gusting to more than 99 kt"
 
 
 # --- visibility -----------------------------------------------------------------------------------------------
@@ -271,6 +272,8 @@ def test_describe_weather(groups: str, expected: str) -> None:
         ("//////", US, "Cloud amount not determined"),
         ("///015CB", US, "Cloud amount not determined at 1,500 ft, cumulonimbus"),
         ("BKN015///", US, "Broken clouds at 1,500 ft, cloud type not determined"),
+        ("//////CB", US, "Cloud amount not determined, height not determined, cumulonimbus"),
+        ("BKN///TCU", US, "Broken clouds, height not determined, towering cumulus"),
     ],
 )
 def test_describe_cloud_layer(layer: str, units: UnitsMode, expected: str) -> None:

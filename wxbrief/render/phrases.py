@@ -214,7 +214,10 @@ def describe_wind(t: Translator, wind: Wind, units: UnitsMode, variation: WindVa
             compass = t.t(COMPASS_KEYS[compass_point(wind.direction)])
             text = t.t(K.WIND_STEADY, direction=f"{wind.direction:03d}", compass=compass, speed=speed)
         if wind.gust is not None:
-            text = t.t(K.WIND_GUST, base=text, gust=format_speed(wind.gust, units, t.numbers))
+            gust = format_speed(wind.gust, units, t.numbers)
+            if wind.gust_above:
+                gust = t.t(K.COMMON_MORE_THAN, value=gust)
+            text = t.t(K.WIND_GUST, base=text, gust=gust)
     if variation is not None:
         text = t.t(K.WIND_VARIATION, base=text, from_deg=f"{variation.start:03d}", to_deg=f"{variation.end:03d}")
     return text
@@ -328,6 +331,9 @@ def describe_cloud_layer(t: Translator, layer: CloudLayer, units: UnitsMode) -> 
         return t.t(K.SKY_VERTICAL_VISIBILITY, height=format_short_distance(layer.base, units, t.numbers))
     cover = t.t(SKY_COVER_KEYS[layer.cover])
     if layer.base is None:
+        # CB or TCU is a hazard: it is stated even when the amount or the height was not determined (``//////CB``).
+        if layer.cloud_type is not None:
+            return t.t(K.SKY_LAYER_NO_HEIGHT_TYPED, cover=cover, type=t.t(CLOUD_TYPE_KEYS[layer.cloud_type]))
         if layer.cover in (SkyCondition.FEW, SkyCondition.SCT, SkyCondition.BKN, SkyCondition.OVC):
             return t.t(K.SKY_LAYER_NO_HEIGHT, cover=cover)
         return cover

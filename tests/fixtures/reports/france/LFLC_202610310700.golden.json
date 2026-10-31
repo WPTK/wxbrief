@@ -94,7 +94,8 @@
     },
     "gust": null,
     "variable": true,
-    "speed_above": false
+    "speed_above": false,
+    "gust_above": false
   },
   "wind_variation": null,
   "visibility": {
