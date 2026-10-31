@@ -55,8 +55,9 @@ def format_decimal(value: float, places: int = 1, nf: NumberFormat = ENGLISH) ->
     return nf.trimmed(value, places)
 
 
-# Flight-category limits in statute miles (LIFR/IFR, IFR/MVFR, MVFR/VFR).
-_CATEGORY_LIMITS_SM = (1, 3, 5)
+# Statute-mile limits below which the category worsens (LIFR below 1, IFR below 3). 5 SM is still MVFR, so a figure
+# rounded up to 5 stays truthful.
+_CATEGORY_LIMITS_SM = (1, 3)
 
 
 def format_miles(value: float, *, exact: bool, nf: NumberFormat = ENGLISH) -> str:

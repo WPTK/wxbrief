@@ -240,7 +240,7 @@ async def test_paste_screen_decodes_offline_and_copies_discord(tmp_path: Path, c
 
 
 def test_parse_reference() -> None:
-    assert parse_reference("2026-10-13", NOW) == (datetime(2026, 10, 13, 12, tzinfo=UTC), True)
+    assert parse_reference("2026-10-13", NOW) == (datetime(2026, 10, 13, 23, 59, 59, tzinfo=UTC), True)
     assert parse_reference("", NOW) == (NOW, True)
     assert parse_reference("tomorrow", NOW) == (NOW, False)
 
@@ -506,3 +506,13 @@ async def test_a_config_the_app_wrote_is_not_backed_up_again(tmp_path: Path) -> 
         app.add_station("KDEN")
         await pilot.pause()
     assert not (tmp_path / "config.toml.bak").exists()
+
+
+def test_a_date_in_the_paste_field_keeps_late_reports_of_that_day() -> None:
+    from wxbrief.decode.split import parse_any
+
+    reference, _ = parse_reference("2026-10-31", NOW)
+    raw = "METAR KDEN 311853Z 06007KT 10SM CLR 09/08 A3001\nTAF KDEN 311740Z 3118/0124 06007KT P6SM SKC"
+    metar, taf = parse_any(raw, reference)
+    assert metar.observed == datetime(2026, 10, 31, 18, 53, tzinfo=UTC)
+    assert taf.valid_from == datetime(2026, 10, 31, 18, tzinfo=UTC)

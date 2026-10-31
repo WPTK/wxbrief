@@ -15,6 +15,7 @@ from wxbrief import __version__
 from wxbrief.config import LAYOUTS, TIME_MODES, Config, LoadedConfig, clean_watchlist, load_config
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
+from wxbrief.decode.times import end_of_day
 from wxbrief.decode.units import UnitsMode
 from wxbrief.getcmd import add_get_parser, run_get
 from wxbrief.i18n import DEFAULT_LANGUAGE, LANGUAGES, Translator, resolve_language
@@ -29,12 +30,12 @@ if TYPE_CHECKING:
 
 
 def _parse_date(value: str) -> datetime:
-    """``YYYY-MM-DD`` as noon UTC, the moment day-of-month timestamps are resolved against."""
+    """``YYYY-MM-DD`` as the end of that day UTC, the moment day-of-month timestamps are resolved against."""
     try:
         parsed = datetime.strptime(value, "%Y-%m-%d")
     except ValueError as exc:
         raise argparse.ArgumentTypeError(f"expected YYYY-MM-DD, got {value!r}") from exc
-    return parsed.replace(hour=12, tzinfo=UTC)
+    return end_of_day(parsed.date())
 
 
 COMMANDS = ("decode", "get")

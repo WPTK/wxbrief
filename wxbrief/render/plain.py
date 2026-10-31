@@ -87,8 +87,10 @@ def _remark_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRo
     shown = [r for r in metar.remarks if not (isinstance(r, ColorStateRemark) and r.group == metar.color_state)]
     rows: list[DecodeRow] = []
     for remark in shown:
-        if isinstance(remark, FreeText):  # only the runs of known words; the rest goes to the not-decoded row
-            rows.extend(DecodeRow(label, words, style) for words in phrases.decoded_free_text(t, remark.text))
+        if isinstance(remark, FreeText):  # spelled out only when every word is known; else the not-decoded row
+            words = phrases.decoded_free_text(t, remark.text)
+            if words is not None:
+                rows.append(DecodeRow(label, words, style))
         else:
             rows.append(DecodeRow(label, phrases.describe_remark(t, remark, units), style))
     undecoded = phrases.undecoded_free_text(t, metar)

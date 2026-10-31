@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import datetime
 
 from rich.console import Group, RenderableType
 from rich.table import Table
@@ -17,6 +17,7 @@ from textual.widgets import Footer, Input, Label, Static, TextArea
 from wxbrief.clipboard import copy_text
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
+from wxbrief.decode.times import end_of_day
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n.keys import K
 from wxbrief.render.discord import render_discord
@@ -29,7 +30,7 @@ MAX_PASTE_CHARS = 60_000  # a TAF or METAR is a few hundred characters; this is 
 
 
 def parse_reference(text: str, now: datetime) -> tuple[datetime, bool]:
-    """The date the day-of-month in a report resolves against: ``YYYY-MM-DD`` as noon UTC, else ``now``.
+    """The date the day-of-month in a report resolves against: ``YYYY-MM-DD`` as the end of that day UTC, else ``now``.
 
     The flag says whether the text was usable (an empty field counts as usable: it means "now").
     """
@@ -37,7 +38,7 @@ def parse_reference(text: str, now: datetime) -> tuple[datetime, bool]:
     if not value:
         return now, True
     try:
-        return datetime.strptime(value, "%Y-%m-%d").replace(hour=12, tzinfo=UTC), True
+        return end_of_day(datetime.strptime(value, "%Y-%m-%d").date()), True
     except ValueError:
         return now, False
 

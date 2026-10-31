@@ -140,8 +140,10 @@ def _resolve_issue(draft: _Draft, token: Token) -> None:
 
 def _resolve_valid(draft: _Draft, token: Token, start: tuple[int, int], end: tuple[int, int]) -> None:
     """Set the valid period from ``(day, hour)`` pairs: the end is the first such moment after the start."""
-    reference = draft.issue_time or draft.reference
-    moment, warning = resolve_day_time(start[0], start[1], 0, reference)
+    if draft.issue_time is not None:
+        moment, warning = resolve_day_time(start[0], start[1], 0, draft.issue_time)
+    else:  # no issue time: the period is read against the moment the TAF is read, which it cannot lie far after
+        moment, warning = resolve_report_time(start[0], start[1], 0, draft.reference)
     if moment is None and warning is not None:
         draft.warn(warning, token)
         return
@@ -157,7 +159,10 @@ def _resolve_valid(draft: _Draft, token: Token, start: tuple[int, int], end: tup
 
 def _resolve_legacy_valid(draft: _Draft, token: Token, day: int, from_hour: int, to_hour: int) -> None:
     """The old valid period ``DDHHHH``: the day, then the hour it starts and the hour it ends (the next such hour)."""
-    moment, warning = resolve_day_time(day, from_hour, 0, draft.issue_time or draft.reference)
+    if draft.issue_time is not None:
+        moment, warning = resolve_day_time(day, from_hour, 0, draft.issue_time)
+    else:
+        moment, warning = resolve_report_time(day, from_hour, 0, draft.reference)
     if moment is None and warning is not None:
         draft.warn(warning, token)
         return

@@ -377,7 +377,7 @@ def test_every_variant_has_a_sentence() -> None:
         ("CVCTV CLD EMBD", "Convective cloud embedded"),
         ("VIRGA", "Virga"),
         ("OBST OBSC", "Obstructions obscured"),
-        ("ZZZ CB", "Cumulonimbus"),  # the unknown word is left to the not-decoded row, not mixed in
+        ("ZZZ CB", "ZZZ CB"),  # not every word is known: left as written
         ("TS ALQDS MOV NE", "Thunderstorm in all quadrants moving northeast"),
         ("SH DSNT W", "Showers distant west"),
         ("ACC NW", "Altocumulus castellanus northwest"),
@@ -389,21 +389,18 @@ def test_free_text_words(text: str, expected: str) -> None:
 
 def test_undecoded_free_text_is_listed_in_a_raw_row() -> None:
     metar = us("AO2 SLP135 VIRGA FOO BAR 1CU030")
-    assert phrases.undecoded_free_text(T, metar) == ["FOO BAR 1CU030"]
+    assert phrases.undecoded_free_text(T, metar) == ["VIRGA FOO BAR 1CU030"]
     lines = render_plain(metar, T, MIXED).splitlines()
-    assert any(line.startswith("Remark:") and line.endswith("Virga") for line in lines)
-    assert any(line.startswith("Remarks (not decoded):") and line.endswith("FOO BAR 1CU030") for line in lines)
+    assert any(line.startswith("Remarks (not decoded):") and line.endswith("VIRGA FOO BAR 1CU030") for line in lines)
+    assert not any(line.startswith("Remark:") and "FOO" in line for line in lines)
 
 
-def test_a_remark_never_mixes_spelled_out_words_with_raw_codes() -> None:
-    lines = render_plain(us("AO2 TS MOV NE FOO CB DSNT W"), T, MIXED).splitlines()
-    remark_lines = [line for line in lines if line.startswith("Remark:")]
-    assert [line.split(":", 1)[1].strip() for line in remark_lines[1:]] == [
-        "Thunderstorm moving northeast",
-        "Cumulonimbus distant west",
-    ]
-    assert not any("FOO" in line for line in remark_lines)
-    assert any(line.startswith("Remarks (not decoded):") and line.endswith("FOO") for line in lines)
+@pytest.mark.parametrize("remark", ["VIS LWR E", "TS ENDED 05", "TS MOV NE FOO"])
+def test_a_partly_known_remark_is_left_whole_and_as_written(remark: str) -> None:
+    # "VIS LWR E" must not become "Visibility" and "East" rows; "TS ENDED 05" not just "Thunderstorm".
+    lines = render_plain(us(f"AO2 {remark}"), T, MIXED).splitlines()
+    assert [line for line in lines if line.startswith("Remark:")][1:] == []
+    assert any(line.startswith("Remarks (not decoded):") and line.endswith(remark) for line in lines)
 
 
 @pytest.mark.parametrize(

@@ -694,40 +694,30 @@ def _free_word(t: Translator, word: str) -> str | None:
     return None
 
 
-def _free_text_runs(t: Translator, text: str) -> list[tuple[bool, str]]:
-    """A plain-language remark in runs: ``(True, spelled out)`` for words the catalog knows, else as written."""
-    runs: list[tuple[bool, list[str]]] = []
-    for word in text.split():
-        spelled = _free_word(t, word)
-        known = spelled is not None
-        if runs and runs[-1][0] == known:
-            runs[-1][1].append(spelled or word)
-        else:
-            runs.append((known, [spelled or word]))
-    return [(known, " ".join(words)) for known, words in runs]
+def decoded_free_text(t: Translator, text: str) -> str | None:
+    """A plain-language remark spelled out, or ``None`` unless the catalog knows every word of it.
 
-
-def decoded_free_text(t: Translator, text: str) -> list[str]:
-    """The runs of a plain-language remark that the catalog can spell out, each as a sentence fragment.
-
-    A word the catalog does not know ends a run and is left to ``undecoded_free_text``, so no row mixes spelled-out
-    words with raw codes.
+    A partly known remark is not split: ``VIS LWR E`` is not "Visibility" plus "East", and ``TS ENDED 05`` is not
+    just "Thunderstorm". It stays whole, as written, for ``undecoded_free_text``.
     """
-    return [upper_first(words) for known, words in _free_text_runs(t, text) if known]
+    spelled = [_free_word(t, word) for word in text.split()]
+    if not spelled or any(word is None for word in spelled):
+        return None
+    return upper_first(" ".join(word for word in spelled if word is not None))
 
 
 def describe_free_text(t: Translator, text: str) -> str:
-    """A plain-language remark with its known runs spelled out (as written when none can be)."""
-    return "; ".join(decoded_free_text(t, text)) or text
+    """A plain-language remark spelled out when every word is known, else as written."""
+    return decoded_free_text(t, text) or text
 
 
 def undecoded_free_text(t: Translator, metar: Metar) -> list[str]:
-    """The runs of words in free-text remarks that the catalog cannot spell out, as written, one string per run."""
-    found: list[str] = []
-    for remark in metar.remarks:
-        if isinstance(remark, FreeText):
-            found.extend(words for known, words in _free_text_runs(t, remark.text) if not known)
-    return found
+    """The free-text remarks the catalog cannot fully spell out, each whole and as written."""
+    return [
+        remark.text
+        for remark in metar.remarks
+        if isinstance(remark, FreeText) and decoded_free_text(t, remark.text) is None
+    ]
 
 
 def _inches(t: Translator, value: float | None, units: UnitsMode, *, trace: bool = False) -> str:

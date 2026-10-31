@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 WARN_INVALID_DAY = "invalid_day"
 WARN_INVALID_TIME = "invalid_time"
@@ -15,6 +15,15 @@ def _month_start(year: int, month: int, offset: int) -> tuple[int, int]:
     """Return the (year, month) that is ``offset`` months away from the given one."""
     index = year * 12 + (month - 1) + offset
     return index // 12, index % 12 + 1
+
+
+def end_of_day(day: date) -> datetime:
+    """The last second of ``day`` in UTC: the reference for a date given without a time.
+
+    Reports describe the past, so a date alone means "any time that day"; its last second keeps every report of the
+    day (``311853Z`` with ``--date 2026-10-31``) inside the tolerance of ``resolve_report_time``.
+    """
+    return datetime(day.year, day.month, day.day, 23, 59, 59, tzinfo=UTC)
 
 
 def _check_time(day: int, hour: int, minute: int) -> str | None:
