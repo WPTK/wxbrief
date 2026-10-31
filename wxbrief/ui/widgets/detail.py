@@ -150,6 +150,7 @@ class DetailPane(VerticalScroll):
         bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED),
         bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF),
         bind("c", "screen.copy_metar", K.UI_BINDING_COPY_METAR),
+        bind("a", "screen.add_station", K.UI_BINDING_ADD_STATION),  # the list is hidden on a narrow terminal
     ]
 
     def __init__(self, **kwargs: Any) -> None:

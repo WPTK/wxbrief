@@ -16,6 +16,7 @@ from wxbrief.ui.widgets.detail import DetailPane
 
 
 class StationDetailScreen(CopyActions):
+    # 1 2 3 and c live on DetailPane (its bindings reach this screen's copy actions through "screen.").
     BINDINGS = [
         bind("escape", "close", K.UI_BINDING_BACK),
         bind("C", "copy_both", K.UI_BINDING_COPY_BOTH, show=False),
@@ -42,6 +43,11 @@ class StationDetailScreen(CopyActions):
     def redraw(self) -> None:
         """Draw the snapshot again, e.g. after a theme change (the colours are baked into the Rich text)."""
         self.query_one(DetailPane).show(self._entry, self._ctx, self._now)
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        """A station's own screen cannot add a station: DetailPane's ``a`` is hidden here."""
+        del parameters
+        return action != "add_station"
 
     def current(self) -> StationReports:
         return self._entry

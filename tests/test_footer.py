@@ -9,6 +9,7 @@ import pytest
 from test_timeline_ui import demo_app
 
 from wxbrief.data.cache import CACHE_DIR_ENV
+from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.widgets.detail import StationHeader
 from wxbrief.ui.widgets.station_grid import StationGrid
 from wxbrief.ui.widgets.station_list import StationList
@@ -36,7 +37,7 @@ async def test_the_footer_follows_focus() -> None:
         assert isinstance(app.focused, StationList)
         assert shown(app) == ["a", "d", "v", "p", "r", "question_mark", "q", "t"]
         await pilot.press("enter")  # into the detail pane
-        assert shown(app) == ["1", "2", "3", "c", "p", "r", "question_mark", "q", "t"]
+        assert shown(app) == ["1", "2", "3", "c", "a", "p", "r", "question_mark", "q", "t"]
         await pilot.press("v")  # still works from the detail pane, though the footer does not list it
         assert isinstance(app.focused, StationGrid)
         assert shown(app) == ["a", "d", "v", "p", "r", "question_mark", "q", "t"]
@@ -46,11 +47,12 @@ async def test_hidden_keys_stay_hidden_and_the_footer_stays_short() -> None:
     app = demo_app()
     async with app.run_test(size=(80, 24)) as pilot:
         await pilot.pause()
+        await pilot.pause(0.1)
         keys = shown(app)
         assert {"g", "u", "z", "C", "y"}.isdisjoint(keys)
         assert "q" in keys and "t" in keys
         footer = "\n".join(strip.text for strip in app.screen._compositor.render_strips())
-        assert "Quit" in footer and "Theme" in footer
+        assert "Add" in footer and "Quit" in footer and "Theme" in footer
 
 
 async def test_the_count_is_in_the_border_title_and_not_in_the_detail_header() -> None:
@@ -62,3 +64,38 @@ async def test_the_count_is_in_the_border_title_and_not_in_the_detail_header() -
         assert app.briefing.query_one(StationGrid).border_title == f"Stations ({count})"
         header = app.briefing.query_one(StationHeader).render().plain  # type: ignore[union-attr]
         assert f"1/{count}" not in header
+
+
+async def test_the_station_screen_copies_and_jumps(monkeypatch: pytest.MonkeyPatch) -> None:
+    copied: list[str] = []
+    monkeypatch.setattr("wxbrief.ui.copying.copy_text", lambda app, text, what, t: copied.append(what))
+    app = demo_app()
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause()
+        await pilot.press("v", "enter")
+        await pilot.pause()
+        assert isinstance(app.screen, StationDetailScreen)
+        assert "a" not in shown(app) and shown(app)[:4] == ["1", "2", "3", "c"]
+        await pilot.press("c")
+        assert len(copied) == 1 and "METAR" in copied[0]
+        await pilot.press("3", "2", "1", "a")  # none of these may raise; a is not offered on this screen
+        await pilot.pause()
+        assert isinstance(app.screen, StationDetailScreen)
+
+
+async def test_the_border_title_count_follows_add_remove_and_language() -> None:
+    app = demo_app()
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause()
+        station_list = app.briefing.query_one(StationList)
+        count = len(app.state.ids)
+        app.remove_station(app.state.ids[0])
+        await pilot.pause()
+        assert station_list.border_title == f"Stations ({count - 1})"
+        app.add_station("KDEN")
+        await pilot.pause()
+        assert station_list.border_title == f"Stations ({count})"
+        app.apply_setting("lang", "es")
+        await pilot.pause()
+        assert station_list.border_title == f"Estaciones ({count})"
+        assert app.briefing.query_one(StationGrid).border_title == f"Estaciones ({count})"
