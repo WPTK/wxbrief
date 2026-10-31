@@ -8,10 +8,12 @@ from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from wxbrief.data.stations import Station, StationDB
+from wxbrief.decode.model import FlightCategory
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import Translator
 from wxbrief.i18n.keys import K
 from wxbrief.render.palette import Palette
+from wxbrief.state import StationReports
 from wxbrief.ui.glyphs import Glyphs
 from wxbrief.ui.style import ViewPalette
 
@@ -27,6 +29,7 @@ class ViewContext:
     glyphs: Glyphs
     time_mode: str
     stations: StationDB
+    crosscheck: bool = True  # mark a station whose AWC flight category differs from ours
     _palette: ViewPalette | None = None
     _palette_theme: str | None = None
 
@@ -38,6 +41,15 @@ class ViewContext:
             self._palette = ViewPalette(Palette.from_theme(self.app.current_theme))
             self._palette_theme = name
         return self._palette
+
+    def awc_differs(self, entry: StationReports) -> str | None:
+        """AWC's flight category for the station when it disagrees with ours and the check is on, else ``None``."""
+        if not self.crosscheck or entry.metar is None or entry.awc_metar is None or entry.metar.flight_category is None:
+            return None
+        theirs = (entry.awc_metar.flight_category or "").upper()
+        if theirs in {c.value for c in FlightCategory} and theirs != entry.metar.flight_category.value:
+            return theirs
+        return None
 
     def station(self, icao: str) -> Station | None:
         return self.stations.get(icao)

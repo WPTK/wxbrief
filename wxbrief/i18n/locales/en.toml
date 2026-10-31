@@ -756,6 +756,9 @@ help = "Help"
 quit = "Quit"
 cycle_theme = "Theme"
 theme_picker = "Themes"
+cycle_glyphs = "Glyphs"
+cycle_units = "Units"
+cycle_time = "Time"
 close = "Close"
 back = "Back"
 cancel = "Cancel"
@@ -820,6 +823,7 @@ config_title = "Config"
 fetch_failed = "Could not fetch {product}: {error}"
 polling_off = "Polling is off"
 refreshing = "Refreshing"
+rate_limited = "Rate limited; retrying in {seconds} s"
 unknown_station = "Unknown station {code}"
 already_listed = "{code} is already in the list"
 already_listed_saved = "{code} is already in the list (now saved)"
@@ -865,7 +869,6 @@ hint = "Esc closes"
 body = """\
 [b]Stations[/b]
   Up/Down  j/k       select a station
-  \\[ and ]            previous / next station
   Enter              move into the detail pane
   a                  add a station (code or name)
   d                  remove the selected station
@@ -878,8 +881,9 @@ body = """\
   C                  copy Discord METAR and TAF
   y                  copy the raw report text
 [b]Tools[/b]
-  t                  next theme (saved to the config)
+  t                  next theme (saved unless --theme or --no-config is used)
   T                  pick a theme, with a live preview
+  g  u  z            next glyph set, units, time mode
   p                  paste and decode any METAR or TAF (offline)
   S                  settings: language, units, time, glyphs
   ?                  this help

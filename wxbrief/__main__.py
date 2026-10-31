@@ -277,6 +277,7 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
     loaded = LoadedConfig(Config()) if args.no_config else load_config(args.config)
     demo = bool(args.demo)
     view = replace(loaded.config.view)
+    from_flags: set[str] = set()
     for name, value in (
         ("theme", args.tui_theme),
         ("glyph_set", args.glyphs),
@@ -287,6 +288,7 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
     ):
         if value:
             setattr(view, name, value)
+            from_flags.add(name)
     notices: list[str] = []
     cleaned = clean_watchlist([s.strip().upper() for s in args.stations], notices)
     if demo:
@@ -313,6 +315,7 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
         config_path=args.config,
         use_config=not args.no_config,
         theme_from_flag=bool(args.tui_theme),
+        flag_view=frozenset(from_flags),
         config_warnings=loaded.warnings,
     )
 

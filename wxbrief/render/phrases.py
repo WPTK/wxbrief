@@ -513,11 +513,14 @@ def describe_period_span(t: Translator, period: TafPeriod) -> str:
     return describe_span(t, period.start, end)
 
 
-def describe_change_header(t: Translator, period: TafPeriod) -> str:
-    """``Becoming, 2026-10-31 09:00 UTC to 11:00 UTC``, ``30% chance, ...``, ``Base forecast, ...``."""
+def describe_change_header(t: Translator, period: TafPeriod, span: str | None = None) -> str:
+    """``Becoming, 2026-10-31 09:00 UTC to 11:00 UTC``, ``30% chance, ...``, ``Base forecast, ...``.
+
+    ``span`` replaces the UTC time span when the caller shows times in another zone.
+    """
     return t.t(
         CHANGE_KEYS[period.change],
-        span=describe_period_span(t, period),
+        span=span if span is not None else describe_period_span(t, period),
         probability=period.probability if period.probability is not None else "",
     )
 

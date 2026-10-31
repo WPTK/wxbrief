@@ -8,7 +8,7 @@ from datetime import datetime
 from rich.text import Text
 from textual.widgets import Static
 
-from wxbrief.decode.model import Taf, Timeline
+from wxbrief.decode.model import ChangeType, Taf, TafPeriod, Timeline
 from wxbrief.decode.timeline import category_of, merge
 from wxbrief.i18n.keys import K
 from wxbrief.render import phrases
@@ -64,6 +64,21 @@ class PeriodDetail(Static):
     def _stamp(self, ctx: ViewContext, icao: str, moment: datetime) -> str:
         return f"{ctx.localize(moment, icao):%Y-%m-%d} {ctx.clock(moment, icao)}"
 
+    def _span(self, ctx: ViewContext, icao: str, period: TafPeriod) -> str:
+        """The group's own time span in the time mode, so a header never mixes local and UTC times."""
+        t = ctx.translator
+        end = period.becoming_end if period.change is ChangeType.BECMG else period.end
+        if period.start is None:
+            return t.t(K.TAF_SPAN_NONE)
+        first = self._stamp(ctx, icao, period.start)
+        if end is None:
+            return t.t(K.TAF_SPAN_START_ONLY, start=first)
+        same_day = ctx.localize(end, icao).date() == ctx.localize(period.start, icao).date()
+        return t.t(K.TAF_SPAN_BOTH, start=first, end=ctx.clock(end, icao) if same_day else self._stamp(ctx, icao, end))
+
+    def _header(self, ctx: ViewContext, icao: str, period: TafPeriod) -> str:
+        return phrases.describe_change_header(ctx.translator, period, self._span(ctx, icao, period))
+
     def _draw(self) -> None:
         assert self._args is not None
         taf, timeline, cell, ctx, icao = self._args
@@ -91,7 +106,7 @@ class PeriodDetail(Static):
             item = timeline.slices[index]
             if item.period is None or item.period in seen:
                 continue
-            header = phrases.describe_change_header(t, taf.periods[item.period])
+            header = self._header(ctx, icao, taf.periods[item.period])
             text = (
                 t.t(K.TIMELINE_THEN, time=ctx.clock(item.start, icao), header=header)
                 if seen
@@ -110,14 +125,14 @@ class PeriodDetail(Static):
                 becoming.add(item.becoming_index)
                 group = taf.periods[item.becoming_index]
                 category = category_of(merge(item.prevailing, group.elements))
-                parts.append(Text(phrases.describe_change_header(t, group), style="bold"))
+                parts.append(Text(self._header(ctx, icao, group), style="bold"))
                 parts.append(rows_text(element_rows(group.elements, category, t, ctx.units), ctx, width))
             for overlay in item.overlays:
                 if overlay.index in overlays:
                     continue
                 overlays.add(overlay.index)
                 group = taf.periods[overlay.index]
-                parts.append(Text(phrases.describe_change_header(t, group), style="bold"))
+                parts.append(Text(self._header(ctx, icao, group), style="bold"))
                 rows = element_rows(overlay.elements, overlay.category, t, ctx.units)
                 parts.append(rows_text(rows, ctx, width))
         self.update(Text("\n").join(parts))

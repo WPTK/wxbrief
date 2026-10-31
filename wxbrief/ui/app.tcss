@@ -79,7 +79,7 @@ StatusBar {
     text-overflow: ellipsis;
 }
 
-/* Narrow terminals: the list gives way to the detail; [ and ] or j and k change station. */
+/* Narrow terminals: the list gives way to the detail; j and k or the arrows change station. */
 BriefingScreen.-narrow StationList {
     display: none;
 }
@@ -276,3 +276,24 @@ StationDetailScreen DetailPane {
     height: 1fr;
 }
 /* === end S6 ===================================================================================================== */
+
+/* === S8: scrollbars in theme colours; the track blends into the surface and a bar only shows when content overflows === */
+* {
+    scrollbar-background: $surface;
+    scrollbar-background-hover: $surface;
+    scrollbar-background-active: $surface;
+    scrollbar-color: $primary-background-lighten-2;
+    scrollbar-color-hover: $primary;
+    scrollbar-color-active: $primary;
+    scrollbar-corner-color: $surface;
+}
+/* Short terminals (under 24 rows): the detail pane gives up its spacing rows. */
+BriefingScreen.-short StationHeader {
+    padding-top: 0;
+}
+
+BriefingScreen.-short FlagsRow,
+BriefingScreen.-short DetailPane .section {
+    margin-top: 0;
+}
+/* === end S8 === */

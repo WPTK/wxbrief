@@ -35,7 +35,6 @@ The aviation themes live in `wxbrief/ui/themes/aviation.py` as Textual `Theme` o
   watchlist: nothing is written with `--no-config`, a config that could not be read is never overwritten, and one
   that loaded with warnings is backed up once first. A saved name that no theme answers to falls back to
   `textual-dark` with a notice and is left in the file until you choose another.
-- The status bar shows the theme name.
 
 ![The theme picker over phosphor-amber](s5-theme-picker.svg)
 

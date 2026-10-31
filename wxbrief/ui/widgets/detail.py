@@ -53,6 +53,9 @@ class StationHeader(Static):
             title.append(f" ({place})", style=palette.muted)
         title.append("  ")
         title.append_text(palette.badge(metar.flight_category if metar else None))
+        theirs = ctx.awc_differs(entry)
+        if theirs:  # AWC's own category for this report is not the one we computed
+            title.append(f" {ctx.glyphs.differs}{theirs}", style=palette.stale)
         title.append(f"   {position}", style=palette.muted)
         lines = [title]
         if entry.awc_metar and entry.awc_metar.observed:
@@ -193,7 +196,7 @@ class DetailPane(VerticalScroll):
         self.query_one(RawReport).show(entry, ctx)
 
         remark_labels = {t.t(K.LABEL_REMARK), t.t(K.LABEL_REMARKS)}
-        skipped = remark_labels | {t.t(K.LABEL_FLAGS)}
+        skipped = remark_labels | {t.t(K.LABEL_FLAGS), t.t(K.LABEL_SUMMARY)}  # the summary restates the rows around it
         rows = decode_rows(metar, t, ctx.units) if metar else []
         self.query_one(DecodedTable).set_rows([r for r in rows if r.label not in skipped], ctx)
         self.query_one("#decoded-title").display = metar is not None
@@ -231,7 +234,6 @@ class DetailPane(VerticalScroll):
             return
         skipped = {t.t(K.LABEL_STATION), t.t(K.LABEL_REPORT), t.t(K.LABEL_FLAGS)}
         rows = [row for row in taf_header_rows(taf, ctx.translator, ctx.units) if row.label not in skipped]
-        rows.append(DecodeRow(t.t(K.LABEL_SUMMARY), phrases.describe_taf_summary(t, taf, ctx.units)))
         self.query_one("#taf-summary", Static).update(rows_text(rows, ctx, self.size.width or 70, indent=0))
         blocks = taf_blocks(taf, t, ctx.units)
         groups: list[Text] = []
@@ -271,4 +273,4 @@ class DetailPane(VerticalScroll):
         if widget.display:
             self.scroll_to_widget(widget, top=True, animate=False)
             if section == "taf" and self.query_one(TafTimeline).display:
-                self.query_one(TafTimeline).focus()
+                self.query_one(TafTimeline).focus(scroll_visible=False)  # the jump has placed the section

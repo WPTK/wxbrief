@@ -186,13 +186,14 @@ class TafTimeline(Widget, can_focus=True):
         ticks, body, overlay, cursor = Text(no_wrap=True), Text(no_wrap=True), Text(no_wrap=True), Text(no_wrap=True)
         previous: FlightCategory | None = None
         label_end = 0
-        zone = ""
+        zones: list[str] = []  # the zone names in order: a TAF can cross a daylight-saving change
         for index, cell in enumerate(self.cells):
             local = ctx.localize(cell.start, self._icao)
-            if not zone:
-                zone = ctx.translator.t(K.TIME_ZONE_UTC) if ctx.is_zulu(self._icao) else (local.tzname() or "")
+            name = ctx.translator.t(K.TIME_ZONE_UTC) if ctx.is_zulu(self._icao) else (local.tzname() or "")
+            if name and name not in zones:
+                zones.append(name)
             position = index * width
-            hour = f"{local:%H}"
+            hour = f"{local:%H}" if local.minute == 0 else f"{local:%H:%M}"  # half-hour zones such as +5:30
             if (self.step > 1 or local.hour % 3 == 0) and position >= label_end:
                 ticks.append(" " * (position - len(ticks.plain)))
                 ticks.append(hour, style=muted)
@@ -212,7 +213,7 @@ class TafTimeline(Widget, can_focus=True):
                 overlay.append(" " * width)
         cursor.append(" " * (self.cursor * width))
         cursor.append(CURSOR_MARK.ljust(width), style="bold")
-        ticks.append(f"  {zone}", style=muted)
+        ticks.append("  " + "/".join(zones), style=muted)
         legend = Text(no_wrap=True)
         legend.append(HATCH, style=muted)
         legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_BECOMING)}   ", style=muted)

@@ -1,4 +1,4 @@
-"""Glyph sets for the small status marks. Switching sets live (``g``) arrives with the polish session."""
+"""Glyph sets for the small status marks; ``g`` cycles through them."""
 
 from __future__ import annotations
 
@@ -13,13 +13,14 @@ class Glyphs:
     stale: str
     missing: str
     error: str
+    differs: str  # AWC's flight category is not ours
 
 
 _SETS = {
-    "ascii": Glyphs(fresh="*", stale="!", missing="-", error="x"),
-    "unicode": Glyphs(fresh="●", stale="◐", missing="○", error="✖"),
-    "emoji": Glyphs(fresh="🟢", stale="🟠", missing="⚪", error="❌"),
-    "nerd": Glyphs(fresh="", stale="", missing="", error=""),
+    "ascii": Glyphs(fresh="*", stale="!", missing="-", error="x", differs="!="),
+    "unicode": Glyphs(fresh="●", stale="◐", missing="○", error="✖", differs="≠"),
+    "emoji": Glyphs(fresh="🟢", stale="🟠", missing="⚪", error="❌", differs="≠"),
+    "nerd": Glyphs(fresh="", stale="", missing="", error="", differs="≠"),
 }
 
 

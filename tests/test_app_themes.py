@@ -21,7 +21,6 @@ from wxbrief.ui.screens.theme_picker import ThemePickerScreen
 from wxbrief.ui.themes import AVIATION_THEMES, THEME_CYCLE
 from wxbrief.ui.themes.semantic import SEMANTIC_DEFAULTS, semantic_variables
 from wxbrief.ui.widgets.detail import RawReport
-from wxbrief.ui.widgets.status_bar import StatusBar
 
 
 def load_reports(app: WxBriefApp) -> None:
@@ -64,7 +63,6 @@ async def test_every_theme_is_registered_and_applies(tmp_path: Path) -> None:
             app.theme = name
             await pilot.pause()
             assert app.current_theme.name == name
-            assert name in str(app.screen.query_one(StatusBar).render())
             seen.add(wind_color(app))
         # every theme re-colours the raw text; the colour changes at least as often as the palette says it can
         expected = {Palette.from_theme(app.available_themes[name]).hex("wx-wind").upper() for name in THEME_CYCLE}

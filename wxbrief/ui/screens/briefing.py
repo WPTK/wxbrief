@@ -39,14 +39,12 @@ class BriefingScreen(Screen[None]):
         bind("p", "paste", K.UI_BINDING_PASTE),
         bind("r", "refresh_now", K.UI_BINDING_REFRESH_NOW),
         bind("v", "toggle_layout", K.UI_BINDING_TOGGLE_LAYOUT),
-        bind("c", "copy_metar", K.UI_BINDING_COPY_METAR, show=False),
+        bind("c", "copy_metar", K.UI_BINDING_COPY_METAR),
         bind("C", "copy_both", K.UI_BINDING_COPY_BOTH, show=False),
         bind("y", "copy_raw", K.UI_BINDING_COPY_RAW, show=False),
         bind("S", "settings", K.UI_BINDING_SETTINGS, show=False),
         bind("j", "next_station", K.UI_BINDING_NEXT_STATION, show=False),
         bind("k", "previous_station", K.UI_BINDING_PREVIOUS_STATION, show=False),
-        bind("right_square_bracket", "next_station", K.UI_BINDING_NEXT_STATION, show=False),
-        bind("left_square_bracket", "previous_station", K.UI_BINDING_PREVIOUS_STATION, show=False),
         bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW, show=False),
         bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED, show=False),
         bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF, show=False),
@@ -122,7 +120,7 @@ class BriefingScreen(Screen[None]):
         if not self._ready:
             return
         wx = self.wx
-        self.query_one(StatusBar).show(wx.state, wx.scheduler, wx.ctx, wx.now(), self.current(), wx.glyph_set)
+        self.query_one(StatusBar).show(wx.state, wx.scheduler, wx.ctx, wx.now(), self.current())
 
     def on_option_list_option_highlighted(self, event: OptionList.OptionHighlighted) -> None:
         if event.option_id is None:
@@ -135,6 +133,9 @@ class BriefingScreen(Screen[None]):
         self.action_focus_detail()
 
     def on_resize(self, event: Resize) -> None:
+        footer = self.query_one(Footer)  # a narrow terminal gets the tight footer without the palette hint
+        footer.compact = event.size.width < 100
+        footer.show_command_palette = event.size.width >= 90
         self.call_after_refresh(self._fix_focus)
 
     def _fix_focus(self) -> None:
@@ -193,7 +194,8 @@ class BriefingScreen(Screen[None]):
         self._step(-1)
 
     def action_focus_detail(self) -> None:
-        self.query_one(DetailPane).focus()
+        if self.layout_mode == "list":  # the detail pane is hidden in the grid
+            self.query_one(DetailPane).focus()
 
     def action_jump(self, section: str) -> None:
         if self.layout_mode == "list":  # the detail pane is hidden in the grid; Enter opens a station's detail instead

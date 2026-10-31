@@ -15,10 +15,10 @@ CACHE_DIR_ENV = "WXBRIEF_CACHE_DIR"
 
 
 def default_cache_dir() -> Path:
-    """``$WXBRIEF_CACHE_DIR`` when set, else the platform cache folder."""
+    """``$WXBRIEF_CACHE_DIR`` when set (made absolute, so a later chdir cannot move it), else the platform folder."""
     override = os.environ.get(CACHE_DIR_ENV, "").strip()
     if override:
-        return Path(override)
+        return Path(override).expanduser().resolve()
     return Path(platformdirs.user_cache_dir("wxbrief"))
 
 
