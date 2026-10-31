@@ -12,7 +12,7 @@ def at(text: str) -> datetime:
 
 
 def test_noon_and_midnight_elevation_at_the_equinox() -> None:
-    assert abs(solar_elevation(0, 0, at("2026-03-20T12:00:00")) - 90) < 3  # the equinox falls at 14:46Z, so the sun is a little south
+    assert abs(solar_elevation(0, 0, at("2026-03-20T12:00:00")) - 90) < 3  # the equinox falls at 14:46Z
     assert solar_elevation(0, 0, at("2026-03-20T00:00:00")) < -85
 
 
@@ -50,3 +50,29 @@ def test_zone_aware_times_are_converted() -> None:
 
 def test_unknown_time_is_unknown() -> None:
     assert is_daylight(39.74, -104.99, None) is None
+
+
+def test_naive_times_are_taken_as_utc() -> None:
+    naive = datetime(2026, 6, 21, 12, 0)
+    assert solar_elevation(39.74, -104.99, naive) == solar_elevation(39.74, -104.99, naive.replace(tzinfo=UTC))
+
+
+def test_tui_copy_path_uses_the_station_position() -> None:
+    # CopyActions._discord with a stub screen: 03:00Z at Denver is dark, and swapped lat/lon would say day.
+    from types import SimpleNamespace
+
+    from wxbrief.data.stations import bundled
+    from wxbrief.decode.metar import parse_metar
+    from wxbrief.decode.units import UnitsMode
+    from wxbrief.i18n import Translator
+    from wxbrief.state import StationReports
+    from wxbrief.ui.copying import CopyActions
+
+    observed = datetime(2026, 10, 31, 3, 0, tzinfo=UTC)
+    report = parse_metar("METAR KDEN 310300Z 00000KT 10SM CLR 10/00 A3001")
+    awc = SimpleNamespace(observed=observed)
+    entry = StationReports(icao="KDEN", awc_metar=awc)  # type: ignore[arg-type]
+    ctx = SimpleNamespace(station=bundled().get, translator=Translator.load("en"), units=UnitsMode.US)
+    screen = SimpleNamespace(app=SimpleNamespace(ctx=ctx))
+    text = CopyActions._discord(screen, report, entry)  # type: ignore[arg-type]
+    assert "\U0001f319 KDEN" in text

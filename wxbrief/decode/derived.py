@@ -75,7 +75,6 @@ _CONTAMINATING_DEPOSITS = frozenset(
 )
 
 
-
 def _on_field(groups: Sequence[WeatherGroup]) -> list[WeatherGroup]:
     """Weather at the station itself (vicinity groups do not set the dominant condition)."""
     return [group for group in groups if not group.vicinity and not group.nsw and not group.not_observed]

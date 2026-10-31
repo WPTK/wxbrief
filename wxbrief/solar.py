@@ -10,8 +10,8 @@ HORIZON_DEG = -0.833
 
 
 def solar_elevation(lat: float, lon: float, moment: datetime) -> float:
-    """Elevation of the sun's centre above the horizon in degrees; ``moment`` must be timezone-aware."""
-    utc = moment.astimezone(UTC)
+    """Elevation of the sun's centre above the horizon in degrees; a naive ``moment`` is taken as UTC."""
+    utc = moment.replace(tzinfo=UTC) if moment.tzinfo is None else moment.astimezone(UTC)
     day_of_year = utc.timetuple().tm_yday
     hours = utc.hour + utc.minute / 60 + utc.second / 3600
     year_len = 366 if utc.year % 4 == 0 and (utc.year % 100 != 0 or utc.year % 400 == 0) else 365
@@ -43,6 +43,4 @@ def is_daylight(lat: float, lon: float, moment: datetime | None) -> bool | None:
     """True while the sun is above the horizon; None when the observation time is unknown."""
     if moment is None:
         return None
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=UTC)
     return solar_elevation(lat, lon, moment) > HORIZON_DEG
