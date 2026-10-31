@@ -137,6 +137,13 @@ class StationDB:
         return score
 
 
+def resolve_id(code: str) -> str:
+    """A 3-character IATA or FAA code as the ICAO id of its station; anything else upper-cased as it is."""
+    key = code.strip().upper()
+    station = bundled().get(key) if len(key) == 3 else None
+    return station.icao if station else key
+
+
 @cache
 def bundled() -> StationDB:
     """The shared instance of the bundled database."""

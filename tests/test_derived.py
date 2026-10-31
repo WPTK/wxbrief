@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from wxbrief.decode.derived import DAY_END_HOUR, DAY_START_HOUR, refine_clear, relative_humidity
+from wxbrief.decode.derived import refine_clear, relative_humidity
 from wxbrief.decode.detect import detect_flavor
 from wxbrief.decode.metar import parse_metar
 from wxbrief.decode.model import Condition, Flag, Flavor
@@ -220,13 +220,11 @@ def test_condition_is_none_without_weather_or_sky() -> None:
     assert condition_of("06007KT A3001") is None
 
 
-def test_clear_is_refined_by_local_hour() -> None:
-    assert refine_clear(Condition.CLEAR, DAY_START_HOUR) is Condition.CLEAR_DAY
-    assert refine_clear(Condition.CLEAR, DAY_END_HOUR - 1) is Condition.CLEAR_DAY
-    assert refine_clear(Condition.CLEAR, DAY_END_HOUR) is Condition.CLEAR_NIGHT
-    assert refine_clear(Condition.CLEAR, 3) is Condition.CLEAR_NIGHT
-    assert refine_clear(Condition.RAIN, 12) is Condition.RAIN
-    assert refine_clear(None, 12) is None
+def test_clear_is_refined_by_daylight() -> None:
+    assert refine_clear(Condition.CLEAR, True) is Condition.CLEAR_DAY
+    assert refine_clear(Condition.CLEAR, False) is Condition.CLEAR_NIGHT
+    assert refine_clear(Condition.RAIN, True) is Condition.RAIN
+    assert refine_clear(None, True) is None
 
 
 # --- relative humidity -----------------------------------------------------------------------------------------

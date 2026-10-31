@@ -127,7 +127,7 @@ class CeilingStatus(Enum):
 class Condition(Enum):
     """The dominant condition at the field, shown as the header glyph. Listed in priority order.
 
-    Parsing yields ``CLEAR``; a caller that knows the station-local hour refines it to ``CLEAR_DAY`` or
+    Parsing yields ``CLEAR``; a caller that knows whether the sun is up refines it to ``CLEAR_DAY`` or
     ``CLEAR_NIGHT`` (see ``derived.refine_clear``).
     """
 
