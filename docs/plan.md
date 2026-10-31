@@ -588,6 +588,27 @@ Screenshot of the briefing screen (120x36, `textual-dark`, saved KDEN and EGLL r
 
 **For S7.** `SettingsScreen(lines)` takes `(name, value)` pairs; replace it. Only `en` exists, `Translator.load(view.lang)` falls back to it.
 
+**After review (PR #21).**
+
+- `PollScheduler.hold_until` is set by a 429 and `poll_now()` never makes a track due before it. On refocus the app calls `poll_now()`
+  only when it was away for at least the METAR interval (`app._monotonic`, `_blurred_at`).
+- Enter on a station focuses the detail pane through `OptionSelected` (the list's own binding wins over a screen binding).
+  A redraw uses `prevent(OptionList.OptionHighlighted)`, so it no longer re-selects.
+- Saving: a config that could not be read at all (`LoadedConfig.usable` is false) is never overwritten, the app says so once and keeps
+  the change for the run. A config that loaded with warnings is copied to `<name>.bak` once, with a toast naming the file. Nothing is
+  written unless the watchlist changed, so removing a command-line-only id leaves the file alone.
+- Command-line ids go through `getcmd.resolve_ids` (IATA and FAA codes resolve); ids that are not plausible are reported in
+  `AppOptions.notices`, which is separate from `config_warnings` and never triggers a backup. `wxbrief` returns the app's return code.
+- Adding a station requires a station the bundled database knows (ICAO, or a unique IATA/FAA code). `ZZZZ` is refused with "Unknown
+  station" and not saved; an id the database lacks cannot be added until the database is rebuilt, because the app does not verify ids
+  with the weather service first. Adding a duplicate says "KDEN is already in the list" and selects it (an id given on the command
+  line is saved by `a`, with "(now saved)").
+- The Help screen escapes `[`; the flight-category row in the decoded table wraps like the other rows.
+- `WXBRIEF_CACHE_DIR` overrides the cache folder (`data/cache.py`, `default_cache_dir`); platformdirs ignores the usual variables on Windows.
+- Parked in issue #22: paste screen runs on the event loop and truncates at 60,000 characters; a TAF arrival resets the cached METAR's
+  age; global flags before a subcommand are ignored; 60x20 footer and Help height; raw exception text when offline; visibility always
+  orange; TAF block label alignment.
+
 **Known limits.** The decoded table wraps values to the width at the last resize. `StationList` is rebuilt on each redraw. No snapshot tests yet.
 
 ### S5a (2026-10-31)

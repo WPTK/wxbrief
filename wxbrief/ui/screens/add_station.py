@@ -92,8 +92,11 @@ class AddStationScreen(ModalScreen[str | None]):
             self.dismiss(self.matches[0].icao)
             return
         code = event.value.strip().upper()
-        if _CODE.match(code):
-            self.dismiss(code)  # not in our list of stations: let the weather service decide
+        station = self._db.get(code) if _CODE.match(code) else None  # an IATA or FAA code finds its station
+        if station is not None:
+            self.dismiss(station.icao)
+        elif _CODE.match(code):
+            self.notify(f"Unknown station {code}", severity="warning")
         else:
             self.notify("Type a station code or part of a name", severity="warning")
 

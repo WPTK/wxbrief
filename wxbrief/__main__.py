@@ -16,7 +16,7 @@ from wxbrief.config import LAYOUTS, TIME_MODES, Config, LoadedConfig, clean_watc
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
 from wxbrief.decode.units import UnitsMode
-from wxbrief.getcmd import add_get_parser, run_get
+from wxbrief.getcmd import add_get_parser, resolve_ids, run_get
 from wxbrief.i18n import Translator
 from wxbrief.render.discord import render_discord
 from wxbrief.render.jsonout import to_dict
@@ -217,8 +217,9 @@ def _run_tui(args: argparse.Namespace) -> int:
     from wxbrief.app import WxBriefApp
 
     options = tui_options(args)
-    WxBriefApp(options).run()
-    return 0
+    app = WxBriefApp(options)
+    app.run()
+    return app.return_code or 0
 
 
 def tui_options(args: argparse.Namespace) -> AppOptions:
@@ -236,8 +237,12 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
     ):
         if value:
             setattr(view, name, value)
+    notices: list[str] = []
+    cleaned = clean_watchlist([s.strip().upper() for s in args.stations], notices)
     return AppOptions(
-        ids=clean_watchlist([s.upper() for s in args.stations]),
+        ids=resolve_ids(cleaned),
+        notices=notices,
+        config_usable=loaded.usable,
         config=loaded.config,
         view=view,
         config_path=args.config,

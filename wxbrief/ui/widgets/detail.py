@@ -117,7 +117,10 @@ class DecodedTable(DataTable[Text]):
         for row in self._rows:
             if row.category is not None:
                 code = row.category.value
-                value = Text.assemble(palette.badge(row.category), " ", row.value.removeprefix(code).strip())
+                badge = palette.badge(row.category)
+                indent = len(badge.plain) + 1
+                lines = textwrap.wrap(row.value.removeprefix(code).strip(), max(8, width - indent)) or [""]
+                value = Text.assemble(badge, " ", ("\n" + " " * indent).join(lines))
             else:
                 wrapped = "\n".join(textwrap.wrap(row.value, width) or [""])
                 value = Text(wrapped, style=palette.style(row.style))

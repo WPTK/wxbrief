@@ -43,7 +43,7 @@ def add_get_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser]
     )
 
 
-def _resolve(codes: list[str]) -> list[str]:
+def resolve_ids(codes: list[str]) -> list[str]:
     db = bundled()
     ids: list[str] = []
     for code in codes:
@@ -89,7 +89,7 @@ def run_get(args: argparse.Namespace) -> int:
     if callable(reconfigure):
         reconfigure(encoding="utf-8", errors="replace")
 
-    ids = _resolve(args.stations)
+    ids = resolve_ids(args.stations)
     metars, tafs, errors = asyncio.run(_fetch(ids))
     for message in errors:
         sys.stderr.write(f"wxbrief get: {message}\n")

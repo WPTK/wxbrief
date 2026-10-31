@@ -11,7 +11,7 @@ from textual.widgets import Label, Static
 HELP_TEXT = """\
 [b]Stations[/b]
   Up/Down  j/k       select a station
-  [ and ]            previous / next station
+  \\[ and ]            previous / next station
   Enter              move into the detail pane
   a                  add a station (code or name)
   d                  remove the selected station

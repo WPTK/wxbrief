@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shutil
+import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -35,6 +36,8 @@ class AppOptions:
     config_path: Path | None = None
     use_config: bool = True  # False for --no-config: nothing is read from or written to the config file
     config_warnings: list[str] = field(default_factory=list)
+    config_usable: bool = True  # False when the config file could not be read at all: it is never overwritten
+    notices: list[str] = field(default_factory=list)  # problems with command-line station ids
     cache_dir: Path | None = None
     use_cache: bool = True
     client: AwcClient | None = None  # tests inject one with a mock transport
@@ -73,6 +76,9 @@ class WxBriefApp(App[None]):
         self.briefing = BriefingScreen()
         self._backed_up = False
         self._ticks = 0
+        self._monotonic: Callable[[], float] = time.monotonic
+        self._blurred_at: float | None = None
+        self._warned_unusable = False
 
     def now(self) -> datetime:
         return self.options.now()
@@ -84,6 +90,8 @@ class WxBriefApp(App[None]):
         self.push_screen(self.briefing)
         for warning in self.options.config_warnings:
             self.notify(warning, severity="warning", title="Config", timeout=10)
+        for notice in self.options.notices:
+            self.notify(notice, severity="warning", title="Stations", timeout=10)
         if self.options.view.layout == "grid":
             self.notify("The grid layout is not built yet; showing the list", severity="warning")
         if self.options.poll:
@@ -138,21 +146,34 @@ class WxBriefApp(App[None]):
     def on_app_blur(self, event: events.AppBlur) -> None:
         if self.scheduler is not None:
             self.scheduler.away = True
+            self._blurred_at = self._monotonic()
 
     def on_app_focus(self, event: events.AppFocus) -> None:
         scheduler = self.scheduler
         if scheduler is None or not scheduler.away:
             return
         scheduler.away = False
-        scheduler.poll_now()  # catch up after being away
+        away_for = self._monotonic() - self._blurred_at if self._blurred_at is not None else 0.0
+        self._blurred_at = None
+        if away_for >= self.options.config.poll.metar_interval:
+            scheduler.poll_now()  # data is a full poll interval old: catch up (a rate-limit hold still applies)
 
     # --- the list --------------------------------------------------------------------------------------------------
 
     def add_station(self, icao: str) -> None:
-        station = self.ctx.station(icao) if len(icao.strip()) == 3 else None
-        code = (station.icao if station else icao).strip().upper()
-        if code in self.state.watchlist or (not self.options.use_config and code in self.state.ids):
-            self.notify(f"{code} is already listed")
+        typed = icao.strip().upper()
+        station = self.ctx.station(typed)  # an ICAO id, or a unique IATA or FAA code
+        if station is None:
+            self.notify(f"Unknown station {typed}", severity="warning")
+            return
+        code = station.icao
+        if code in self.state.ids:
+            note = f"{code} is already in the list"
+            if self.options.use_config and not self.state.is_saved(code):
+                self.state.add(code, persist=True)  # it was only listed for this run: keep it now
+                self._save()
+                note += " (now saved)"
+            self.notify(note)
             self.briefing.select(code)
             return
         if not self.state.add(code, persist=self.options.use_config):
@@ -171,19 +192,35 @@ class WxBriefApp(App[None]):
             self.briefing.refresh_view()
 
     def _save(self) -> None:
-        """Write the watchlist back. A config that loaded with warnings is copied to ``.bak`` first, once."""
+        """Write the watchlist back when it changed.
+
+        A config file that could not be read is never overwritten. One that loaded with warnings is copied to
+        ``<name>.bak`` first, once.
+        """
         options = self.options
-        if not options.use_config:
+        watchlist = list(self.state.watchlist)
+        if not options.use_config or watchlist == options.config.stations.watchlist:
             return
         path = options.config_path or default_config_path()
+        if not options.config_usable:
+            if not self._warned_unusable:
+                self._warned_unusable = True
+                self.notify(
+                    f"{path} could not be read, so it was left alone. Changes last for this run only.",
+                    severity="warning",
+                    timeout=10,
+                )
+            return
         if options.config_warnings and not self._backed_up and path.exists():
+            backup = path.with_name(path.name + ".bak")
             try:
-                shutil.copy2(path, path.with_suffix(".toml.bak"))
+                shutil.copy2(path, backup)
             except OSError:
                 self.notify("Could not back up the config; not saving it", severity="error")
                 return
             self._backed_up = True
-        options.config.stations.watchlist = list(self.state.watchlist)
+            self.notify(f"The config had problems; the original is kept as {backup}", timeout=10)
+        options.config.stations.watchlist = watchlist
         if not save_config(options.config, path):
             self.notify(f"Could not save {path}", severity="error")
 

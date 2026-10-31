@@ -43,7 +43,6 @@ class BriefingScreen(Screen[None]):
         Binding("k", "previous_station", "Previous", show=False),
         Binding("right_square_bracket", "next_station", "Next", show=False),
         Binding("left_square_bracket", "previous_station", "Previous", show=False),
-        Binding("enter", "focus_detail", "Detail", show=False),
         Binding("1", "jump('raw')", "Raw", show=False),
         Binding("2", "jump('decoded')", "Decoded", show=False),
         Binding("3", "jump('taf')", "TAF", show=False),
@@ -53,7 +52,6 @@ class BriefingScreen(Screen[None]):
     def __init__(self) -> None:
         super().__init__()
         self.selected: str | None = None
-        self._syncing = False
         self._ready = False
 
     @property
@@ -86,11 +84,8 @@ class BriefingScreen(Screen[None]):
         ids = [r.icao for r in reports]
         if self.selected not in ids:
             self.selected = ids[0] if ids else None
-        self._syncing = True
-        try:
+        with self.prevent(OptionList.OptionHighlighted):  # a redraw must not look like the user moving
             self.query_one(StationList).set_stations(reports, wx.ctx, wx.now(), self.selected)
-        finally:
-            self._syncing = False
         self.show_selected()
 
     def show_selected(self) -> None:
@@ -108,10 +103,14 @@ class BriefingScreen(Screen[None]):
         self.query_one(StatusBar).show(wx.state, wx.scheduler, wx.ctx, wx.now(), self.current(), wx.glyph_set)
 
     def on_option_list_option_highlighted(self, event: OptionList.OptionHighlighted) -> None:
-        if self._syncing or event.option_id is None:
+        if event.option_id is None:
             return
         self.selected = event.option_id
         self.show_selected()
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        """Enter on a station moves into its detail."""
+        self.action_focus_detail()
 
     def on_resize(self, event: Resize) -> None:
         self.call_after_refresh(self._fix_focus)

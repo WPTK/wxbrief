@@ -127,6 +127,7 @@ class PollScheduler:
         self._tracks = {Product.METAR: _Track(metar_interval), Product.TAF: _Track(taf_interval)}
         self._base = {Product.METAR: metar_interval, Product.TAF: taf_interval}
         self.away = False
+        self.hold_until = 0.0  # clock time before which nothing may be fetched (set by a 429's Retry-After)
         self._wake = asyncio.Event()
 
     def _interval(self, product: Product) -> float:
@@ -135,7 +136,7 @@ class PollScheduler:
     def poll_now(self) -> None:
         """Make both products due immediately (a new station was added, the user pressed refresh)."""
         for track in self._tracks.values():
-            track.due = 0.0
+            track.due = self.hold_until  # never earlier than a rate-limit hold
         self._wake.set()
 
     def next_due_in(self) -> float:
@@ -168,6 +169,7 @@ class PollScheduler:
                 if isinstance(exc, RateLimited):
                     # The limit is per client, not per product: hold every track back and end the cycle.
                     hold = self._clock() + min(BACKOFF_CAP, max(delay, exc.retry_after))
+                    self.hold_until = max(self.hold_until, hold)
                     for other in self._tracks.values():
                         other.due = max(other.due, hold)
                 if self._on_error:

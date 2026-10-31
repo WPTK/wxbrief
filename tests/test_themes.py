@@ -138,7 +138,10 @@ def test_rich_theme_has_every_style_the_renderer_uses() -> None:
     assert set(DEFAULT_THEME.styles) <= set(palette.rich_theme.styles)
 
 
-def test_decode_with_theme_renders_truecolor(capsys: pytest.CaptureFixture[str]) -> None:
+def test_decode_with_theme_renders_truecolor(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("NO_COLOR", raising=False)
     from wxbrief.decode.split import parse_any
     from wxbrief.i18n import Translator
     from wxbrief.render.richtext import build_renderable
