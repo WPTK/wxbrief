@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 
 import pytest
-from corpus import awc_rows, golden_path, read_raw, reference_for, report_files
+from corpus import awc_rows, golden_files, golden_path, read_raw, reference_for, report_files
 
 from wxbrief.decode.metar import parse_metar
 from wxbrief.render.jsonout import to_dict
@@ -35,9 +35,7 @@ def test_golden(path: Path, update_goldens: bool) -> None:
 
 
 def test_every_golden_has_a_report() -> None:
-    goldens = {p.name.removesuffix(".golden.json") for p in (FILES[0].parents[1]).glob("*/*.golden.json")}
-    reports = {p.stem for p in FILES}
-    assert goldens == reports
+    assert golden_files(taf=False) == {p.stem for p in FILES}
 
 
 def test_live_fixtures_are_real_awc_reports() -> None:

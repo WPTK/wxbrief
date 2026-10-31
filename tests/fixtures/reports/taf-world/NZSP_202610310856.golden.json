@@ -1,0 +1,271 @@
+{
+  "raw": "TAF NZSP 310856Z 3109/0109 30010KT 8000 IC BR SCT010 OVC020 QNH2835INS WND21008KT AFT 3122 ALL WINDS GRID TXM35/3109Z TNM37/3119Z",
+  "station": "NZSP",
+  "issue_time": "2026-10-31T08:56:00+00:00",
+  "valid_from": "2026-10-31T09:00:00+00:00",
+  "valid_to": "2026-11-01T09:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T09:00:00+00:00",
+    "end": "2026-11-01T09:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 300,
+        "speed": {
+          "value": 10,
+          "unit": "KT"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 8000,
+          "unit": "M"
+        },
+        "prefix": null,
+        "cavok": false,
+        "unlimited": false,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "IC"
+          ],
+          "vicinity": false,
+          "nsw": false,
+          "not_observed": false
+        },
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "BR"
+          ],
+          "vicinity": false,
+          "nsw": false,
+          "not_observed": false
+        }
+      ],
+      "sky": [
+        {
+          "cover": "SCT",
+          "base": {
+            "value": 1000,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        },
+        {
+          "cover": "OVC",
+          "base": {
+            "value": 2000,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": {
+        "value": 28.35,
+        "unit": "INHG"
+      },
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "MVFR",
+    "becoming_end": null
+  },
+  "changes": [],
+  "remarks": null,
+  "flavor": "ICAO",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "NZSP",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "310856Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3109/0109",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "30010KT",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND"
+    },
+    {
+      "text": "8000",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "IC",
+      "start": 40,
+      "end": 42,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BR",
+      "start": 43,
+      "end": 45,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT010",
+      "start": 46,
+      "end": 52,
+      "kind": "SKY"
+    },
+    {
+      "text": "OVC020",
+      "start": 53,
+      "end": 59,
+      "kind": "SKY"
+    },
+    {
+      "text": "QNH2835INS",
+      "start": 60,
+      "end": 70,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "WND21008KT",
+      "start": 71,
+      "end": 81,
+      "kind": "UNKNOWN"
+    },
+    {
+      "text": "AFT",
+      "start": 82,
+      "end": 85,
+      "kind": "UNKNOWN"
+    },
+    {
+      "text": "3122",
+      "start": 86,
+      "end": 90,
+      "kind": "UNKNOWN"
+    },
+    {
+      "text": "ALL",
+      "start": 91,
+      "end": 94,
+      "kind": "UNKNOWN"
+    },
+    {
+      "text": "WINDS",
+      "start": 95,
+      "end": 100,
+      "kind": "UNKNOWN"
+    },
+    {
+      "text": "GRID",
+      "start": 101,
+      "end": 105,
+      "kind": "UNKNOWN"
+    },
+    {
+      "text": "TXM35/3109Z",
+      "start": 106,
+      "end": 117,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "TNM37/3119Z",
+      "start": 118,
+      "end": 129,
+      "kind": "TEMPERATURE"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "unknown_token",
+      "start": 71,
+      "end": 81,
+      "text": "WND21008KT"
+    },
+    {
+      "code": "unknown_token",
+      "start": 82,
+      "end": 85,
+      "text": "AFT"
+    },
+    {
+      "code": "unknown_token",
+      "start": 86,
+      "end": 90,
+      "text": "3122"
+    },
+    {
+      "code": "unknown_token",
+      "start": 91,
+      "end": 94,
+      "text": "ALL"
+    },
+    {
+      "code": "unknown_token",
+      "start": 95,
+      "end": 100,
+      "text": "WINDS"
+    },
+    {
+      "code": "unknown_token",
+      "start": 101,
+      "end": 105,
+      "text": "GRID"
+    }
+  ],
+  "worst_category": "MVFR",
+  "report_type": "TAF",
+  "temperatures": [
+    {
+      "kind": "MAX",
+      "temperature": {
+        "value": -35,
+        "unit": "C"
+      },
+      "day": 31,
+      "hour": 9,
+      "time": "2026-10-31T09:00:00+00:00"
+    },
+    {
+      "kind": "MIN",
+      "temperature": {
+        "value": -37,
+        "unit": "C"
+      },
+      "day": 31,
+      "hour": 19,
+      "time": "2026-10-31T19:00:00+00:00"
+    }
+  ],
+  "flags": [],
+  "legacy": false
+}

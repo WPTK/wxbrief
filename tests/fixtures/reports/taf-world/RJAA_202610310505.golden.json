@@ -1,0 +1,156 @@
+{
+  "raw": "TAF RJAA 310505Z 3106/0112 35006KT 9999 FEW030 BECMG 0103/0106 13006KT",
+  "station": "RJAA",
+  "issue_time": "2026-10-31T05:05:00+00:00",
+  "valid_from": "2026-10-31T06:00:00+00:00",
+  "valid_to": "2026-11-01T12:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T06:00:00+00:00",
+    "end": "2026-11-01T03:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 350,
+        "speed": {
+          "value": 6,
+          "unit": "KT"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 10000,
+          "unit": "M"
+        },
+        "prefix": null,
+        "cavok": false,
+        "unlimited": true,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [],
+      "sky": [
+        {
+          "cover": "FEW",
+          "base": {
+            "value": 3000,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "VFR",
+    "becoming_end": null
+  },
+  "changes": [
+    {
+      "change": "BECMG",
+      "probability": null,
+      "start": "2026-11-01T03:00:00+00:00",
+      "end": "2026-11-01T12:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": 130,
+          "speed": {
+            "value": 6,
+            "unit": "KT"
+          },
+          "gust": null,
+          "variable": false,
+          "speed_above": false
+        },
+        "visibility": null,
+        "weather": [],
+        "sky": [],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "VFR",
+      "becoming_end": "2026-11-01T06:00:00+00:00"
+    }
+  ],
+  "remarks": null,
+  "flavor": "ICAO",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "RJAA",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "310505Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3106/0112",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "35006KT",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "FEW030",
+      "start": 40,
+      "end": 46,
+      "kind": "SKY"
+    },
+    {
+      "text": "BECMG",
+      "start": 47,
+      "end": 52,
+      "kind": "TREND"
+    },
+    {
+      "text": "0103/0106",
+      "start": 53,
+      "end": 62,
+      "kind": "TREND"
+    },
+    {
+      "text": "13006KT",
+      "start": 63,
+      "end": 70,
+      "kind": "WIND"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "VFR",
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [],
+  "legacy": false
+}

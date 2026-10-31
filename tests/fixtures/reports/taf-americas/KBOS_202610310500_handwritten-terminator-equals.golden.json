@@ -1,0 +1,112 @@
+{
+  "raw": "TAF KBOS 310500Z 3106/0112 VRB03KT P6SM SKC=",
+  "station": "KBOS",
+  "issue_time": "2026-10-31T05:00:00+00:00",
+  "valid_from": "2026-10-31T06:00:00+00:00",
+  "valid_to": "2026-11-01T12:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T06:00:00+00:00",
+    "end": "2026-11-01T12:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": null,
+        "speed": {
+          "value": 3,
+          "unit": "KT"
+        },
+        "gust": null,
+        "variable": true,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 6.0,
+          "unit": "SM"
+        },
+        "prefix": "GREATER_THAN",
+        "cavok": false,
+        "unlimited": false,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [],
+      "sky": [
+        {
+          "cover": "SKC",
+          "base": null,
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "VFR",
+    "becoming_end": null
+  },
+  "changes": [],
+  "remarks": null,
+  "flavor": "US",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KBOS",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "310500Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3106/0112",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "VRB03KT",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND"
+    },
+    {
+      "text": "P6SM",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "SKC",
+      "start": 40,
+      "end": 43,
+      "kind": "SKY"
+    },
+    {
+      "text": "=",
+      "start": 43,
+      "end": 44,
+      "kind": "TERMINATOR"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "VFR",
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [],
+  "legacy": false
+}

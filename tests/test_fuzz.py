@@ -12,14 +12,19 @@ import os
 import time
 from datetime import UTC, datetime
 
-from corpus import awc_rows, read_raw, report_files
+from corpus import awc_rows, awc_taf_rows, read_raw, report_files, taf_files
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from rich.console import Console
 
 from wxbrief.decode.metar import parse_metar
+from wxbrief.decode.model import Metar, Taf
+from wxbrief.decode.split import parse_any
+from wxbrief.decode.taf import parse_taf
+from wxbrief.decode.timeline import expand_timeline
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import Translator
+from wxbrief.render.discord import discord_block
 from wxbrief.render.highlight import highlight_spans
 from wxbrief.render.jsonout import to_dict
 from wxbrief.render.plain import render_plain
@@ -221,3 +226,128 @@ def test_pathological_inputs_stay_fast() -> None:
     for raw in nasty:
         check(raw)
     assert time.perf_counter() - started < 20
+
+
+# --- TAFs ----------------------------------------------------------------------------------------------------------
+
+TAF_CORPUS = sorted({read_raw(path) for path in taf_files()} | {row["rawTAF"].strip() for row in awc_taf_rows()})
+
+
+def check_taf(raw: str) -> None:
+    """The decoder's contract for any input read as a TAF: the same as ``check``, plus the timeline and the output."""
+    taf = parse_taf(raw, REF)
+
+    covered: list[int] = []
+    previous_end = 0
+    for token in taf.tokens:
+        assert 0 <= token.start < token.end <= len(raw)
+        assert token.start >= previous_end
+        assert raw[token.start : token.end].upper() == token.text
+        covered.extend(range(token.start, token.end))
+        previous_end = token.end
+    assert covered == [i for i, ch in enumerate(raw) if not ch.isspace()]
+
+    for warning in taf.warnings:
+        assert 0 <= warning.start <= warning.end <= len(raw)
+    known = set(taf.tokens)
+    for period in taf.periods:
+        assert set(period.tokens) <= known
+
+    timeline = expand_timeline(taf)
+    for left, right in zip(timeline.slices, timeline.slices[1:], strict=False):
+        assert left.end == right.start
+    timeline.hourly()
+    render_plain(taf, T, UnitsMode.MIXED)
+    discord_block(taf, T, UnitsMode.US)
+    json.dumps(to_dict(taf))
+
+
+def mutate(draw: st.DrawFn, corpus: list[str]) -> str:
+    tokens = draw(st.sampled_from(corpus)).split(" ")
+    for _ in range(draw(st.integers(min_value=0, max_value=6))):
+        if not tokens:
+            break
+        operation = draw(st.sampled_from(["drop", "duplicate", "truncate", "garble", "swap", "insert"]))
+        index = draw(st.integers(min_value=0, max_value=len(tokens) - 1))
+        token = tokens[index]
+        if operation == "drop":
+            del tokens[index]
+        elif operation == "duplicate":
+            tokens.insert(index, token)
+        elif operation == "truncate":
+            tokens[index] = token[: draw(st.integers(min_value=0, max_value=len(token)))]
+        elif operation == "garble" and token:
+            at = draw(st.integers(min_value=0, max_value=len(token) - 1))
+            tokens[index] = token[:at] + draw(st.sampled_from(GARBLE_CHARS)) + token[at + 1 :]
+        elif operation == "swap":
+            other = draw(st.integers(min_value=0, max_value=len(tokens) - 1))
+            tokens[index], tokens[other] = tokens[other], tokens[index]
+        elif operation == "insert":
+            tokens.insert(index, draw(st.text(alphabet=REPORT_ALPHABET, max_size=8)))
+    return draw(st.sampled_from([" ", "  ", "\n", " \t ", "="])).join(tokens)
+
+
+@st.composite
+def mutated_tafs(draw: st.DrawFn) -> str:
+    return mutate(draw, TAF_CORPUS)
+
+
+@given(mutated_tafs())
+@FUZZ
+def test_mutated_corpus_tafs(raw: str) -> None:
+    check_taf(raw)
+
+
+@given(st.text(alphabet=REPORT_ALPHABET, max_size=200).map(lambda text: "TAF KDEN 130500Z 1306/1412 " + text))
+@FUZZ
+def test_text_after_a_taf_header(raw: str) -> None:
+    check_taf(raw)
+
+
+@given(st.text())
+@FUZZ
+def test_arbitrary_text_as_a_taf(raw: str) -> None:
+    check_taf(raw)
+
+
+@given(mutated_tafs(), mutated_reports())
+@settings(max_examples=300, deadline=None, database=None, suppress_health_check=[HealthCheck.too_slow])
+def test_parse_any_of_a_mixed_blob(taf_raw: str, metar_raw: str) -> None:
+    """Splitting loses nothing and every piece decodes: whatever the pieces look like."""
+    blob = taf_raw + "\n" + metar_raw
+    reports = parse_any(blob, REF)
+    assert all(isinstance(report, (Metar, Taf)) for report in reports)
+    assert "".join("".join(report.raw.split()) for report in reports) == "".join(blob.split())
+
+
+@given(mutated_tafs())
+@settings(max_examples=200, deadline=None, database=None, suppress_health_check=[HealthCheck.too_slow])
+def test_rich_rendering_of_mutated_tafs(raw: str) -> None:
+    taf = parse_taf(raw, REF)
+    console = Console(file=io.StringIO(), width=100, theme=DEFAULT_THEME, color_system=None)
+    console.print(build_renderable(taf, T, UnitsMode.MIXED))
+
+
+def test_taf_corpus_is_large_enough_to_mutate() -> None:
+    assert len(TAF_CORPUS) > 200
+
+
+def test_pathological_tafs_stay_fast() -> None:
+    nasty = [
+        "TAF KDEN 130500Z 1306/1412 " + " ".join(["TEMPO 1306/1308 3SM BR"] * 3000),
+        "TAF KDEN 130500Z 1306/1412 " + " ".join(["BECMG 1306/1308 VRB03KT"] * 3000),
+        "TAF KDEN 130500Z 1306/1412 18010KT " + " ".join(["FM130800 18010KT P6SM SKC"] * 3000),
+        "TAF KDEN 130500Z 1306/1412 " + "PROB30 " * 10000,
+        "TAF KDEN 130500Z 1306/1412 " + "WS020/" * 10000,
+        "TAF KDEN 130500Z 1306/1412 " + " ".join(["TX20/1318Z TNM05/1410Z"] * 3000),
+        "TAF KDEN 130500Z 1306/1412 " + " ".join(["520009 610505 QNH2992INS"] * 3000),
+        "TAF KDEN 130500Z 1306/1412 " + "FM" * 20000,
+        "TAF " + "A" * 100000,
+        "TAF KDEN 130500Z 1306/1412 " + "1306/1412 " * 10000,
+        "TAF KDEN 130500Z 1306/1412 RMK " + "LAST NO AMDS AFT 3023 " * 5000,
+        "TAF KDEN 130500Z 1306/1412 " + "LAST NO AMDS AFT 3023 NEXT 0207 " * 5000,
+    ]
+    started = time.perf_counter()
+    for raw in nasty:
+        check_taf(raw)
+    assert time.perf_counter() - started < 30

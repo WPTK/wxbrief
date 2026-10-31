@@ -1,0 +1,46 @@
+{
+  "raw": "TAF LFPB 311000Z NIL",
+  "station": "LFPB",
+  "issue_time": "2026-10-31T10:00:00+00:00",
+  "valid_from": null,
+  "valid_to": null,
+  "modifiers": [
+    "NIL"
+  ],
+  "base": null,
+  "changes": [],
+  "remarks": null,
+  "flavor": "UNKNOWN",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "LFPB",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "311000Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "NIL",
+      "start": 17,
+      "end": 20,
+      "kind": "MODIFIER"
+    }
+  ],
+  "warnings": [],
+  "worst_category": null,
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [],
+  "legacy": false
+}

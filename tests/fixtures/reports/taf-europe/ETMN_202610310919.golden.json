@@ -1,0 +1,245 @@
+{
+  "raw": "TAF AMD ETMN 310919Z 3109/3118 32005KT 7000 NSW BKN020 TEMPO 3109/3118 VRB03KT 4000 BR FEW002 BKN012",
+  "station": "ETMN",
+  "issue_time": "2026-10-31T09:19:00+00:00",
+  "valid_from": "2026-10-31T09:00:00+00:00",
+  "valid_to": "2026-10-31T18:00:00+00:00",
+  "modifiers": [
+    "AMD"
+  ],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T09:00:00+00:00",
+    "end": "2026-10-31T18:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 320,
+        "speed": {
+          "value": 5,
+          "unit": "KT"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 7000,
+          "unit": "M"
+        },
+        "prefix": null,
+        "cavok": false,
+        "unlimited": false,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [],
+          "vicinity": false,
+          "nsw": true,
+          "not_observed": false
+        }
+      ],
+      "sky": [
+        {
+          "cover": "BKN",
+          "base": {
+            "value": 2000,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "MVFR",
+    "becoming_end": null
+  },
+  "changes": [
+    {
+      "change": "TEMPO",
+      "probability": null,
+      "start": "2026-10-31T09:00:00+00:00",
+      "end": "2026-10-31T18:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": null,
+          "speed": {
+            "value": 3,
+            "unit": "KT"
+          },
+          "gust": null,
+          "variable": true,
+          "speed_above": false
+        },
+        "visibility": {
+          "distance": {
+            "value": 4000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": null,
+            "phenomena": [
+              "BR"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "FEW",
+            "base": {
+              "value": 200,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          },
+          {
+            "cover": "BKN",
+            "base": {
+              "value": 1200,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "IFR",
+      "becoming_end": null
+    }
+  ],
+  "remarks": null,
+  "flavor": "ICAO",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "AMD",
+      "start": 4,
+      "end": 7,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "ETMN",
+      "start": 8,
+      "end": 12,
+      "kind": "STATION"
+    },
+    {
+      "text": "310919Z",
+      "start": 13,
+      "end": 20,
+      "kind": "TIME"
+    },
+    {
+      "text": "3109/3118",
+      "start": 21,
+      "end": 30,
+      "kind": "TIME"
+    },
+    {
+      "text": "32005KT",
+      "start": 31,
+      "end": 38,
+      "kind": "WIND"
+    },
+    {
+      "text": "7000",
+      "start": 39,
+      "end": 43,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "NSW",
+      "start": 44,
+      "end": 47,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BKN020",
+      "start": 48,
+      "end": 54,
+      "kind": "SKY"
+    },
+    {
+      "text": "TEMPO",
+      "start": 55,
+      "end": 60,
+      "kind": "TREND"
+    },
+    {
+      "text": "3109/3118",
+      "start": 61,
+      "end": 70,
+      "kind": "TREND"
+    },
+    {
+      "text": "VRB03KT",
+      "start": 71,
+      "end": 78,
+      "kind": "WIND"
+    },
+    {
+      "text": "4000",
+      "start": 79,
+      "end": 83,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BR",
+      "start": 84,
+      "end": 86,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "FEW002",
+      "start": 87,
+      "end": 93,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN012",
+      "start": 94,
+      "end": 100,
+      "kind": "SKY"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "IFR",
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [
+    "LOW_VISIBILITY",
+    "AMENDED"
+  ],
+  "legacy": false
+}
