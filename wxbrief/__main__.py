@@ -104,6 +104,8 @@ def _collect_texts(arguments: Sequence[str], stdin: TextIO) -> list[str]:
 def _run_decode(args: argparse.Namespace) -> int:
     palette = None
     if args.theme:
+        from textual.color import ColorParseError
+
         from wxbrief.render.palette import Palette, all_themes
 
         themes = all_themes()
@@ -111,7 +113,11 @@ def _run_decode(args: argparse.Namespace) -> int:
             names = ", ".join(sorted(themes))
             sys.stderr.write(f"wxbrief decode: unknown theme {args.theme!r} (choose from: {names})\n")
             return 2
-        palette = Palette.from_theme(themes[args.theme])
+        try:
+            palette = Palette.from_theme(themes[args.theme])
+        except (ColorParseError, KeyError, ValueError) as exc:
+            sys.stderr.write(f"wxbrief decode: cannot build theme {args.theme!r}: {exc}\n")
+            return 2
     texts = _collect_texts(args.reports, sys.stdin)
     reference = args.date if args.date is not None else datetime.now(UTC)
     decoded: list[Metar | Taf] = [item for text in texts for item in parse_any(text, reference)]

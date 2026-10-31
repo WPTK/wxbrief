@@ -20,7 +20,7 @@ from wxbrief.ui.themes.semantic import (
 )
 
 THEMES = all_themes()
-CYCLE_THEMES = [THEMES[name] for name in THEME_CYCLE]
+ALL_THEMES = list(THEMES.values())
 
 
 class _SemanticApp(App[None]):
@@ -61,7 +61,7 @@ def test_aviation_themes_cover_both_sides() -> None:
     assert len({theme.name for theme in AVIATION_THEMES}) == 6
 
 
-@pytest.mark.parametrize("theme", CYCLE_THEMES, ids=lambda theme: theme.name)
+@pytest.mark.parametrize("theme", ALL_THEMES, ids=lambda theme: theme.name)
 def test_semantic_variables_resolve(theme: Theme) -> None:
     palette = Palette.from_theme(theme)
     for key in (*SEMANTIC_DEFAULTS, *semantic_variables(theme.dark)):
@@ -70,7 +70,7 @@ def test_semantic_variables_resolve(theme: Theme) -> None:
     assert palette.hex("fcat-ifr") == FLIGHT_CATEGORY_COLORS["ifr"][0 if theme.dark else 1]
 
 
-@pytest.mark.parametrize("theme", CYCLE_THEMES, ids=lambda theme: theme.name)
+@pytest.mark.parametrize("theme", ALL_THEMES, ids=lambda theme: theme.name)
 def test_fixed_colors_are_legible_on_the_background(theme: Theme) -> None:
     palette = Palette.from_theme(theme)
     background = palette.color("background")
@@ -164,3 +164,29 @@ def test_cli_accepts_a_known_theme(capsys: pytest.CaptureFixture[str]) -> None:
 
     assert main(["decode", "--theme", "paper-chart", "--plain", "METAR KDEN 131453Z 06007KT 10SM CLR 09/08 A3001"]) == 0
     assert "KDEN" in capsys.readouterr().out
+
+
+def test_ansi_themes_are_not_offered() -> None:
+    assert "ansi-dark" not in THEMES and "ansi-light" not in THEMES
+
+
+@pytest.mark.parametrize("theme", ALL_THEMES, ids=lambda theme: theme.name)
+def test_every_theme_builds_css_variables(theme: Theme) -> None:
+    variables = Palette.from_theme(theme).css_variables()
+    assert set(variables) == {*SEMANTIC_DEFAULTS, *semantic_variables(theme.dark)}
+    assert all(value.startswith("#") for value in variables.values())
+
+
+def test_cli_reports_a_theme_that_cannot_be_built(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from textual.color import ColorParseError
+
+    from wxbrief.__main__ import main
+
+    def broken(theme: Theme) -> Palette:
+        raise ColorParseError("failed to parse")
+
+    monkeypatch.setattr(Palette, "from_theme", staticmethod(broken))
+    assert main(["decode", "--theme", "nord", "METAR KDEN 131453Z 06007KT 10SM CLR 09/08 A3001"]) == 2
+    assert "cannot build theme" in capsys.readouterr().err

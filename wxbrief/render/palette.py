@@ -28,8 +28,12 @@ _PERCENT = re.compile(r"^(\d+(?:\.\d+)?)%$")
 
 
 def all_themes() -> dict[str, Theme]:
-    """Every theme the CLI can name: the Textual built-ins and the aviation themes."""
-    themes = dict(BUILTIN_THEMES)
+    """Every theme the CLI can name: the Textual built-ins and the aviation themes.
+
+    ``ansi-dark`` and ``ansi-light`` are left out: they use the terminal's own colours (``ansi_default`` ...), so they
+    have no fixed RGB palette to match.
+    """
+    themes = {name: theme for name, theme in BUILTIN_THEMES.items() if not theme.ansi}
     themes.update({theme.name: theme for theme in AVIATION_THEMES})
     return themes
 

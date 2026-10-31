@@ -18,7 +18,9 @@ The aviation themes live in `wxbrief/ui/themes/aviation.py` as Textual `Theme` o
 
 `THEME_CYCLE` (`wxbrief/ui/themes/__init__.py`) adds a curated set of Textual built-ins after them: textual-dark and
 -light, nord, gruvbox, catppuccin-mocha and -latte, dracula, tokyo-night, monokai, flexoki, solarized-dark and -light.
-`wxbrief decode --theme` accepts any Textual built-in name as well as the aviation names.
+`wxbrief decode --theme` accepts any Textual built-in name as well as the aviation names, except `ansi-dark` and
+`ansi-light`: those use the terminal's own colours (`ansi_default` ...) and have no fixed RGB palette to match, so
+`all_themes()` leaves them out.
 
 ## Token layers
 
@@ -37,7 +39,8 @@ A theme can restyle any `wx-*` token by setting it in `variables`, for example `
 Flight categories and colour states keep their meaning in every theme: VFR green, MVFR blue, IFR red, LIFR magenta;
 BLU, WHT, GRN, YLO, AMB, RED. Each has a `(dark, light)` pair and `semantic_variables(theme.dark)` picks one, so the
 colour follows the theme's side and never its accents. `tests/test_themes.py` checks that every one reaches a WCAG
-contrast of at least 3.0 against the background of every theme in the cycle.
+contrast of at least 3.0 against the background of every theme in `all_themes()`. 3.0 is the WCAG standard for
+non-text UI components, which is what badges and timeline segments are; it is not a body-text standard.
 
 ## Palette (CLI and app)
 
