@@ -78,6 +78,95 @@ def test_flags_follow_the_enum_order() -> None:
     assert {Flag.CB, Flag.LOW_CEILING, Flag.LOW_VISIBILITY, Flag.GUSTS, Flag.THUNDERSTORM, Flag.AUTOMATED} <= set(flags)
 
 
+def icao_flags(tail: str, body: str = "24010KT 9999 FEW040 12/08 Q1013") -> set[Flag]:
+    return set(parse_metar(f"METAR EGLL 131453Z {body} {tail}", REF).flags)
+
+
+def test_wind_shear_flag() -> None:
+    assert Flag.WIND_SHEAR in icao_flags("WS R24L")
+    assert Flag.WIND_SHEAR in icao_flags("WS ALL RWY NOSIG")
+    assert Flag.WIND_SHEAR not in icao_flags("NOSIG")
+
+
+@pytest.mark.parametrize(
+    ("tail", "expected"),
+    [
+        ("BLU", False),
+        ("WHT", False),
+        ("GRN", False),
+        ("YLO", True),
+        ("YLO1", True),
+        ("YLO2", True),
+        ("AMB", True),
+        ("RED", True),
+        ("BLACKRED", True),
+        ("BLACK", False),
+        ("BLU TEMPO RED", False),  # only the current state counts
+        ("RED BECMG BLU", True),
+        ("///", False),
+        ("NOSIG", False),
+    ],
+)
+def test_color_below_green_flag(tail: str, expected: bool) -> None:
+    assert (Flag.COLOR_BELOW_GRN in icao_flags(tail)) is expected
+
+
+def test_color_below_green_flag_from_the_remarks() -> None:
+    assert Flag.COLOR_BELOW_GRN in icao_flags("NOSIG RMK AMB TEMPO RED")
+    assert Flag.COLOR_BELOW_GRN not in icao_flags("NOSIG RMK BLU BLU")
+
+
+def test_rapid_pressure_change_flag() -> None:
+    assert Flag.RAPID_PRESSURE_CHANGE in icao_flags("RMK PRESRR")
+    assert Flag.RAPID_PRESSURE_CHANGE in icao_flags("RMK PRESFR")
+    assert Flag.RAPID_PRESSURE_CHANGE not in icao_flags("RMK SLP135")
+
+
+def test_maintenance_flag() -> None:
+    assert Flag.MAINTENANCE in icao_flags("RMK AO2 SLP135 $")
+    assert Flag.MAINTENANCE not in icao_flags("RMK AO2 SLP135")
+
+
+@pytest.mark.parametrize(
+    ("body", "tail", "expected"),
+    [
+        ("24010KT 9999 VA FEW040 12/08 Q1013", "", True),
+        ("24010KT 9999 VCVA FEW040 12/08 Q1013", "", True),
+        ("24010KT 9999 FEW040 12/08 Q1013", "REVA", True),
+        ("24010KT 9999 FEW040 12/08 Q1013", "TEMPO 3000 VA", True),
+        ("24010KT 9999 FEW040 12/08 Q1013", "RERA", False),
+        ("24010KT 9999 -RA FEW040 12/08 Q1013", "", False),
+    ],
+)
+def test_volcanic_ash_flag(body: str, tail: str, expected: bool) -> None:
+    assert (Flag.VOLCANIC_ASH in icao_flags(tail, body)) is expected
+
+
+@pytest.mark.parametrize(
+    ("body", "tail", "expected"),
+    [
+        ("24010KT 9999 FEW040 12/08 Q1013", "RMK RVRNO", True),
+        ("24010KT 9999 FEW040 12/08 Q1013", "RMK PWINO", True),
+        ("24010KT 9999 FEW040 12/08 Q1013", "RMK SLPNO", True),
+        ("24010KT 9999 // FEW040 12/08 Q1013", "", True),
+        ("24010KT //// FEW040 12/08 Q1013", "", True),
+        ("24010KT 9999 //////  12/08 Q1013", "", True),
+        ("24010KT 9999 BKN/// 12/08 Q1013", "", True),
+        ("24010KT 0300 FG VV/// 12/08 Q1013", "", True),
+        ("24010KT 9999 FEW040 12/08 Q1013", "RMK SLP135", False),
+        ("24010KT 9999 FEW040 12/08 Q1013", "", False),
+    ],
+)
+def test_missing_data_flag(body: str, tail: str, expected: bool) -> None:
+    assert (Flag.MISSING_DATA in icao_flags(tail, body)) is expected
+
+
+def test_flag_order_follows_the_enum_with_the_new_flags() -> None:
+    flags = parse_metar("METAR EGLL 131453Z AUTO 24010G20KT 0300 FG VV002 12/08 Q1013 WS R24L AMB RMK PRESRR $ RVRNO", REF).flags
+    assert list(flags) == [flag for flag in Flag if flag in flags]
+    assert {Flag.WIND_SHEAR, Flag.COLOR_BELOW_GRN, Flag.RAPID_PRESSURE_CHANGE, Flag.MAINTENANCE, Flag.MISSING_DATA} <= set(flags)
+
+
 # --- ceiling ---------------------------------------------------------------------------------------------------
 
 
@@ -178,6 +267,20 @@ def test_relative_humidity_on_a_report() -> None:
 def test_detect_flavor(text: str, flavor: Flavor, military: bool) -> None:
     detection = detect_flavor(tokenize(text))
     assert (detection.flavor, detection.military) == (flavor, military)
+
+
+@pytest.mark.parametrize(
+    ("text", "military"),
+    [
+        ("EGVN 311550Z 29006KT 9999 10/04 Q1021 BLU+", True),
+        ("EGVN 311550Z 29006KT 9999 10/04 Q1021 BLACKRED", True),
+        ("EGVN 311550Z 29006KT 9999 10/04 Q1021 BLACK", False),  # closed for other reasons: no weather state
+        ("ETHB 311550Z AUTO 29006KT 9999 10/04 Q1021 ///", False),  # a colour that was not reported
+        ("EGVN 311550Z 29006KT 9999 10/04 Q1021 NOSIG", False),
+    ],
+)
+def test_a_colour_state_marks_a_military_report(text: str, military: bool) -> None:
+    assert detect_flavor(tokenize(text)).military is military
 
 
 def test_the_station_prefix_is_not_a_signal() -> None:

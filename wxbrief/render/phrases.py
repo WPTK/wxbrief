@@ -543,12 +543,14 @@ def describe_free_text(t: Translator, text: str) -> str:
 
 
 def undecoded_free_text(t: Translator, metar: Metar) -> list[str]:
-    """The free-text remarks that contain a word the catalog cannot spell out, verbatim."""
-    return [
-        remark.text
-        for remark in metar.remarks
-        if isinstance(remark, FreeText) and any(_free_word(t, word) is None for word in remark.text.split())
-    ]
+    """The words of free-text remarks that the catalog cannot spell out, as written, one string per remark."""
+    found: list[str] = []
+    for remark in metar.remarks:
+        if isinstance(remark, FreeText):
+            unknown = [word for word in remark.text.split() if _free_word(t, word) is None]
+            if unknown:
+                found.append(" ".join(unknown))
+    return found
 
 
 def _inches(t: Translator, value: float | None, units: UnitsMode, *, trace: bool = False) -> str:

@@ -254,6 +254,7 @@ class K:
     REMARK_WORD_CB = "remark.word.CB"
     REMARK_WORD_CLD = "remark.word.CLD"
     REMARK_WORD_CLN = "remark.word.CLN"
+    REMARK_WORD_CLOUD = "remark.word.CLOUD"
     REMARK_WORD_CVCTV = "remark.word.CVCTV"
     REMARK_WORD_DSNT = "remark.word.DSNT"
     REMARK_WORD_E = "remark.word.E"
