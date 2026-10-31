@@ -12,6 +12,18 @@ from dataclasses import dataclass, replace
 from wxbrief.decode.model import SemanticKind
 
 _WORD = re.compile(r"\S+")
+# C0 controls except tab and newline, a carriage return not followed by a newline, DEL and the C1 controls.
+_CONTROLS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]|\r(?!\n)")
+
+
+def strip_controls(raw: str) -> str:
+    """``raw`` without control characters (other than newline and tab), which would act on a terminal once printed.
+
+    Report text comes from a paste or the network, and an ESC in it starts a terminal escape sequence: an OSC 52
+    clipboard write, a window-title change, a CSI cursor or delete-lines code. Both entry points of the decoder
+    (``parse_metar`` and ``parse_taf``) call this first, so every renderer and the TUI's raw pane see clean text.
+    """
+    return _CONTROLS.sub("", raw)
 
 
 @dataclass(frozen=True)
