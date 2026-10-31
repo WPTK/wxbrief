@@ -428,10 +428,10 @@ def _blocks(
     chunks: list[list[str]] = [[]]
     size = 0
     for line in lines:
-        if chunks[-1] and size + 1 + len(line) > BODY_LIMIT:
+        if chunks[-1] and size + 1 + _units(line) > BODY_LIMIT:
             chunks.append([])
             size = 0
-        size += len(line) + (1 if chunks[-1] else 0)
+        size += _units(line) + (1 if chunks[-1] else 0)
         chunks[-1].append(line)
     for chunk in chunks:
         while chunk and not chunk[0]:  # a blank line left at a split is not wanted at the top of a block
@@ -441,12 +441,31 @@ def _blocks(
     return [f"{INNER_FENCE}\n" + "\n".join(chunk) + f"\n{INNER_FENCE}" for chunk in chunks if chunk]
 
 
+def block_count(text: str) -> int:
+    """How many fenced blocks ``discord_block`` made ``text`` of (each is a message of its own)."""
+    return text.count(INNER_FENCE) // 2
+
+
+def _units(text: str) -> int:
+    """Length in UTF-16 code units, which is how Discord counts the 2000 characters (an emoji can be two)."""
+    return len(text.encode("utf-16-le")) // 2
+
+
+_JOINERS = ("\u200d", "\ufe0f", "\ufe0e")  # a cut before one of these, or after a ZWJ, would split an emoji
+
+
 def _wrap(line: str, limit: int) -> list[str]:
-    """``line`` in pieces of at most ``limit`` characters, cut at a space where there is one."""
+    """``line`` in pieces of at most ``limit`` UTF-16 units, cut at a space where there is one."""
     pieces: list[str] = []
-    while len(line) > limit:
-        cut = line.rfind(" ", 0, limit + 1)
-        cut = cut if cut > 0 else limit
+    while _units(line) > limit:
+        end = min(len(line), limit)  # a character is at least one unit, so the fit is at or before here
+        while _units(line[:end]) > limit:
+            end -= 1
+        cut = line.rfind(" ", 0, end + 1)
+        if cut <= 0:
+            cut = end
+            while cut > 1 and (line[cut] in _JOINERS or line[cut - 1] == "\u200d"):
+                cut -= 1
         pieces.append(line[:cut])
         line = line[cut:].lstrip(" ")
     pieces.append(line)

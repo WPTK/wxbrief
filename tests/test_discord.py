@@ -319,3 +319,32 @@ def test_unread_groups_are_listed_in_the_discord_block() -> None:
     text = block("METAR KDEN 131453Z 06007KT 10SM FEW030 09/08 A3001 FOO")
     assert "1 warning" in text and "Unrecognized group: FOO" in text
     assert text.endswith(FENCE)
+
+
+def test_length_counts_utf16_units_and_never_splits_an_emoji() -> None:
+    from wxbrief.render.discord import _units, _wrap
+
+    heart = "\u2764\ufe0f"  # one character plus a variation selector
+    pair = "\U0001f468\u200d\U0001f469"  # man, ZWJ, woman: five UTF-16 units
+    line = "x" * 9 + heart + pair * 4
+    for limit in (10, 11, 12, 13, 14):
+        pieces = _wrap(line, limit)
+        assert "".join(pieces) == line
+        assert all(_units(p) <= limit for p in pieces)
+        assert not any(p.startswith(("\ufe0f", "\u200d")) or p.endswith("\u200d") for p in pieces)
+    assert _units("\U0001f321") == 2
+
+
+def test_a_copy_that_is_several_messages_says_so_in_the_toast() -> None:
+    from wxbrief.render.discord import block_count
+    from wxbrief.ui.copying import parts_note
+
+    long_text = render_discord(report(LONG_TAF), T, outer_fence=False)
+    count = block_count(long_text)
+    assert count >= 2
+    assert str(count) in parts_note(T, "KRIV", long_text) and "own message" in parts_note(T, "KRIV", long_text)
+    short = block("METAR KDEN 131453Z 06007KT 10SM FEW030 09/08 A3001")
+    assert parts_note(T, "KDEN", short) == "KDEN"
+    assert parts_note(T, "KDEN", short + "\n\n" + short, reports=2) == "KDEN"
+    for lang in ("de", "es", "fr", "pt"):
+        assert "{" not in parts_note(Translator.load(lang), "X", long_text)

@@ -61,11 +61,6 @@ async def _fetch(ids: list[str]) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf]
 
 def run_get(args: argparse.Namespace) -> int:
     """Exit 0 when everything arrived, 3 when a product failed but some data arrived, 1 when no station got anything."""
-    # Always UTF-8, as `decode` does: never fail on a character the stream cannot encode.
-    reconfigure = getattr(sys.stdout, "reconfigure", None)
-    if callable(reconfigure):
-        reconfigure(encoding="utf-8", errors="replace")
-
     ids = resolve_ids(args.stations)
     metars, tafs, errors = asyncio.run(_fetch(ids))
     for message in errors:

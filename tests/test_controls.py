@@ -10,6 +10,7 @@ from rich.console import Console
 from wxbrief.decode.metar import parse_metar
 from wxbrief.decode.split import parse_any
 from wxbrief.decode.taf import parse_taf
+from wxbrief.decode.tokens import strip_controls
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import Translator
 from wxbrief.render.plain import render_plain
@@ -54,3 +55,17 @@ def test_newline_tab_and_crlf_survive() -> None:
     (taf,) = parse_any(text, REF)
     assert taf.raw.replace(cr, "") == text.replace(cr, "")
     assert not _has_control(parse_metar(f"KDEN 131453Z{nul} 06007KT{bel}{cr}10SM 09/08 A3001", REF).raw)
+
+
+def test_whitespace_class_controls_keep_groups_apart() -> None:
+    ff, fs, nel, ls, cr = chr(12), chr(31), chr(133), chr(0x2028), chr(13)
+    text = f"METAR KDEN 131453Z{ff}06007KT 10SM{fs}FEW030{nel}09/08{ls}A3001{cr}RMK AO2"
+    metar = parse_metar(text, REF)
+    assert metar.raw == "METAR KDEN 131453Z 06007KT 10SM FEW030 09/08 A3001 RMK AO2"
+    assert metar.wind is not None and metar.visibility is not None and metar.altimeter is not None
+    assert strip_controls(metar.raw) == metar.raw  # idempotent
+
+
+def test_bidi_controls_are_dropped() -> None:
+    bidi = "".join(chr(c) for c in (0x202A, 0x202E, 0x2066, 0x2069))
+    assert parse_metar(f"METAR KDEN 131453Z 06007KT{bidi} 10SM", REF).raw == "METAR KDEN 131453Z 06007KT 10SM"

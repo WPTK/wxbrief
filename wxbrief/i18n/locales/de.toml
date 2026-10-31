@@ -160,6 +160,12 @@ SH = "Schauer mit {phenomena}"
 TS = "Gewitter mit {phenomena}"
 FZ = "gefrierender {phenomena}"
 
+# Freezing precipitation and fog have their own wording where the generic form would not agree.
+[wx.freezing]
+DZ = "gefrierender Sprühregen"
+RA = "gefrierender Regen"
+FG = "gefrierender Nebel"
+
 [wx.phenomenon]
 DZ = "Sprühregen"
 RA = "Regen"
@@ -879,6 +885,7 @@ metar = "METAR für {icao}"
 both = "METAR und TAF für {icao}"
 raw = "Originalmeldung für {icao}"
 discord = "Discord-Block"
+parts = "{what} in {count} Teilen: jeden als eigene Nachricht einfügen"
 
 [ui.add]
 title = "Station hinzufügen: ICAO- oder IATA-Code oder Teil des Namens"

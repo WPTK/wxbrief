@@ -23,6 +23,7 @@ from wxbrief.render.discord import discord_block
 from wxbrief.render.plain import decode_rows, render_plain, warning_lines
 from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
+from wxbrief.ui.copying import parts_note
 
 DEBOUNCE_SECONDS = 0.2
 MAX_PASTE_CHARS = 60_000  # a TAF or METAR is a few hundred characters; this is generous and keeps a stray paste cheap
@@ -134,7 +135,9 @@ class PasteDecodeScreen(Screen[None]):
         if not self.discord_text:
             self.notify(self._ctx.translator.t(K.UI_TOAST_NOTHING_DECODED), severity="warning")
             return
-        copy_text(self.app, self.discord_text, self._ctx.translator.t(K.UI_CLIPBOARD_DISCORD), self._ctx.translator)
+        t = self._ctx.translator
+        what = parts_note(t, t.t(K.UI_CLIPBOARD_DISCORD), self.discord_text, len(self.decoded))
+        copy_text(self.app, self.discord_text, what, t)
 
     def action_close(self) -> None:
         self.app.pop_screen()
