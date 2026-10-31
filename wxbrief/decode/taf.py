@@ -229,7 +229,7 @@ def _read_window(cur: Cursor, draft: _Draft, keyword: Token) -> tuple[datetime |
             draft.warn(warning, token)
         return start, end
     old = legacy_window_of(token.text) if draft.legacy else None
-    if old is not None and old[0] <= 24 and old[1] <= 24:
+    if old is not None:
         cur.take(SemanticKind.TREND)
         draft.warn(WARN_LEGACY_FORMAT, token)
         start = next_clock_time(old[0], 0, draft.previous_start())

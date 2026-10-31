@@ -405,7 +405,8 @@ def discord_block(
         lines = _taf_lines(report, t, units, station_name)
     else:
         lines = _metar_lines(report, t, units, station_name, local_hour)
-    return f"{INNER_FENCE}\n" + "\n".join(lines) + f"\n{INNER_FENCE}"
+    body = "\n".join(lines).replace("`", "'")  # report text can hold a backtick, which would close the fence early
+    return f"{INNER_FENCE}\n{body}\n{INNER_FENCE}"
 
 
 def render_discord(
