@@ -1,0 +1,155 @@
+/* Only Textual's built-in theme variables are used here; the colourway session adds the weather ones. */
+
+BriefingScreen #main {
+    height: 1fr;
+}
+
+StationList {
+    width: 38;
+    border-right: tall $primary-background-lighten-2;
+    background: $surface;
+}
+
+StationList:focus {
+    border-right: tall $primary;
+}
+
+DetailPane {
+    width: 1fr;
+    padding: 0 1;
+    background: $surface;
+}
+
+DetailPane .section {
+    margin-top: 1;
+    color: $text-muted;
+    text-style: bold;
+}
+
+DetailPane #placeholder {
+    margin: 2 2;
+    color: $text-muted;
+}
+
+StationHeader {
+    height: auto;
+    padding-top: 1;
+}
+
+FlagsRow {
+    height: auto;
+    margin-top: 1;
+}
+
+RawReport {
+    height: auto;
+}
+
+DecodedTable {
+    height: auto;
+    background: $surface;
+}
+
+DecodedTable > .datatable--header {
+    display: none;
+}
+
+#remarks-box {
+    margin-top: 1;
+    padding: 0;
+    background: $surface;
+    border: none;
+}
+
+#taf {
+    height: auto;
+}
+
+#warnings {
+    margin-top: 1;
+    height: auto;
+}
+
+StatusBar {
+    height: 1;
+    padding: 0 1;
+    background: $panel;
+    color: $text;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+}
+
+/* Narrow terminals: the list gives way to the detail; [ and ] or j and k change station. */
+BriefingScreen.-narrow StationList {
+    display: none;
+}
+
+BriefingScreen.-narrow DetailPane {
+    padding: 0;
+}
+
+.dialog {
+    width: 80%;
+    max-width: 90;
+    height: auto;
+    max-height: 90%;
+    padding: 1 2;
+    border: round $primary;
+    background: $surface;
+}
+
+.dialog-title {
+    text-style: bold;
+    color: $primary;
+    margin-bottom: 1;
+}
+
+.hint {
+    color: $text-muted;
+    margin-top: 1;
+}
+
+AddStationScreen, HelpScreen, SettingsScreen {
+    align: center middle;
+    background: $background 60%;
+}
+
+#add-box #results {
+    height: auto;
+    max-height: 12;
+    margin-top: 1;
+    border: none;
+    background: $surface;
+}
+
+PasteDecodeScreen #paste-layout {
+    height: 1fr;
+}
+
+PasteDecodeScreen #paste-reference {
+    height: 1;
+    padding: 0 1;
+}
+
+PasteDecodeScreen #paste-reference Label {
+    margin-right: 1;
+}
+
+PasteDecodeScreen #reference {
+    width: 14;
+}
+
+PasteDecodeScreen #paste-input {
+    height: 35%;
+    min-height: 4;
+}
+
+PasteDecodeScreen #paste-output {
+    height: 1fr;
+    padding: 0 1;
+    border-top: tall $primary-background-lighten-2;
+}
+
+PasteDecodeScreen #paste-result {
+    height: auto;
+}

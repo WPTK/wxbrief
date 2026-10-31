@@ -72,7 +72,7 @@ async def _fetch(ids: list[str]) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf]
     return latest_by_station(metars), {taf.icao: taf for taf in tafs}, errors
 
 
-def _local_hour(tz: str | None, moment: datetime | None) -> int | None:
+def local_hour(tz: str | None, moment: datetime | None) -> int | None:
     """The hour of day at the station when the report was made, for the day/night glyph."""
     if tz is None or moment is None:
         return None
@@ -119,7 +119,7 @@ def run_get(args: argparse.Namespace) -> int:
         name = station.name if station else None
         parts: list[str] = []
         if icao in decoded_metars:
-            hour = _local_hour(station.tz if station else None, metars[icao].observed)
+            hour = local_hour(station.tz if station else None, metars[icao].observed)
             if args.discord:
                 parts.append(
                     render_discord(decoded_metars[icao], translator, units, station_name=name, local_hour=hour)

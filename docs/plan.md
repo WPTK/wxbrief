@@ -172,7 +172,7 @@ Tick a row when the session has landed on `main` (S0 committed directly; later s
 | S2a | Decoder depth: METAR/SPECI tail (trends, color states, runway state, remarks) | [x] 2026-10-31 |
 | S2b | Decoder depth: TAF, timeline, `split.py`, Discord and JSON output | [x] 2026-10-31 |
 | S3 | Data layer | [x] 2026-10-31 |
-| S4 | TUI MVP | [ ] |
+| S4 | TUI MVP | [x] 2026-10-31 |
 | S5 | Colorways | [ ] |
 | S6 | TAF timeline | [ ] |
 | S7 | i18n | [ ] |
@@ -544,3 +544,48 @@ files, WSSS has two trends). Nothing else moved in any METAR golden.
 - `DiskCache.read` accepts a naive `saved_at`; treat it as damaged or give it UTC.
 - Refocus after away mode should call `poll_now()`.
 - `wxbrief get` exit codes: 0 all arrived, 3 one product failed but some data arrived, 1 nothing arrived for any requested station.
+
+### S4 (2026-10-31)
+
+Screenshot of the briefing screen (120x36, `textual-dark`, saved KDEN and EGLL reports): `docs/s4-briefing.svg`.
+
+**Names as built.**
+
+- `app.py`: `AppOptions` (ids, `config` as loaded, `view` as in effect, `config_path`, `use_config`, `config_warnings`, `cache_dir`,
+  `client`, `poll`, `now`) and `WxBriefApp(options)`. The poll worker is `poll_worker` (`@work(exclusive=True, group="poll")`) and builds
+  a `PollScheduler`, kept as `app.scheduler`. `app.state`, `app.ctx`, `app.briefing`, `add_station`, `remove_station`, `refresh_now`.
+  Command-line flags change `options.view` only; `options.config` is what `save_config` writes, so a flag is never saved.
+- `state.py`: `AppState(watchlist, session, cache, now)` with `ids`, `add(icao, persist=)`, `remove`, `apply(product, rows)` (decodes,
+  writes the cache), `load_cache()`, `reports()`; `StationReports(icao, awc_metar, awc_taf, metar, taf, updated, from_cache)`.
+- `clipboard.py`: `copy_text(app, text, what)`. `ui/context.py`: `ViewContext` (translator, units, glyphs, time mode, station DB, and
+  `palette` for the active theme). `ui/style.py`: `Palette` maps the decoder's `wx.*` style names to Rich styles from the theme's
+  variables, plus fixed flight-category badges. `ui/glyphs.py`: `GLYPH_SETS`, `glyphs_for`. `getcmd.local_hour` is now public.
+- Screens in `ui/screens/`: `briefing`, `add_station` (with `StationSuggester`), `paste`, `help`, `settings` (read-only). Widgets in
+  `ui/widgets/`: `station_list`, `detail` (`StationHeader`, `FlagsRow`, `RawReport`, `DecodedTable`, `DetailPane`), `status_bar`.
+- CLI: `wxbrief [ICAO ...]` opens the TUI; `decode` and `get` are unchanged. Global flags `--glyphs --layout --units --time --lang
+  --config --no-config` (`--units` is stored as `tui_units`). Without a terminal on stdin and stdout, `wxbrief` prints the help and exits 0.
+
+**Deviations.**
+
+- `--demo` is deferred to S6 (the demo reports do not exist yet). `--theme` is S5's. `--layout grid` is accepted and shows a toast; the
+  grid arrives in S6. `S` opens a read-only settings view, the editable one is S7. `g`, `u`, `z`, `t`, `T`, `v` are not bound yet.
+- Ids given on the command line are for the run only (not saved). `a` saves the station to the watchlist; with `--no-config` it is kept
+  for the run only. A config that loaded with warnings is copied to `config.toml.bak` once before the first save.
+- The TAF in the detail pane is the plain-text decode plus the highlighted raw TAF; S6 replaces it with the timeline.
+- Raw-text colours come from `ui/style.py`, not component classes in `app.tcss`; `app.tcss` uses built-in theme variables only. Textual
+  8.2.8 does not expand `$name` references held in a variables dict, so S5 must put resolved values into `get_css_variables()`.
+- Narrow terminals (under 90 columns) hide the list; `j`/`k`/`[`/`]` change station. 60x20 is covered by a test.
+- Paste screen: `c` types a letter while the text box has focus, so copy is also `F2` (always works); `Tab` leaves the box (`tab_behavior="focus"`).
+- Refocus: after away mode the scheduler is set back to normal and `poll_now()` is called on every refocus from away.
+- Cache: a cache file whose `saved_at` has no time zone is ignored as damaged.
+
+**For S5.** `Palette` and `ViewContext.palette` are the single place the TUI turns style names into colours; replace the `_SEMANTIC` and
+`_BADGES` tables in `ui/style.py` (the badge colours are fixed Rich names today). The list and detail redraw on every poll and every
+30 s, so they pick up a theme change at the next redraw; call `briefing.refresh_view()` from `watch_theme`.
+
+**For S6.** The detail pane has `#taf-title`, `#taf` (plain text); put `TafTimeline` and `PeriodDetail` there. `1/2/3` jump to
+`#raw-title`, `#decoded-title`, `#taf-title`. `AppOptions.layout` is read only for the "grid" toast.
+
+**For S7.** `SettingsScreen(lines)` takes `(name, value)` pairs; replace it. Only `en` exists, `Translator.load(view.lang)` falls back to it.
+
+**Known limits.** The decoded table wraps values to the width at the last resize. `StationList` is rebuilt on each redraw. No snapshot tests yet.

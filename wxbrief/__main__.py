@@ -6,10 +6,13 @@ import argparse
 import json
 import sys
 from collections.abc import Sequence
+from dataclasses import replace
 from datetime import UTC, datetime
-from typing import TextIO
+from pathlib import Path
+from typing import TYPE_CHECKING, TextIO
 
 from wxbrief import __version__
+from wxbrief.config import LAYOUTS, TIME_MODES, Config, LoadedConfig, clean_watchlist, load_config
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
 from wxbrief.decode.units import UnitsMode
@@ -18,6 +21,10 @@ from wxbrief.i18n import Translator
 from wxbrief.render.discord import render_discord
 from wxbrief.render.jsonout import to_dict
 from wxbrief.render.plain import render_plain
+from wxbrief.ui.glyphs import GLYPH_SETS
+
+if TYPE_CHECKING:
+    from wxbrief.app import AppOptions
 
 
 def _parse_date(value: str) -> datetime:
@@ -29,13 +36,56 @@ def _parse_date(value: str) -> datetime:
     return parsed.replace(hour=12, tzinfo=UTC)
 
 
+COMMANDS = ("decode", "get")
+_GLOBAL_WITH_VALUE = frozenset({"--glyphs", "--layout", "--units", "--time", "--lang", "--config"})
+
+
+def _add_global_flags(parser: argparse.ArgumentParser) -> None:
+    """The flags that apply to the TUI (and are accepted before a subcommand)."""
+    parser.add_argument("--version", action="version", version=f"wxbrief {__version__}")
+    parser.add_argument("--glyphs", choices=GLYPH_SETS, help="glyph set (default: from config, nerd)")
+    parser.add_argument("--layout", choices=LAYOUTS, help="list or grid layout (grid arrives later)")
+    parser.add_argument("--units", dest="tui_units", choices=[m.value for m in UnitsMode], help="units mode")
+    parser.add_argument("--time", choices=TIME_MODES, help="time shown: station, local or zulu")
+    parser.add_argument("--lang", help="language of the plain-language decode (en)")
+    parser.add_argument("--config", type=Path, metavar="FILE", help="read and save this config file")
+    parser.add_argument("--no-config", action="store_true", help="ignore the config file and never write it")
+
+
+def _first_positional(argv: Sequence[str]) -> str | None:
+    """The first word that is not a flag or a flag's value."""
+    skip = False
+    for word in argv:
+        if skip:
+            skip = False
+        elif word in _GLOBAL_WITH_VALUE:
+            skip = True
+        elif not word.startswith("-"):
+            return word
+    return None
+
+
+def build_tui_parser() -> argparse.ArgumentParser:
+    """The parser for ``wxbrief [ICAO ...]``, which opens the TUI."""
+    parser = argparse.ArgumentParser(
+        prog="wxbrief",
+        description="Terminal METAR/TAF briefing with colorways and plain-language translation. "
+        "Give station ids to watch them for this run; saved stations load from the config.",
+        epilog="commands: decode (decode text without the TUI), get (fetch once and print). "
+        "Run 'wxbrief decode --help' or 'wxbrief get --help'.",
+    )
+    _add_global_flags(parser)
+    parser.add_argument("stations", nargs="*", metavar="ICAO", help="station ids to add for this run")
+    return parser
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Return the top-level argument parser."""
     parser = argparse.ArgumentParser(
         prog="wxbrief",
         description="Terminal METAR/TAF briefing with colorways and plain-language translation.",
     )
-    parser.add_argument("--version", action="version", version=f"wxbrief {__version__}")
+    _add_global_flags(parser)
     commands = parser.add_subparsers(dest="command", metavar="command")
 
     decode = commands.add_parser(
@@ -136,16 +186,53 @@ def _run_decode(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_tui(args: argparse.Namespace) -> int:
+    """Open the TUI. Without a terminal there is nothing to draw on, so print the help instead."""
+    if not (sys.stdin.isatty() and sys.stdout.isatty()):
+        sys.stdout.write(build_tui_parser().format_help())
+        return 0
+    from wxbrief.app import WxBriefApp
+
+    options = tui_options(args)
+    WxBriefApp(options).run()
+    return 0
+
+
+def tui_options(args: argparse.Namespace) -> AppOptions:
+    """Build the app options from the parsed flags: config first, then each flag overrides it for this run only."""
+    from wxbrief.app import AppOptions
+
+    loaded = LoadedConfig(Config()) if args.no_config else load_config(args.config)
+    view = replace(loaded.config.view)
+    for name, value in (
+        ("glyph_set", args.glyphs),
+        ("layout", args.layout),
+        ("units", args.tui_units),
+        ("time", args.time),
+        ("lang", args.lang),
+    ):
+        if value:
+            setattr(view, name, value)
+    return AppOptions(
+        ids=clean_watchlist([s.upper() for s in args.stations]),
+        config=loaded.config,
+        view=view,
+        config_path=args.config,
+        use_config=not args.no_config,
+        config_warnings=loaded.warnings,
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line and return the process exit code."""
-    parser = build_parser()
-    args = parser.parse_args(argv)
+    words = list(sys.argv[1:] if argv is None else argv)
+    if _first_positional(words) not in COMMANDS:
+        tui_args = build_tui_parser().parse_args(words)
+        return _run_tui(tui_args)
+    args = build_parser().parse_args(words)
     if args.command == "decode":
         return _run_decode(args)
-    if args.command == "get":
-        return run_get(args)
-    parser.print_help()
-    return 0
+    return run_get(args)
 
 
 if __name__ == "__main__":
