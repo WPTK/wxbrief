@@ -67,6 +67,8 @@ class WxBriefApp(App[None]):
         bind("g", "cycle_glyphs", K.UI_BINDING_CYCLE_GLYPHS, show=False),
         bind("u", "cycle_units", K.UI_BINDING_CYCLE_UNITS, show=False),
         bind("z", "cycle_time", K.UI_BINDING_CYCLE_TIME, show=False),
+        # Textual adds this binding with an English label only when the app has none, and the footer reads it by key.
+        bind(App.COMMAND_PALETTE_BINDING, "command_palette", K.UI_BINDING_PALETTE, show=False, priority=True),
     ]
 
     def __init__(self, options: AppOptions | None = None) -> None:

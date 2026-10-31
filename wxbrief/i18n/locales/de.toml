@@ -12,8 +12,8 @@ keep_case = true
 # first words that are not nouns, so they lose their capital in the middle of a sentence ("Wind aus 240°")
 lowercase_starts = [
     "Ab", "Alle", "Alte", "Auf", "Aufgehobene", "Aufgelockerte", "Aus", "Automatische", "Bedeckt", "Berichtigte",
-    "Böiger", "Das", "Dauerhafte", "Der", "Die", "Diese", "Einige", "Es", "Gefrierender", "Geringe", "Geänderte",
-    "In", "Kein", "Keine", "Konnte", "Nicht", "Niedrige", "Verspätete", "Veränderliche", "Vorübergehend",
+    "Böiger", "Das", "Dauerhafte", "Der", "Die", "Diese", "Einige", "Es", "Flacher", "Gefrierender", "Geringe", "Geänderte", "Hohes",
+    "In", "Kein", "Keine", "Konnte", "Nicht", "Niedrige", "Niedriges", "Teilweise", "Verspätete", "Veränderliche", "Vorübergehend",
     "Vorübergehende", "Wenige", "Windstill", "Wolkenfrei", "Wolkenlos", "Zeitweise", "Überwiegend",
 ]
 
@@ -156,7 +156,7 @@ PR = "teilweise {phenomena}"
 BC = "Schwaden von {phenomena}"
 DR = "niedriges Treiben von {phenomena}"
 BL = "hohes Treiben von {phenomena}"
-SH = "Schauer von {phenomena}"
+SH = "Schauer mit {phenomena}"
 TS = "Gewitter mit {phenomena}"
 FZ = "gefrierender {phenomena}"
 
@@ -770,6 +770,7 @@ help = "Hilfe"
 quit = "Beenden"
 cycle_theme = "Design"
 theme_picker = "Designs"
+palette = "Palette"
 cycle_glyphs = "Symbole"
 cycle_units = "Einheiten"
 cycle_time = "Zeit"

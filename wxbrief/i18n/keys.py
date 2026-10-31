@@ -607,6 +607,7 @@ class K:
     UI_BINDING_LEFT = "ui.binding.left"
     UI_BINDING_NEXT_STATION = "ui.binding.next_station"
     UI_BINDING_OPEN = "ui.binding.open"
+    UI_BINDING_PALETTE = "ui.binding.palette"
     UI_BINDING_PASTE = "ui.binding.paste"
     UI_BINDING_PREVIOUS_STATION = "ui.binding.previous_station"
     UI_BINDING_QUIT = "ui.binding.quit"
