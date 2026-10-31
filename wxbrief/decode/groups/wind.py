@@ -30,7 +30,14 @@ def wind_from_text(text: str) -> Wind | None:
     unit = _UNITS[match.group("unit")]
     speed = None if match.group("spd") == "//" else Speed(int(match.group("spd")), unit)
     gust = Speed(int(match.group("gst")), unit) if match.group("gst") else None
-    return Wind(direction, speed, gust, variable=variable, speed_above=bool(match.group("above")))
+    return Wind(
+        direction,
+        speed,
+        gust,
+        variable=variable,
+        speed_above=bool(match.group("above")),
+        gust_above=bool(match.group("gabove")),
+    )
 
 
 def parse_wind(cur: Cursor) -> Wind | None:

@@ -18,7 +18,7 @@ from wxbrief.decode.tokens import Token
 _US_SIGNALS = (
     re.compile(r"^[PM]?\d{1,2}(?:/\d{1,2})?SM$"),  # statute-mile visibility
     re.compile(r"^A\d{4}$"),  # altimeter setting
-    re.compile(r"^R\d{2}[LCR]?/.*FT[UDN]?$"),  # RVR in feet
+    re.compile(r"^R\d{2}[LCR]?/.*FT(?:/?[UDN])?$"),  # RVR in feet
 )
 _STATION_TYPE = re.compile(r"^AO[12]$")  # automated station type, found in the remarks
 _ICAO_SIGNALS = (
