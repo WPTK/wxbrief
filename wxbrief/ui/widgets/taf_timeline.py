@@ -8,6 +8,7 @@ pane which period to describe. In a narrow terminal, or when hourly cells would 
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from datetime import datetime
 
 from rich.style import Style
@@ -43,6 +44,30 @@ def category_letter(t: Translator, category: FlightCategory | None) -> str:
 def cell_width(step: int) -> int:
     """Columns per cell: two for an hour, four for three hours."""
     return 2 if step == 1 else 4
+
+
+def tick_labels(cells: Sequence[StripCell], width: int, ctx: ViewContext, icao: str, *, every_cell: bool) -> Text:
+    """The hour labels above a strip of ``width``-column cells, then the zone name(s) in the order they occur.
+
+    A label sits over a cell that starts on a multiple of three hours (every cell when ``every_cell``, for strips
+    of merged hours); several zones appear when a daylight-saving change falls inside the strip.
+    """
+    ticks = Text(no_wrap=True)
+    label_end = 0
+    zones: list[str] = []
+    for index, cell in enumerate(cells):
+        local = ctx.localize(cell.start, icao)
+        name = ctx.translator.t(K.TIME_ZONE_UTC) if ctx.is_zulu(icao) else (local.tzname() or "")
+        if name and name not in zones:
+            zones.append(name)
+        position = index * width
+        hour = f"{local:%H}" if local.minute == 0 else f"{local:%H:%M}"  # half-hour zones such as +5:30
+        if (every_cell or local.hour % 3 == 0) and position >= label_end:
+            ticks.append(" " * (position - len(ticks.plain)))
+            ticks.append(hour, style=ctx.palette.muted)
+            label_end = position + len(hour) + 1
+    ticks.append("  " + "/".join(zones), style=ctx.palette.muted)
+    return ticks
 
 
 class TafTimeline(Widget, can_focus=True):
@@ -183,21 +208,10 @@ class TafTimeline(Widget, can_focus=True):
         colors = category_colors(ctx.palette)
         muted = ctx.palette.muted
         width = cell_width(self.step)
-        ticks, body, overlay, cursor = Text(no_wrap=True), Text(no_wrap=True), Text(no_wrap=True), Text(no_wrap=True)
+        ticks = tick_labels(self.cells, width, ctx, self._icao, every_cell=self.step > 1)
+        body, overlay, cursor = Text(no_wrap=True), Text(no_wrap=True), Text(no_wrap=True)
         previous: FlightCategory | None = None
-        label_end = 0
-        zones: list[str] = []  # the zone names in order: a TAF can cross a daylight-saving change
         for index, cell in enumerate(self.cells):
-            local = ctx.localize(cell.start, self._icao)
-            name = ctx.translator.t(K.TIME_ZONE_UTC) if ctx.is_zulu(self._icao) else (local.tzname() or "")
-            if name and name not in zones:
-                zones.append(name)
-            position = index * width
-            hour = f"{local:%H}" if local.minute == 0 else f"{local:%H:%M}"  # half-hour zones such as +5:30
-            if (self.step > 1 or local.hour % 3 == 0) and position >= label_end:
-                ticks.append(" " * (position - len(ticks.plain)))
-                ticks.append(hour, style=muted)
-                label_end = position + len(hour) + 1
             if cell.becoming:
                 worst = cell.worst_category
                 foreground = colors.fill_of(worst) if worst is not None and worst != cell.category else None
@@ -213,7 +227,6 @@ class TafTimeline(Widget, can_focus=True):
                 overlay.append(" " * width)
         cursor.append(" " * (self.cursor * width))
         cursor.append(CURSOR_MARK.ljust(width), style="bold")
-        ticks.append("  " + "/".join(zones), style=muted)
         legend = Text(no_wrap=True)
         legend.append(HATCH, style=muted)
         legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_BECOMING)}   ", style=muted)

@@ -631,6 +631,7 @@ legend_becoming = "becoming"
 legend_temporary = "temporary"
 none = "No timeline: the forecast has no usable valid period."
 no_taf = "no TAF"
+expired = "TAF expired"
 
 [hazard]
 surface = "the surface"
