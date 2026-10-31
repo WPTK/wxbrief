@@ -132,7 +132,8 @@ Principles: **never raise** on real input (wrap each group parser; failures beco
 |---|---|---|
 | **S0 Scaffold** | `git init`, pyproject, package skeleton, `--version`, ruff/mypy/pytest config, `CLAUDE.md`, `docs/plan.md`, `CHANGELOG.md` (empty `0.1.0` scaffold is *not* allowed by the spec, so the file starts with the heading only), `LICENSE` (MIT), `.gitignore`/`.gitattributes`, `ci.yml`, first commit, `gh repo create WPTK/wxbrief --public --source . --push` | `pip install -e .[dev]`, `ruff check .`, `mypy wxbrief`, `pytest` green on Windows; `python -m wxbrief --version` prints `wxbrief 0.1.0`; repo on GitHub with CI green |
 | **S1 Decoder core** | `tokens`, `model`, `units`, `times`, `detect`, METAR body groups (header, wind, visibility, RVR, weather, sky, temp/dew, pressure), `flightcat`, `derived`; en catalog + `phrases`; plain/Rich renderers; `wxbrief decode` CLI; US + UK + France fixtures with goldens; hypothesis fuzz test | goldens pass; fuzz 2,000 cases no raise; `wxbrief decode "METAR KDEN …"` prints a correct LIFR decode |
-| **S2 Decoder depth** | `remarks` (all variants from `remarks.md`), color states, runway state, trends, recent wx, wind shear, sea state; `taf` + `timeline`; Discord + JSON renderers; `split.py`; remaining regional fixtures (ETHB, UUEE, YSSY, RJTT, VIDP, SBGR, CYYZ, NZSP, NIL, AMD/CNL, legacy TAF); fltCat parity test against a saved AWC batch | all goldens pass; parity test passes with documented exceptions; `--discord` reproduces the skill template; `docs/decoding.md` written |
+| **S2a METAR tail** | `remarks` (all variants from `remarks.md`), color states, runway state, trends, recent wx, wind shear, sea state for METAR/SPECI; model additions, phrases and plain/Rich/JSON rendering of them; remaining METAR regional fixtures (ETHB and other ET/EG/EH military, UUEE, YSSY, RJTT, VIDP, SBGR, CYYZ, NZSP, NIL); AWC structured-field cross-check | all goldens pass; AWC cross-check passes with documented exceptions; `docs/decoding.md` covers the tail |
+| **S2b TAF and output** | `taf` + `timeline`, `split.py`, Discord and JSON renderers with the `--json`/`--discord` flags, TAF fixtures (AMD/CNL, legacy windows, INTER) | all TAF goldens pass; `--discord` reproduces the skill template; `parse_any` splits pasted blobs |
 | **S3 Data layer** | `AwcClient`, `data/models`, `poll`, `cache`, `StationDB` + `scripts/build_stations.py` (commits `stations.json.gz`), `config.py`, `wxbrief get` subcommand, respx tests | `wxbrief get KDEN EGLL --plain` prints live decodes; 204/429/500 handled in tests; station search returns EGLL for "heathrow" |
 | **S4 TUI MVP** | `app.py`, `state.py`, `BriefingScreen` list layout, `StationList`, `DetailPane` (header, flags, raw, decoded table, remarks), `AddStationScreen`, `PasteDecodeScreen`, `StatusBar`, clipboard, poll worker, Help screen; `textual-dark` only | `wxbrief KDEN EGLL` shows live data; offline relaunch shows cached "stale" data; `run_test` smoke passes |
 | **S5 Colorways** | aviation themes, semantic token variables + component classes, fixed fcat/color-state colors with light/dark adaption, `t`/`T` + picker, persistence, CLI palette parity, snapshot tests (or SVG fallback), `docs/themes.md` | `test_themes` passes for every theme; snapshots stable in 3 themes; CLI colors match TUI |
@@ -168,7 +169,8 @@ Tick a row when the session has landed on `main` (S0 committed directly; later s
 |---|---|---|
 | S0 | Scaffold: package, CI, project docs | [x] 2026-10-31 |
 | S1 | Decoder core | [x] 2026-10-31 |
-| S2 | Decoder depth | [ ] |
+| S2a | Decoder depth: METAR/SPECI tail (trends, color states, runway state, remarks) | [ ] |
+| S2b | Decoder depth: TAF, timeline, `split.py`, Discord and JSON output | [ ] |
 | S3 | Data layer | [ ] |
 | S4 | TUI MVP | [ ] |
 | S5 | Colorways | [ ] |
