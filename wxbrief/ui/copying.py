@@ -9,13 +9,20 @@ from textual.screen import Screen
 from wxbrief.clipboard import copy_text
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.units import UnitsMode
+from wxbrief.i18n import Translator
 from wxbrief.i18n.keys import K
-from wxbrief.render.discord import render_discord
+from wxbrief.render.discord import block_count, discord_block
 from wxbrief.solar import is_daylight
 from wxbrief.state import StationReports
 
 if TYPE_CHECKING:
     from wxbrief.app import WxBriefApp
+
+
+def parts_note(t: Translator, what: str, text: str, reports: int = 1) -> str:
+    """``what``, with a note when the text of ``reports`` reports is more blocks (messages) than reports."""
+    count = block_count(text)
+    return t.t(K.UI_CLIPBOARD_PARTS, what=what, count=count) if count > reports else what
 
 
 class CopyActions(Screen[None]):
@@ -32,7 +39,7 @@ class CopyActions(Screen[None]):
         if isinstance(report, Metar) and entry.awc_metar is not None and station is not None:
             daylight = is_daylight(station.lat, station.lon, entry.awc_metar.observed)
         units = ctx.units if ctx.units is not UnitsMode.MIXED else UnitsMode.US
-        return render_discord(report, ctx.translator, units, station_name=name, daylight=daylight)
+        return discord_block(report, ctx.translator, units, station_name=name, daylight=daylight)
 
     def action_copy_metar(self) -> None:
         t = cast("WxBriefApp", self.app).ctx.translator
@@ -40,7 +47,8 @@ class CopyActions(Screen[None]):
         if entry is None or entry.metar is None:
             self.notify(t.t(K.UI_TOAST_NO_METAR_TO_COPY), severity="warning")
             return
-        copy_text(self.app, self._discord(entry.metar, entry), t.t(K.UI_CLIPBOARD_METAR, icao=entry.icao), t)
+        text = self._discord(entry.metar, entry)
+        copy_text(self.app, text, parts_note(t, t.t(K.UI_CLIPBOARD_METAR, icao=entry.icao), text), t)
 
     def action_copy_both(self) -> None:
         t = cast("WxBriefApp", self.app).ctx.translator
@@ -49,7 +57,8 @@ class CopyActions(Screen[None]):
             self.notify(t.t(K.UI_TOAST_NOTHING_TO_COPY), severity="warning")
             return
         blocks = [self._discord(report, entry) for report in (entry.metar, entry.taf) if report is not None]
-        copy_text(self.app, "\n\n".join(blocks), t.t(K.UI_CLIPBOARD_BOTH, icao=entry.icao), t)
+        text = "\n\n".join(blocks)
+        copy_text(self.app, text, parts_note(t, t.t(K.UI_CLIPBOARD_BOTH, icao=entry.icao), text, len(blocks)), t)
 
     def action_copy_raw(self) -> None:
         t = cast("WxBriefApp", self.app).ctx.translator

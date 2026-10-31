@@ -67,6 +67,7 @@ wxbrief = [
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+markers = ["slow: UAT journeys that take several seconds (deselect with -m \"not slow\")"]
 
 [tool.ruff]
 line-length = 120

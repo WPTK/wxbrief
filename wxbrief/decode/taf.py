@@ -48,7 +48,7 @@ from wxbrief.decode.model import (
 from wxbrief.decode.tables import MODIFIER_CODES
 from wxbrief.decode.timeline import categorize_periods
 from wxbrief.decode.times import next_clock_time, resolve_day_time, resolve_day_time_after, resolve_report_time
-from wxbrief.decode.tokens import Cursor, Token, tokenize
+from wxbrief.decode.tokens import Cursor, Token, strip_controls, tokenize
 
 WARN_UNKNOWN_TOKEN = "unknown_token"
 WARN_PARSER_ERROR = "parser_error"
@@ -451,6 +451,7 @@ def parse_taf(raw: str, reference: datetime | None = None) -> Taf:
     ``reference`` resolves the day-of-month in the issue time (``DDHHMMZ``) to a real date: the receipt time of the
     forecast, a date chosen by the user, or now when omitted. Never raises.
     """
+    raw = strip_controls(raw)
     try:
         return _parse(raw, reference)
     except Exception:

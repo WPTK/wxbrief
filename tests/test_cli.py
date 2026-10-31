@@ -315,3 +315,9 @@ def test_date_keeps_a_late_taf_of_that_day_current(hour: str, capsys: pytest.Cap
     data = json.loads(capsys.readouterr().out)[0]
     assert data["issue_time"] == f"2026-10-31T{hour}:40:00+00:00"
     assert data["valid_from"] == f"2026-10-31T{hour}:00:00+00:00"
+
+
+def test_discord_output_lists_the_warnings_of_unreadable_groups() -> None:
+    result = run_module("decode", "--discord", "XYZZY PLUGH")
+    assert result.returncode == 0  # like --plain: garbage is reported, not an error
+    assert "Unrecognized group: XYZZY" in result.stdout and "2 warnings" in result.stdout

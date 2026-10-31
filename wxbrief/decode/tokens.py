@@ -12,6 +12,22 @@ from dataclasses import dataclass, replace
 from wxbrief.decode.model import SemanticKind
 
 _WORD = re.compile(r"\S+")
+# Controls that split words (VT, FF, FS to US, NEL, LS, PS, a lone CR) become a space, so groups stay apart.
+_SPLITTING = re.compile(r"[\x0b\x0c\x1c-\x1f\x85\u2028\u2029]|\r(?!\n)")
+# The rest: C0 except tab and newline, DEL, C1, and the bidi embeddings and isolates.
+_CONTROLS = re.compile(r"[\x00-\x08\x0e-\x1b\x7f-\x84\x86-\x9f\u202a-\u202e\u2066-\u2069]")
+
+
+def strip_controls(raw: str) -> str:
+    """``raw`` without control characters (other than newline and tab), which would act on a terminal once printed.
+
+    Report text comes from a paste or the network, and an ESC in it starts a terminal escape sequence: an OSC 52
+    clipboard write, a window-title change, a CSI cursor or delete-lines code. Bidi controls can reorder what is
+    shown. Both entry points of the decoder (``parse_metar`` and ``parse_taf``) call this first, so every renderer and
+    the TUI's raw pane see clean text. Controls that count as whitespace become a space, so a form feed between two
+    groups keeps them two groups. Applying it twice changes nothing more.
+    """
+    return _CONTROLS.sub("", _SPLITTING.sub(" ", raw))
 
 
 @dataclass(frozen=True)

@@ -275,6 +275,13 @@ def describe_rvr(t: Translator, rvr: RVR, units: UnitsMode) -> str:
     return t.t(K.RVR_RUNWAY, runway=rvr.runway, value=value)
 
 
+_FREEZING_KEYS = {
+    Phenomenon.DZ: K.WX_FREEZING_DZ,
+    Phenomenon.RA: K.WX_FREEZING_RA,
+    Phenomenon.FG: K.WX_FREEZING_FG,
+}
+
+
 def describe_weather_group(t: Translator, group: WeatherGroup) -> str:
     """One present-weather group in lower case (``light rain``, ``thunderstorm with rain``)."""
     if group.nsw:
@@ -295,7 +302,11 @@ def describe_weather_group(t: Translator, group: WeatherGroup) -> str:
         if group.descriptor is None:
             body = phenomena
         elif phenomena:
-            body = t.t(DESCRIPTOR_WITH_KEYS[group.descriptor], phenomena=phenomena)
+            freezing = _FREEZING_KEYS.get(group.phenomena[0]) if group.descriptor is Descriptor.FZ else None
+            if freezing is not None and len(group.phenomena) == 1:
+                body = t.t(freezing)
+            else:
+                body = t.t(DESCRIPTOR_WITH_KEYS[group.descriptor], phenomena=phenomena)
         else:
             body = t.t(DESCRIPTOR_ALONE_KEYS[group.descriptor])
         if intensity_key is not None and not on_phenomena:

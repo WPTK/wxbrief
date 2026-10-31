@@ -52,7 +52,7 @@ from wxbrief.decode.model import (
 )
 from wxbrief.decode.remarks import Context, parse_remarks
 from wxbrief.decode.times import resolve_report_time
-from wxbrief.decode.tokens import Cursor, Token, tokenize
+from wxbrief.decode.tokens import Cursor, Token, strip_controls, tokenize
 from wxbrief.decode.units import Pressure, Temperature
 
 WARN_UNKNOWN_TOKEN = "unknown_token"
@@ -398,6 +398,7 @@ def parse_metar(raw: str, reference: datetime | None = None) -> Metar:
     ``reference`` is the moment used to resolve the day-of-month timestamp (``DDHHMMZ``) to a real date: the report's
     receipt time, a date chosen by the user, or now when omitted. Never raises.
     """
+    raw = strip_controls(raw)
     try:
         return _parse(raw, reference)
     except Exception:
