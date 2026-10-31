@@ -17,7 +17,7 @@ _FRACTION_SM = re.compile(r"^(?P<num>\d{1,2})/(?P<den>\d{1,2})SM$")
 _WHOLE = re.compile(r"^\d{1,2}$")
 _METERS = re.compile(r"^(?P<m>\d{4})(?P<ndv>NDV)?$")
 _KM = re.compile(r"^(?P<km>\d{1,2})KM$")
-_DIRECTIONAL = re.compile(r"^(?P<m>\d{4})(?P<dir>NE|NW|SE|SW|N|E|S|W)$")
+_DIRECTIONAL = re.compile(r"^(?P<m>\d{4})(?P<dir>NE|NW|SE|SW|N|E|S|W)?$")
 _PREFIXES = {"P": VisPrefix.GREATER_THAN, "M": VisPrefix.LESS_THAN}
 
 
@@ -30,12 +30,16 @@ def _fraction(num: str, den: str | None) -> float | None:
     return int(num) / denominator
 
 
-def _directional_tail(cur: Cursor, ndv: bool) -> tuple[tuple[DirectionalVisibility, ...], bool]:
-    """Consume ``NDV`` and any directional minima that follow a metric visibility."""
+def _minimum_tail(cur: Cursor, ndv: bool, prevailing: int) -> tuple[tuple[DirectionalVisibility, ...], bool]:
+    """Consume ``NDV`` and the minimum visibilities that follow a metric prevailing visibility.
+
+    A minimum is ``1200NW`` (with its bearing) or, from automated stations, a bare ``1200`` lower than the
+    prevailing value (``0350 0300``).
+    """
     found: list[DirectionalVisibility] = []
     while (token := cur.peek()) is not None:
         match = _DIRECTIONAL.match(token.text)
-        if match is not None:
+        if match is not None and (match.group("dir") or int(match.group("m")) < prevailing):
             cur.take(SemanticKind.VISIBILITY)
             found.append(DirectionalVisibility(Distance(int(match.group("m")), DistanceUnit.M), match.group("dir")))
         elif token.text == "NDV":
@@ -91,7 +95,7 @@ def parse_visibility(cur: Cursor) -> Visibility | None:
     if match is not None:
         meters = int(match.group("m"))
         cur.take(SemanticKind.VISIBILITY)
-        directional, ndv = _directional_tail(cur, bool(match.group("ndv")))
+        directional, ndv = _minimum_tail(cur, bool(match.group("ndv")), meters)
         if meters == 9999:
             return Visibility(Distance(10000, DistanceUnit.M), unlimited=True, ndv=ndv, directional=directional)
         if meters == 0:

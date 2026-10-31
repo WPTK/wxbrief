@@ -22,9 +22,18 @@ def parse_type(cur: Cursor) -> ReportType | None:
 
 
 def parse_station(cur: Cursor) -> str | None:
-    """A four-character location indicator such as ``KDEN`` or ``K1G4``."""
+    """A four-character location indicator such as ``KDEN`` or ``K1G4``.
+
+    Four letters and digits describe plenty of ordinary words, so the shape alone is not enough: the indicator must be
+    followed by a day/time group, follow an explicit ``METAR``/``SPECI``, or be the only token.
+    """
     token = cur.peek()
     if token is None or not _STATION.match(token.text):
+        return None
+    following = cur.peek(1)
+    followed_by_time = following is not None and _TIME.match(following.text) is not None
+    after_type = cur.pos > 0 and cur.kind_at(cur.pos - 1) is SemanticKind.TYPE
+    if not (followed_by_time or after_type or len(cur) == 1):
         return None
     cur.take(SemanticKind.STATION)
     return token.text

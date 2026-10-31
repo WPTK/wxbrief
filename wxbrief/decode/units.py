@@ -105,14 +105,20 @@ class Distance:
 
     @property
     def kilometers(self) -> float:
+        if self.unit is DistanceUnit.KM:
+            return float(self.value)
         return self.meters / 1000.0
 
     @property
     def statute_miles(self) -> float:
+        if self.unit is DistanceUnit.SM:
+            return float(self.value)  # exact: flight-category thresholds compare against these
         return self.meters / METERS_PER_STATUTE_MILE
 
     @property
     def feet(self) -> float:
+        if self.unit is DistanceUnit.FT:
+            return float(self.value)
         return self.meters / METERS_PER_FOOT
 
 

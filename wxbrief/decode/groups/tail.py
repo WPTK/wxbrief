@@ -31,7 +31,7 @@ _PHEN = "|".join(PHENOMENON_CODES)
 # Two-letter codes only, so the repeat is unambiguous (no catastrophic backtracking on junk input).
 _RECENT = re.compile(rf"^RE(?:[-+]?(?:{_DESC}|{_PHEN}))+$")
 _SEA_STATE = re.compile(r"^W(?:M?\d{2}|//)/(?:S[\d/]|H\d{1,3}|H///)$")
-_RUNWAY_STATE = re.compile(r"^(?:R\d{2}[LCR]?/(?:[\d/]{6}|CLRD//)|R/SNOCLO|SNOCLO|CLRD//|\d{2}[\d/]{6})$")
+_RUNWAY_STATE = re.compile(r"^(?:R\d{2}[LCR]?/(?:[\d/]{6}|CLRD(?:\d{2}|//))|R/SNOCLO|SNOCLO|\d{2}[\d/]{6})$")
 _WIND_SHEAR_ARGS = re.compile(r"^(?:ALL|RWY|(?:RWY)?\d{2}[LCR]?|R\d{2}[LCR]?)$")
 
 

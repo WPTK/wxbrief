@@ -12,6 +12,7 @@ from datetime import datetime
 from wxbrief.decode.model import (
     RVR,
     CloudLayer,
+    DirectionalVisibility,
     Flag,
     FlightCategory,
     Intensity,
@@ -52,6 +53,8 @@ from wxbrief.render.measure import (
     format_temperature,
     format_visibility,
 )
+
+CAVOK_CLOUD_BASE_FT = 5000  # CAVOK means no cloud below 5,000 ft (or the highest minimum sector altitude)
 
 _WARNING_KEYS = {
     "unknown_token": K.WARN_UNKNOWN_TOKEN,
@@ -141,24 +144,33 @@ def _qualified(t: Translator, distance: Distance, prefix: VisPrefix | None, unit
     return text
 
 
+def _ten_km_or_more(t: Translator, units: UnitsMode) -> str:
+    """The meaning of ``9999`` and of CAVOK's visibility."""
+    return t.t(K.COMMON_OR_MORE, value=format_visibility(Distance(10, DistanceUnit.KM), units))
+
+
+def _describe_minimum(t: Translator, item: DirectionalVisibility, units: UnitsMode) -> str:
+    value = format_visibility(item.distance, units)
+    if item.direction is None:
+        return value
+    return t.t(K.VIS_DIRECTIONAL, value=value, compass=t.t(COMPASS_KEYS[item.direction]))
+
+
 def describe_visibility(t: Translator, visibility: Visibility, units: UnitsMode) -> str:
     if visibility.cavok:
-        return t.t(K.VIS_CAVOK)
+        return t.t(
+            K.VIS_CAVOK,
+            visibility=_ten_km_or_more(t, units),
+            height=format_short_distance(Distance(CAVOK_CLOUD_BASE_FT, DistanceUnit.FT), units),
+        )
     if visibility.not_reported or visibility.distance is None:
         return t.t(K.VIS_NOT_REPORTED)
     if visibility.unlimited:
-        text = t.t(K.COMMON_OR_MORE, value=format_visibility(Distance(10, DistanceUnit.KM), units))
+        text = _ten_km_or_more(t, units)
     else:
         text = _qualified(t, visibility.distance, visibility.prefix, units, short=False)
     if visibility.directional:
-        lowest = "; ".join(
-            t.t(
-                K.VIS_DIRECTIONAL,
-                value=format_visibility(item.distance, units),
-                compass=t.t(COMPASS_KEYS[item.direction]),
-            )
-            for item in visibility.directional
-        )
+        lowest = "; ".join(_describe_minimum(t, item, units) for item in visibility.directional)
         text = t.t(K.VIS_LOWEST, base=text, minimum=lowest)
     if visibility.ndv:
         text = t.t(K.VIS_WITH_NDV, base=text, ndv=t.t(K.VIS_NDV))

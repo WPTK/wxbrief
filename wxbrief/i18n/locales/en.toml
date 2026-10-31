@@ -86,7 +86,7 @@ gust = "{base}, gusting to {gust}"
 variation = "{base}; direction varies between {from_deg}° and {to_deg}°"
 
 [vis]
-cavok = "CAVOK: visibility 10 km or more, no cloud below 5,000 ft, no significant weather"
+cavok = "CAVOK: visibility {visibility}, no cloud below {height}, no significant weather"
 not_reported = "Not reported"
 ndv = "no directional variation"
 with_ndv = "{base}, {ndv}"

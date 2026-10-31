@@ -60,9 +60,8 @@ def format_miles(value: float, *, exact: bool) -> str:
     if value == 0:
         return "0"
     if exact or value < 1:
-        fraction = Fraction(value).limit_denominator(16)
-        if fraction == 0:
-            fraction = Fraction(1, 16)  # never show a measurable distance as zero
+        # A converted value is rounded to the nearest sixteenth and never shown as zero.
+        fraction = Fraction(value).limit_denominator(16) if exact else Fraction(max(1, round(value * 16)), 16)
         whole, rest = divmod(fraction.numerator, fraction.denominator)
         if rest == 0:
             return str(whole)

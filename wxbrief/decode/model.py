@@ -220,10 +220,10 @@ class WindVariation:
 
 @dataclass(frozen=True)
 class DirectionalVisibility:
-    """Visibility toward one compass direction (``1200NW``)."""
+    """A minimum visibility: toward one compass direction (``1200NW``), or with no bearing (``0300``)."""
 
     distance: Distance
-    direction: str  # N, NE, E, SE, S, SW, W, NW
+    direction: str | None = None  # N, NE, E, SE, S, SW, W, NW
 
 
 @dataclass(frozen=True)
