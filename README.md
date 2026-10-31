@@ -17,7 +17,12 @@ translation (English complete; Spanish, French, German and Portuguese seeded).
 
 ## Status
 
-Version 0.1.0 is being prepared; nothing is released yet and there are no packaged downloads. Install from source.
+Version 0.1.0 is the first release.
+
+## Download
+
+Standalone binaries for Windows, Linux and macOS, a wheel and `SHA256SUMS` are on the
+[GitHub Releases page](https://github.com/WPTK/wxbrief/releases) once a version is published. Otherwise, install from source.
 
 ## Install from source
 

@@ -13,6 +13,7 @@ def test_selftest_passes(capsys: pytest.CaptureFixture[str]) -> None:
     out = capsys.readouterr().out
     assert out.count("ok   ") == len(CHECKS)
     assert "FAIL" not in out
+    assert "ok   app:" in out
 
 
 def test_selftest_fails_when_a_check_fails(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:

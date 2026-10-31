@@ -21,6 +21,16 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check the tag commit is on main
+        env:
+          TAG_SHA: ${{ github.sha }}
+        run: |
+          if ! git merge-base --is-ancestor "$TAG_SHA" origin/main; then
+            echo "::error::the tagged commit is not on main"; exit 1
+          fi
       - name: Check the tag against the version and the changelog
         env:
           TAG: ${{ github.ref_name }}
@@ -51,6 +61,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
@@ -93,6 +105,8 @@ jobs:
             runner: macos-15-intel
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         if: matrix.container == ''
         with:

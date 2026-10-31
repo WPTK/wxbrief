@@ -66,7 +66,27 @@ def _demo() -> str:
     return f"{len(stations)} demo stations"
 
 
+def _app() -> str:
+    import importlib
+    import io
+
+    from rich.console import Console
+    from rich.text import Text
+
+    screens = ("add_station", "briefing", "help", "paste", "settings", "station_detail", "theme_picker")
+    for module in ("wxbrief.app", *(f"wxbrief.ui.screens.{name}" for name in screens)):
+        importlib.import_module(module)
+
+    out = io.StringIO()
+    console = Console(file=out, width=40, force_terminal=True, color_system="truecolor")
+    console.print(Text("LIFR ▒▀ ° →", "bold red"))
+    if "LIFR" not in out.getvalue():
+        raise RuntimeError("rich did not render")
+    return "TUI modules and rich"
+
+
 CHECKS: tuple[tuple[str, Callable[[], str]], ...] = (
+    ("app", _app),
     ("catalogs", _catalogs),
     ("stations", _stations),
     ("assets", _assets),
