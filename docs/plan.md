@@ -296,8 +296,8 @@ passes on all 647 saved reports with an empty exceptions list. Keys: edit `local
 - `render/measure.py` (unit formatting; unit symbols are not translated) was added; the plan's render layout did not
   list it. `phrases.py` stays the only place that composes words.
 - Times print as UTC ("2026-10-13 14:53 UTC"); station-local time needs the station DB from S3. `Condition` parses to
-  `CLEAR`; `derived.refine_clear(condition, local_hour)` turns it into `CLEAR_DAY`/`CLEAR_NIGHT` (06 to 20 local) once
-  the hour is known.
+  `CLEAR`; `derived.refine_clear(condition, daylight)` turns it into `CLEAR_DAY`/`CLEAR_NIGHT` once solar elevation
+  (`wxbrief/solar.py`, from the station's lat/lon and the observation time) says whether the sun is up.
 - `wxbrief decode` reads one report per non-blank stdin line; with several arguments that contain no whitespace they
   are joined into one report, otherwise each argument is a report. `--date` means noon UTC of that date. No input is
   exit code 2 with a message; any text, however broken, is exit 0 with a warning list. Output is plain when stdout is
@@ -472,7 +472,7 @@ files, WSSS has two trends). Nothing else moved in any METAR golden.
 
 **For S3 and later.**
 
-- Station name and local hour plug into `discord_block(..., station_name=, local_hour=)` and `condition_emoji`; both are
+- Station name and daylight plug into `discord_block(..., station_name=, daylight=)` and `condition_emoji`; both are
   tested but unused by the CLI.
 - `PROB30 INTER` is its own `ChangeType.PROB_INTER` (an overlay like `PROB_TEMPO`), so the probability reaches the plain
   and Discord headings. AWC reports both `INTER` forms as `TEMPO`.
@@ -561,6 +561,7 @@ Screenshot of the briefing screen (120x36, `textual-dark`, saved KDEN and EGLL r
 - `clipboard.py`: `copy_text(app, text, what)`. `ui/context.py`: `ViewContext` (translator, units, glyphs, time mode, station DB, and
   `palette` for the active theme). `ui/style.py`: `Palette` maps the decoder's `wx.*` style names to Rich styles from the theme's
   variables, plus fixed flight-category badges. `ui/glyphs.py`: `GLYPH_SETS`, `glyphs_for`. `getcmd.local_hour` is now public.
+  (`local_hour` was later removed: the day/night glyph comes from solar elevation in `wxbrief/solar.py`, see #14.)
 - Screens in `ui/screens/`: `briefing`, `add_station` (with `StationSuggester`), `paste`, `help`, `settings` (read-only). Widgets in
   `ui/widgets/`: `station_list`, `detail` (`StationHeader`, `FlagsRow`, `RawReport`, `DecodedTable`, `DetailPane`), `status_bar`.
 - CLI: `wxbrief [ICAO ...]` opens the TUI; `decode` and `get` are unchanged. Global flags `--glyphs --layout --units --time --lang

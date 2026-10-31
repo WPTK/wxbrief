@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -87,3 +88,35 @@ def test_get_decodes_the_taf(awc: respx.MockRouter, capsys: pytest.CaptureFixtur
     assert main(["get", "EGLL", "--plain"]) == 0
     out = capsys.readouterr().out
     assert "worst flight category" in out
+
+
+def _clear_kden(observed: datetime) -> bytes:
+    """A clear-sky KDEN METAR observed at ``observed`` (UTC), shaped like the AWC JSON."""
+    record = json.loads((FIXTURES / "metar_kden_egll.json").read_bytes())[0]
+    stamp = observed.strftime("%d%H%MZ")
+    record.update(
+        obsTime=int(observed.timestamp()),
+        rawOb=f"METAR KDEN {stamp} 00000KT 10SM CLR 10/00 A3001",
+        wxString=None,
+        vertVis=None,
+        cover="CLR",
+        clouds=[],
+        visib=10,
+        fltCat="VFR",
+        metarType="METAR",
+    )
+    return json.dumps([record]).encode()
+
+
+@pytest.mark.parametrize(("hour", "emoji"), [(3, "🌙"), (18, "☀️")])
+def test_get_discord_clear_sky_glyph_follows_the_sun_at_the_station(
+    hour: int, emoji: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # Denver on 2026-10-31: 03:00Z is evening dark, 18:00Z is midday. Swapping lat and lon would call 03:00Z day.
+    metar = _clear_kden(datetime(2026, 10, 31, hour, tzinfo=UTC))
+    with respx.mock() as router:
+        router.get(f"{BASE_URL}/metar").mock(return_value=httpx.Response(200, content=metar))
+        router.get(f"{BASE_URL}/taf").mock(return_value=httpx.Response(200, content=b"[]"))
+        assert main(["get", "KDEN", "--discord"]) == 0
+    title = next(line for line in capsys.readouterr().out.splitlines() if "KDEN" in line and "DENVER" in line.upper())
+    assert title.startswith(emoji)
