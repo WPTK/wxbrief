@@ -8,11 +8,13 @@ from __future__ import annotations
 
 from wxbrief.decode.model import (
     BrakingAction,
+    ChangeType,
     CloudType,
     ColorCode,
     Descriptor,
     Flag,
     FlightCategory,
+    IcingIntensity,
     Intensity,
     LightningFrequency,
     LightningType,
@@ -26,6 +28,7 @@ from wxbrief.decode.model import (
     SensorKind,
     SkyCondition,
     TrendTimeKind,
+    TurbulenceIntensity,
 )
 from wxbrief.i18n.keys import K
 
@@ -48,6 +51,7 @@ CLEAR_SKY_CODES: frozenset[SkyCondition] = frozenset(
 REPORT_TYPE_KEYS: dict[ReportType, str] = {
     ReportType.METAR: K.REPORT_METAR,
     ReportType.SPECI: K.REPORT_SPECI,
+    ReportType.TAF: K.REPORT_TAF,
 }
 
 MODIFIER_KEYS: dict[Modifier, str] = {
@@ -198,6 +202,9 @@ FLAG_KEYS.update(
         Flag.MAINTENANCE: K.FLAG_MAINTENANCE,
         Flag.VOLCANIC_ASH: K.FLAG_VOLCANIC_ASH,
         Flag.MISSING_DATA: K.FLAG_MISSING_DATA,
+        Flag.AMENDED: K.FLAG_AMENDED,
+        Flag.ICING: K.FLAG_ICING,
+        Flag.TURBULENCE: K.FLAG_TURBULENCE,
     }
 )
 
@@ -271,6 +278,65 @@ SEA_STATE_KEYS: dict[int, str] = {
     7: K.SEA_NAME_7,
     8: K.SEA_NAME_8,
     9: K.SEA_NAME_9,
+}
+
+# --- TAF -------------------------------------------------------------------------------------------------------
+
+CHANGE_KEYS: dict[ChangeType, str] = {
+    ChangeType.BASE: K.TAF_CHANGE_BASE,
+    ChangeType.FM: K.TAF_CHANGE_FM,
+    ChangeType.BECMG: K.TAF_CHANGE_BECMG,
+    ChangeType.TEMPO: K.TAF_CHANGE_TEMPO,
+    ChangeType.PROB: K.TAF_CHANGE_PROB,
+    ChangeType.PROB_TEMPO: K.TAF_CHANGE_PROB_TEMPO,
+    ChangeType.INTER: K.TAF_CHANGE_INTER,
+}
+
+CHANGE_SHORT_KEYS: dict[ChangeType, str] = {
+    ChangeType.BASE: K.TAF_CHANGE_SHORT_BASE,
+    ChangeType.FM: K.TAF_CHANGE_SHORT_FM,
+    ChangeType.BECMG: K.TAF_CHANGE_SHORT_BECMG,
+    ChangeType.TEMPO: K.TAF_CHANGE_SHORT_TEMPO,
+    ChangeType.PROB: K.TAF_CHANGE_SHORT_PROB,
+    ChangeType.PROB_TEMPO: K.TAF_CHANGE_SHORT_PROB_TEMPO,
+    ChangeType.INTER: K.TAF_CHANGE_SHORT_INTER,
+}
+
+DISCORD_HEADING_KEYS: dict[ChangeType, str] = {
+    ChangeType.BASE: K.DISCORD_HEADING_BASE,
+    ChangeType.FM: K.DISCORD_HEADING_FM,
+    ChangeType.BECMG: K.DISCORD_HEADING_BECMG,
+    ChangeType.TEMPO: K.DISCORD_HEADING_TEMPO,
+    ChangeType.PROB: K.DISCORD_HEADING_PROB,
+    ChangeType.PROB_TEMPO: K.DISCORD_HEADING_PROB_TEMPO,
+    ChangeType.INTER: K.DISCORD_HEADING_INTER,
+}
+
+ICING_KEYS: dict[IcingIntensity, str] = {
+    IcingIntensity.NONE: K.HAZARD_ICING_NONE,
+    IcingIntensity.LIGHT: K.HAZARD_ICING_LIGHT,
+    IcingIntensity.LIGHT_IN_CLOUD: K.HAZARD_ICING_LIGHT_IN_CLOUD,
+    IcingIntensity.LIGHT_IN_PRECIPITATION: K.HAZARD_ICING_LIGHT_IN_PRECIPITATION,
+    IcingIntensity.MODERATE: K.HAZARD_ICING_MODERATE,
+    IcingIntensity.MODERATE_IN_CLOUD: K.HAZARD_ICING_MODERATE_IN_CLOUD,
+    IcingIntensity.MODERATE_IN_PRECIPITATION: K.HAZARD_ICING_MODERATE_IN_PRECIPITATION,
+    IcingIntensity.SEVERE: K.HAZARD_ICING_SEVERE,
+    IcingIntensity.SEVERE_IN_CLOUD: K.HAZARD_ICING_SEVERE_IN_CLOUD,
+    IcingIntensity.SEVERE_IN_PRECIPITATION: K.HAZARD_ICING_SEVERE_IN_PRECIPITATION,
+}
+
+TURBULENCE_KEYS: dict[TurbulenceIntensity, str] = {
+    TurbulenceIntensity.NONE: K.HAZARD_TURBULENCE_NONE,
+    TurbulenceIntensity.LIGHT: K.HAZARD_TURBULENCE_LIGHT,
+    TurbulenceIntensity.MODERATE_CLEAR_OCCASIONAL: K.HAZARD_TURBULENCE_MODERATE_CLEAR_OCCASIONAL,
+    TurbulenceIntensity.MODERATE_CLEAR_FREQUENT: K.HAZARD_TURBULENCE_MODERATE_CLEAR_FREQUENT,
+    TurbulenceIntensity.MODERATE_CLOUD_OCCASIONAL: K.HAZARD_TURBULENCE_MODERATE_CLOUD_OCCASIONAL,
+    TurbulenceIntensity.MODERATE_CLOUD_FREQUENT: K.HAZARD_TURBULENCE_MODERATE_CLOUD_FREQUENT,
+    TurbulenceIntensity.SEVERE_CLEAR_OCCASIONAL: K.HAZARD_TURBULENCE_SEVERE_CLEAR_OCCASIONAL,
+    TurbulenceIntensity.SEVERE_CLEAR_FREQUENT: K.HAZARD_TURBULENCE_SEVERE_CLEAR_FREQUENT,
+    TurbulenceIntensity.SEVERE_CLOUD_OCCASIONAL: K.HAZARD_TURBULENCE_SEVERE_CLOUD_OCCASIONAL,
+    TurbulenceIntensity.SEVERE_CLOUD_FREQUENT: K.HAZARD_TURBULENCE_SEVERE_CLOUD_FREQUENT,
+    TurbulenceIntensity.EXTREME: K.HAZARD_TURBULENCE_EXTREME,
 }
 
 # --- remarks ---------------------------------------------------------------------------------------------------

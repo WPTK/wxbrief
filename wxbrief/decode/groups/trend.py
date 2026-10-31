@@ -42,6 +42,7 @@ _TIME = re.compile(r"^(?P<kind>FM|TL|AT)(?P<hour>\d{2})(?P<minute>\d{2})$")
 _TIME_KINDS = {kind.value: kind for kind in TrendTimeKind}
 
 StopTest = Callable[[Token], bool]
+ExtraGroup = Callable[[Cursor], bool]
 
 
 def parse_trend_time(cur: Cursor, observed: datetime | None) -> TrendTime | None:
@@ -60,9 +61,13 @@ def parse_trend_time(cur: Cursor, observed: datetime | None) -> TrendTime | None
 
 
 def parse_trend_body(
-    cur: Cursor, observed: datetime | None, stop: StopTest
+    cur: Cursor, observed: datetime | None, stop: StopTest, extra: ExtraGroup | None = None
 ) -> tuple[tuple[TrendTime, ...], ForecastElements]:
-    """Read time qualifiers and forecast elements until ``stop`` says a token is not part of the body."""
+    """Read time qualifiers and forecast elements until ``stop`` says a token is not part of the body.
+
+    ``extra`` lets a caller claim groups of its own (the TAF parser's wind shear, icing and turbulence groups): it is
+    offered each token first, and returns ``True`` after consuming and tagging the group it recognised.
+    """
     times: list[TrendTime] = []
     wind: Wind | None = None
     visibility: Visibility | None = None
@@ -70,6 +75,8 @@ def parse_trend_body(
     sky: list[CloudLayer] = []
     color: ColorState | None = None
     while (token := cur.peek()) is not None and not stop(token):
+        if extra is not None and extra(cur):
+            continue
         moment = parse_trend_time(cur, observed)
         if moment is not None:
             times.append(moment)

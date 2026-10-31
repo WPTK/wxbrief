@@ -149,7 +149,11 @@
         "visibility": null,
         "weather": [],
         "sky": [],
-        "color_state": null
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
       }
     }
   ],
