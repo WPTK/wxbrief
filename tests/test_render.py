@@ -195,6 +195,15 @@ def test_highlighted_raw_styles_each_token() -> None:
 def test_default_theme_defines_flight_category_styles() -> None:
     for category in FlightCategory:
         assert f"fcat.{category.value.lower()}" in DEFAULT_THEME.styles
+        assert f"fcat.{category.value.lower()}.badge" in DEFAULT_THEME.styles
+
+
+def test_flight_category_badge_is_coloured_on_a_terminal() -> None:
+    sink = io.StringIO()
+    console = Console(theme=DEFAULT_THEME, width=120, force_terminal=True, color_system="standard", file=sink)
+    console.print(build_renderable(decode(COBOL), T, UnitsMode.MIXED))
+    badge_line = next(line for line in sink.getvalue().splitlines() if "LIFR (low instrument" in line)
+    assert "[" in badge_line.split("LIFR")[0]  # the badge carries its own colour codes
 
 
 # --- JSON -----------------------------------------------------------------------------------------------------

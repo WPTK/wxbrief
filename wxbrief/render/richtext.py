@@ -37,6 +37,10 @@ DEFAULT_THEME = Theme(
         "fcat.mvfr": "bold blue",
         "fcat.ifr": "bold red",
         "fcat.lifr": "bold magenta",
+        "fcat.vfr.badge": "bold black on green",
+        "fcat.mvfr.badge": "bold white on blue",
+        "fcat.ifr.badge": "bold white on red",
+        "fcat.lifr.badge": "bold white on magenta",
     }
 )
 
@@ -59,7 +63,7 @@ def build_renderable(metar: Metar, t: Translator, units: UnitsMode = UnitsMode.M
         if row.category is not None:
             code = row.category.value
             value = Text.assemble(
-                (f" {code} ", f"fcat.{code.lower()} reverse"),
+                (f" {code} ", f"fcat.{code.lower()}.badge"),
                 row.value.removeprefix(code),
             )
         else:

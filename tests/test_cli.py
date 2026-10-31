@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import os
 import subprocess
 import sys
@@ -62,7 +63,7 @@ def test_decode_reads_stdin_one_report_per_line() -> None:
     assert "KSEA is reporting IFR" in result.stdout
 
 
-def test_decode_reads_stdin_with_a_dash_free_pipe() -> None:
+def test_decode_reads_a_single_report_from_stdin() -> None:
     result = run_module("decode", "--date", "2026-10-13", "--plain", stdin=COBOL)
     assert result.returncode == 0
     assert "Flight category:     LIFR" in result.stdout
@@ -132,31 +133,41 @@ def test_without_a_date_the_current_month_is_used(capsys: pytest.CaptureFixture[
     assert "Observed:" in capsys.readouterr().out
 
 
-def test_rich_output_on_a_terminal(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
-    import io
+class FakeTty(io.StringIO):
+    """A stdout that claims to be a terminal."""
 
-    class FakeTty(io.StringIO):
-        def isatty(self) -> bool:
-            return True
+    def isatty(self) -> bool:
+        return True
 
-    monkeypatch.setattr(sys, "stdout", FakeTty())
+
+def test_rich_output_on_a_terminal(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = FakeTty()
+    monkeypatch.setattr(sys, "stdout", fake)
     assert main(["decode", "--date", "2026-10-13", COBOL]) == 0
-    out = sys.stdout.getvalue()  # type: ignore[attr-defined]
-    assert "KDEN" in out
-    assert "LIFR" in out
-    assert "Traceback" not in out
+    assert "KDEN" in fake.getvalue()
+    assert "LIFR" in fake.getvalue()
+    assert "Traceback" not in fake.getvalue()
 
 
 def test_plain_flag_forces_plain_output_on_a_terminal(monkeypatch: pytest.MonkeyPatch) -> None:
-    import io
-
-    class FakeTty(io.StringIO):
-        def isatty(self) -> bool:
-            return True
-
-    monkeypatch.setattr(sys, "stdout", FakeTty())
+    fake = FakeTty()
+    monkeypatch.setattr(sys, "stdout", fake)
     assert main(["decode", "--plain", "--date", "2026-10-13", COBOL]) == 0
-    assert "\x1b" not in sys.stdout.getvalue()  # type: ignore[attr-defined]
+    assert "" not in fake.getvalue()
+    assert "Flight category:" in fake.getvalue()
+
+
+def test_a_leading_dash_group_needs_quotes_or_a_double_dash(capsys: pytest.CaptureFixture[str]) -> None:
+    words = ["METAR", "KSEA", "131453Z", "18014KT", "2SM", "-RA", "BR", "OVC007", "12/11", "A2972"]
+    with pytest.raises(SystemExit) as excinfo:
+        main(["decode", *words])
+    assert excinfo.value.code == 2
+    capsys.readouterr()
+    assert main(["decode", "--date", "2026-10-13", "--", *words]) == 0
+    out = capsys.readouterr().out
+    assert "Light rain and mist" in out
+    assert main(["decode", "--date", "2026-10-13", " ".join(words)]) == 0
+    assert "Light rain and mist" in capsys.readouterr().out
 
 
 def test_version_still_works() -> None:

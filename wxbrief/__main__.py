@@ -38,7 +38,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="decode METAR/SPECI text given as arguments or on stdin",
         description=(
             "Decode METAR or SPECI reports into plain language. Pass each report as one quoted argument (unquoted "
-            "words are joined into a single report), or pipe text on stdin with one report per line."
+            "words are joined into a single report), or pipe text on stdin with one report per line. A group such "
+            "as -RA is read as an option unless the report is quoted or follows --."
         ),
     )
     decode.add_argument("reports", nargs="*", metavar="RAW", help="raw report text")
