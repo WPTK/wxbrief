@@ -11,6 +11,7 @@ from pathlib import Path
 
 from textual import events, work
 from textual.app import App
+from textual.geometry import Size
 from textual.notifications import SeverityLevel
 from textual.theme import Theme
 
@@ -42,6 +43,7 @@ from wxbrief.ui.glyphs import GLYPH_SETS, glyphs_for
 from wxbrief.ui.screens.briefing import BriefingScreen
 from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.screens.theme_picker import ThemePickerScreen
+from wxbrief.ui.screens.too_small import MIN_SIZE, TooSmallScreen
 from wxbrief.ui.themes import AVIATION_THEMES, THEME_CYCLE
 
 
@@ -71,7 +73,7 @@ class WxBriefApp(App[None]):
     CSS_PATH = "ui/app.tcss"
     TITLE = "wxbrief"
     HORIZONTAL_BREAKPOINTS = [(0, "-narrow"), (90, "-normal"), (140, "-wide")]
-    VERTICAL_BREAKPOINTS = [(0, "-short"), (24, "-tall")]
+    VERTICAL_BREAKPOINTS = [(0, "-short"), (24, "-tall"), (40, "-roomy")]
     BINDINGS = [
         bind("q", "quit", K.UI_BINDING_QUIT),
         bind("t", "cycle_theme", K.UI_BINDING_CYCLE_THEME),
@@ -160,6 +162,22 @@ class WxBriefApp(App[None]):
             self.notify(notice, severity="warning", title=t.t(K.UI_TOAST_STATIONS_TITLE), timeout=10)
         if self.options.poll:
             self.poll_worker()
+        self._check_size(self.size)
+
+    def on_resize(self, event: events.Resize) -> None:
+        self._check_size(event.size)
+
+    def _check_size(self, size: Size) -> None:
+        """Cover the app with the too-small notice while the terminal cannot hold it; take it away when it can."""
+        small = size.width < MIN_SIZE.width or size.height < MIN_SIZE.height
+        notices = [screen for screen in self.screen_stack if isinstance(screen, TooSmallScreen)]
+        if not small and notices:
+            while notices[0] in self.screen_stack:  # the palette may sit above it: that goes too
+                self.pop_screen()
+        elif small and notices:
+            notices[0].show_size(size)
+        elif small and len(self.screen_stack) > 1:  # not before the briefing screen is up
+            self.push_screen(TooSmallScreen())
 
     # --- themes ----------------------------------------------------------------------------------------------------
 

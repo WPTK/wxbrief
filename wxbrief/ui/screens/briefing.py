@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import TYPE_CHECKING, cast
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.events import Resize
-from textual.widgets import Footer, OptionList
+from textual.widgets import OptionList
 
 from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
@@ -19,12 +20,14 @@ from wxbrief.ui.screens.paste import PasteDecodeScreen
 from wxbrief.ui.screens.settings import SettingsScreen
 from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.widgets.detail import DetailPane
+from wxbrief.ui.widgets.key_bar import KeyBar
 from wxbrief.ui.widgets.station_grid import StationGrid
 from wxbrief.ui.widgets.station_list import StationList
 from wxbrief.ui.widgets.status_bar import StatusBar
 
 if TYPE_CHECKING:
     from wxbrief.app import WxBriefApp
+
 
 
 class BriefingScreen(CopyActions):
@@ -40,7 +43,8 @@ class BriefingScreen(CopyActions):
         bind("C", "copy_both", K.UI_BINDING_COPY_BOTH, show=False),
         bind("y", "copy_raw", K.UI_BINDING_COPY_RAW, show=False),
         bind("S", "settings", K.UI_BINDING_SETTINGS, show=False),
-        bind("j", "next_station", K.UI_BINDING_NEXT_STATION, show=False),
+        # j and k show in the key bar only while the station list is hidden (see _hint_steps).
+        bind("j", "next_station", K.UI_BINDING_NEXT_STATION, show=False, key_display="j/k"),
         bind("k", "previous_station", K.UI_BINDING_PREVIOUS_STATION, show=False),
         bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW, show=False),
         bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED, show=False),
@@ -64,7 +68,7 @@ class BriefingScreen(CopyActions):
             yield DetailPane(id="detail")
             yield StationGrid(id="grid")
         yield StatusBar(id="status")
-        yield Footer()
+        yield KeyBar()
 
     def on_mount(self) -> None:
         localize(self)
@@ -117,7 +121,9 @@ class BriefingScreen(CopyActions):
         if not self._ready:
             return
         wx = self.wx
-        self.query_one(StatusBar).show(wx.state, wx.scheduler, wx.ctx, wx.now(), self.current())
+        ids = wx.state.ids
+        position = (ids.index(self.selected) + 1, len(ids)) if self.selected in ids else None
+        self.query_one(StatusBar).show(wx.state, wx.scheduler, wx.ctx, wx.now(), self.current(), position)
 
     def on_option_list_option_highlighted(self, event: OptionList.OptionHighlighted) -> None:
         if event.option_id is None:
@@ -130,10 +136,16 @@ class BriefingScreen(CopyActions):
         self.action_focus_detail()
 
     def on_resize(self, event: Resize) -> None:
-        footer = self.query_one(Footer)  # a narrow terminal gets the tight footer without the palette hint
-        footer.compact = event.size.width < 100
-        footer.show_command_palette = event.size.width >= 90
+        self._hint_steps()
         self.call_after_refresh(self._fix_focus)
+
+    def _hint_steps(self) -> None:
+        """Show ``j/k`` in the key bar while the list is hidden (narrow terminal): the only way to change station."""
+        hidden = self.layout_mode == "list" and self.has_class("-narrow")
+        for key, bindings in self._bindings.key_to_bindings.items():
+            if key == "j":
+                bindings[:] = [replace(item, show=hidden) for item in bindings]
+        self.refresh_bindings()
 
     def _fix_focus(self) -> None:
         if self.layout_mode == "list" and not self.query_one(StationList).display:
@@ -144,6 +156,7 @@ class BriefingScreen(CopyActions):
     def _apply_layout(self) -> None:
         """Switch between list and grid with a class: the stylesheet shows and hides the three panes."""
         self.set_class(self.layout_mode == "grid", "-grid")
+        self._hint_steps()
 
     def _focus_main(self) -> None:
         if self.layout_mode == "grid":

@@ -248,8 +248,7 @@ async def add_station(run: Run) -> None:
         await run.pilot.press(char)
     results = run.app.screen.query_one("#results", OptionList)
     await run.until(lambda: results.option_count > 0, "the matches for ksea")
-    if run.size[1] >= 14:  # at 40x12 the matches get no room: see test_known_bugs
-        assert "KSEA" in run.text() and "Seattle" in run.text()
+    assert "KSEA" in run.text() and "Seattle" in run.text()
     await run.shot("matches")
     await run.press("enter")
     await run.until(lambda: run.app.screen is screen, "the briefing after adding")
@@ -452,7 +451,7 @@ async def resize(run: Run) -> None:
     await run.press("escape")
     assert app.screen is screen and screen.selected == "EGLL"
     await run.press("S")
-    await run.pilot.resize_terminal(50, 14)
+    await run.pilot.resize_terminal(60, 16)
     await run.settle()
     assert isinstance(app.screen, SettingsScreen)
     await run.pilot.resize_terminal(120, 30)
@@ -479,10 +478,10 @@ JOURNEYS = [
     Spec("paste", paste, EVERY),
     Spec("add_station", add_station, EVERY),
     Spec("help", help_screen, EVERY),
-    Spec("theme_cycle", theme_cycle, ("120x30", "80x24", "50x14"), slow=True),
-    Spec("theme_picker", theme_picker, ("120x30", "80x24", "40x12")),
+    Spec("theme_cycle", theme_cycle, ("120x30", "80x24", "60x16"), slow=True),
+    Spec("theme_picker", theme_picker, ("120x30", "80x24", "60x16")),
     Spec("settings", settings, EVERY),
-    Spec("copy_keys", copy_keys, ("120x30", "80x24", "40x12")),
-    Spec("quit", quit_app, ("120x30", "40x12")),
+    Spec("copy_keys", copy_keys, ("120x30", "80x24", "60x16")),
+    Spec("quit", quit_app, ("120x30", "60x16")),
     Spec("resize", resize, ("120x30",), slow=True),
 ]

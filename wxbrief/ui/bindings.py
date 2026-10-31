@@ -23,9 +23,13 @@ def _english() -> Translator:
     return Translator.load("en")
 
 
-def bind(key: str, action: str, label: str, *, show: bool = True, priority: bool = False) -> Binding:
+def bind(
+    key: str, action: str, label: str, *, show: bool = True, priority: bool = False, key_display: str | None = None
+) -> Binding:
     """A binding labelled by the catalog key ``label`` (one of the ``K.UI_BINDING_*`` constants)."""
-    return Binding(key, action, _english().t(label), show=show, priority=priority, id=label)
+    return Binding(
+        key, action, _english().t(label), show=show, priority=priority, id=label, key_display=key_display
+    )
 
 
 def relabel(node: DOMNode, translator: Translator) -> None:

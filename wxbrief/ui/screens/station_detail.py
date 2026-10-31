@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import datetime
 
 from textual.app import ComposeResult
-from textual.widgets import Footer
 
 from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
@@ -13,6 +12,7 @@ from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.copying import CopyActions
 from wxbrief.ui.widgets.detail import DetailPane
+from wxbrief.ui.widgets.key_bar import KeyBar
 
 
 class StationDetailScreen(CopyActions):
@@ -31,7 +31,7 @@ class StationDetailScreen(CopyActions):
 
     def compose(self) -> ComposeResult:
         yield DetailPane(id="detail")
-        yield Footer()
+        yield KeyBar()
 
     def on_mount(self) -> None:
         localize(self)

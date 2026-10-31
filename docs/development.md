@@ -50,7 +50,7 @@ Changes that only touch Markdown, `docs/` or `LICENSE` skip CI.
 ## UAT suite
 
 `tests/uat/test_uat.py` drives the real app on `--demo` data at the sizes users have: 120x30 (the main case), 200x50,
-100x50, 280x70, the 80x24 floor, and 60x20, 50x14 and 40x12. The journeys live in `tests/uat/journeys.py` (list, grid,
+100x50, 280x70, the 80x24 floor, and 60x20 and 60x16 (the smallest the app draws; below 60x16 it shows a notice). The journeys live in `tests/uat/journeys.py` (list, grid,
 station detail, paste, add station, help, themes, settings, copy keys, quit, and a live resize 120x30 to 100x50 to
 200x50 to 80x24 and back); `harness.py` holds the app setup and screen reading. Each journey asserts what is on screen
 and where focus is, and any saved config goes to a temp directory. Waits poll with a deadline, never a fixed sleep.

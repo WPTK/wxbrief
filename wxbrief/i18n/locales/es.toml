@@ -835,6 +835,9 @@ no_metar = "Sin METAR en las últimas 2 horas"
 observed_ago = "Observado {time}, hace {age}"
 cached_ago = "(en caché desde hace {age})"
 
+[ui.small]
+text = "Terminal demasiado pequeño: wxbrief necesita al menos {width}x{height}, esta es {now_width}x{now_height}. Agranda la ventana o pulsa q para salir."
+
 [ui.age]
 minutes = "{minutes} min"
 hours = "{hours} h {minutes:02d} min"

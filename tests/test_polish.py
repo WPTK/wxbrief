@@ -150,7 +150,7 @@ def test_cache_dir_override_is_absolute(monkeypatch: pytest.MonkeyPatch) -> None
 
 async def test_a_redraw_does_not_snap_the_grid_back(tmp_path: Path) -> None:
     app = demo(tmp_path)
-    async with app.run_test(size=(80, 14)) as pilot:
+    async with app.run_test(size=(80, 16)) as pilot:
         await pilot.pause()
         await pilot.press("v")
         await pilot.pause(0.2)
