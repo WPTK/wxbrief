@@ -171,7 +171,7 @@ Tick a row when the session has landed on `main` (S0 committed directly; later s
 | S1 | Decoder core | [x] 2026-10-31 |
 | S2a | Decoder depth: METAR/SPECI tail (trends, color states, runway state, remarks) | [x] 2026-10-31 |
 | S2b | Decoder depth: TAF, timeline, `split.py`, Discord and JSON output | [x] 2026-10-31 |
-| S3 | Data layer | [ ] |
+| S3 | Data layer | [x] 2026-10-31 |
 | S4 | TUI MVP | [ ] |
 | S5 | Colorways | [ ] |
 | S6 | TAF timeline | [ ] |
@@ -485,3 +485,62 @@ files, WSSS has two trends). Nothing else moved in any METAR golden.
 - The AWC client should store `rawTAF` and `issueTime` per station; `issueTime` is the right reference for
   `parse_taf` (as the cross-check does). AWC TAFs sometimes lack an issue time (military `TAF KNID 3023/3123`).
 - Locale catalogs: S2b added the `taf.*` and `discord.*` keys to `locales/en.toml`, the only catalog so far (S7 adds the rest).
+
+### S3 (2026-10-31)
+
+**Names as built.**
+
+- `data/awc.py`: `AwcClient(base_url=, client=, timeout=)` with `metars(ids, hours=2)`, `tafs(ids)`, `stations(ids)`, usable as an
+  async context manager; constants `BASE_URL`, `USER_AGENT`, `MAX_IDS_PER_REQUEST = 400`. Errors: `AwcError` base, `RateLimited(retry_after)`
+  (default 60 s when the header is missing or unreadable), `ServerError(status)`, `ClientError` (other 4xx, or a body that is not JSON),
+  `TransportError` (timeout, DNS, connect, TLS). 204 gives `[]`. Chunks go out one after another; a failure in any chunk raises.
+- `data/models.py`: frozen `AwcMetar`, `AwcTaf`, `AwcStation`; `parse_metars/tafs/stations` drop rows without a raw report and turn a
+  mistyped field into `None`; `parse_visibility("10+") -> (10.0, True)`; `latest_by_station`. `AwcMetar.source`/`AwcTaf.source` keep the
+  original JSON object, which is what the cache stores.
+- `data/poll.py`: `PollScheduler(client, ids, on_result, on_error, budget=, clock=, sleep=, metar_interval=, taf_interval=, away_interval=)`
+  with `run_cycle()` (one pass, returns the products attempted), `run()` (loop; cancel it to stop), `poll_now()`, `next_due_in()`, `.away`;
+  `RateBudget(100, 60, clock)` with `used`, `remaining`, `try_acquire`, `wait_time`; `Freshness` and `freshness(observed, now)` (fresh under
+  75 min); `backoff_delay(interval, failures)`. A 429 waits at least its `Retry-After` (capped at 3600 s). The scheduler is plain asyncio and
+  does no Textual work, so S4 runs `run()` inside its `@work(exclusive=True)` worker.
+- `data/cache.py`: `DiskCache(directory=None)` with `write(key, payload)` (atomic, returns `False` on failure) and `read(key)` returning
+  `(saved_at, payload)` or `None`; never raises.
+- `data/stations.py`: `StationDB.load(path=None)`, `get(code)` (ICAO, or a unique IATA/FAA code), `search(query, limit=10)`; `bundled()`
+  is the shared instance. `scripts/build_stations.py` builds `wxbrief/data/stations.json.gz` (8,751 stations with an ICAO id and valid coordinates,
+  full coordinate precision, 258 KB) from the AWC `stations.cache.json.gz`, with `timezonefinder` imported only inside the script. It skips placeholder
+  coordinates such as -99.99. The output is deterministic (sorted, gzip without timestamp).
+- `config.py`: `load_config(path=None) -> LoadedConfig(config, warnings)`, `parse_config`, `save_config`, `default_config_path`, `clean_watchlist`.
+  Each bad value falls back on its own and adds a warning; a missing file gives defaults with no warning.
+- `getcmd.py` (new, so `__main__.py` changes by four lines): `wxbrief get ICAO... [--json|--plain] [--units]`.
+
+**Deviations.**
+
+- `StationDB` search covers name, state and country text plus codes; it does not search a city column because the AWC cache has none.
+- `wxbrief get` decodes TAFs with `parse_taf` (AWC issue time as the reference) and renders `--discord` with `render_discord`
+  (station name from the station DB, local hour from its time zone). `--json` gives `{icao: {"metar": <to_dict>, "taf": <to_dict>}}`. Units default
+  as in `decode`: mixed, or US with `--discord`.
+- `get` fetches `hours=2` and keeps the newest report per station; a station with no report in that window prints "no METAR".
+- No `stations-canary.yml` yet (S9 per the table).
+
+**For S4.**
+
+- Run `PollScheduler.run()` in the poll worker; feed `on_result` into the state, write `[m.source for m in rows]` to
+  `DiskCache("metars")`/`("tafs")`, and rebuild rows with `parse_metars(payload)` at launch for an instant offline start. `DiskCache.read`
+  also gives the `saved_at` time for the stale marker; `freshness()` judges each report's own observation time.
+- Show `scheduler.budget.used`/`remaining` in the status bar. Call `poll_now()` after adding a station and set `scheduler.away = True` when
+  the window loses focus.
+- The ids callable is read at the start of each cycle, so watchlist edits need no restart.
+- `AwcMetar.flight_category` is AWC's `fltCat` for the cross-check indicator.
+- `tests/fixtures/awc/metar_kden_egll.json` and `taf_kden_egll.json` (2026-10-31) include a real TAF payload for S2b/S6.
+
+**Known limitations / S4 hand-off.**
+
+- `RateBudget` counts one request per product per cycle, not per 400-id chunk; `wait_time(count)` with `count` above the limit raises
+  `IndexError`. A 429 holds back every track, not only the product that got it.
+- `save_config` rewrites the file without comments or unknown keys, so S4 must not save after a load that produced a parse-error warning, or
+  must back the file up first.
+- `stations.json.gz`: the `tz` field comes from `timezonefinder` data (ODbL), so add attribution before 0.1.0; record the AWC cache date and
+  the `timezonefinder` version used for the build; add a test that every `tz` is a valid `zoneinfo` key. Seven IATA codes are ambiguous
+  (GWD, ISU, CEM, PTZ, GYA, VTZ, SRG), and `get()` returns `None` for them.
+- `DiskCache.read` accepts a naive `saved_at`; treat it as damaged or give it UTC.
+- Refocus after away mode should call `poll_now()`.
+- `wxbrief get` exit codes: 0 all arrived, 3 one product failed but some data arrived, 1 nothing arrived for any requested station.
