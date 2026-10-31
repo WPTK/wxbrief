@@ -79,6 +79,12 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="YYYY-MM-DD",
         help="date used to resolve the day of the month in the report's timestamp (default: now, UTC)",
     )
+    decode.add_argument(
+        "--theme",
+        metavar="NAME",
+        default=None,
+        help="colourway for the coloured terminal output, such as paper-chart (default: the built-in palette)",
+    )
     add_get_parser(commands)
     return parser
 
@@ -96,6 +102,22 @@ def _collect_texts(arguments: Sequence[str], stdin: TextIO) -> list[str]:
 
 
 def _run_decode(args: argparse.Namespace) -> int:
+    palette = None
+    if args.theme:
+        from textual.color import ColorParseError
+
+        from wxbrief.render.palette import Palette, all_themes
+
+        themes = all_themes()
+        if args.theme not in themes:
+            names = ", ".join(sorted(themes))
+            sys.stderr.write(f"wxbrief decode: unknown theme {args.theme!r} (choose from: {names})\n")
+            return 2
+        try:
+            palette = Palette.from_theme(themes[args.theme])
+        except (ColorParseError, KeyError, ValueError) as exc:
+            sys.stderr.write(f"wxbrief decode: cannot build theme {args.theme!r}: {exc}\n")
+            return 2
     texts = _collect_texts(args.reports, sys.stdin)
     reference = args.date if args.date is not None else datetime.now(UTC)
     decoded: list[Metar | Taf] = [item for text in texts for item in parse_any(text, reference)]
@@ -128,7 +150,8 @@ def _run_decode(args: argparse.Namespace) -> int:
 
     from wxbrief.render.richtext import DEFAULT_THEME, build_renderable
 
-    console = Console(theme=DEFAULT_THEME)
+    rich_theme = palette.rich_theme if palette else DEFAULT_THEME
+    console = Console(theme=rich_theme)
     for index, item in enumerate(decoded):
         if index:
             console.print(Text(""))
