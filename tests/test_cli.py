@@ -174,7 +174,7 @@ def test_a_leading_dash_group_needs_quotes_or_a_double_dash(capsys: pytest.Captu
 def test_version_still_works() -> None:
     result = run_module("--version")
     assert result.returncode == 0
-    assert result.stdout.strip() == "wxbrief 0.1.0"
+    assert result.stdout.strip() == "wxbrief 0.2.0"
 
 
 def test_help_lists_the_decode_command() -> None:

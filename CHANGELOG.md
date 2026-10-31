@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0 - 2026-10-31
+
+### Changed
+
+- Show the footer keys for the focused pane, with `a` visible in the narrow footer (#32)
+- Show the station count once, in the title of the list and the grid, and drop "1/N" from the detail header (#32)
+- Show an expired TAF as `TAF expired` instead of `no TAF` on grid cards (#31)
+
+### Added
+
+- Add hour labels and the zone name to the mini timeline on grid cards (#31)
+
+### Fixed
+
+- Fix the copy keys on the station detail screen opened from the grid (#32)
+
 ## 0.1.0 - 2026-10-31
 
 ### Added
