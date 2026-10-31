@@ -91,14 +91,14 @@ def _add_global_flags(parser: argparse.ArgumentParser, t: Translator) -> None:
     parser.add_argument("--demo", action="store_true", help=t.t(K.CLI_HELP_DEMO))
 
 
-def _add_language_flag(parser: argparse.ArgumentParser) -> None:
+def _add_language_flag(parser: argparse.ArgumentParser, t: Translator) -> None:
     """``--lang`` for a subcommand. Unset it leaves any ``--lang`` given before the subcommand alone."""
     parser.add_argument(
         "--lang",
         type=_language,
         metavar="CODE",
         default=argparse.SUPPRESS,
-        help=f"language of the plain-language text: {', '.join(LANGUAGES)} (default: en)",
+        help=t.t(K.CLI_HELP_LANG_COMMAND, languages=", ".join(LANGUAGES)),
     )
 
 
@@ -127,63 +127,28 @@ def build_tui_parser(t: Translator | None = None) -> argparse.ArgumentParser:
 def build_parser(t: Translator | None = None) -> argparse.ArgumentParser:
     """Return the top-level argument parser."""
     t = t or Translator.load(DEFAULT_LANGUAGE)
-    parser = argparse.ArgumentParser(
-        prog="wxbrief",
-        description="Terminal METAR/TAF briefing with colorways and plain-language translation.",
-    )
+    parser = argparse.ArgumentParser(prog="wxbrief", description=t.t(K.CLI_DESCRIPTION))
     _add_global_flags(parser, t)
     commands = parser.add_subparsers(dest="command", metavar="command")
 
     decode = commands.add_parser(
-        "decode",
-        help="decode METAR, SPECI and TAF text given as arguments or on stdin",
-        description=(
-            "Decode METAR, SPECI and TAF reports into plain language. Pass each report as one quoted argument "
-            "(unquoted words are joined into a single report), or pipe text on stdin: a blob with several reports, "
-            "TAFs wrapped over several lines, reports separated by blank lines or '=', in upper or lower case. "
-            "A group such as -RA is read as an option unless the report is quoted or follows --."
-        ),
+        "decode", help=t.t(K.CLI_HELP_DECODE), description=t.t(K.CLI_HELP_DECODE_DESCRIPTION)
     )
-    decode.add_argument("reports", nargs="*", metavar="RAW", help="raw report text")
-    _add_language_flag(decode)
+    decode.add_argument("reports", nargs="*", metavar="RAW", help=t.t(K.CLI_HELP_RAW))
+    _add_language_flag(decode, t)
     output = decode.add_mutually_exclusive_group()
-    output.add_argument(
-        "--plain",
-        action="store_true",
-        help="plain text without colour (automatic when stdout is not a terminal)",
-    )
-    output.add_argument(
-        "--json",
-        action="store_true",
-        help="print the decoded reports as a JSON list (language-neutral: codes, numbers, UTC times)",
-    )
-    output.add_argument(
-        "--discord",
-        action="store_true",
-        help="print each report as a Discord code block (inside an outer four-backtick fence); imperial units "
-        "unless --units says otherwise",
+    output.add_argument("--plain", action="store_true", help=t.t(K.CLI_HELP_PLAIN))
+    output.add_argument("--json", action="store_true", help=t.t(K.CLI_HELP_JSON))
+    output.add_argument("--discord", action="store_true", help=t.t(K.CLI_HELP_DISCORD))
+    decode.add_argument(
+        "--units", choices=[mode.value for mode in UnitsMode], default=None, help=t.t(K.CLI_HELP_UNITS_MODE)
     )
     decode.add_argument(
-        "--units",
-        choices=[mode.value for mode in UnitsMode],
-        default=None,
-        help="us or metric units first, or mixed: as reported with the other system in parentheses "
-        "(default: mixed, or us with --discord)",
+        "--date", type=_parse_date, metavar="YYYY-MM-DD", help=t.t(K.CLI_HELP_DATE)
     )
-    decode.add_argument(
-        "--date",
-        type=_parse_date,
-        metavar="YYYY-MM-DD",
-        help="date used to resolve the day of the month in the report's timestamp (default: now, UTC)",
-    )
-    decode.add_argument(
-        "--theme",
-        metavar="NAME",
-        default=None,
-        help="colourway for the coloured terminal output, such as paper-chart (default: the built-in palette)",
-    )
-    add_get_parser(commands)
-    _add_language_flag(commands.choices["get"])
+    decode.add_argument("--theme", metavar="NAME", default=None, help=t.t(K.CLI_HELP_DECODE_THEME))
+    add_get_parser(commands, t)
+    _add_language_flag(commands.choices["get"], t)
     return parser
 
 
@@ -223,14 +188,8 @@ def _run_decode(args: argparse.Namespace) -> int:
         sys.stderr.write("wxbrief decode: no report text given (pass it as an argument or on stdin)\n")
         return 2
 
-    # Always UTF-8: a pipe on Windows defaults to the ANSI code page, which turns the degree sign into a lone 0xB0 byte.
-    # Never fail on a character the stream cannot encode.
-    reconfigure = getattr(sys.stdout, "reconfigure", None)
-    if callable(reconfigure):
-        reconfigure(encoding="utf-8", errors="replace")
-
     if args.json:
-        sys.stdout.write(json.dumps([to_dict(item) for item in decoded], indent=2) + "\n")
+        sys.stdout.write(json.dumps([to_dict(item) for item in decoded], indent=2, ensure_ascii=False) + "\n")
         return 0
 
     units = UnitsMode(args.units or (UnitsMode.US.value if args.discord else UnitsMode.MIXED.value))
@@ -239,8 +198,9 @@ def _run_decode(args: argparse.Namespace) -> int:
         sys.stdout.write("\n\n".join(render_discord(item, translator, units) for item in decoded) + "\n")
         return 0
 
-    if args.plain or not sys.stdout.isatty():
-        sys.stdout.write("\n\n".join(render_plain(item, translator, units) for item in decoded) + "\n")
+    plain = "\n\n".join(render_plain(item, translator, units) for item in decoded) + "\n"
+    if args.plain:
+        sys.stdout.write(plain)
         return 0
 
     from rich.console import Console
@@ -249,7 +209,11 @@ def _run_decode(args: argparse.Namespace) -> int:
     from wxbrief.render.richtext import DEFAULT_THEME, build_renderable
 
     rich_theme = palette.rich_theme if palette else DEFAULT_THEME
-    console = Console(theme=rich_theme)
+    # A pipe has no Windows console to draw on, so a forced colour there has to be ANSI codes.
+    console = Console(theme=rich_theme, legacy_windows=None if sys.stdout.isatty() else False)
+    if not console.is_terminal:  # Rich decides, so FORCE_COLOR and NO_COLOR are honoured as everywhere else
+        sys.stdout.write(plain)
+        return 0
     for index, item in enumerate(decoded):
         if index:
             console.print(Text(""))
@@ -327,6 +291,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         from wxbrief.selftest import run_selftest
 
         return run_selftest()
+    # Always UTF-8 on stdout, help text included: a pipe on Windows defaults to the ANSI code page, which turns the
+    # degree sign into a lone 0xB0 byte. Never fail on a character the stream cannot encode.
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if callable(reconfigure):
+        reconfigure(encoding="utf-8", errors="replace")
     translator = _help_translator(words)
     if _first_positional(words) not in COMMANDS:
         tui_args = build_tui_parser(translator).parse_args(words)
