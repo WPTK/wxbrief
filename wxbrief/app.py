@@ -43,6 +43,7 @@ class AppOptions:
     config_path: Path | None = None
     use_config: bool = True  # False for --no-config: nothing is read from or written to the config file
     theme_from_flag: bool = False  # --theme was given: the theme is for this run and is never saved
+    flag_view: frozenset[str] = frozenset()  # view settings given as flags: for this run only, never saved
     config_warnings: list[str] = field(default_factory=list)
     config_usable: bool = True  # False when the config file could not be read at all: it is never overwritten
     notices: list[str] = field(default_factory=list)  # problems with command-line station ids
@@ -292,7 +293,7 @@ class WxBriefApp(App[None]):
         options = self.options
         t = self.ctx.translator
         watchlist = list(self.state.watchlist)
-        chosen = dict(self._chosen_view)
+        chosen = {k: v for k, v in self._chosen_view.items() if k not in options.flag_view}
         if self._chosen_theme is not None and not options.theme_from_flag:
             chosen["theme"] = self._chosen_theme
         saved_view = options.config.view

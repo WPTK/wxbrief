@@ -79,7 +79,7 @@ StatusBar {
     text-overflow: ellipsis;
 }
 
-/* Narrow terminals: the list gives way to the detail; [ and ] or j and k change station. */
+/* Narrow terminals: the list gives way to the detail; j and k or the arrows change station. */
 BriefingScreen.-narrow StationList {
     display: none;
 }

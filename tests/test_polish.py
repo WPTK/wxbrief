@@ -206,3 +206,22 @@ async def test_timeline_names_both_zones_across_a_clock_change_and_labels_half_h
         await pilot.pause(0.2)
         first_line = plain(screen.query_one(TafTimeline)).split("\n")[0]
         assert ":30" in first_line and first_line.rstrip().endswith("IST")
+
+
+async def test_a_view_flag_is_never_saved(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    app = make_app(tmp_path, [], watchlist=["KDEN"])
+    app.options.view = replace(app.options.config.view)
+    app.options.flag_view = frozenset({"glyph_set"})
+    saved: list[str] = []
+
+    def record(config: object, path: object) -> bool:
+        saved.append(config.view.glyph_set + config.view.units)  # type: ignore[attr-defined]
+        return True
+
+    monkeypatch.setattr(app_module, "save_config", record)
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause()
+        app.apply_setting("glyph_set", "ascii")
+        assert saved == []  # --glyphs was given: this run only
+        app.apply_setting("units", "us")
+        assert saved == ["unicodeus"]  # units were not a flag: saved; the glyph set was not

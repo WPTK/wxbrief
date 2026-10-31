@@ -2,7 +2,7 @@
 
 How a raw METAR becomes a `Metar`, what the parser promises, and how to add a test report. The architecture and the
 session plan live in [plan.md](plan.md); this page covers the decoder as built in S1 (the body) and S2a (the tail and the
-remarks). TAF decoding arrives in S2b.
+remarks). TAF decoding is covered under "TAF" below.
 
 ## Pipeline
 
@@ -38,7 +38,7 @@ Every non-whitespace character belongs to exactly one token; the highlighter and
 * The remarks driver (`remarks.py`) cannot reject a token: whatever no pattern claims becomes `FreeText`. If it fails
   outright, the remaining tokens stay plain `REMARK` tokens and one `parser_error` warning is added.
 * If the driver itself fails, `_failsafe` returns every token as `UNKNOWN` with one warning.
-* A report starting with `TAF` is not decoded (S2b): one `unsupported_report` warning, tokens kept.
+* `parse_metar` is for METAR and SPECI; a TAF goes through `parse_taf`, and `parse_any` picks the right one.
 * Regexes use unambiguous alternations (fixed-width codes, no nested repeats), so junk input cannot cause
   catastrophic backtracking. The one repeating shape, weather timing (`DZB04E37RAB37`), is scanned in explicit steps.
   `tests/test_fuzz.py` has a timing test over long runs of group-like text, including every tail and remark shape.
@@ -352,8 +352,8 @@ and tendencies keep their tenth).
 
 ## Known limits
 
-* Temperatures and times stay UTC / as reported until the station database (S3).
-* Only English phrases exist (S7 adds es, fr, de, pt); `FreeText` word decoding is English-only.
+* The decoder keeps times in UTC / as reported; the interface converts them with the station database.
+* `FreeText` word decoding is English-only; the other phrases have es, fr, de and pt catalogs (see [i18n.md](i18n.md)).
 * `933RRR` (water equivalent of snow), `931SSS`, `I1xxx` ice accretion and other additive groups not listed above
   stay `FreeText`; the plain decode lists them under "Remarks (not decoded)".
 * TAF notes the catalog does not know (`WND 230V330`, Antarctic grid winds) stay unknown tokens with a warning.

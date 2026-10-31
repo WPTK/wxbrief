@@ -49,7 +49,8 @@ stations in the bundled database. Ids given on the command line or in `config.to
 a station the database does not know (a new or private field) can still be watched; it just has no name or time zone.
 
 Settings you change in the app (theme, glyphs, units, time, language) are saved to `config.toml`; a value given as a
-command-line flag applies to that run only. `--no-config` reads and writes no config file. Run `wxbrief --help` for
+command-line flag (`--theme`, `--glyphs`, `--units`, `--time`, `--lang`) applies to that run only and is never saved,
+even if you change it in the app. `--no-config` reads and writes no config file. Run `wxbrief --help` for
 every flag.
 
 Without the TUI:

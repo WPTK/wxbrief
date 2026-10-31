@@ -44,8 +44,7 @@ Changes that only touch Markdown, `docs/` or `LICENSE` skip CI.
 - Interface tests run the real app in Textual's pilot, with polling off and the network blocked. `--demo` gives a fixed
   clock and ten stations to test against.
 - `tests/uat/test_journeys.py` walks complete journeys key by key: reading and copying a station, the dialogs, `g` `u`
-  `z`, the grid, a 60x20 terminal, and the timeline markers without colour. A live test against aviationweather.gov
-  runs only with `WXBRIEF_LIVE=1`.
+  `z`, the grid, a 60x20 terminal, and the timeline markers without colour.
 - A test that fails is run alone before it is called a flake.
 
 ## Snapshots

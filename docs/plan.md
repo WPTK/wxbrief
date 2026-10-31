@@ -109,7 +109,7 @@ Principles: **never raise** on real input (wrap each group parser; failures beco
 - `test_flightcat.py` asserts our category == AWC `fltCat` for every report in a saved batch (documented exceptions list). `test_fuzz.py` with `hypothesis`: random text and mutated corpus reports never raise, every char covered, raw round-trips.
 - `test_i18n.py`: every locale has every en key, param sets match, plural forms present. `test_themes.py`: all themes register, semantic vars resolve, fcat colors contrast ≥3.0 on light and dark.
 - `test_client.py` (respx: 200/204/429/500/timeout, chunking, UA), `test_poll.py` (injected clock), `test_app_smoke.py` (`App.run_test()` + `Pilot`, incl. 60×20), `test_snapshots.py` with `pytest-textual-snapshot` in textual-dark / paper-chart / phosphor-green; fallback to in-house `export_screenshot()` SVG comparison if the plugin lacks Textual 8 support.
-- `tests/uat/` journeys; live test only with `WXBRIEF_LIVE=1`.
+- `tests/uat/` journeys.
 
 ### Packaging and CI
 - `pyproject.toml` mirrors cfbtui: setuptools, `dynamic=["version"]`, `requires-python >=3.12`, deps `textual>=8.2,<9 httpx>=0.28,<1 platformdirs>=4,<5 tomli-w>=1,<2 pyperclip>=1.9,<2 tzdata; sys_platform=="win32"`; dev extras = cfbtui's list + `hypothesis pytest-textual-snapshot timezonefinder>=9,<10`; package-data tcss, stations.json.gz, demo, locales; ruff 120 / py312 / `E F W I B UP SIM C4 RUF`; mypy strict for `decode` and `i18n`.
@@ -832,8 +832,8 @@ in a marked S8 block of `app.tcss`; they still appear only when the content over
   breakpoint `-short` (under 24 rows) that drops the spacing rows of the detail pane, and a compact footer without the palette
   hint under 90 and 100 columns. At 60x20 the list gives way to the detail, `j` `k` change station, `3` reaches the timeline and
   the footer shows the first keys only.
-- **Summary rows** (METAR "Summary", TAF "Summary:") are removed from the TUI only. The CLI `decode`/`get` output, `--json` and the
-  tests of it still carry them; the Discord blocks never used them.
+- **Summary rows** (METAR "Summary", TAF "Summary:") are removed from the TUI only. The CLI `decode`/`get` plain and Rich output and
+  the tests of it still carry them (`--json` never did); the Discord blocks never used them.
 - **Period detail time base.** The span in each group header ("Prevailing: Base forecast, ...", `BECMG`, `TEMPO`) is now written
   in the chosen time mode, as the header above it is, instead of UTC. It is not dropped: it is the group's own validity, which
   differs from the cell window, and the catalog templates carry it. `phrases.describe_change_header` takes an optional `span`.
