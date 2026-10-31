@@ -20,7 +20,7 @@ from wxbrief.ui.context import ViewContext
 from wxbrief.ui.fcat import CategoryColors, category_colors
 from wxbrief.ui.strip import MINI_STRIP_HOURS, StripCell, mini_cells, strip_for
 from wxbrief.ui.widgets.station_list import short_conditions
-from wxbrief.ui.widgets.taf_timeline import HATCH, OVERLAY_MARK, category_letter
+from wxbrief.ui.widgets.taf_timeline import HATCH, OVERLAY_MARK, category_letter, tick_labels
 
 CELL_WIDTH = 2
 STRIP_WIDTH = MINI_STRIP_HOURS * CELL_WIDTH
@@ -88,9 +88,13 @@ class StationCard(Static):
         conditions = short_conditions(metar) or (ctx.translator.t(K.UI_LIST_NO_REPORT) if metar is None else "")
         lines = [head, Text(conditions, style=palette.muted, no_wrap=True, overflow="ellipsis")]
         taf = entry.taf if isinstance(entry.taf, Taf) else None
-        cells = mini_cells(strip_for(taf)[1], now) if taf is not None else ()
+        hours = strip_for(taf)[1] if taf is not None else ()
+        cells = mini_cells(hours, now)
         if cells:
+            lines.append(tick_labels(cells, CELL_WIDTH, ctx, entry.icao, every_cell=False))
             lines.extend(strip_lines(cells, colors, ctx.translator))
         else:
-            lines.append(Text(ctx.translator.t(K.TIMELINE_NO_TAF), style=palette.muted))
+            expired = bool(hours) and now >= hours[-1].end
+            key = K.TIMELINE_EXPIRED if expired else K.TIMELINE_NO_TAF
+            lines.append(Text(ctx.translator.t(key), style=palette.muted))
         self.update(Text("\n").join(lines))

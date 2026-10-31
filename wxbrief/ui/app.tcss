@@ -258,7 +258,7 @@ StationGrid #cards {
 }
 
 StationCard {
-    height: 6;
+    height: 7;
     padding: 0 1;
     border: round $primary-background-lighten-2;
     background: $surface;
