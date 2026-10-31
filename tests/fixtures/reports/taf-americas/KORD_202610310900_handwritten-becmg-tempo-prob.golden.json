@@ -1,0 +1,386 @@
+{
+  "raw": "TAF KORD 310900Z 3109/0112 20010KT 4SM -RA BR OVC008 BECMG 3112/3114 24012KT P6SM BKN030 TEMPO 3114/3118 2SM TSRA BKN015CB PROB40 3120/3124 1SM +TSRA OVC010CB",
+  "station": "KORD",
+  "issue_time": "2026-10-31T09:00:00+00:00",
+  "valid_from": "2026-10-31T09:00:00+00:00",
+  "valid_to": "2026-11-01T12:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T09:00:00+00:00",
+    "end": "2026-10-31T12:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 200,
+        "speed": {
+          "value": 10,
+          "unit": "KT"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 4.0,
+          "unit": "SM"
+        },
+        "prefix": null,
+        "cavok": false,
+        "unlimited": false,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [
+        {
+          "intensity": "LIGHT",
+          "descriptor": null,
+          "phenomena": [
+            "RA"
+          ],
+          "vicinity": false,
+          "nsw": false,
+          "not_observed": false
+        },
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "BR"
+          ],
+          "vicinity": false,
+          "nsw": false,
+          "not_observed": false
+        }
+      ],
+      "sky": [
+        {
+          "cover": "OVC",
+          "base": {
+            "value": 800,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "IFR",
+    "becoming_end": null
+  },
+  "changes": [
+    {
+      "change": "BECMG",
+      "probability": null,
+      "start": "2026-10-31T12:00:00+00:00",
+      "end": "2026-11-01T12:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": 240,
+          "speed": {
+            "value": 12,
+            "unit": "KT"
+          },
+          "gust": null,
+          "variable": false,
+          "speed_above": false
+        },
+        "visibility": {
+          "distance": {
+            "value": 6.0,
+            "unit": "SM"
+          },
+          "prefix": "GREATER_THAN",
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [],
+        "sky": [
+          {
+            "cover": "BKN",
+            "base": {
+              "value": 3000,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "MVFR",
+      "becoming_end": "2026-10-31T14:00:00+00:00"
+    },
+    {
+      "change": "TEMPO",
+      "probability": null,
+      "start": "2026-10-31T14:00:00+00:00",
+      "end": "2026-10-31T18:00:00+00:00",
+      "elements": {
+        "wind": null,
+        "visibility": {
+          "distance": {
+            "value": 2.0,
+            "unit": "SM"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": "TS",
+            "phenomena": [
+              "RA"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "BKN",
+            "base": {
+              "value": 1500,
+              "unit": "FT"
+            },
+            "cloud_type": "CB"
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "IFR",
+      "becoming_end": null
+    },
+    {
+      "change": "PROB",
+      "probability": 40,
+      "start": "2026-10-31T20:00:00+00:00",
+      "end": "2026-11-01T00:00:00+00:00",
+      "elements": {
+        "wind": null,
+        "visibility": {
+          "distance": {
+            "value": 1.0,
+            "unit": "SM"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "HEAVY",
+            "descriptor": "TS",
+            "phenomena": [
+              "RA"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "OVC",
+            "base": {
+              "value": 1000,
+              "unit": "FT"
+            },
+            "cloud_type": "CB"
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "IFR",
+      "becoming_end": null
+    }
+  ],
+  "remarks": null,
+  "flavor": "US",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KORD",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "310900Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3109/0112",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "20010KT",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND"
+    },
+    {
+      "text": "4SM",
+      "start": 35,
+      "end": 38,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-RA",
+      "start": 39,
+      "end": 42,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BR",
+      "start": 43,
+      "end": 45,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "OVC008",
+      "start": 46,
+      "end": 52,
+      "kind": "SKY"
+    },
+    {
+      "text": "BECMG",
+      "start": 53,
+      "end": 58,
+      "kind": "TREND"
+    },
+    {
+      "text": "3112/3114",
+      "start": 59,
+      "end": 68,
+      "kind": "TREND"
+    },
+    {
+      "text": "24012KT",
+      "start": 69,
+      "end": 76,
+      "kind": "WIND"
+    },
+    {
+      "text": "P6SM",
+      "start": 77,
+      "end": 81,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BKN030",
+      "start": 82,
+      "end": 88,
+      "kind": "SKY"
+    },
+    {
+      "text": "TEMPO",
+      "start": 89,
+      "end": 94,
+      "kind": "TREND"
+    },
+    {
+      "text": "3114/3118",
+      "start": 95,
+      "end": 104,
+      "kind": "TREND"
+    },
+    {
+      "text": "2SM",
+      "start": 105,
+      "end": 108,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "TSRA",
+      "start": 109,
+      "end": 113,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BKN015CB",
+      "start": 114,
+      "end": 122,
+      "kind": "SKY"
+    },
+    {
+      "text": "PROB40",
+      "start": 123,
+      "end": 129,
+      "kind": "TREND"
+    },
+    {
+      "text": "3120/3124",
+      "start": 130,
+      "end": 139,
+      "kind": "TREND"
+    },
+    {
+      "text": "1SM",
+      "start": 140,
+      "end": 143,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "+TSRA",
+      "start": 144,
+      "end": 149,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "OVC010CB",
+      "start": 150,
+      "end": 158,
+      "kind": "SKY"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "IFR",
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [
+    "CB",
+    "LOW_CEILING",
+    "LOW_VISIBILITY",
+    "THUNDERSTORM"
+  ],
+  "legacy": false
+}

@@ -255,7 +255,11 @@
             "cloud_type": null
           }
         ],
-        "color_state": null
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
       }
     }
   ],

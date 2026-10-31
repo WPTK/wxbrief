@@ -1,0 +1,254 @@
+{
+  "raw": "TAF VIDP 310600Z 3106/0112 08003MPS 3000 HZ NSC BECMG 3109/3111 12006MPS 5000 BR FEW020 TX33/3109Z TN17/0101Z",
+  "station": "VIDP",
+  "issue_time": "2026-10-31T06:00:00+00:00",
+  "valid_from": "2026-10-31T06:00:00+00:00",
+  "valid_to": "2026-11-01T12:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T06:00:00+00:00",
+    "end": "2026-10-31T09:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 80,
+        "speed": {
+          "value": 3,
+          "unit": "MPS"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 3000,
+          "unit": "M"
+        },
+        "prefix": null,
+        "cavok": false,
+        "unlimited": false,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "HZ"
+          ],
+          "vicinity": false,
+          "nsw": false,
+          "not_observed": false
+        }
+      ],
+      "sky": [
+        {
+          "cover": "NSC",
+          "base": null,
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "IFR",
+    "becoming_end": null
+  },
+  "changes": [
+    {
+      "change": "BECMG",
+      "probability": null,
+      "start": "2026-10-31T09:00:00+00:00",
+      "end": "2026-11-01T12:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": 120,
+          "speed": {
+            "value": 6,
+            "unit": "MPS"
+          },
+          "gust": null,
+          "variable": false,
+          "speed_above": false
+        },
+        "visibility": {
+          "distance": {
+            "value": 5000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": null,
+            "phenomena": [
+              "BR"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "FEW",
+            "base": {
+              "value": 2000,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "MVFR",
+      "becoming_end": "2026-10-31T11:00:00+00:00"
+    }
+  ],
+  "remarks": null,
+  "flavor": "ICAO",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "VIDP",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "310600Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3106/0112",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "08003MPS",
+      "start": 27,
+      "end": 35,
+      "kind": "WIND"
+    },
+    {
+      "text": "3000",
+      "start": 36,
+      "end": 40,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "HZ",
+      "start": 41,
+      "end": 43,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "NSC",
+      "start": 44,
+      "end": 47,
+      "kind": "SKY"
+    },
+    {
+      "text": "BECMG",
+      "start": 48,
+      "end": 53,
+      "kind": "TREND"
+    },
+    {
+      "text": "3109/3111",
+      "start": 54,
+      "end": 63,
+      "kind": "TREND"
+    },
+    {
+      "text": "12006MPS",
+      "start": 64,
+      "end": 72,
+      "kind": "WIND"
+    },
+    {
+      "text": "5000",
+      "start": 73,
+      "end": 77,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BR",
+      "start": 78,
+      "end": 80,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "FEW020",
+      "start": 81,
+      "end": 87,
+      "kind": "SKY"
+    },
+    {
+      "text": "TX33/3109Z",
+      "start": 88,
+      "end": 98,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "TN17/0101Z",
+      "start": 99,
+      "end": 109,
+      "kind": "TEMPERATURE"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "IFR",
+  "report_type": "TAF",
+  "temperatures": [
+    {
+      "kind": "MAX",
+      "temperature": {
+        "value": 33,
+        "unit": "C"
+      },
+      "day": 31,
+      "hour": 9,
+      "time": "2026-10-31T09:00:00+00:00"
+    },
+    {
+      "kind": "MIN",
+      "temperature": {
+        "value": 17,
+        "unit": "C"
+      },
+      "day": 1,
+      "hour": 1,
+      "time": "2026-11-01T01:00:00+00:00"
+    }
+  ],
+  "flags": [
+    "LOW_VISIBILITY"
+  ],
+  "legacy": false
+}

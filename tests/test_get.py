@@ -30,7 +30,7 @@ def test_get_plain_prints_decodes_and_raw_taf(awc: respx.MockRouter, capsys: pyt
     assert main(["get", "KDEN", "egll", "--plain"]) == 0
     out = capsys.readouterr().out
     assert "Station:" in out and "KDEN" in out and "EGLL" in out
-    assert out.count("TAF (raw):") == 2
+    assert out.count("TAF") >= 2
 
 
 def test_get_resolves_iata_codes(awc: respx.MockRouter, capsys: pytest.CaptureFixture[str]) -> None:
@@ -43,7 +43,8 @@ def test_get_json(awc: respx.MockRouter, capsys: pytest.CaptureFixture[str]) -> 
     assert main(["get", "KDEN", "ZZZZ", "--json"]) == 0
     document = json.loads(capsys.readouterr().out)
     assert document["KDEN"]["metar"]["raw"].startswith(("METAR KDEN", "SPECI KDEN"))
-    assert document["ZZZZ"] == {"metar": None, "taf_raw": None}
+    assert document["KDEN"]["taf"]["raw"].startswith("TAF KDEN")
+    assert document["ZZZZ"] == {"metar": None, "taf": None}
 
 
 def test_get_total_failure_exits_1(capsys: pytest.CaptureFixture[str]) -> None:
@@ -73,6 +74,16 @@ def test_get_exits_1_when_no_station_has_a_report(capsys: pytest.CaptureFixture[
     assert "no METAR" in capsys.readouterr().out
 
 
-def test_get_discord_is_not_available_yet(capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["get", "KDEN", "--discord"]) == 2
-    assert "S2b" in capsys.readouterr().err
+def test_get_discord_prints_fenced_blocks_with_station_names(
+    awc: respx.MockRouter, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["get", "EGLL", "--discord"]) == 0
+    out = capsys.readouterr().out
+    assert out.count("````") == 4  # one outer fence pair per report: the METAR and the TAF
+    assert "LONDON/HEATHROW" in out.upper() and "TAF issued" in out
+
+
+def test_get_decodes_the_taf(awc: respx.MockRouter, capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["get", "EGLL", "--plain"]) == 0
+    out = capsys.readouterr().out
+    assert "worst flight category" in out

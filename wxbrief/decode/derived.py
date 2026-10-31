@@ -14,6 +14,7 @@ from wxbrief.decode.flightcat import (
     flight_category,
     lowest_ceiling,
     visibility_sm,
+    worst_of,
 )
 from wxbrief.decode.model import (
     CloudType,
@@ -21,6 +22,8 @@ from wxbrief.decode.model import (
     Condition,
     Descriptor,
     Flag,
+    ForecastElements,
+    IcingIntensity,
     MaintenanceIndicator,
     Metar,
     Modifier,
@@ -32,8 +35,11 @@ from wxbrief.decode.model import (
     SeaLevelPressure,
     SensorStatus,
     SkyCondition,
+    Taf,
+    TurbulenceIntensity,
     WeatherGroup,
 )
+from wxbrief.decode.timeline import expand_timeline
 from wxbrief.decode.units import Distance, Temperature
 
 # Condition groups, from the metar-taf-decode reference notes (header glyph rules, listed there in priority order).
@@ -212,3 +218,61 @@ def derive(metar: Metar) -> Metar:
         relative_humidity=relative_humidity(metar.temperature, metar.dewpoint),
         computed_color_state=_computed_color(staged),
     )
+
+
+# --- TAF ---------------------------------------------------------------------------------------------------------
+
+
+def _elements_of(taf: Taf) -> list[ForecastElements]:
+    return [period.elements for period in taf.periods]
+
+
+def compute_taf_flags(taf: Taf) -> tuple[Flag, ...]:
+    """Operationally significant conditions anywhere in the forecast, in the order of the ``Flag`` enum."""
+    found: set[Flag] = set()
+    for elements in _elements_of(taf):
+        types = {layer.cloud_type for layer in elements.sky}
+        if CloudType.CB in types:
+            found.add(Flag.CB)
+        if CloudType.TCU in types:
+            found.add(Flag.TCU)
+        layer = lowest_ceiling(elements.sky)
+        if layer is not None and layer.base is not None and layer.base.feet < IFR_CEILING_FT:
+            found.add(Flag.LOW_CEILING)
+        vis = visibility_sm(elements.visibility)
+        if vis is not None and vis < IFR_VISIBILITY_SM:
+            found.add(Flag.LOW_VISIBILITY)
+        if elements.wind is not None and elements.wind.gust is not None:
+            found.add(Flag.GUSTS)
+        if elements.wind_shear is not None:
+            found.add(Flag.WIND_SHEAR)
+        for group in elements.weather:
+            if group.descriptor is Descriptor.FZ and set(group.phenomena) & _FREEZING_PRECIP_PHENOMENA:
+                found.add(Flag.FREEZING_PRECIP)
+            if group.descriptor is Descriptor.TS:
+                found.add(Flag.THUNDERSTORM)
+            if Phenomenon.VA in group.phenomena:
+                found.add(Flag.VOLCANIC_ASH)
+        if is_below_green(elements.color_state):
+            found.add(Flag.COLOR_BELOW_GRN)
+        if any(item.intensity is not IcingIntensity.NONE for item in elements.icing):
+            found.add(Flag.ICING)
+        if any(item.intensity is not TurbulenceIntensity.NONE for item in elements.turbulence):
+            found.add(Flag.TURBULENCE)
+        if any(
+            item.cover is SkyCondition.UNKNOWN or (item.is_ceiling_layer and item.base is None)
+            for item in elements.sky
+        ):
+            found.add(Flag.MISSING_DATA)
+    if _CORRECTION_MODIFIERS & set(taf.modifiers):
+        found.add(Flag.CORRECTED)
+    if Modifier.AMD in taf.modifiers:
+        found.add(Flag.AMENDED)
+    return tuple(flag for flag in Flag if flag in found)
+
+
+def derive_taf(taf: Taf) -> Taf:
+    """Fill in the derived fields of a parsed ``Taf``: its flags and the worst flight category anywhere."""
+    timeline = expand_timeline(taf)
+    worst = timeline.worst_category if timeline.slices else worst_of(period.flight_category for period in taf.periods)
+    return replace(taf, flags=compute_taf_flags(taf), worst_category=worst)

@@ -1,0 +1,248 @@
+{
+  "raw": "TAF COR ETHS 210722Z 2108/2117 15005KT 3000 -DZ BKN010 OVC015 PROB30 2108/2117 17003KT 1500 DZ OVC005",
+  "station": "ETHS",
+  "issue_time": "2026-10-21T07:22:00+00:00",
+  "valid_from": "2026-10-21T08:00:00+00:00",
+  "valid_to": "2026-10-21T17:00:00+00:00",
+  "modifiers": [
+    "COR"
+  ],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-21T08:00:00+00:00",
+    "end": "2026-10-21T17:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 150,
+        "speed": {
+          "value": 5,
+          "unit": "KT"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 3000,
+          "unit": "M"
+        },
+        "prefix": null,
+        "cavok": false,
+        "unlimited": false,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [
+        {
+          "intensity": "LIGHT",
+          "descriptor": null,
+          "phenomena": [
+            "DZ"
+          ],
+          "vicinity": false,
+          "nsw": false,
+          "not_observed": false
+        }
+      ],
+      "sky": [
+        {
+          "cover": "BKN",
+          "base": {
+            "value": 1000,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        },
+        {
+          "cover": "OVC",
+          "base": {
+            "value": 1500,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "IFR",
+    "becoming_end": null
+  },
+  "changes": [
+    {
+      "change": "PROB",
+      "probability": 30,
+      "start": "2026-10-21T08:00:00+00:00",
+      "end": "2026-10-21T17:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": 170,
+          "speed": {
+            "value": 3,
+            "unit": "KT"
+          },
+          "gust": null,
+          "variable": false,
+          "speed_above": false
+        },
+        "visibility": {
+          "distance": {
+            "value": 1500,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": null,
+            "phenomena": [
+              "DZ"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "OVC",
+            "base": {
+              "value": 500,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "LIFR",
+      "becoming_end": null
+    }
+  ],
+  "remarks": null,
+  "flavor": "ICAO",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "COR",
+      "start": 4,
+      "end": 7,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "ETHS",
+      "start": 8,
+      "end": 12,
+      "kind": "STATION"
+    },
+    {
+      "text": "210722Z",
+      "start": 13,
+      "end": 20,
+      "kind": "TIME"
+    },
+    {
+      "text": "2108/2117",
+      "start": 21,
+      "end": 30,
+      "kind": "TIME"
+    },
+    {
+      "text": "15005KT",
+      "start": 31,
+      "end": 38,
+      "kind": "WIND"
+    },
+    {
+      "text": "3000",
+      "start": 39,
+      "end": 43,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-DZ",
+      "start": 44,
+      "end": 47,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BKN010",
+      "start": 48,
+      "end": 54,
+      "kind": "SKY"
+    },
+    {
+      "text": "OVC015",
+      "start": 55,
+      "end": 61,
+      "kind": "SKY"
+    },
+    {
+      "text": "PROB30",
+      "start": 62,
+      "end": 68,
+      "kind": "TREND"
+    },
+    {
+      "text": "2108/2117",
+      "start": 69,
+      "end": 78,
+      "kind": "TREND"
+    },
+    {
+      "text": "17003KT",
+      "start": 79,
+      "end": 86,
+      "kind": "WIND"
+    },
+    {
+      "text": "1500",
+      "start": 87,
+      "end": 91,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "DZ",
+      "start": 92,
+      "end": 94,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "OVC005",
+      "start": 95,
+      "end": 101,
+      "kind": "SKY"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "LIFR",
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [
+    "LOW_CEILING",
+    "LOW_VISIBILITY",
+    "CORRECTED"
+  ],
+  "legacy": false
+}

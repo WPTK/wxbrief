@@ -14,7 +14,7 @@ The ceiling is the lowest broken, overcast or vertical-visibility layer. Metres 
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 
 from wxbrief.decode.model import CloudLayer, FlightCategory, SkyCondition, Visibility
 
@@ -78,3 +78,9 @@ def flight_category(visibility: Visibility | None, sky: Sequence[CloudLayer]) ->
     """Flight category of a decoded body, or ``None`` when neither visibility nor sky is available."""
     cavok = visibility is not None and visibility.cavok
     return classify(ceiling_for_classification(sky, cavok), visibility_sm(visibility))
+
+
+def worst_of(categories: Iterable[FlightCategory | None]) -> FlightCategory | None:
+    """The most restrictive category of those given (``LIFR`` is worst); ``None`` entries are ignored."""
+    found = [category for category in categories if category is not None]
+    return max(found, key=lambda category: category.rank) if found else None

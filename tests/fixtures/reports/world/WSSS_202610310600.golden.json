@@ -240,7 +240,11 @@
           }
         ],
         "sky": [],
-        "color_state": null
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
       }
     },
     {
@@ -273,7 +277,11 @@
           }
         ],
         "sky": [],
-        "color_state": null
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
       }
     }
   ],

@@ -1,0 +1,231 @@
+{
+  "raw": "TAF ENGM 310500Z 3106/3118 24015KT 9999 FEW030 WS020/30035KT TEMPO 3110/3114 VRB20G35KT 3000 TSRA BKN010CB",
+  "station": "ENGM",
+  "issue_time": "2026-10-31T05:00:00+00:00",
+  "valid_from": "2026-10-31T06:00:00+00:00",
+  "valid_to": "2026-10-31T18:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T06:00:00+00:00",
+    "end": "2026-10-31T18:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 240,
+        "speed": {
+          "value": 15,
+          "unit": "KT"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 10000,
+          "unit": "M"
+        },
+        "prefix": null,
+        "cavok": false,
+        "unlimited": true,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [],
+      "sky": [
+        {
+          "cover": "FEW",
+          "base": {
+            "value": 3000,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": {
+        "height": {
+          "value": 2000,
+          "unit": "FT"
+        },
+        "direction": 300,
+        "speed": {
+          "value": 35,
+          "unit": "KT"
+        },
+        "gust": null
+      },
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "VFR",
+    "becoming_end": null
+  },
+  "changes": [
+    {
+      "change": "TEMPO",
+      "probability": null,
+      "start": "2026-10-31T10:00:00+00:00",
+      "end": "2026-10-31T14:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": null,
+          "speed": {
+            "value": 20,
+            "unit": "KT"
+          },
+          "gust": {
+            "value": 35,
+            "unit": "KT"
+          },
+          "variable": true,
+          "speed_above": false
+        },
+        "visibility": {
+          "distance": {
+            "value": 3000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": "TS",
+            "phenomena": [
+              "RA"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "BKN",
+            "base": {
+              "value": 1000,
+              "unit": "FT"
+            },
+            "cloud_type": "CB"
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "IFR",
+      "becoming_end": null
+    }
+  ],
+  "remarks": null,
+  "flavor": "ICAO",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "ENGM",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "310500Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3106/3118",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "24015KT",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "FEW030",
+      "start": 40,
+      "end": 46,
+      "kind": "SKY"
+    },
+    {
+      "text": "WS020/30035KT",
+      "start": 47,
+      "end": 60,
+      "kind": "WIND_SHEAR"
+    },
+    {
+      "text": "TEMPO",
+      "start": 61,
+      "end": 66,
+      "kind": "TREND"
+    },
+    {
+      "text": "3110/3114",
+      "start": 67,
+      "end": 76,
+      "kind": "TREND"
+    },
+    {
+      "text": "VRB20G35KT",
+      "start": 77,
+      "end": 87,
+      "kind": "WIND"
+    },
+    {
+      "text": "3000",
+      "start": 88,
+      "end": 92,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "TSRA",
+      "start": 93,
+      "end": 97,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BKN010CB",
+      "start": 98,
+      "end": 106,
+      "kind": "SKY"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "IFR",
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [
+    "CB",
+    "LOW_VISIBILITY",
+    "GUSTS",
+    "WIND_SHEAR",
+    "THUNDERSTORM"
+  ],
+  "legacy": false
+}

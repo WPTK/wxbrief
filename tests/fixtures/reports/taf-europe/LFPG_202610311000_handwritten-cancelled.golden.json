@@ -1,0 +1,61 @@
+{
+  "raw": "TAF AMD LFPG 311000Z 3110/3118 CNL",
+  "station": "LFPG",
+  "issue_time": "2026-10-31T10:00:00+00:00",
+  "valid_from": "2026-10-31T10:00:00+00:00",
+  "valid_to": "2026-10-31T18:00:00+00:00",
+  "modifiers": [
+    "AMD",
+    "CNL"
+  ],
+  "base": null,
+  "changes": [],
+  "remarks": null,
+  "flavor": "UNKNOWN",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "AMD",
+      "start": 4,
+      "end": 7,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "LFPG",
+      "start": 8,
+      "end": 12,
+      "kind": "STATION"
+    },
+    {
+      "text": "311000Z",
+      "start": 13,
+      "end": 20,
+      "kind": "TIME"
+    },
+    {
+      "text": "3110/3118",
+      "start": 21,
+      "end": 30,
+      "kind": "TIME"
+    },
+    {
+      "text": "CNL",
+      "start": 31,
+      "end": 34,
+      "kind": "MODIFIER"
+    }
+  ],
+  "warnings": [],
+  "worst_category": null,
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [
+    "AMENDED"
+  ],
+  "legacy": false
+}
