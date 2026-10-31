@@ -102,6 +102,13 @@ def test_a_keyword_inside_remarks_is_text_not_a_new_report() -> None:
     assert split_reports(f"{T1} RMK TEST\n{T2}") == [f"{T1} RMK TEST", T2]
 
 
+@pytest.mark.parametrize("header", ["TAF AMD", "TAF", "METAR", "METAR COR"])
+def test_a_header_only_line_after_a_report_with_remarks_still_starts_one(header: str) -> None:
+    previous = f"{M1} RMK AO2"
+    body = "KJFK 311130Z 3112/0112 06007KT P6SM SKC"
+    assert split_reports(f"{previous}\n{header}\n{body}") == [previous, f"{header}\n{body}"]
+
+
 def test_original_line_breaks_are_kept_inside_a_report() -> None:
     wrapped = f"{T1}\n  FM131800 18010KT"
     (report,) = split_reports(wrapped.replace("\n", "\r\n"))

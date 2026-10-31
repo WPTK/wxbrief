@@ -56,7 +56,8 @@ def _first_word(line: str) -> str:
 def _full_head(words: list[str]) -> bool:
     """Whether ``words`` open with a keyword, modifiers, a station and an issue time (``TAF AMD KDEN 131130Z``).
 
-    Inside remarks a keyword is ordinary text unless the full head follows it.
+    Inside remarks a keyword is ordinary text unless the full head follows it (or, on a line of its own, only
+    keywords and modifiers: the two-line bulletin form). A head with no issue time after RMK does not split.
     """
     rest = iter(words[1:])
     word = next(rest, "")
@@ -124,7 +125,7 @@ def _split_chunk(chunk: str) -> list[str]:
             elif _header_only(current):
                 continues = word not in _KEYWORDS
             elif word in _KEYWORDS and _in_remarks(current):
-                continues = not _full_head(_WORD.findall(piece.upper()))
+                continues = not (_header_only([piece]) or _full_head(_WORD.findall(piece.upper())))
             elif _first_word(current[0]) == "TAF":
                 continues = not _starts_report(piece)  # a TAF wraps anywhere, not only before a change group
             else:
