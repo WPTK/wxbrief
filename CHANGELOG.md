@@ -15,3 +15,4 @@
 - Add Spanish, French, German and Portuguese text, `--lang` and a Settings screen (#25)
 - Add `g`, `u` and `z` to cycle glyph sets, units and the time mode, and mark a station where AWC's flight category differs from the decoded one (#26)
 - Tighten the spacing and footer on short and narrow terminals (#26)
+- Add standalone binaries for Windows, Linux and macOS, a wheel, SHA256SUMS and build provenance (#27)

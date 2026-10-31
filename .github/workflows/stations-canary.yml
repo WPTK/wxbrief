@@ -1,0 +1,59 @@
+name: Stations canary
+
+# Weekly check that the AWC station cache behind wxbrief/data/stations.json.gz is still reachable and parsable.
+# It writes nothing; on failure it opens an issue, or comments on the one that is already open.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stations-canary
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check the station source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Check the station cache
+        id: check
+        run: |
+          set +e
+          python scripts/check_stations_source.py | tee canary.txt
+          status=${PIPESTATUS[0]}
+          exit "$status"
+      - name: Open or update the issue
+        if: failure() && steps.check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Station database source check failed"
+          {
+            echo '```'
+            cat canary.txt
+            echo '```'
+            echo
+            echo "Run: $RUN_URL"
+          } > body.md
+          number=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --repo "$GITHUB_REPOSITORY" --body-file body.md
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label data --body-file body.md
+          fi

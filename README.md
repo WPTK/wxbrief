@@ -17,7 +17,12 @@ translation (English complete; Spanish, French, German and Portuguese seeded).
 
 ## Status
 
-Version 0.1.0 is being prepared; nothing is released yet and there are no packaged downloads. Install from source.
+Version 0.1.0 is the first release.
+
+## Download
+
+Standalone binaries for Windows, Linux and macOS, a wheel and `SHA256SUMS` are on the
+[GitHub Releases page](https://github.com/WPTK/wxbrief/releases) once a version is published. Otherwise, install from source.
 
 ## Install from source
 
@@ -71,6 +76,7 @@ The cache folder can be moved with the `WXBRIEF_CACHE_DIR` environment variable.
 - [docs/i18n.md](docs/i18n.md): languages and how to add or fix a translation.
 - [docs/decoding.md](docs/decoding.md): how the decoder works and how to add a test report.
 - [docs/development.md](docs/development.md): setup, checks, tests, snapshots and screenshots.
+- [docs/release.md](docs/release.md): cutting a release, what the release workflow does, the smoke checklist.
 - [docs/plan.md](docs/plan.md): architecture, session plan, checklist and deviations from the design.
 - [CONTRIBUTING.md](CONTRIBUTING.md): the workflow for changes.
 

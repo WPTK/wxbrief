@@ -26,8 +26,8 @@ class HelpScreen(ModalScreen[None]):
         t = cast("WxBriefApp", self.app).ctx.translator
         with VerticalScroll(id="help-box", classes="dialog"):
             yield Label(t.t(K.UI_HELP_TITLE), classes="dialog-title")
-            yield Static(t.t(K.UI_HELP_BODY))
             yield Label(t.t(K.UI_HELP_HINT), classes="hint")
+            yield Static(t.t(K.UI_HELP_BODY))
 
     def on_mount(self) -> None:
         localize(self)
