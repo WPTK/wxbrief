@@ -116,6 +116,14 @@ class Flag(Enum):
     TURBULENCE = "TURBULENCE"
 
 
+class CeilingStatus(Enum):
+    """What a report says about its ceiling, so that "no ceiling" and "ceiling of unknown height" stay apart."""
+
+    HEIGHT = "HEIGHT"  # a broken, overcast or vertical-visibility layer of known height: ``Metar.ceiling``
+    NONE = "NONE"  # a sky known to have no ceiling (few or scattered clouds, clear, CAVOK)
+    UNKNOWN = "UNKNOWN"  # a ceiling layer of unknown height (``BKN///``, ``VV///``) or a sky not observed (``//////``)
+
+
 class Condition(Enum):
     """The dominant condition at the field, shown as the header glyph. Listed in priority order.
 
@@ -966,6 +974,7 @@ class Metar:
     flavor: Flavor = Flavor.UNKNOWN
     military: bool = False
     ceiling: Distance | None = None
+    ceiling_status: CeilingStatus | None = None  # ``None`` when the report has no sky group at all
     flight_category: FlightCategory | None = None
     flags: tuple[Flag, ...] = ()
     condition: Condition | None = None

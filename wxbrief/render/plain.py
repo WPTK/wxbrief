@@ -124,7 +124,7 @@ def decode_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRow
     for layer in metar.sky:
         add(K.LABEL_SKY, phrases.describe_cloud_layer(t, layer, units), SemanticKind.SKY)
     if metar.sky:
-        add(K.LABEL_CEILING, phrases.describe_ceiling(t, metar.ceiling, units), SemanticKind.SKY)
+        add(K.LABEL_CEILING, phrases.describe_ceiling(t, metar, units), SemanticKind.SKY)
     if metar.temperature is not None:
         add(K.LABEL_TEMPERATURE, phrases.describe_temperature(t, metar.temperature, units), SemanticKind.TEMPERATURE)
     if metar.dewpoint is not None:

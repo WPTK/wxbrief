@@ -103,7 +103,7 @@ def test_weather_goes_into_the_visibility_line_and_the_peak_wind_into_the_tail()
         "Obs: 14:53 UTC (311453Z)",
         "",
         "Wind: 180° @ 14 kt, gusting 25 kt (S)",
-        "Visibility: 2 SM in heavy thunderstorm with rain and mist",
+        "Visibility: 2 SM in thunderstorm with heavy rain and mist",
         "Temperature: 54°F (12°C) | Dewpoint: 52°F (11°C)",
         "Altimeter: 29.72 inHg",
         "",

@@ -51,7 +51,7 @@ from wxbrief.decode.model import (
     WindVariation,
 )
 from wxbrief.decode.remarks import Context, parse_remarks
-from wxbrief.decode.times import resolve_day_time
+from wxbrief.decode.times import resolve_report_time
 from wxbrief.decode.tokens import Cursor, Token, tokenize
 from wxbrief.decode.units import Pressure, Temperature
 
@@ -137,7 +137,7 @@ def _run_time(cur: Cursor, draft: _Draft) -> bool:
     result = parse_time(cur)
     if result is None or token is None:
         return False
-    moment, warning = resolve_day_time(*result, draft.reference)
+    moment, warning = resolve_report_time(*result, draft.reference)
     if moment is None and warning is not None:
         draft.warn(warning, token)
     draft.observed = moment

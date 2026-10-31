@@ -14,6 +14,7 @@ from wxbrief.decode.model import (
     RVR,
     AltimeterSetting,
     AutomatedStationType,
+    CeilingStatus,
     ChangeType,
     CloudLayer,
     CloudOpacity,
@@ -25,6 +26,7 @@ from wxbrief.decode.model import (
     DailyPrecipitation,
     DailyTemperatureExtremes,
     DensityAltitude,
+    Descriptor,
     DirectionalVisibility,
     Flag,
     FlightCategory,
@@ -279,14 +281,19 @@ def describe_weather_group(t: Translator, group: WeatherGroup) -> str:
         body = t.t(K.WX_TORNADO)
     else:
         phenomena = join_list(t, [t.t(PHENOMENON_KEYS[p]) for p in group.phenomena])
+        intensity_key = INTENSITY_KEYS[group.intensity]
+        # FMH-1 and WMO: the sign on a thunderstorm group qualifies its precipitation (+TSRA is a thunderstorm with
+        # heavy rain), not the thunderstorm. Every other descriptor reads naturally with the sign in front.
+        on_phenomena = group.descriptor is Descriptor.TS and bool(phenomena)
+        if intensity_key is not None and on_phenomena:
+            phenomena = t.t(K.WX_WITH_INTENSITY, intensity=t.t(intensity_key), body=phenomena)
         if group.descriptor is None:
             body = phenomena
         elif phenomena:
             body = t.t(DESCRIPTOR_WITH_KEYS[group.descriptor], phenomena=phenomena)
         else:
             body = t.t(DESCRIPTOR_ALONE_KEYS[group.descriptor])
-        intensity_key = INTENSITY_KEYS[group.intensity]
-        if intensity_key is not None:
+        if intensity_key is not None and not on_phenomena:
             body = t.t(K.WX_WITH_INTENSITY, intensity=t.t(intensity_key), body=body)
     if group.vicinity:
         body = t.t(K.WX_VICINITY, body=body)
@@ -318,10 +325,12 @@ def describe_sky(t: Translator, layers: Sequence[CloudLayer], units: UnitsMode) 
     return "; ".join(describe_cloud_layer(t, layer, units) for layer in layers)
 
 
-def describe_ceiling(t: Translator, ceiling: Distance | None, units: UnitsMode) -> str:
-    if ceiling is None:
-        return t.t(K.SKY_NO_CEILING)
-    return t.t(K.SKY_CEILING, height=format_short_distance(ceiling, units, t.numbers))
+def describe_ceiling(t: Translator, metar: Metar, units: UnitsMode) -> str:
+    if metar.ceiling is not None:
+        return t.t(K.SKY_CEILING, height=format_short_distance(metar.ceiling, units, t.numbers))
+    if metar.ceiling_status is CeilingStatus.UNKNOWN:
+        return t.t(K.SKY_CEILING_UNKNOWN)
+    return t.t(K.SKY_NO_CEILING)
 
 
 def describe_temperature(t: Translator, temperature: Temperature | None, units: UnitsMode) -> str:
@@ -357,6 +366,8 @@ def summary_line(t: Translator, metar: Metar, units: UnitsMode) -> str:
         details.append(t.t(K.SUMMARY_CAVOK))
     if metar.ceiling is not None:
         details.append(t.t(K.SUMMARY_CEILING, height=format_short_distance(metar.ceiling, units, t.numbers)))
+    elif metar.ceiling_status is CeilingStatus.UNKNOWN:
+        details.append(t.t(K.SUMMARY_CEILING_UNKNOWN))
     if metar.visibility is not None and not metar.cavok and metar.visibility.distance is not None:
         details.append(t.t(K.SUMMARY_VISIBILITY, value=t.lower_first(describe_visibility(t, metar.visibility, units))))
     if metar.wind is not None and metar.wind.speed is not None:

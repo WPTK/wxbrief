@@ -474,6 +474,7 @@ class K:
     SHEAR_VALUE = "shear.value"
 
     SKY_CEILING = "sky.ceiling"
+    SKY_CEILING_UNKNOWN = "sky.ceiling_unknown"
     SKY_COVER_BKN = "sky.cover.BKN"
     SKY_COVER_CLR = "sky.cover.CLR"
     SKY_COVER_FEW = "sky.cover.FEW"
@@ -495,6 +496,7 @@ class K:
 
     SUMMARY_CAVOK = "summary.cavok"
     SUMMARY_CEILING = "summary.ceiling"
+    SUMMARY_CEILING_UNKNOWN = "summary.ceiling_unknown"
     SUMMARY_NO_STATION = "summary.no_station"
     SUMMARY_NO_STATION_NO_CATEGORY = "summary.no_station_no_category"
     SUMMARY_NOTHING = "summary.nothing"

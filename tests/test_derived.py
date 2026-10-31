@@ -287,3 +287,8 @@ def test_the_station_prefix_is_not_a_signal() -> None:
     # A "K" station reporting in metres and QNH is still ICAO flavor; an "EG" station in SM and inHg is US flavor.
     assert detect_flavor(tokenize("KXYZ 131453Z 24010KT 9999 Q1013")).flavor is Flavor.ICAO
     assert detect_flavor(tokenize("EGXX 131453Z 24010KT 10SM A3001")).flavor is Flavor.US
+
+
+def test_a_metar_two_weeks_before_the_reference_is_dated_in_the_same_month() -> None:
+    m = parse_metar("METAR KDEN 141153Z 06007KT 10SM CLR 09/08 A3001", datetime(2026, 10, 31, 12, 0, tzinfo=UTC))
+    assert m.observed == datetime(2026, 10, 14, 11, 53, tzinfo=UTC)

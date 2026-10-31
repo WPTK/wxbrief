@@ -112,7 +112,7 @@ def test_a_forecast_with_no_issue_time() -> None:
 
 
 def test_the_valid_period_runs_into_the_next_month() -> None:
-    taf = decode("TAF KJFK 312200Z 3122/0106 06007KT P6SM SKC")
+    taf = decode("TAF KJFK 312200Z 3122/0106 06007KT P6SM SKC", utc(31, 23))
     assert taf.issue_time == utc(31, 22)
     assert (taf.valid_from, taf.valid_to) == (utc(31, 22), utc(1, 6, month=11))
 
@@ -123,7 +123,9 @@ def test_the_issue_day_resolves_to_the_most_recent_such_day_before_the_reference
 
 
 def test_group_windows_are_resolved_against_the_valid_period() -> None:
-    taf = decode("TAF KJFK 312200Z 3122/0106 06007KT P6SM SKC BECMG 0100/0102 VRB03KT TEMPO 0103/0105 3SM BR")
+    taf = decode(
+        "TAF KJFK 312200Z 3122/0106 06007KT P6SM SKC BECMG 0100/0102 VRB03KT TEMPO 0103/0105 3SM BR", utc(31, 23)
+    )
     becmg, tempo = taf.changes
     assert (becmg.change, becmg.start) == (ChangeType.BECMG, utc(1, 0, month=11))
     assert becmg.becoming_end == utc(1, 2, month=11)
@@ -358,3 +360,12 @@ def test_worst_category_includes_the_overlays() -> None:
     assert taf.base is not None and taf.base.flight_category is FlightCategory.VFR
     assert taf.changes[0].flight_category is FlightCategory.IFR
     assert taf.worst_category is FlightCategory.IFR
+
+
+def test_a_two_week_old_report_is_not_placed_in_next_month() -> None:
+    # The nearest-month rule read these as 14 November, so a pasted TAF looked upcoming and never expired.
+    now = utc(31, 12)
+    taf = decode("TAF KDEN 141130Z 1412/1518 06007KT P6SM SKC", now)
+    assert taf.issue_time == utc(14, 11, minute=30)
+    assert (taf.valid_from, taf.valid_to) == (utc(14, 12), utc(15, 18))
+    assert taf.valid_to is not None and taf.valid_to < now

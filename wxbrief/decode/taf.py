@@ -47,7 +47,7 @@ from wxbrief.decode.model import (
 )
 from wxbrief.decode.tables import MODIFIER_CODES
 from wxbrief.decode.timeline import categorize_periods
-from wxbrief.decode.times import next_clock_time, resolve_day_time, resolve_day_time_after
+from wxbrief.decode.times import next_clock_time, resolve_day_time, resolve_day_time_after, resolve_report_time
 from wxbrief.decode.tokens import Cursor, Token, tokenize
 
 WARN_UNKNOWN_TOKEN = "unknown_token"
@@ -129,7 +129,9 @@ def _resolve_issue(draft: _Draft, token: Token) -> None:
     match = _ISSUE.match(token.text)
     if match is None:
         return
-    moment, warning = resolve_day_time(int(match.group(1)), int(match.group(2)), int(match.group(3)), draft.reference)
+    moment, warning = resolve_report_time(
+        int(match.group(1)), int(match.group(2)), int(match.group(3)), draft.reference
+    )
     if moment is None and warning is not None:
         draft.warn(warning, token)
     draft.issue_time = moment
