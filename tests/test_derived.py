@@ -177,6 +177,15 @@ def test_ceiling_value() -> None:
     assert parse_metar("METAR KXYZ 131453Z 06007KT 10SM FEW010 09/08 A3001", REF).ceiling is None
 
 
+def test_tornado_funnel_cloud_and_squall_set_flags() -> None:
+    assert Flag.TORNADO in flags_of("06007KT 3SM +FC OVC010 22/20 A3001")
+    assert Flag.FUNNEL_CLOUD not in flags_of("06007KT 3SM +FC OVC010 22/20 A3001")
+    assert Flag.FUNNEL_CLOUD in flags_of("06007KT 10SM FC SCT040 22/20 A3001")
+    assert Flag.TORNADO not in flags_of("06007KT 10SM FC SCT040 22/20 A3001")
+    assert Flag.SQUALL in flags_of("06007KT 10SM SQ BKN040 22/20 A3001")
+    assert not {Flag.TORNADO, Flag.FUNNEL_CLOUD, Flag.SQUALL} & flags_of("06007KT 10SM RA BKN040 22/20 A3001")
+
+
 # --- condition -------------------------------------------------------------------------------------------------
 
 
@@ -185,6 +194,9 @@ def test_ceiling_value() -> None:
     [
         ("06007KT 3SM +TSRA OVC010 22/20 A3001", Condition.THUNDERSTORM),
         ("06007KT 10SM VCTS SCT040 22/20 A3001", Condition.THUNDERSTORM),
+        ("06007KT 3SM +FC +TSRA OVC010 22/20 A3001", Condition.TORNADO),
+        ("06007KT 10SM FC SCT040 22/20 A3001", Condition.TORNADO),
+        ("06007KT 10SM SQ BKN040 22/20 A3001", Condition.SQUALL),
         ("06007KT 3SM -SN OVC010 M02/M03 A3001", Condition.SNOW),
         ("06007KT 3SM FZRA OVC010 M02/M03 A3001", Condition.SNOW),
         ("06007KT 3SM BLSN OVC010 M02/M03 A3001", Condition.SNOW),
@@ -260,6 +272,8 @@ def test_relative_humidity_on_a_report() -> None:
         ("KDEN 131453Z", Flavor.UNKNOWN, False),
         ("R35L/P6000FT", Flavor.US, False),
         ("R12/1000U", Flavor.ICAO, False),
+        ("R06L/2600FT/D", Flavor.US, False),
+        ("R06L/2600V4000FT/U", Flavor.US, False),
     ],
 )
 def test_detect_flavor(text: str, flavor: Flavor, military: bool) -> None:

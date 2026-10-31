@@ -8,7 +8,8 @@ Thresholds are those of paragraph ``700-FLIGHT-RULES`` of the reference COBOL de
 * VFR: everything else
 
 The ceiling is the lowest broken, overcast or vertical-visibility layer. Metres convert to statute miles at
-1609.34, and ``9999`` or ``CAVOK`` counts as 10 SM. A missing component is computed from the other one.
+1609.34, and ``9999`` or ``CAVOK`` counts as 10 SM. A missing component is not assumed clear: the category is then
+``None`` unless the known component alone forces IFR or LIFR.
 """
 
 from __future__ import annotations
@@ -59,12 +60,7 @@ def ceiling_for_classification(sky: Sequence[CloudLayer], cavok: bool) -> float 
     return None  # no sky group, or only "//////" placeholders: the sensor reported nothing
 
 
-def classify(ceiling_ft: float | None, visibility: float | None) -> FlightCategory | None:
-    """Category for a ceiling in feet and a visibility in statute miles; ``None`` marks a missing component."""
-    if ceiling_ft is None and visibility is None:
-        return None
-    ceil = math.inf if ceiling_ft is None else ceiling_ft
-    vis = math.inf if visibility is None else visibility
+def _band(ceil: float, vis: float) -> FlightCategory:
     if ceil < LIFR_CEILING_FT or vis < LIFR_VISIBILITY_SM:
         return FlightCategory.LIFR
     if ceil < IFR_CEILING_FT or vis < IFR_VISIBILITY_SM:
@@ -72,6 +68,21 @@ def classify(ceiling_ft: float | None, visibility: float | None) -> FlightCatego
     if ceil <= MVFR_CEILING_FT or vis <= MVFR_VISIBILITY_SM:
         return FlightCategory.MVFR
     return FlightCategory.VFR
+
+
+def classify(ceiling_ft: float | None, visibility: float | None) -> FlightCategory | None:
+    """Category for a ceiling in feet and a visibility in statute miles.
+
+    ``math.inf`` is a known absence of limit (no ceiling, unlimited visibility); ``None`` is unknown. While a
+    component is unknown the result is ``None``, unless the known component alone forces IFR or LIFR: unknown data
+    never earns a VFR or MVFR badge.
+    """
+    if ceiling_ft is None and visibility is None:
+        return None
+    known = _band(math.inf if ceiling_ft is None else ceiling_ft, math.inf if visibility is None else visibility)
+    if ceiling_ft is not None and visibility is not None:
+        return known
+    return known if known in (FlightCategory.IFR, FlightCategory.LIFR) else None
 
 
 def flight_category(visibility: Visibility | None, sky: Sequence[CloudLayer]) -> FlightCategory | None:

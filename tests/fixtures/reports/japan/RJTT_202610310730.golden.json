@@ -86,7 +86,8 @@
     },
     "gust": null,
     "variable": true,
-    "speed_above": false
+    "speed_above": false,
+    "gust_above": false
   },
   "wind_variation": null,
   "visibility": {
@@ -158,7 +159,8 @@
           },
           "gust": null,
           "variable": false,
-          "speed_above": false
+          "speed_above": false,
+          "gust_above": false
         },
         "visibility": null,
         "weather": [],
