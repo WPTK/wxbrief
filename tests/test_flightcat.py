@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
@@ -11,7 +12,7 @@ from corpus import awc_rows
 
 from wxbrief.decode.flightcat import classify, flight_category, lowest_ceiling, visibility_sm
 from wxbrief.decode.metar import parse_metar
-from wxbrief.decode.model import CloudLayer, FlightCategory, SkyCondition, Visibility, VisPrefix
+from wxbrief.decode.model import CloudLayer, FlightCategory, Metar, SkyCondition, Visibility, VisPrefix
 from wxbrief.decode.units import Distance, DistanceUnit
 
 VFR, MVFR, IFR, LIFR = FlightCategory.VFR, FlightCategory.MVFR, FlightCategory.IFR, FlightCategory.LIFR
@@ -150,31 +151,91 @@ def test_decoded_reports(raw: str, expected: FlightCategory) -> None:
     assert parse_metar(raw, datetime(2026, 10, 13, 15, 0)).flight_category is expected
 
 
+def test_a_sky_of_placeholders_is_not_a_clear_sky() -> None:
+    """``//////`` (cloud not observed) says nothing about a ceiling, unlike FEW or CLR."""
+    unknown = CloudLayer(SkyCondition.UNKNOWN)
+    assert flight_category(Visibility(), [unknown]) is None
+    assert flight_category(Visibility(Distance(1000, DistanceUnit.M)), [unknown]) is LIFR  # from visibility alone
+    assert flight_category(Visibility(), [CloudLayer(SkyCondition.CLR)]) is VFR
+    assert flight_category(Visibility(), [unknown, CloudLayer(SkyCondition.FEW, Distance(1000, DistanceUnit.FT))]) is VFR
+
+
 # --- parity with the AWC API --------------------------------------------------------------------------------------
 
-# Reports where our category legitimately differs from AWC's, as {raw report: (our category, AWC category, reason)}.
-# Empty today: all saved reports agree.
-PARITY_EXCEPTIONS: dict[str, tuple[str, str, str]] = {}
+# Reports where our category legitimately differs from AWC's. Each rule says which saved reports it covers and why
+# the difference is not a decoder bug; a rule must cover at least one saved report (the stale-rule test below).
+# A rule gets the AWC row and our decode.
 
 
-def test_exceptions_list_is_not_stale() -> None:
-    saved = {row["rawOb"] for row in awc_rows()}
-    assert set(PARITY_EXCEPTIONS) <= saved
+def _awc_has_no_category(row: dict[str, Any]) -> bool:
+    return row.get("fltCat") is None
+
+
+def _sky_not_observed(row: dict[str, Any], decoded: Metar) -> bool:
+    """German military AUTO reports with ``// ////// ``: no weather and no sky, only a visibility."""
+    return (
+        _awc_has_no_category(row)
+        and bool(decoded.sky)
+        and all(layer.cover is SkyCondition.UNKNOWN for layer in decoded.sky)
+        and decoded.visibility is not None
+        and decoded.visibility.distance is not None
+    )
+
+
+def _undirectional_visibility_suffix(row: dict[str, Any], decoded: Metar) -> bool:
+    """Greenland's ``9999NDV``: AWC does not read the NDV suffix and withholds a category."""
+    return _awc_has_no_category(row) and decoded.visibility is not None and decoded.visibility.ndv
+
+
+PARITY_RULES: dict[str, tuple[Callable[[dict[str, Any], Metar], bool], str]] = {
+    "sky-not-observed": (
+        _sky_not_observed,
+        "AWC gives no category when the sky is `//////`; the plan's missing-component rule classifies from the "
+        "visibility alone (the COBOL decoder does the same), so ours is the visibility category.",
+    ),
+    "ndv-suffix": (
+        _undirectional_visibility_suffix,
+        "AWC returns no category for `9999NDV` (every saved report with the NDV suffix); `9999` is 10 km, so with "
+        "the layers decoded the category is VFR.",
+    ),
+}
+
+
+def _covering_rule(row: dict[str, Any], decoded: Metar) -> str | None:
+    for name, (applies, _reason) in PARITY_RULES.items():
+        if applies(row, decoded):
+            return name
+    return None
+
+
+def _decode_row(row: dict[str, Any]) -> Metar:
+    return parse_metar(row["rawOb"], datetime.fromisoformat(row["reportTime"].replace("Z", "+00:00")))
+
+
+def test_every_exception_rule_covers_a_saved_report() -> None:
+    used = {_covering_rule(row, _decode_row(row)) for row in awc_rows()}
+    assert set(PARITY_RULES) <= used
 
 
 def test_category_matches_awc_for_every_saved_report() -> None:
     rows: list[dict[str, Any]] = awc_rows()
-    assert len(rows) > 500
+    assert len(rows) > 900
     checked = 0
     mismatches: list[str] = []
     for row in rows:
-        if row["rawOb"] in PARITY_EXCEPTIONS:
-            continue
-        reference = datetime.fromisoformat(row["reportTime"].replace("Z", "+00:00"))
-        decoded = parse_metar(row["rawOb"], reference)
+        decoded = _decode_row(row)
         ours = decoded.flight_category.name if decoded.flight_category else None
         checked += 1
-        if ours != row.get("fltCat"):
+        if ours != row.get("fltCat") and _covering_rule(row, decoded) is None:
             mismatches.append(f"{row['icaoId']}: ours={ours} awc={row.get('fltCat')} :: {row['rawOb']}")
-    assert checked > 500
+    assert checked > 900
     assert not mismatches, "\n".join(mismatches)
+
+
+def test_rules_only_excuse_a_difference() -> None:
+    """A rule must not hide a report where AWC and we agree: excusing agreement would make a rule stale."""
+    for row in awc_rows():
+        decoded = _decode_row(row)
+        ours = decoded.flight_category.name if decoded.flight_category else None
+        if _covering_rule(row, decoded) is not None:
+            assert ours != row.get("fltCat"), row["rawOb"]
