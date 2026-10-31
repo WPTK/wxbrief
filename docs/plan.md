@@ -171,7 +171,7 @@ Tick a row when the session has landed on `main` (S0 committed directly; later s
 | S1 | Decoder core | [x] 2026-10-31 |
 | S2a | Decoder depth: METAR/SPECI tail (trends, color states, runway state, remarks) | [x] 2026-10-31 |
 | S2b | Decoder depth: TAF, timeline, `split.py`, Discord and JSON output | [ ] |
-| S3 | Data layer | [ ] |
+| S3 | Data layer | [x] 2026-10-31 |
 | S4 | TUI MVP | [ ] |
 | S5 | Colorways | [ ] |
 | S6 | TAF timeline | [ ] |
@@ -425,3 +425,49 @@ fuzz test gained tail and remark inputs (it also passed 20,000 examples per prop
 - Catalog: add keys to `locales/en.toml`, run `python scripts/gen_keys.py`; `test_i18n` checks the tables in
   `decode/tables.py` against the catalog and the enums.
 - AWC TAF JSON was not fetched or saved here.
+
+### S3 (2026-10-31)
+
+**Names as built.**
+
+- `data/awc.py`: `AwcClient(base_url=, client=, timeout=)` with `metars(ids, hours=2)`, `tafs(ids)`, `stations(ids)`, usable as an
+  async context manager; constants `BASE_URL`, `USER_AGENT`, `MAX_IDS_PER_REQUEST = 400`. Errors: `AwcError` base, `RateLimited(retry_after)`
+  (default 60 s when the header is missing or unreadable), `ServerError(status)`, `ClientError` (other 4xx, or a body that is not JSON),
+  `TransportError` (timeout, DNS, connect, TLS). 204 gives `[]`. Chunks go out one after another; a failure in any chunk raises.
+- `data/models.py`: frozen `AwcMetar`, `AwcTaf`, `AwcStation`; `parse_metars/tafs/stations` drop rows without a raw report and turn a
+  mistyped field into `None`; `parse_visibility("10+") -> (10.0, True)`; `latest_by_station`. `AwcMetar.source`/`AwcTaf.source` keep the
+  original JSON object, which is what the cache stores.
+- `data/poll.py`: `PollScheduler(client, ids, on_result, on_error, budget=, clock=, sleep=, metar_interval=, taf_interval=, away_interval=)`
+  with `run_cycle()` (one pass, returns the products attempted), `run()` (loop; cancel it to stop), `poll_now()`, `next_due_in()`, `.away`;
+  `RateBudget(100, 60, clock)` with `used`, `remaining`, `try_acquire`, `wait_time`; `Freshness` and `freshness(observed, now)` (fresh under
+  75 min); `backoff_delay(interval, failures)`. A 429 waits at least its `Retry-After` (capped at 3600 s). The scheduler is plain asyncio and
+  does no Textual work, so S4 runs `run()` inside its `@work(exclusive=True)` worker.
+- `data/cache.py`: `DiskCache(directory=None)` with `write(key, payload)` (atomic, returns `False` on failure) and `read(key)` returning
+  `(saved_at, payload)` or `None`; never raises.
+- `data/stations.py`: `StationDB.load(path=None)`, `get(code)` (ICAO, or a unique IATA/FAA code), `search(query, limit=10)`; `bundled()`
+  is the shared instance. `scripts/build_stations.py` builds `wxbrief/data/stations.json.gz` (7,871 stations with an ICAO id and METAR or TAF
+  service, 234 KB) from the AWC `stations.cache.json.gz`, with `timezonefinder` imported only inside the script. It skips placeholder
+  coordinates such as -99.99. The output is deterministic (sorted, gzip without timestamp).
+- `config.py`: `load_config(path=None) -> LoadedConfig(config, warnings)`, `parse_config`, `save_config`, `default_config_path`, `clean_watchlist`.
+  Each bad value falls back on its own and adds a warning; a missing file gives defaults with no warning.
+- `getcmd.py` (new, so `__main__.py` changes by four lines): `wxbrief get ICAO... [--json|--plain] [--units]`.
+
+**Deviations.**
+
+- `StationDB` search covers name, state and country text plus codes; it does not search a city column because the AWC cache has none.
+- `wxbrief get` prints the raw TAF under the decode and `--discord` exits 2 with a message: TAF decoding and the Discord renderer belong to
+  S2b. Both places are marked `TODO(S2b)` in `getcmd.py`. `--json` gives `{icao: {"metar": <to_dict>, "taf_raw": ...}}`; swap `taf_raw` for the
+  decoded TAF when S2b lands.
+- `get` fetches `hours=2` and keeps the newest report per station; a station with no report in that window prints "no METAR".
+- No `stations-canary.yml` yet (S9 per the table).
+
+**For S4.**
+
+- Run `PollScheduler.run()` in the poll worker; feed `on_result` into the state, write `[m.source for m in rows]` to
+  `DiskCache("metars")`/`("tafs")`, and rebuild rows with `parse_metars(payload)` at launch for an instant offline start. `DiskCache.read`
+  also gives the `saved_at` time for the stale marker; `freshness()` judges each report's own observation time.
+- Show `scheduler.budget.used`/`remaining` in the status bar. Call `poll_now()` after adding a station and set `scheduler.away = True` when
+  the window loses focus.
+- The ids callable is read at the start of each cycle, so watchlist edits need no restart.
+- `AwcMetar.flight_category` is AWC's `fltCat` for the cross-check indicator.
+- `tests/fixtures/awc/metar_kden_egll.json` and `taf_kden_egll.json` (2026-10-31) include a real TAF payload for S2b/S6.
