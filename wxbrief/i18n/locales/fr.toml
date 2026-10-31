@@ -750,6 +750,8 @@ PROB_INTER = "PROB{probability} INTER {when}"
 description = "Synthèse METAR/TAF dans le terminal, avec palettes de couleurs et traduction en langage clair. Indiquez des identifiants de station pour les suivre pendant cette session; les stations enregistrées sont chargées depuis la configuration."
 epilog = "commandes : decode (décode du texte sans l'interface), get (télécharge une fois et affiche). Lancez 'wxbrief decode --help' ou 'wxbrief get --help'."
 no_metar = "{icao} : pas de METAR depuis 2 heures"
+metar_failed = "{icao} : METAR indisponible (la requête a échoué)"
+metar_stale = "{icao} : ce METAR date de {minutes} min, au-delà de la limite de fraîcheur de {limit} minutes"
 
 [cli.help]
 stations = "identifiants de station à ajouter pour cette session"

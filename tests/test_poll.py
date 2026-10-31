@@ -135,6 +135,27 @@ async def test_retry_after_is_honoured_when_longer_than_the_backoff() -> None:
     assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
 
 
+async def test_a_short_retry_after_on_the_slow_track_holds_for_that_long_not_for_the_backoff() -> None:
+    class TafLimited(FakeClient):
+        limited = False
+
+        def _go(self, product: str, ids: list[str]) -> list[Any]:
+            if product == "taf" and self.limited:
+                raise RateLimited(5)
+            return super()._go(product, ids)
+
+    clock, client = FakeClock(), TafLimited()
+    scheduler, _ = make(clock, client)
+    await scheduler.run_cycle()  # both succeed
+    client.limited = True
+    clock.now += 1800
+    assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]  # the TAF is limited for 5 s
+    assert scheduler.hold_remaining() == 5  # not the 1800 s backoff of the TAF track
+    clock.now += 5
+    scheduler.poll_now()
+    assert (await scheduler.run_cycle())[0] is Product.METAR
+
+
 async def test_empty_watchlist_makes_no_requests() -> None:
     clock, client = FakeClock(), FakeClient()
     scheduler, _ = make(clock, client, ids=[])

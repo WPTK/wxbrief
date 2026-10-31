@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -18,8 +19,28 @@ def default_cache_dir() -> Path:
     """``$WXBRIEF_CACHE_DIR`` when set (made absolute, so a later chdir cannot move it), else the platform folder."""
     override = os.environ.get(CACHE_DIR_ENV, "").strip()
     if override:
-        return Path(override).expanduser().resolve()
+        try:
+            return Path(override).expanduser().resolve()
+        except (RuntimeError, OSError):  # an unknown ``~user`` has no home folder to expand to: use the default
+            pass
     return Path(platformdirs.user_cache_dir("wxbrief"))
+
+
+TEMP_MAX_AGE = 3600.0  # seconds; a younger temp file may belong to a write still in progress in another process
+
+
+def sweep_temp_files(directory: Path, prefix: str, max_age: float = TEMP_MAX_AGE) -> None:
+    """Delete the ``<prefix>*.tmp`` files a killed process left in ``directory``. Never raises."""
+    cutoff = time.time() - max_age
+    try:
+        for path in directory.glob(f"{prefix}*.tmp"):
+            try:
+                if path.stat().st_mtime < cutoff:
+                    path.unlink()
+            except OSError:
+                continue
+    except OSError:
+        return
 
 
 class DiskCache:
@@ -45,9 +66,13 @@ class DiskCache:
             except BaseException:
                 Path(tmp_name).unlink(missing_ok=True)
                 raise
-        except (OSError, TypeError, ValueError):
+        except (OSError, TypeError, ValueError, RecursionError):
             return False
         return True
+
+    def clean(self) -> None:
+        """Remove temp files left by a process killed mid-write."""
+        sweep_temp_files(self.directory, ".")
 
     def read(self, key: str) -> tuple[datetime, Any] | None:
         """The stored payload and when it was saved (always timezone-aware), or ``None``; a naive time is damaged."""
