@@ -52,6 +52,7 @@ RawReport {
 
 DecodedTable {
     height: auto;
+    max-height: 9999;  /* no cap (DataTable caps at its parent): the pane is the only scroller */
     background: $surface;
 }
 

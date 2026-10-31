@@ -148,8 +148,12 @@ class BriefingScreen(CopyActions):
         self.refresh_bindings()
 
     def _fix_focus(self) -> None:
+        """With the station list hidden the keyboard belongs in the detail pane; once it is there, leave it."""
         if self.layout_mode == "list" and not self.query_one(StationList).display:
-            self.query_one(DetailPane).focus()
+            pane = self.query_one(DetailPane)
+            focused = self.focused
+            if focused is None or pane not in focused.ancestors_with_self:
+                pane.focus()
 
     # --- layout ----------------------------------------------------------------------------------------------------
 
@@ -178,7 +182,7 @@ class BriefingScreen(CopyActions):
     def on_station_grid_opened(self, message: StationGrid.Opened) -> None:
         entry = self.current()
         if entry is not None:
-            self.app.push_screen(StationDetailScreen(entry, self.wx.ctx, self.wx.now()))
+            self.app.push_screen(StationDetailScreen(entry.icao))
 
     # --- selection -------------------------------------------------------------------------------------------------
 

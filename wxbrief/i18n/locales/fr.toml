@@ -830,7 +830,7 @@ groups = "Tous les groupes de prévision ({n})"
 [ui.detail]
 no_stations = "Aucune station pour l'instant. Appuyez sur [b]a[/b] pour en ajouter une."
 no_report = "Pas encore de message"
-no_metar = "Pas de METAR depuis 2 heures"
+no_metar = "Pas de METAR disponible"
 observed_ago = "Observé {time}, il y a {age}"
 cached_ago = "(en cache depuis {age})"
 

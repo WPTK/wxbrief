@@ -838,7 +838,7 @@ groups = "Alle Vorhersagegruppen ({n})"
 [ui.detail]
 no_stations = "Noch keine Stationen. Drücken Sie [b]a[/b], um eine hinzuzufügen."
 no_report = "Noch keine Meldung"
-no_metar = "Kein METAR in den letzten 2 Stunden"
+no_metar = "Kein METAR verfügbar"
 observed_ago = "Beobachtet {time}, vor {age}"
 cached_ago = "(zwischengespeichert vor {age})"
 

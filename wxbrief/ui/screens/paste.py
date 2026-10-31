@@ -87,6 +87,10 @@ class PasteDecodeScreen(Screen[None]):
             self._timer.stop()
         self._timer = self.set_timer(DEBOUNCE_SECONDS, self.decode_now)
 
+    def redraw(self) -> None:
+        """Decode again with the units and colours now in use (the output is Rich text with both baked in)."""
+        self.decode_now()
+
     def decode_now(self) -> None:
         """Decode what is in the box now (the timer calls this 200 ms after the last change)."""
         text = self.query_one(TextArea).text[:MAX_PASTE_CHARS]

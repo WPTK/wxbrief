@@ -831,7 +831,7 @@ groups = "Todos los grupos del pronóstico ({n})"
 [ui.detail]
 no_stations = "Aún no hay estaciones. Pulse [b]a[/b] para añadir una."
 no_report = "Aún no hay informe"
-no_metar = "Sin METAR en las últimas 2 horas"
+no_metar = "Sin METAR disponible"
 observed_ago = "Observado {time}, hace {age}"
 cached_ago = "(en caché desde hace {age})"
 

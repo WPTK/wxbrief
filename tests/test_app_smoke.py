@@ -480,7 +480,7 @@ async def test_the_offline_label_and_message_come_from_the_same_error(tmp_path: 
         app.briefing.refresh_view()
         await pilot.pause()
         status = str(app.screen.query_one(StatusBar).render())
-        assert "offline (metar: TransportError: down)" in status and "503" not in status
+        assert "offline" in status and "(metar: TransportError: down)" in status and "503" not in status
 
 
 async def test_a_hand_written_config_is_backed_up_before_the_first_save(tmp_path: Path) -> None:

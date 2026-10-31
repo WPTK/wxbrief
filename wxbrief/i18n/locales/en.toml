@@ -826,7 +826,7 @@ groups = "All forecast groups ({n})"
 [ui.detail]
 no_stations = "No stations yet. Press [b]a[/b] to add one."
 no_report = "No report yet"
-no_metar = "No METAR in the last 2 hours"
+no_metar = "No METAR available"
 observed_ago = "Observed {time}, {age} ago"
 cached_ago = "(cached {age} ago)"
 

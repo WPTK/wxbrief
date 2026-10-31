@@ -9,6 +9,7 @@ from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.events import Resize
+from textual.widget import Widget
 from textual.widgets import Collapsible, DataTable, Label, Static
 
 from wxbrief.data.poll import Freshness
@@ -20,6 +21,7 @@ from wxbrief.render.plain import DecodeBlock, DecodeRow, decode_rows, taf_blocks
 from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
+from wxbrief.ui.strip import is_expired
 from wxbrief.ui.widgets.period_detail import PeriodDetail, RowBlocks
 from wxbrief.ui.widgets.status_bar import STATE_KEYS
 from wxbrief.ui.widgets.taf_timeline import TafTimeline
@@ -70,7 +72,7 @@ class StationHeader(Static):
                 cached = t.t(K.UI_DETAIL_CACHED_AGO, age=age_text(now - entry.updated, t))
                 line.append(f"  {cached}", style=ctx.palette.muted)
             lines.append(line)
-        else:
+        elif metar is None:  # nothing held: not fetched yet, the fetch failed, or the station has none
             lines.append(Text(ctx.translator.t(K.UI_DETAIL_NO_METAR), style=ctx.palette.stale))
         self.update(Text("\n").join(lines))
 
@@ -195,9 +197,12 @@ class DetailPane(VerticalScroll):
                 child.display = shown
 
     def show(self, entry: StationReports | None, ctx: ViewContext, now: datetime) -> None:
+        previous = self._entry.icao if self._entry is not None else None
         self._entry, self._ctx = entry, ctx
         t = ctx.translator
         self.query_one("#placeholder", Static).update(t.t(K.UI_DETAIL_NO_STATIONS))
+        if entry is None or entry.icao != previous:
+            self.scroll_home(animate=False)  # another station starts at its own header, never mid-way down the last one
         if entry is None:
             self._set_visible(False)
             return
@@ -222,6 +227,8 @@ class DetailPane(VerticalScroll):
         self.query_one(DecodedTable).display = metar is not None
         remarks = [r for r in rows if r.label in remark_labels]
         box = self.query_one("#remarks-box", Collapsible)
+        if not remarks:
+            self._release_focus(box)
         box.display = bool(remarks)
         box.title = t.t(K.UI_SECTION_REMARKS, n=len(remarks))
         palette = ctx.palette
@@ -260,6 +267,8 @@ class DetailPane(VerticalScroll):
         taf = entry.taf if isinstance(entry.taf, Taf) else None
         t = ctx.translator
         shown = taf is not None
+        if not shown:
+            self._release_focus(self.query_one("#taf-groups-box"))
         for selector in ("#taf-title", "#taf-summary", "#taf-groups-box"):
             self.query_one(selector).display = shown
         timeline = self.query_one(TafTimeline)
@@ -274,16 +283,19 @@ class DetailPane(VerticalScroll):
         self.query_one("#taf-groups-box", Collapsible).title = t.t(K.UI_SECTION_GROUPS, n=len(blocks))
         self.query_one("#taf-groups", RowBlocks).set_blocks([(b.title, b.rows) for b in blocks], ctx, labels=labels)
         drawn = timeline.set_taf(taf, ctx, entry.icao, now)
+        expired = is_expired(timeline.hours, now)  # a lapsed forecast is not "Prevailing ...": say so instead
+        drawn = drawn and not expired
         timeline.display = period.display = drawn
         note.display = not drawn
-        note.update(Text(t.t(K.TIMELINE_NONE), style=ctx.palette.muted))
+        note.update(Text(t.t(K.TIMELINE_EXPIRED if expired else K.TIMELINE_NONE), style=ctx.palette.muted))
         if not drawn:
             period.update("")
             self._release_focus(timeline)
 
-    def _release_focus(self, timeline: TafTimeline) -> None:
-        """A hidden timeline must not keep the keyboard: hand it to the pane."""
-        if timeline.has_focus:
+    def _release_focus(self, hidden: Widget) -> None:
+        """A widget about to be hidden must not keep the keyboard (Textual would drop it): hand it to the pane."""
+        focused = self.screen.focused
+        if focused is not None and (focused is hidden or hidden in focused.ancestors):
             self.focus()
 
     def on_taf_timeline_moved(self, message: TafTimeline.Moved) -> None:

@@ -41,6 +41,7 @@ from wxbrief.ui.bindings import bind, localize, relabel_tree
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.glyphs import GLYPH_SETS, glyphs_for
 from wxbrief.ui.screens.briefing import BriefingScreen
+from wxbrief.ui.screens.paste import PasteDecodeScreen
 from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.screens.theme_picker import ThemePickerScreen
 from wxbrief.ui.screens.too_small import MIN_SIZE, TooSmallScreen
@@ -185,11 +186,16 @@ class WxBriefApp(App[None]):
         """Textual's variables plus the resolved ``$wx-*``, ``$fcat-*`` and ``$cs-*`` ones for the current theme."""
         return {**super().get_css_variables(), **Palette.from_theme(self.current_theme).css_variables()}
 
-    def _theme_changed(self, theme: Theme) -> None:
-        self.briefing.refresh_view()  # the list, detail and status bar are Rich text drawn from the palette
+    def redraw_screens(self, *, paste: bool = True) -> None:
+        """Draw the briefing and every open screen that shows data again (their text is Rich text with the palette,
+        units and clock baked in)."""
+        self.briefing.refresh_view()
         for screen in self.screen_stack:
-            if isinstance(screen, StationDetailScreen):
+            if isinstance(screen, StationDetailScreen) or (paste and isinstance(screen, PasteDecodeScreen)):
                 screen.redraw()
+
+    def _theme_changed(self, theme: Theme) -> None:
+        self.redraw_screens()
         self._settle()
 
     def _settle(self) -> None:
@@ -259,7 +265,7 @@ class WxBriefApp(App[None]):
 
     def _on_result(self, product: Product, rows: list[object]) -> None:
         self.state.apply(product, rows)
-        self.briefing.refresh_view()
+        self.redraw_screens(paste=False)
 
     def _on_error(self, product: Product, error: AwcError) -> None:
         first = product not in self.state.errors
@@ -273,7 +279,7 @@ class WxBriefApp(App[None]):
                 K.UI_TOAST_FETCH_FAILED, product=product.value.upper(), error=error or type(error).__name__
             )
             self.notify(fetch, severity="warning")
-        self.briefing.refresh_view()
+        self.redraw_screens(paste=False)
 
     def refresh_now(self) -> None:
         if self.scheduler is None:
@@ -436,10 +442,7 @@ class WxBriefApp(App[None]):
                 raise ValueError(f"not a view setting: {name}")
         setattr(self.options.view, name, value)
         self._chosen_view[name] = value
-        self.briefing.refresh_view()
-        for screen in self.screen_stack:
-            if isinstance(screen, StationDetailScreen):
-                screen.redraw()
+        self.redraw_screens()
         self._save()
 
     def settings_extra_lines(self) -> list[tuple[str, str]]:
