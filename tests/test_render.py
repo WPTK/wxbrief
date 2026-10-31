@@ -57,6 +57,29 @@ def test_style_names_follow_the_plan() -> None:
     assert style_name(SemanticKind.UNKNOWN) == "wx.unknown"
 
 
+def test_highlight_spans_use_the_finer_tail_and_remark_kinds() -> None:
+    raw = "METAR EGLL 311050Z 24010KT 9999 FEW040 12/08 Q1013 BECMG FM1200 25015G25KT -RA RMK SLP177 T01200080 FOO"
+    spans = {raw[s.start : s.end]: s.kind for s in highlight_spans(decode(raw).tokens)}
+    assert spans["BECMG"] is SemanticKind.TREND
+    assert spans["25015G25KT"] is SemanticKind.WIND
+    assert spans["-RA"] is SemanticKind.WEATHER
+    assert spans["SLP177"] is SemanticKind.PRESSURE
+    assert spans["T01200080"] is SemanticKind.TEMPERATURE
+    assert spans["FOO"] is SemanticKind.REMARK
+
+
+def test_rich_text_styles_a_trend_body_and_remarks_like_the_body() -> None:
+    from wxbrief.render.richtext import highlighted_raw
+
+    raw = "METAR EGLL 311050Z 24010KT 9999 FEW040 12/08 Q1013 BECMG 25015G25KT RMK SLP177 FOO"
+    text = highlighted_raw(decode(raw))
+    styles = {raw[span.start : span.end]: str(span.style) for span in text.spans}
+    assert styles["25015G25KT"] == "wx.wind"
+    assert styles["SLP177"] == "wx.pressure"
+    assert styles["BECMG"] == "wx.trend"
+    assert styles["FOO"] == "wx.remark"
+
+
 # --- plain ----------------------------------------------------------------------------------------------------
 
 

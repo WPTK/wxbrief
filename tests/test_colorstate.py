@@ -43,7 +43,7 @@ def test_the_table_is_the_standard_one() -> None:
 
 
 def test_yellow_one_is_not_the_green_minimums() -> None:
-    """The skill's international.md lists YLO1 as 700 ft / 3.7 km, which would be GRN; the register says 500 ft / 2.5 km."""
+    """The reference notes list YLO1 as 700 ft / 3.7 km, which would be GRN; the register says 500 ft / 2.5 km."""
     by_code = {row.code: row for row in THRESHOLDS}
     assert (by_code[YLO1].ceiling_ft, by_code[YLO1].visibility_m) == (500, 2500)
     assert computed_color_state(699, 3700) is YLO1
@@ -179,7 +179,7 @@ def test_an_unknown_sky_leaves_visibility_to_decide() -> None:
 def test_reported_colours_agree_with_the_computed_ones_on_every_saved_report() -> None:
     """47 saved reports from German, Dutch and UK military fields carry a colour: all of them recompute to it.
 
-    This is what rules out the skill's YLO1 figures (700 ft / 3.7 km): the UK ``YLO1`` reports below would compute
+    This is what rules out the notes' YLO1 figures (700 ft / 3.7 km): the UK ``YLO1`` reports below would compute
     to Green with them.
     """
     checked = 0
