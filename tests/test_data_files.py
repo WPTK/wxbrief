@@ -131,3 +131,37 @@ def test_station_get_prefers_iata_over_faa_and_refuses_shared_codes() -> None:
         if station.iata:
             iata[station.iata] = iata.get(station.iata, 0) + 1
     assert sorted(code for code, n in iata.items() if n > 1) == sorted(shared)
+
+
+def test_cache_nested_past_the_recursion_limit_reads_as_damaged(tmp_path: Path) -> None:
+    (tmp_path / "metars.json").write_text("[" * 100000 + "]" * 100000, encoding="utf-8")
+    assert DiskCache(tmp_path).read("metars") is None
+
+
+def test_unknown_keys_and_sections_are_warned_about() -> None:
+    loaded = parse_config({"view": {"theem": "nord"}, "poll": {"metar_intervall": 300}, "alerts": {"webhook": "x"}})
+    assert sorted(loaded.warnings) == [
+        "[alerts] is not a section; ignoring it",
+        "poll.metar_intervall is not a setting; ignoring it",
+        "view.theem is not a setting; ignoring it",
+    ]
+    assert parse_config({"view": {"theme": "nord"}}).warnings == []
+
+
+def test_watchlist_iata_codes_resolve_to_icao() -> None:
+    assert parse_config({"stations": {"watchlist": ["DEN", "kden", "EGLL"]}}).config.stations.watchlist == [
+        "KDEN",
+        "EGLL",
+    ]
+
+
+def test_a_failed_cache_write_is_reported_through_the_error_path(tmp_path: Path) -> None:
+    from wxbrief.data.poll import Product
+    from wxbrief.state import AppState
+
+    blocker = tmp_path / "file"
+    blocker.write_text("x", encoding="utf-8")
+    state = AppState(["KDEN"], cache=DiskCache(blocker / "sub"))
+    state.apply(Product.METAR, [])
+    assert "could not write the cache" in state.errors[Product.METAR]
+    assert Product.METAR not in state.offline

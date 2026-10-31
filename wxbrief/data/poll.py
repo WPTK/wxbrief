@@ -7,6 +7,7 @@ injected async ``sleep``, so the tests drive the schedule without waiting.
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from collections import deque
 from collections.abc import Awaitable, Callable, Sequence
@@ -15,7 +16,9 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
-from wxbrief.data.awc import AwcClient, AwcError, RateLimited, request_count
+from wxbrief.data.awc import AwcClient, AwcError, ClientError, RateLimited, request_count
+
+log = logging.getLogger(__name__)
 
 Clock = Callable[[], float]
 Sleep = Callable[[float], Awaitable[None]]
@@ -90,6 +93,7 @@ class _Track:
     interval: float
     due: float = 0.0
     failures: int = 0
+    fetched: float | None = None  # clock time of the last successful fetch
 
 
 def backoff_delay(interval: float, failures: int) -> float:
@@ -130,6 +134,7 @@ class PollScheduler:
         self._base = {Product.METAR: metar_interval, Product.TAF: taf_interval}
         self.away = False
         self.hold_until = 0.0  # clock time before which nothing may be fetched (set by a 429's Retry-After)
+        self._requests = 0  # how many times poll_now() has been called
         self._wake = asyncio.Event()
 
     def _interval(self, product: Product) -> float:
@@ -137,8 +142,17 @@ class PollScheduler:
 
     def poll_now(self) -> None:
         """Make both products due immediately (a new station was added, the user pressed refresh)."""
+        self._requests += 1
         for track in self._tracks.values():
             track.due = self.hold_until  # never earlier than a rate-limit hold
+        self._wake.set()
+
+    def return_from_away(self) -> None:
+        """Back in focus: a product whose away interval has not run out yet is rescheduled on its normal interval."""
+        self.away = False
+        for product, track in self._tracks.items():
+            if track.failures == 0 and track.fetched is not None:
+                track.due = max(self.hold_until, min(track.due, track.fetched + self._interval(product)))
         self._wake.set()
 
     def hold_remaining(self) -> float:
@@ -153,10 +167,10 @@ class PollScheduler:
     async def run_cycle(self) -> list[Product]:
         """Fetch every product that is due and has budget; return the products attempted."""
         attempted: list[Product] = []
-        ids = list(self._ids())
         for product, track in self._tracks.items():
             if track.due > self._clock():
                 continue
+            ids = list(self._ids())  # read per product: a station added during the METAR fetch is in the TAF one
             if not ids:
                 track.due = self._clock() + self._interval(product)
                 continue
@@ -165,29 +179,44 @@ class PollScheduler:
                 track.due = self._clock() + self.budget.wait_time(requests)
                 continue
             attempted.append(product)
+            requested = self._requests
             try:
                 rows: list[Any] = (
                     await self._client.metars(ids) if product is Product.METAR else await self._client.tafs(ids)
                 )
-            except AwcError as exc:
+            except Exception as exc:  # nothing a fetch raises may end the poller
+                if not isinstance(exc, AwcError):
+                    log.exception("unexpected error fetching %s", product.value)
+                error = exc if isinstance(exc, AwcError) else ClientError(f"unexpected {type(exc).__name__}")
                 track.failures += 1
                 delay = backoff_delay(self._interval(product), track.failures - 1)
-                track.due = self._clock() + delay
-                if isinstance(exc, RateLimited):
+                if self._requests == requested:  # a poll_now() during the fetch keeps the due time it set
+                    track.due = self._clock() + delay
+                if isinstance(error, RateLimited):
                     # The limit is per client, not per product: hold every track back and end the cycle.
-                    hold = self._clock() + min(BACKOFF_CAP, max(delay, exc.retry_after))
+                    hold = self._clock() + max(delay, error.retry_after)
                     self.hold_until = max(self.hold_until, hold)
                     for other in self._tracks.values():
                         other.due = max(other.due, hold)
                 if self._on_error:
-                    self._on_error(product, exc)
-                if isinstance(exc, RateLimited):
+                    self._notify(self._on_error, product, error)
+                if isinstance(error, RateLimited):
                     break
                 continue
             track.failures = 0
-            track.due = self._clock() + self._interval(product)
-            self._on_result(product, rows)
+            track.fetched = self._clock()
+            if self._requests == requested:
+                track.due = track.fetched + self._interval(product)
+            self._notify(self._on_result, product, rows)
         return attempted
+
+    @staticmethod
+    def _notify(callback: Callable[..., Any], *args: Any) -> None:
+        """Call a result or error callback; one that raises is logged and must not end the poller."""
+        try:
+            callback(*args)
+        except Exception:
+            log.exception("poll callback failed")
 
     async def run(self) -> None:
         """Poll until cancelled."""

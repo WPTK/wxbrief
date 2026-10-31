@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
 
-from wxbrief.data.awc import AwcError, RateLimited, ServerError
+from wxbrief.data.awc import AwcError, ClientError, RateLimited, ServerError
 from wxbrief.data.poll import (
     BACKOFF_CAP,
     Freshness,
@@ -234,3 +235,91 @@ async def test_a_long_id_list_spends_one_budget_unit_per_request() -> None:
     scheduler, _ = make(clock, client, ids)
     await scheduler.run_cycle()
     assert scheduler.budget.used == 4
+
+
+class GatedClient(FakeClient):
+    """Holds each METAR fetch open until ``gate`` is set."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.gate = asyncio.Event()
+
+    async def metars(self, ids: list[str]) -> list[Any]:
+        await self.gate.wait()
+        return self._go("metar", ids)
+
+
+async def test_poll_now_during_a_fetch_is_not_lost() -> None:
+    clock, client = FakeClock(), GatedClient()
+    ids = ["KDEN"]
+    scheduler, _ = make(clock, client, ids)
+    cycle = asyncio.ensure_future(scheduler.run_cycle())
+    for _ in range(5):
+        await asyncio.sleep(0)  # the METAR request is in flight
+    ids.append("EGLL")
+    scheduler.poll_now()
+    client.gate.set()
+    await cycle
+    assert client.calls == [("metar", ["KDEN"]), ("taf", ["KDEN", "EGLL"])]  # the TAF fetch sees the new station
+    assert scheduler.next_due_in() == 0  # and the METAR is still due
+    assert await scheduler.run_cycle() == [Product.METAR]
+    assert client.calls[-1] == ("metar", ["KDEN", "EGLL"])
+
+
+async def test_an_unexpected_exception_is_reported_not_raised() -> None:
+    class Broken(FakeClient):
+        async def metars(self, ids: list[str]) -> list[Any]:
+            raise RecursionError
+
+    clock, client = FakeClock(), Broken()
+    scheduler, seen = make(clock, client)
+    await scheduler.run_cycle()
+    assert [type(item[1]) for item in seen if item[0] is Product.METAR] == [ClientError]
+
+
+async def test_a_short_blur_does_not_leave_the_away_interval_in_force() -> None:
+    clock, client = FakeClock(), FakeClient()
+    scheduler, _ = make(clock, client, ["KDEN"])
+    await scheduler.run_cycle()
+    clock.now += 599
+    scheduler.away = True
+    clock.now += 1
+    await scheduler.run_cycle()  # the METAR poll that falls due while away
+    assert scheduler._tracks[Product.METAR].due - clock.now == 1800
+    clock.now += 1
+    scheduler.return_from_away()
+    assert scheduler.next_due_in() == 599
+
+
+async def test_returning_after_a_long_blur_polls_what_is_overdue() -> None:
+    clock, client = FakeClock(), FakeClient()
+    scheduler, _ = make(clock, client, ["KDEN"])
+    await scheduler.run_cycle()
+    scheduler.away = True
+    clock.now += 700
+    scheduler.return_from_away()
+    assert await scheduler.run_cycle() == [Product.METAR]
+
+
+async def test_a_raising_callback_does_not_end_the_poller() -> None:
+    clock, client = FakeClock(), FakeClient()
+    calls: list[Product] = []
+
+    def broken(product: Product, rows: list[Any]) -> None:
+        calls.append(product)
+        raise RuntimeError("apply failed")
+
+    scheduler = PollScheduler(client, lambda: ["KDEN"], broken, broken_error, clock=clock)  # type: ignore[arg-type]
+    assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
+    assert calls == [Product.METAR, Product.TAF]
+
+
+def broken_error(product: Product, error: AwcError) -> None:
+    raise RuntimeError("report failed")
+
+
+async def test_a_raising_error_callback_does_not_end_the_poller() -> None:
+    clock, client = FakeClock(), FakeClient()
+    client.errors = [ServerError(500), ServerError(500)]
+    scheduler = PollScheduler(client, lambda: ["KDEN"], lambda p, r: None, broken_error, clock=clock)  # type: ignore[arg-type]
+    assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
