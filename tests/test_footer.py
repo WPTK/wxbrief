@@ -30,17 +30,28 @@ def shown(app: object) -> list[str]:
     return [key for key, active in bindings.items() if active.binding.show]
 
 
+async def shown_is(app: object, pilot: object, expected: list[str]) -> list[str]:
+    """The footer keys once they equal ``expected`` (bounded wait: the footer follows a focus or screen change later)."""
+    keys = shown(app)
+    for _ in range(100):
+        if keys == expected:
+            break
+        await pilot.pause(0.05)  # type: ignore[attr-defined]
+        keys = shown(app)
+    return keys
+
+
 async def test_the_footer_follows_focus() -> None:
     app = demo_app()
     async with app.run_test(size=(120, 40)) as pilot:
         await pilot.pause()
         assert isinstance(app.focused, StationList)
-        assert shown(app) == ["a", "d", "v", "p", "r", "question_mark", "q", "t"]
+        assert await shown_is(app, pilot, ["a", "d", "v", "p", "r", "question_mark", "q", "t"]) == ["a", "d", "v", "p", "r", "question_mark", "q", "t"]
         await pilot.press("enter")  # into the detail pane
-        assert shown(app) == ["1", "2", "3", "c", "a", "p", "r", "question_mark", "q", "t"]
+        assert await shown_is(app, pilot, ["1", "2", "3", "c", "a", "p", "r", "question_mark", "q", "t"]) == ["1", "2", "3", "c", "a", "p", "r", "question_mark", "q", "t"]
         await pilot.press("v")  # still works from the detail pane, though the footer does not list it
         assert isinstance(app.focused, StationGrid)
-        assert shown(app) == ["a", "d", "v", "p", "r", "question_mark", "q", "t"]
+        assert await shown_is(app, pilot, ["a", "d", "v", "p", "r", "question_mark", "q", "t"]) == ["a", "d", "v", "p", "r", "question_mark", "q", "t"]
 
 
 async def screen_text(app: object, pilot: object, *wanted: str) -> str:
@@ -85,7 +96,8 @@ async def test_the_station_screen_copies_and_jumps(monkeypatch: pytest.MonkeyPat
         await pilot.press("v", "enter")
         await pilot.pause()
         assert isinstance(app.screen, StationDetailScreen)
-        assert "a" not in shown(app) and shown(app)[:4] == ["1", "2", "3", "c"]
+        keys = await shown_is(app, pilot, ["1", "2", "3", "c", "escape", "q", "t"])
+        assert "a" not in keys and keys[:4] == ["1", "2", "3", "c"]
         await pilot.press("c")
         assert len(copied) == 1 and "METAR" in copied[0]
         await pilot.press("3", "2", "1", "a")  # none of these may raise; a is not offered on this screen
