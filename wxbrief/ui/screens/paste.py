@@ -9,7 +9,6 @@ from rich.console import Group, RenderableType
 from rich.table import Table
 from rich.text import Text
 from textual.app import ComposeResult
-from textual.binding import Binding
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.timer import Timer
@@ -19,8 +18,10 @@ from wxbrief.clipboard import copy_text
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
 from wxbrief.decode.units import UnitsMode
+from wxbrief.i18n.keys import K
 from wxbrief.render.discord import render_discord
 from wxbrief.render.plain import decode_rows, render_plain, warning_lines
+from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
 
 DEBOUNCE_SECONDS = 0.2
@@ -43,9 +44,9 @@ def parse_reference(text: str, now: datetime) -> tuple[datetime, bool]:
 
 class PasteDecodeScreen(Screen[None]):
     BINDINGS = [
-        Binding("escape", "close", "Back", priority=True),
-        Binding("f2", "copy_discord", "Copy Discord", priority=True),
-        Binding("c", "copy_discord", "Copy Discord (c)", show=False),
+        bind("escape", "close", K.UI_BINDING_BACK, priority=True),
+        bind("f2", "copy_discord", K.UI_BINDING_COPY_DISCORD, priority=True),
+        bind("c", "copy_discord", K.UI_BINDING_COPY_DISCORD_KEY, show=False),
     ]
 
     def __init__(self, ctx: ViewContext, now: Callable[[], datetime]) -> None:
@@ -59,14 +60,15 @@ class PasteDecodeScreen(Screen[None]):
     def compose(self) -> ComposeResult:
         with Vertical(id="paste-layout"):
             with Horizontal(id="paste-reference"):
-                yield Label("Reference date (YYYY-MM-DD):")
+                yield Label(self._ctx.translator.t(K.UI_PASTE_REFERENCE))
                 yield Input(value=self._now().strftime("%Y-%m-%d"), id="reference", compact=True)
             yield TextArea(id="paste-input", tab_behavior="focus", show_line_numbers=False)
             with VerticalScroll(id="paste-output"):
-                yield Static("Paste a METAR or TAF above. Several reports at once are fine.", id="paste-result")
+                yield Static(self._ctx.translator.t(K.UI_PASTE_PROMPT), id="paste-result")
         yield Footer()
 
     def on_mount(self) -> None:
+        localize(self)
         self.query_one(TextArea).focus()
 
     # --- decoding --------------------------------------------------------------------------------------------------
@@ -92,9 +94,9 @@ class PasteDecodeScreen(Screen[None]):
         self.discord_text = "\n\n".join(render_discord(r, ctx.translator, units) for r in self.decoded)
         parts: list[RenderableType] = []
         if not valid:
-            parts.append(Text("Reference date not understood; using now.", style=ctx.palette.style("wx.warning")))
+            parts.append(Text(ctx.translator.t(K.UI_PASTE_BAD_DATE), style=ctx.palette.style("wx.warning")))
         if not self.decoded:
-            parts.append(Text("Paste a METAR or TAF above. Several reports at once are fine."))
+            parts.append(Text(ctx.translator.t(K.UI_PASTE_PROMPT)))
         for index, report in enumerate(self.decoded):
             if index:
                 parts.append(Text(""))
@@ -130,9 +132,9 @@ class PasteDecodeScreen(Screen[None]):
 
     def action_copy_discord(self) -> None:
         if not self.discord_text:
-            self.notify("Nothing decoded yet", severity="warning")
+            self.notify(self._ctx.translator.t(K.UI_TOAST_NOTHING_DECODED), severity="warning")
             return
-        copy_text(self.app, self.discord_text, "Discord block")
+        copy_text(self.app, self.discord_text, self._ctx.translator.t(K.UI_CLIPBOARD_DISCORD), self._ctx.translator)
 
     def action_close(self) -> None:
         self.app.pop_screen()

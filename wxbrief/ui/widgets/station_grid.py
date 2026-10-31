@@ -5,12 +5,13 @@ from __future__ import annotations
 from datetime import datetime
 
 from textual.app import ComposeResult
-from textual.binding import Binding
 from textual.containers import Container, VerticalScroll
 from textual.events import Resize
 from textual.message import Message
 
+from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
+from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.widgets.station_card import StationCard
 
@@ -19,11 +20,11 @@ CARD_WIDTH = 38  # the least width a card gets; a wider pane fits more columns
 
 class StationGrid(VerticalScroll, can_focus=True):
     BINDINGS = [
-        Binding("left", "move(-1, 0)", "Left", show=False),
-        Binding("right", "move(1, 0)", "Right", show=False),
-        Binding("up", "move(0, -1)", "Up", show=False),
-        Binding("down", "move(0, 1)", "Down", show=False),
-        Binding("enter", "open", "Open", show=False),
+        bind("left", "move(-1, 0)", K.UI_BINDING_LEFT, show=False),
+        bind("right", "move(1, 0)", K.UI_BINDING_RIGHT, show=False),
+        bind("up", "move(0, -1)", K.UI_BINDING_UP, show=False),
+        bind("down", "move(0, 1)", K.UI_BINDING_DOWN, show=False),
+        bind("enter", "open", K.UI_BINDING_OPEN, show=False),
     ]
 
     class Selected(Message):
@@ -44,6 +45,9 @@ class StationGrid(VerticalScroll, can_focus=True):
 
     def compose(self) -> ComposeResult:
         yield Container(id="cards")
+
+    def on_mount(self) -> None:
+        localize(self)
 
     @property
     def columns(self) -> int:

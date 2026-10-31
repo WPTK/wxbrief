@@ -98,6 +98,17 @@ def fallback_chain(lang: str) -> list[str]:
     return chain
 
 
+def resolve_language(code: str) -> str | None:
+    """The catalog that serves ``code`` (``pt-BR`` -> ``pt``, ``DE`` -> ``de``), or ``None`` when there is none."""
+    parts = code.strip().replace("_", "-").split("-")
+    parts[0] = parts[0].lower()
+    for end in range(len(parts), 0, -1):
+        name = "-".join(parts[:end])
+        if _read_catalog(name) is not None:
+            return name
+    return None
+
+
 class Translator:
     """Looks up catalog keys and fills in their placeholders."""
 

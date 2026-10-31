@@ -8,7 +8,6 @@ from collections.abc import Sequence
 from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
-from textual.binding import Binding
 from textual.containers import Vertical
 from textual.screen import ModalScreen
 from textual.suggester import Suggester
@@ -16,6 +15,8 @@ from textual.widgets import Input, Label, OptionList
 from textual.widgets.option_list import Option
 
 from wxbrief.data.stations import Station, StationDB
+from wxbrief.i18n.keys import K
+from wxbrief.ui.bindings import bind, localize, translator_of
 
 _CODE = re.compile(r"^[A-Za-z0-9]{3,4}$")
 
@@ -53,8 +54,8 @@ class AddStationScreen(ModalScreen[str | None]):
     """Dismisses with the chosen station id, or ``None``."""
 
     BINDINGS = [
-        Binding("escape", "cancel", "Cancel"),
-        Binding("down", "focus_results", "Results", show=False),
+        bind("escape", "cancel", K.UI_BINDING_CANCEL),
+        bind("down", "focus_results", K.UI_BINDING_FOCUS_RESULTS, show=False),
     ]
 
     def __init__(self, db: StationDB, existing: Sequence[str] = ()) -> None:
@@ -64,13 +65,15 @@ class AddStationScreen(ModalScreen[str | None]):
         self.matches: list[Station] = []
 
     def compose(self) -> ComposeResult:
+        t = translator_of(self)
         with Vertical(id="add-box", classes="dialog"):
-            yield Label("Add station: ICAO or IATA code, or part of the name", classes="dialog-title")
-            yield Input(placeholder="KDEN, DEN, heathrow ...", id="query", suggester=StationSuggester(self._db))
+            yield Label(t.t(K.UI_ADD_TITLE), classes="dialog-title")
+            yield Input(placeholder=t.t(K.UI_ADD_PLACEHOLDER), id="query", suggester=StationSuggester(self._db))
             yield OptionList(id="results")
-            yield Label("Enter adds the first match   Down picks another   Esc cancels", classes="hint")
+            yield Label(t.t(K.UI_ADD_HINT), classes="hint")
 
     def on_mount(self) -> None:
+        localize(self)
         self.query_one(Input).focus()
 
     @on(Input.Changed)
@@ -81,7 +84,7 @@ class AddStationScreen(ModalScreen[str | None]):
         for station in self.matches:
             label = station_label(station)
             if station.icao in self._existing:
-                label.append("  (listed)", style="dim")
+                label.append("  " + translator_of(self).t(K.UI_ADD_LISTED), style="dim")
             results.add_option(Option(label, id=station.icao))
         if self.matches:
             results.highlighted = 0
@@ -96,9 +99,9 @@ class AddStationScreen(ModalScreen[str | None]):
         if station is not None:
             self.dismiss(station.icao)
         elif _CODE.match(code):
-            self.notify(f"Unknown station {code}", severity="warning")
+            self.notify(translator_of(self).t(K.UI_TOAST_UNKNOWN_STATION, code=code), severity="warning")
         else:
-            self.notify("Type a station code or part of a name", severity="warning")
+            self.notify(translator_of(self).t(K.UI_TOAST_TYPE_A_STATION), severity="warning")
 
     @on(OptionList.OptionSelected)
     def _picked(self, event: OptionList.OptionSelected) -> None:

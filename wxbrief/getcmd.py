@@ -16,7 +16,8 @@ from wxbrief.decode.metar import parse_metar
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.taf import parse_taf
 from wxbrief.decode.units import UnitsMode
-from wxbrief.i18n import Translator
+from wxbrief.i18n import DEFAULT_LANGUAGE, Translator
+from wxbrief.i18n.keys import K
 from wxbrief.render.discord import render_discord
 from wxbrief.render.jsonout import to_dict
 from wxbrief.render.plain import render_plain
@@ -111,7 +112,7 @@ def run_get(args: argparse.Namespace) -> int:
         return status
 
     units = UnitsMode(args.units or (UnitsMode.US.value if args.discord else UnitsMode.MIXED.value))
-    translator = Translator.load("en")
+    translator = Translator.load(getattr(args, "lang", None) or DEFAULT_LANGUAGE)
     db = bundled()
     blocks: list[str] = []
     for icao in ids:
@@ -127,7 +128,7 @@ def run_get(args: argparse.Namespace) -> int:
             else:
                 parts.append(render_plain(decoded_metars[icao], translator, units))
         else:
-            parts.append(f"{icao}: no METAR in the last 2 hours")
+            parts.append(translator.t(K.CLI_NO_METAR, icao=icao))
         if icao in decoded_tafs:
             if args.discord:
                 parts.append(render_discord(decoded_tafs[icao], translator, units, station_name=name))

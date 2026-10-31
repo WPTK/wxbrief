@@ -14,25 +14,27 @@ from textual.widgets import Collapsible, DataTable, Label, Static
 
 from wxbrief.data.poll import Freshness
 from wxbrief.decode.model import Metar, Taf
+from wxbrief.i18n import Translator
 from wxbrief.i18n.keys import K
 from wxbrief.render import phrases
 from wxbrief.render.plain import DecodeRow, decode_rows, taf_blocks, taf_header_rows, warning_lines
 from wxbrief.state import StationReports
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.widgets.period_detail import PeriodDetail, rows_text
+from wxbrief.ui.widgets.status_bar import STATE_KEYS
 from wxbrief.ui.widgets.taf_timeline import TafTimeline
 
 
-def age_text(delta: timedelta) -> str:
+def age_text(delta: timedelta, t: Translator) -> str:
     """``12 min``, ``3 h 05 min``, ``2 d 4 h``: how long ago, never negative."""
     minutes = max(0, int(delta.total_seconds() // 60))
     if minutes < 60:
-        return f"{minutes} min"
+        return t.t(K.UI_AGE_MINUTES, minutes=minutes)
     hours, rest = divmod(minutes, 60)
     if hours < 24:
-        return f"{hours} h {rest:02d} min"
+        return t.t(K.UI_AGE_HOURS, hours=hours, minutes=rest)
     days, hours = divmod(hours, 24)
-    return f"{days} d {hours} h"
+    return t.t(K.UI_AGE_DAYS, days=days, hours=hours)
 
 
 class StationHeader(Static):
@@ -58,13 +60,15 @@ class StationHeader(Static):
             state = entry.freshness(now)
             mark = ctx.glyphs.fresh if state is Freshness.FRESH else ctx.glyphs.stale
             style = ctx.palette.fresh if state is Freshness.FRESH else ctx.palette.stale
-            when = f"Observed {ctx.clock(observed, entry.icao)}, {age_text(now - observed)} ago  "
-            line = Text.assemble(when, (f"{mark} {state.value}", style))
+            t = ctx.translator
+            when = t.t(K.UI_DETAIL_OBSERVED_AGO, time=ctx.clock(observed, entry.icao), age=age_text(now - observed, t))
+            line = Text.assemble(f"{when}  ", (f"{mark} {t.t(STATE_KEYS[state])}", style))
             if entry.from_cache and entry.updated is not None:
-                line.append(f"  (cached {age_text(now - entry.updated)} ago)", style=ctx.palette.muted)
+                cached = t.t(K.UI_DETAIL_CACHED_AGO, age=age_text(now - entry.updated, t))
+                line.append(f"  {cached}", style=ctx.palette.muted)
             lines.append(line)
         else:
-            lines.append(Text("No METAR in the last 2 hours", style=ctx.palette.stale))
+            lines.append(Text(ctx.translator.t(K.UI_DETAIL_NO_METAR), style=ctx.palette.stale))
         self.update(Text("\n").join(lines))
 
 
@@ -91,7 +95,8 @@ class RawReport(Static):
             parts.append(ctx.palette.raw_text(entry.metar))
         if entry.taf is not None:
             parts.append(ctx.palette.raw_text(entry.taf))
-        self.update(Text("\n\n").join(parts) if parts else Text("No report yet", style=ctx.palette.muted))
+        empty = Text(ctx.translator.t(K.UI_DETAIL_NO_REPORT), style=ctx.palette.muted)
+        self.update(Text("\n\n").join(parts) if parts else empty)
 
 
 class DecodedTable(DataTable[Text]):
@@ -144,21 +149,21 @@ class DetailPane(VerticalScroll):
         self._ctx: ViewContext | None = None
 
     def compose(self) -> ComposeResult:
-        yield Static("No stations yet. Press [b]a[/b] to add one.", id="placeholder")
+        yield Static(id="placeholder")  # the text is set in show(), in the language in use
         yield StationHeader(id="header")
         yield FlagsRow(id="flags")
-        yield Label("Raw", classes="section", id="raw-title")
+        yield Label(classes="section", id="raw-title")
         yield RawReport(id="raw")
-        yield Label("Decoded", classes="section", id="decoded-title")
+        yield Label(classes="section", id="decoded-title")
         yield DecodedTable(id="decoded")
-        with Collapsible(title="Remarks", id="remarks-box", collapsed=True):
+        with Collapsible(id="remarks-box", collapsed=True):
             yield Static(id="remarks")
-        yield Label("Forecast (TAF)", classes="section", id="taf-title")
+        yield Label(classes="section", id="taf-title")
         yield Static(id="taf-summary")
         yield Static(id="taf-note")
         yield TafTimeline(id="timeline")
         yield PeriodDetail(id="period")
-        with Collapsible(title="All forecast groups", id="taf-groups-box", collapsed=True):
+        with Collapsible(id="taf-groups-box", collapsed=True):
             yield Static(id="taf-groups")
         yield Static(id="warnings")
 
@@ -173,11 +178,15 @@ class DetailPane(VerticalScroll):
 
     def show(self, entry: StationReports | None, ctx: ViewContext, now: datetime, position: str = "") -> None:
         self._entry, self._ctx = entry, ctx
+        t = ctx.translator
+        self.query_one("#placeholder", Static).update(t.t(K.UI_DETAIL_NO_STATIONS))
         if entry is None:
             self._set_visible(False)
             return
         self._set_visible(True)
-        t = ctx.translator
+        self.query_one("#raw-title", Label).update(t.t(K.UI_SECTION_RAW))
+        self.query_one("#decoded-title", Label).update(t.t(K.UI_SECTION_DECODED))
+        self.query_one("#taf-title", Label).update(t.t(K.UI_SECTION_FORECAST))
         metar = entry.metar
         self.query_one(StationHeader).show(entry, ctx, now, position)
         self.query_one(FlagsRow).show(metar, ctx)
@@ -192,7 +201,7 @@ class DetailPane(VerticalScroll):
         remarks = [r for r in rows if r.label in remark_labels]
         box = self.query_one("#remarks-box", Collapsible)
         box.display = bool(remarks)
-        box.title = f"Remarks ({len(remarks)})"
+        box.title = t.t(K.UI_SECTION_REMARKS, n=len(remarks))
         palette = ctx.palette
         self.query_one("#remarks", Static).update(
             Text("\n").join(Text(r.value, style=palette.style(r.style)) for r in remarks)
@@ -229,7 +238,7 @@ class DetailPane(VerticalScroll):
         for block in blocks:
             groups.append(Text(block.title, style="bold"))
             groups.append(rows_text(block.rows, ctx, self.size.width or 70))
-        self.query_one("#taf-groups-box", Collapsible).title = f"All forecast groups ({len(blocks)})"
+        self.query_one("#taf-groups-box", Collapsible).title = t.t(K.UI_SECTION_GROUPS, n=len(blocks))
         self.query_one("#taf-groups", Static).update(Text("\n").join(groups))
         drawn = timeline.set_taf(taf, ctx, entry.icao, now)
         timeline.display = period.display = drawn

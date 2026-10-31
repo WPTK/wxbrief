@@ -17,7 +17,8 @@ from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
 from wxbrief.decode.units import UnitsMode
 from wxbrief.getcmd import add_get_parser, resolve_ids, run_get
-from wxbrief.i18n import Translator
+from wxbrief.i18n import DEFAULT_LANGUAGE, LANGUAGES, Translator, resolve_language
+from wxbrief.i18n.keys import K
 from wxbrief.render.discord import render_discord
 from wxbrief.render.jsonout import to_dict
 from wxbrief.render.plain import render_plain
@@ -50,27 +51,54 @@ def _tui_theme(value: str) -> str:
     return value
 
 
-def _add_global_flags(parser: argparse.ArgumentParser) -> None:
+def _language(value: str) -> str:
+    """A language code that has a catalog (``de``, ``pt-BR`` -> ``pt``), as an argparse type."""
+    found = resolve_language(value)
+    if found is None:
+        raise argparse.ArgumentTypeError(f"unknown language {value!r} (choose from: {', '.join(LANGUAGES)})")
+    return found
+
+
+def _help_translator(words: Sequence[str]) -> Translator:
+    """The translator for the ``--help`` text: the language named by ``--lang`` on the command line, else English."""
+    for index, word in enumerate(words):
+        value = word.removeprefix("--lang=") if word.startswith("--lang=") else None
+        if value is None and word == "--lang" and index + 1 < len(words):
+            value = words[index + 1]
+        if value is not None:
+            return Translator.load(resolve_language(value) or DEFAULT_LANGUAGE)
+    return Translator.load(DEFAULT_LANGUAGE)
+
+
+def _add_global_flags(parser: argparse.ArgumentParser, t: Translator) -> None:
     """The flags that apply to the TUI (and are accepted before a subcommand)."""
     parser.add_argument("--version", action="version", version=f"wxbrief {__version__}")
+    parser.add_argument("--theme", dest="tui_theme", type=_tui_theme, metavar="NAME", help=t.t(K.CLI_HELP_THEME))
+    parser.add_argument("--glyphs", choices=GLYPH_SETS, help=t.t(K.CLI_HELP_GLYPHS))
+    parser.add_argument("--layout", choices=LAYOUTS, help=t.t(K.CLI_HELP_LAYOUT))
     parser.add_argument(
-        "--theme",
-        dest="tui_theme",
-        type=_tui_theme,
-        metavar="NAME",
-        help="colourway for this run, such as paper-chart (not saved; default: from config, textual-dark)",
+        "--units", dest="tui_units", choices=[m.value for m in UnitsMode], help=t.t(K.CLI_HELP_UNITS)
     )
-    parser.add_argument("--glyphs", choices=GLYPH_SETS, help="glyph set (default: from config, nerd)")
-    parser.add_argument("--layout", choices=LAYOUTS, help="list or grid layout (v toggles it)")
-    parser.add_argument("--units", dest="tui_units", choices=[m.value for m in UnitsMode], help="units mode")
-    parser.add_argument("--time", choices=TIME_MODES, help="time shown: station, local or zulu")
-    parser.add_argument("--lang", help="language of the plain-language decode (en)")
-    parser.add_argument("--config", type=Path, metavar="FILE", help="read and save this config file")
-    parser.add_argument("--no-config", action="store_true", help="ignore the config file and never write it")
+    parser.add_argument("--time", choices=TIME_MODES, help=t.t(K.CLI_HELP_TIME))
     parser.add_argument(
-        "--demo",
-        action="store_true",
-        help="open with the bundled sample reports of ten stations: fully offline, nothing is fetched, cached or saved",
+        "--lang",
+        type=_language,
+        metavar="CODE",
+        help=t.t(K.CLI_HELP_LANG, languages=", ".join(LANGUAGES)),
+    )
+    parser.add_argument("--config", type=Path, metavar="FILE", help=t.t(K.CLI_HELP_CONFIG))
+    parser.add_argument("--no-config", action="store_true", help=t.t(K.CLI_HELP_NO_CONFIG))
+    parser.add_argument("--demo", action="store_true", help=t.t(K.CLI_HELP_DEMO))
+
+
+def _add_language_flag(parser: argparse.ArgumentParser) -> None:
+    """``--lang`` for a subcommand. Unset it leaves any ``--lang`` given before the subcommand alone."""
+    parser.add_argument(
+        "--lang",
+        type=_language,
+        metavar="CODE",
+        default=argparse.SUPPRESS,
+        help=f"language of the plain-language text: {', '.join(LANGUAGES)} (default: en)",
     )
 
 
@@ -87,27 +115,23 @@ def _first_positional(argv: Sequence[str]) -> str | None:
     return None
 
 
-def build_tui_parser() -> argparse.ArgumentParser:
-    """The parser for ``wxbrief [ICAO ...]``, which opens the TUI."""
-    parser = argparse.ArgumentParser(
-        prog="wxbrief",
-        description="Terminal METAR/TAF briefing with colorways and plain-language translation. "
-        "Give station ids to watch them for this run; saved stations load from the config.",
-        epilog="commands: decode (decode text without the TUI), get (fetch once and print). "
-        "Run 'wxbrief decode --help' or 'wxbrief get --help'.",
-    )
-    _add_global_flags(parser)
-    parser.add_argument("stations", nargs="*", metavar="ICAO", help="station ids to add for this run")
+def build_tui_parser(t: Translator | None = None) -> argparse.ArgumentParser:
+    """The parser for ``wxbrief [ICAO ...]``, which opens the TUI; its help is in the language ``t``."""
+    t = t or Translator.load(DEFAULT_LANGUAGE)
+    parser = argparse.ArgumentParser(prog="wxbrief", description=t.t(K.CLI_DESCRIPTION), epilog=t.t(K.CLI_EPILOG))
+    _add_global_flags(parser, t)
+    parser.add_argument("stations", nargs="*", metavar="ICAO", help=t.t(K.CLI_HELP_STATIONS))
     return parser
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser(t: Translator | None = None) -> argparse.ArgumentParser:
     """Return the top-level argument parser."""
+    t = t or Translator.load(DEFAULT_LANGUAGE)
     parser = argparse.ArgumentParser(
         prog="wxbrief",
         description="Terminal METAR/TAF briefing with colorways and plain-language translation.",
     )
-    _add_global_flags(parser)
+    _add_global_flags(parser, t)
     commands = parser.add_subparsers(dest="command", metavar="command")
 
     decode = commands.add_parser(
@@ -121,6 +145,7 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     decode.add_argument("reports", nargs="*", metavar="RAW", help="raw report text")
+    _add_language_flag(decode)
     output = decode.add_mutually_exclusive_group()
     output.add_argument(
         "--plain",
@@ -158,6 +183,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="colourway for the coloured terminal output, such as paper-chart (default: the built-in palette)",
     )
     add_get_parser(commands)
+    _add_language_flag(commands.choices["get"])
     return parser
 
 
@@ -208,7 +234,7 @@ def _run_decode(args: argparse.Namespace) -> int:
         return 0
 
     units = UnitsMode(args.units or (UnitsMode.US.value if args.discord else UnitsMode.MIXED.value))
-    translator = Translator.load("en")
+    translator = Translator.load(args.lang or DEFAULT_LANGUAGE)
     if args.discord:
         sys.stdout.write("\n\n".join(render_discord(item, translator, units) for item in decoded) + "\n")
         return 0
@@ -231,10 +257,10 @@ def _run_decode(args: argparse.Namespace) -> int:
     return 0
 
 
-def _run_tui(args: argparse.Namespace) -> int:
+def _run_tui(args: argparse.Namespace, translator: Translator) -> int:
     """Open the TUI. Without a terminal there is nothing to draw on, so print the help instead."""
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
-        sys.stdout.write(build_tui_parser().format_help())
+        sys.stdout.write(build_tui_parser(translator).format_help())
         return 0
     from wxbrief.app import WxBriefApp
 
@@ -294,10 +320,11 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line and return the process exit code."""
     words = list(sys.argv[1:] if argv is None else argv)
+    translator = _help_translator(words)
     if _first_positional(words) not in COMMANDS:
-        tui_args = build_tui_parser().parse_args(words)
-        return _run_tui(tui_args)
-    args = build_parser().parse_args(words)
+        tui_args = build_tui_parser(translator).parse_args(words)
+        return _run_tui(tui_args, translator)
+    args = build_parser(translator).parse_args(words)
     if args.command == "decode":
         return _run_decode(args)
     return run_get(args)

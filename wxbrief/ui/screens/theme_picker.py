@@ -6,17 +6,19 @@ from collections.abc import Sequence
 from typing import Any
 
 from textual.app import App, ComposeResult
-from textual.binding import Binding
 from textual.containers import Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Label, OptionList
 from textual.widgets.option_list import Option
 
+from wxbrief.i18n.keys import K
+from wxbrief.ui.bindings import bind, localize, translator_of
+
 
 class ThemePickerScreen(ModalScreen[str | None]):
     """Dismisses with the kept theme name, or ``None`` when the choice was cancelled (the old theme is restored)."""
 
-    BINDINGS = [Binding("escape", "cancel", "Cancel")]
+    BINDINGS = [bind("escape", "cancel", K.UI_BINDING_CANCEL)]
 
     def __init__(self, names: Sequence[str], current: str) -> None:
         super().__init__()
@@ -24,12 +26,14 @@ class ThemePickerScreen(ModalScreen[str | None]):
         self.original = current
 
     def compose(self) -> ComposeResult:
+        t = translator_of(self)
         with Vertical(id="theme-box", classes="dialog"):
-            yield Label("Theme", classes="dialog-title")
+            yield Label(t.t(K.UI_THEMES_TITLE), classes="dialog-title")
             yield OptionList(*(Option(name, id=name) for name in self.names), id="theme-list")
-            yield Label("Up/Down previews, Enter keeps, Esc cancels", classes="hint")
+            yield Label(t.t(K.UI_THEMES_HINT), classes="hint")
 
     def on_mount(self) -> None:
+        localize(self)
         options = self.query_one(OptionList)
         if self.original in self.names:
             options.highlighted = self.names.index(self.original)
