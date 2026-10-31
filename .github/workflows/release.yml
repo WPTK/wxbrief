@@ -165,6 +165,16 @@ jobs:
           subject-path: |
             release/*
             !release/SHA256SUMS
+      - name: Confirm the tag still points at the commit that was built
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          now=$(gh api "repos/$GITHUB_REPOSITORY/commits/refs/tags/$TAG" --jq .sha)
+          if [ "$now" != "$GITHUB_SHA" ]; then
+            echo "::error::$TAG now points at $now, but this run built $GITHUB_SHA; not publishing"
+            exit 1
+          fi
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
+import os
 import sys
 from collections.abc import Sequence
 from dataclasses import replace
@@ -161,8 +163,16 @@ def _collect_texts(arguments: Sequence[str], stdin: TextIO) -> list[str]:
         return [arg for arg in arguments if arg.strip()]
     if stdin.isatty():
         return []
-    text = stdin.read()
+    buffer = getattr(stdin, "buffer", None)
+    text = stdin.read() if buffer is None else _decode_bytes(buffer.read())  # no bytes under it: a test's StringIO
     return [text] if text.strip() else []
+
+
+def _decode_bytes(data: bytes) -> str:
+    """Piped report text: UTF-8 (a BOM is dropped) or, with a UTF-16 BOM, UTF-16; bad bytes become U+FFFD."""
+    if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return data.decode("utf-16", errors="replace")
+    return data.decode("utf-8-sig", errors="replace")
 
 
 def _run_decode(args: argparse.Namespace) -> int:
@@ -193,7 +203,7 @@ def _run_decode(args: argparse.Namespace) -> int:
         sys.stdout.write(json.dumps([to_dict(item) for item in decoded], indent=2, ensure_ascii=False) + "\n")
         return 0
 
-    units = UnitsMode(args.units or (UnitsMode.US.value if args.discord else UnitsMode.MIXED.value))
+    units = UnitsMode(args.units or args.tui_units or (UnitsMode.US.value if args.discord else UnitsMode.MIXED.value))
     translator = Translator.load(args.lang or DEFAULT_LANGUAGE)
     if args.discord:
         sys.stdout.write("\n\n".join(render_discord(item, translator, units) for item in decoded) + "\n")
@@ -302,9 +312,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         tui_args = build_tui_parser(translator).parse_args(words)
         return _run_tui(tui_args, translator)
     args = build_parser(translator).parse_args(words)
-    if args.command == "decode":
-        return _run_decode(args)
-    return run_get(args)
+    try:
+        return _run_decode(args) if args.command == "decode" else run_get(args)
+    except KeyboardInterrupt:
+        return 130
+    except BrokenPipeError:  # the reader (``| head``) went away: stop quietly
+        with contextlib.suppress(OSError, ValueError):  # point stdout at nothing, so the flush at exit cannot raise
+            devnull = os.open(os.devnull, os.O_WRONLY)
+            os.dup2(devnull, sys.stdout.fileno())
+            os.close(devnull)
+        return 1
 
 
 if __name__ == "__main__":

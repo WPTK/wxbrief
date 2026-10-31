@@ -34,6 +34,8 @@ class K:
     CLI_HELP_TIME = "cli.help.time"
     CLI_HELP_UNITS = "cli.help.units"
     CLI_HELP_UNITS_MODE = "cli.help.units_mode"
+    CLI_METAR_FAILED = "cli.metar_failed"
+    CLI_METAR_STALE = "cli.metar_stale"
     CLI_NO_METAR = "cli.no_metar"
 
     COLOR_BECOMING = "color.becoming"

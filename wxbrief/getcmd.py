@@ -8,9 +8,11 @@ import json
 import sys
 from datetime import UTC, datetime
 
+from wxbrief.config import station_id
 from wxbrief.data.awc import AwcClient, AwcError
 from wxbrief.data.models import AwcMetar, AwcTaf, latest_by_station
-from wxbrief.data.stations import bundled, resolve_id
+from wxbrief.data.poll import STALE_AFTER, Freshness, freshness
+from wxbrief.data.stations import bundled
 from wxbrief.decode.metar import parse_metar
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.taf import parse_taf
@@ -33,41 +35,69 @@ def add_get_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser]
     get.add_argument("--units", choices=[mode.value for mode in UnitsMode], help=t.t(K.CLI_HELP_UNITS_MODE))
 
 
-def resolve_ids(codes: list[str]) -> list[str]:
+def resolve_ids(codes: list[str]) -> tuple[list[str], list[str]]:
+    """The station ids to fetch (IATA and FAA codes resolved, no repeats) and the arguments that are not ids."""
     ids: list[str] = []
+    rejected: list[str] = []
     for code in codes:
-        resolved = resolve_id(code)
-        if resolved and resolved not in ids:
+        resolved = station_id(code)  # the watchlist's rule: AWC would read ``KDEN,KSFO`` as two stations
+        if resolved is None:
+            rejected.append(code)
+        elif resolved not in ids:
             ids.append(resolved)
-    return ids
+    return ids, rejected
 
 
-async def _fetch(ids: list[str]) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf], list[str]]:
-    """Fetch each product on its own, so one failing does not hide what the other returned."""
-    errors: list[str] = []
+async def _fetch(ids: list[str]) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf], dict[str, str]]:
+    """Fetch each product on its own, so one failing does not hide what the other returned.
+
+    The third item maps each product that failed (``METAR``, ``TAF``) to why.
+    """
+    errors: dict[str, str] = {}
     metars: list[AwcMetar] = []
     tafs: list[AwcTaf] = []
-    async with AwcClient() as client:
+    try:
+        client = AwcClient()
+    except AwcError as exc:  # the HTTP client could not be built (a proxy or CA setting)
+        return {}, {}, {"METAR": str(exc), "TAF": str(exc)}
+    async with client:
         try:
             metars = await client.metars(ids)
         except AwcError as exc:
-            errors.append(f"METAR: {exc}")
+            errors["METAR"] = str(exc)
         try:
             tafs = await client.tafs(ids)
         except AwcError as exc:
-            errors.append(f"TAF: {exc}")
+            errors["TAF"] = str(exc)
     return latest_by_station(metars), {taf.icao: taf for taf in tafs}, errors
 
 
 def run_get(args: argparse.Namespace) -> int:
-    """Exit 0 when everything arrived, 3 when a product failed but some data arrived, 1 when no station got anything."""
-    ids = resolve_ids(args.stations)
+    """Exit 0 when every station got a report, 3 when a product failed or a station got nothing but some data
+    arrived, 2 for an argument that is not a station id, 1 when no station got anything."""
+    ids, rejected = resolve_ids(args.stations)
+    if rejected or not ids:
+        shown = ", ".join(repr(code) for code in rejected)
+        sys.stderr.write(
+            f"wxbrief get: not a station id: {shown} (give 3 or 4 letters or digits, one id per argument)\n"
+            if rejected
+            else "wxbrief get: no station given\n"
+        )
+        return 2
     metars, tafs, errors = asyncio.run(_fetch(ids))
-    for message in errors:
-        sys.stderr.write(f"wxbrief get: {message}\n")
-    status = 1 if not (metars or tafs) else 3 if errors else 0
+    for product, message in errors.items():
+        sys.stderr.write(f"wxbrief get: {product}: {message}\n")
+    empty = [icao for icao in ids if icao not in metars and icao not in tafs]
+    if empty and not errors:  # after a failed fetch the error above already says why they are empty
+        sys.stderr.write(f"wxbrief get: no report for {', '.join(empty)}\n")
+    status = 1 if not (metars or tafs) else 3 if errors or empty else 0
 
     now = datetime.now(UTC)
+    stale = {
+        icao: now - m.observed
+        for icao, m in metars.items()
+        if m.observed is not None and freshness(m.observed, now) is Freshness.STALE
+    }
     decoded_metars: dict[str, Metar] = {icao: parse_metar(m.raw, m.observed or now) for icao, m in metars.items()}
     decoded_tafs: dict[str, Taf] = {icao: parse_taf(t.raw, t.issued or now) for icao, t in tafs.items()}
 
@@ -76,13 +106,15 @@ def run_get(args: argparse.Namespace) -> int:
             icao: {
                 "metar": to_dict(decoded_metars[icao]) if icao in decoded_metars else None,
                 "taf": to_dict(decoded_tafs[icao]) if icao in decoded_tafs else None,
+                "stale": icao in stale,  # the METAR is older than the freshness limit
+                "errors": [product.lower() for product in errors],  # a null above is a failed fetch for these
             }
             for icao in ids
         }
         sys.stdout.write(json.dumps(document, indent=2, ensure_ascii=False) + "\n")
         return status
 
-    units = UnitsMode(args.units or (UnitsMode.US.value if args.discord else UnitsMode.MIXED.value))
+    units = UnitsMode(args.units or args.tui_units or (UnitsMode.US.value if args.discord else UnitsMode.MIXED.value))
     translator = Translator.load(getattr(args, "lang", None) or DEFAULT_LANGUAGE)
     db = bundled()
     blocks: list[str] = []
@@ -91,6 +123,10 @@ def run_get(args: argparse.Namespace) -> int:
         name = station.name if station else None
         parts: list[str] = []
         if icao in decoded_metars:
+            if icao in stale:
+                minutes = int(stale[icao].total_seconds() // 60)
+                limit = int(STALE_AFTER.total_seconds() // 60)
+                parts.append(translator.t(K.CLI_METAR_STALE, icao=icao, minutes=minutes, limit=limit))
             daylight = is_daylight(station.lat, station.lon, metars[icao].observed) if station else None
             if args.discord:
                 parts.append(
@@ -98,6 +134,8 @@ def run_get(args: argparse.Namespace) -> int:
                 )
             else:
                 parts.append(render_plain(decoded_metars[icao], translator, units))
+        elif "METAR" in errors:
+            parts.append(translator.t(K.CLI_METAR_FAILED, icao=icao))
         else:
             parts.append(translator.t(K.CLI_NO_METAR, icao=icao))
         if icao in decoded_tafs:
