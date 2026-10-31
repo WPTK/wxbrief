@@ -11,7 +11,7 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from wxbrief.decode.groups.tail import is_color_state
+from wxbrief.decode.groups.colorstate import is_color_state
 from wxbrief.decode.model import Flavor
 from wxbrief.decode.tokens import Token
 

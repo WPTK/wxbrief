@@ -6,16 +6,31 @@ import math
 from collections.abc import Sequence
 from dataclasses import replace
 
-from wxbrief.decode.flightcat import IFR_CEILING_FT, IFR_VISIBILITY_SM, flight_category, lowest_ceiling, visibility_sm
+from wxbrief.decode.colorstate import computed_color_state, is_below_green, visibility_meters
+from wxbrief.decode.flightcat import (
+    IFR_CEILING_FT,
+    IFR_VISIBILITY_SM,
+    ceiling_for_classification,
+    flight_category,
+    lowest_ceiling,
+    visibility_sm,
+)
 from wxbrief.decode.model import (
     CloudType,
+    ColorCode,
     Condition,
     Descriptor,
     Flag,
+    MaintenanceIndicator,
     Metar,
     Modifier,
     Phenomenon,
+    PressureRapidChange,
     ReportType,
+    RunwayDeposit,
+    RunwayState,
+    SeaLevelPressure,
+    SensorStatus,
     SkyCondition,
     WeatherGroup,
 )
@@ -39,6 +54,19 @@ _OBSCURATION_PHENOMENA = frozenset(
 )
 _FREEZING_PRECIP_PHENOMENA = frozenset({Phenomenon.RA, Phenomenon.DZ, Phenomenon.UP})
 _CORRECTION_MODIFIERS = frozenset({Modifier.COR, Modifier.CCA, Modifier.CCB, Modifier.CCC})
+
+# Deposits that make a runway contaminated for the flag: anything but clear, damp or wet.
+_CONTAMINATING_DEPOSITS = frozenset(
+    {
+        RunwayDeposit.FROST,
+        RunwayDeposit.DRY_SNOW,
+        RunwayDeposit.WET_SNOW,
+        RunwayDeposit.SLUSH,
+        RunwayDeposit.ICE,
+        RunwayDeposit.COMPACTED_SNOW,
+        RunwayDeposit.FROZEN_RUTS,
+    }
+)
 
 DAY_START_HOUR = 6  # local hours [6, 20) count as daytime for the clear-sky glyph
 DAY_END_HOUR = 20
@@ -83,6 +111,33 @@ def refine_clear(condition: Condition | None, local_hour: int) -> Condition | No
     return Condition.CLEAR_DAY if DAY_START_HOUR <= local_hour < DAY_END_HOUR else Condition.CLEAR_NIGHT
 
 
+def _runway_contaminated(state: RunwayState) -> bool:
+    return state.snoclo or (not state.cleared and state.deposit in _CONTAMINATING_DEPOSITS)
+
+
+def _has_volcanic_ash(metar: Metar) -> bool:
+    groups = [*metar.weather, *(recent.weather for recent in metar.recent_weather)]
+    groups.extend(group for trend in metar.trends for group in trend.elements.weather)
+    return any(Phenomenon.VA in group.phenomena for group in groups)
+
+
+def _has_missing_data(metar: Metar) -> bool:
+    """A sensor reported out, ``SLPNO``, or a group the station could not report (``//``, ``////``, ``///``)."""
+    if any(isinstance(remark, SensorStatus) for remark in metar.remarks):
+        return True
+    if any(isinstance(remark, SeaLevelPressure) and remark.pressure is None for remark in metar.remarks):
+        return True
+    if any(group.not_observed for group in metar.weather):
+        return True
+    if metar.visibility is not None and metar.visibility.not_reported:
+        return True
+    if metar.wind is not None and metar.wind.speed is None:
+        return True
+    return any(
+        layer.cover is SkyCondition.UNKNOWN or (layer.is_ceiling_layer and layer.base is None) for layer in metar.sky
+    )
+
+
 def compute_flags(metar: Metar) -> tuple[Flag, ...]:
     """Operationally significant conditions, in the order of the ``Flag`` enum."""
     found: set[Flag] = set()
@@ -109,6 +164,20 @@ def compute_flags(metar: Metar) -> tuple[Flag, ...]:
         found.add(Flag.AUTOMATED)
     if metar.report_type is ReportType.SPECI:
         found.add(Flag.SPECIAL_REPORT)
+    if metar.wind_shear:
+        found.add(Flag.WIND_SHEAR)
+    if metar.color_state is not None and is_below_green(metar.color_state.current):
+        found.add(Flag.COLOR_BELOW_GRN)
+    if any(isinstance(remark, PressureRapidChange) for remark in metar.remarks):
+        found.add(Flag.RAPID_PRESSURE_CHANGE)
+    if any(_runway_contaminated(state) for state in metar.runway_states):
+        found.add(Flag.RUNWAY_CONTAMINATED)
+    if any(isinstance(remark, MaintenanceIndicator) for remark in metar.remarks):
+        found.add(Flag.MAINTENANCE)
+    if _has_volcanic_ash(metar):
+        found.add(Flag.VOLCANIC_ASH)
+    if _has_missing_data(metar):
+        found.add(Flag.MISSING_DATA)
     return tuple(flag for flag in Flag if flag in found)
 
 
@@ -122,6 +191,14 @@ def relative_humidity(temperature: Temperature | None, dewpoint: Temperature | N
     return round(min(100.0, humidity), 1)
 
 
+def _computed_color(metar: Metar) -> ColorCode | None:
+    """The colour state the report's ceiling and visibility compute to, for reports that carry a colour state."""
+    if metar.color_state is None:
+        return None
+    ceiling_ft = ceiling_for_classification(metar.sky, metar.cavok)
+    return computed_color_state(ceiling_ft, visibility_meters(metar.visibility))
+
+
 def derive(metar: Metar) -> Metar:
     """Fill in the derived fields of a parsed ``Metar``."""
     layer = lowest_ceiling(metar.sky)
@@ -133,4 +210,5 @@ def derive(metar: Metar) -> Metar:
         flags=compute_flags(staged),
         condition=compute_condition(staged),
         relative_humidity=relative_humidity(metar.temperature, metar.dewpoint),
+        computed_color_state=_computed_color(staged),
     )

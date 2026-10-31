@@ -1,7 +1,7 @@
 """METAR/SPECI parser: an ordered section state machine with tolerant fallthrough.
 
 The driver walks the tokens once. Sections have a fixed order (type, station, time, wind, wind variation, visibility,
-then RVR/weather/sky in any order, temperature, pressure, then the undecoded tail), and a token is offered to the
+then RVR/weather/sky in any order, temperature, pressure, then the tail groups), and a token is offered to the
 current section and every later one, so a missing group is skipped rather than fatal. A small allowlist (modifiers
 such as ``AUTO`` and ``COR``) may match earlier than the current section. A token nothing accepts becomes an
 ``UNKNOWN`` token plus a ``ParseWarning`` and parsing carries on with the next one.
@@ -31,17 +31,26 @@ from wxbrief.decode.groups.wind import parse_wind, parse_wind_variation
 from wxbrief.decode.model import (
     RVR,
     CloudLayer,
+    ColorStateGroup,
+    ColorStateRemark,
     Flavor,
     Metar,
     Modifier,
     ParseWarning,
+    RecentWeather,
+    Remark,
     ReportType,
+    RunwayState,
+    SeaState,
     SemanticKind,
+    Trend,
     Visibility,
     WeatherGroup,
     Wind,
+    WindShearRunway,
     WindVariation,
 )
+from wxbrief.decode.remarks import Context, parse_remarks
 from wxbrief.decode.times import resolve_day_time
 from wxbrief.decode.tokens import Cursor, Token, tokenize
 from wxbrief.decode.units import Pressure, Temperature
@@ -61,7 +70,7 @@ class _Section(IntEnum):
     BODY = 6  # RVR, weather and sky groups, in any order and repeatable
     TEMPDEW = 7
     PRESSURE = 8  # repeatable: some reports give both QNH and an altimeter setting
-    TAIL = 9  # trends, colour states, runway state ...: recognised, not decoded
+    TAIL = 9  # trends, colour states, runway state, recent weather, wind shear, sea state
 
 
 @dataclass
@@ -85,6 +94,13 @@ class _Draft:
     dewpoint: Temperature | None = None
     altimeters: list[Pressure] = field(default_factory=list)
     tail_index: int | None = None
+    trends: list[Trend] = field(default_factory=list)
+    color_state: ColorStateGroup | None = None
+    runway_states: list[RunwayState] = field(default_factory=list)
+    recent_weather: list[RecentWeather] = field(default_factory=list)
+    wind_shear: list[WindShearRunway] = field(default_factory=list)
+    sea_state: SeaState | None = None
+    remarks: list[Remark] = field(default_factory=list)
 
     def warn(self, code: str, token: Token) -> None:
         self.warnings.append(ParseWarning(code, token.start, token.end, token.text))
@@ -205,11 +221,26 @@ def _run_pressure(cur: Cursor, draft: _Draft) -> bool:
 
 def _run_tail(cur: Cursor, draft: _Draft) -> bool:
     start = cur.pos
-    kind = parse_tail_group(cur, draft.flavor)
-    if kind is None:
+    result = parse_tail_group(cur, draft.flavor, draft.observed)
+    if result is None:
         return False
     if draft.tail_index is None:
         draft.tail_index = start
+    if result.trend is not None:
+        draft.trends.append(result.trend)
+    if result.color_state is not None and draft.color_state is None:
+        draft.color_state = result.color_state
+    if result.runway_state is not None:
+        draft.runway_states.append(result.runway_state)
+    if result.recent_weather is not None:
+        draft.recent_weather.append(result.recent_weather)
+    draft.wind_shear.extend(result.wind_shear)
+    if result.sea_state is not None and draft.sea_state is None:
+        draft.sea_state = result.sea_state
+    # A group parser leaves a token it cannot place inside the group as UNKNOWN; report each one.
+    for index in range(start, cur.pos):
+        if cur.kind_at(index) is SemanticKind.UNKNOWN:
+            draft.warn(WARN_UNKNOWN_TOKEN, cur.token_at(index))
     return True
 
 
@@ -249,6 +280,22 @@ def _guarded(step: _Step, cur: Cursor, draft: _Draft) -> bool:
     return False
 
 
+def _decode_remarks(cur: Cursor, draft: _Draft, rmk: Token) -> None:
+    """Decode everything after ``RMK``; if that fails, the rest stays plain ``REMARK`` tokens and a warning."""
+    try:
+        draft.remarks = parse_remarks(cur, Context(draft.observed))
+    except Exception:
+        draft.remarks = []
+        draft.warn(WARN_PARSER_ERROR, rmk)
+    while (rest := cur.peek()) is not None:
+        cur.take(SemanticKind.TERMINATOR if rest.kind is SemanticKind.TERMINATOR else SemanticKind.REMARK)
+    if draft.color_state is None:
+        for remark in draft.remarks:
+            if isinstance(remark, ColorStateRemark):
+                draft.color_state = remark.group
+                break
+
+
 def _remarks_text(raw: str, tokens: tuple[Token, ...], remarks_index: int) -> str:
     body = [tok for tok in tokens[remarks_index + 1 :] if tok.kind is not SemanticKind.TERMINATOR]
     if not body:
@@ -285,8 +332,7 @@ def _parse(raw: str, reference: datetime | None) -> Metar:
         if token.text == "RMK":
             remarks_index = cur.pos
             cur.take(SemanticKind.REMARK)
-            while (rest := cur.peek()) is not None:
-                cur.take(SemanticKind.TERMINATOR if rest.kind is SemanticKind.TERMINATOR else SemanticKind.REMARK)
+            _decode_remarks(cur, draft, token)
             break
         for step in _candidates(position):
             if _guarded(step, cur, draft):
@@ -317,6 +363,13 @@ def _parse(raw: str, reference: datetime | None) -> Metar:
         tail_index=draft.tail_index,
         remarks_index=remarks_index,
         remarks_raw=_remarks_text(raw, tagged, remarks_index) if remarks_index is not None else None,
+        trends=tuple(draft.trends),
+        color_state=draft.color_state,
+        runway_states=tuple(draft.runway_states),
+        recent_weather=tuple(draft.recent_weather),
+        wind_shear=tuple(draft.wind_shear),
+        sea_state=draft.sea_state,
+        remarks=tuple(draft.remarks),
         flavor=detection.flavor,
         military=detection.military,
         warnings=tuple(draft.warnings),

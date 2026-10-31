@@ -1,87 +1,94 @@
-"""Recognition of the groups between the pressure and ``RMK``.
+"""The groups between the pressure and ``RMK`` (trends, colour states, runway state and the rest).
 
-Trends, colour states, runway state, recent weather, wind shear and sea state are only *recognised* here: their
-tokens get the right ``SemanticKind`` (so highlighting works and no "unknown token" warning is raised) and the
-text stays in the token list. Decoding them into model objects is the next session's job.
-
-Layout the next session can rely on:
+``parse_tail_group`` looks at the token under the cursor, decodes one group with the matching parser and returns it
+in a ``TailResult`` (``None``, with nothing consumed, if the token starts no tail group). The groups and how their
+tokens are tagged:
 
 * ``NOSIG``                      -> one ``TREND`` token.
-* ``BECMG``/``TEMPO`` + body     -> the keyword and every following token up to the next trend keyword, ``RMK`` or
-  the end are ``TREND`` (a colour-state code inside the body is ``COLOR_STATE``).
+* ``BECMG``/``TEMPO`` + body     -> the keyword and its ``FM``/``TL``/``AT`` times are ``TREND``; the body elements get
+  their own kinds (``WIND``, ``VISIBILITY``, ``WEATHER``, ``SKY``, ``COLOR_STATE``); a token the body cannot place is
+  ``UNKNOWN``.
+* ``BLU``, ``YLO2``, ``BLACKRED``, ``BLU TEMPO YLO`` -> ``COLOR_STATE`` (a trend keyword inside the group is ``TREND``).
 * ``RERA``, ``RETSRA`` ...       -> ``RECENT_WEATHER``.
 * ``WS ALL RWY``, ``WS R24L``    -> ``WIND_SHEAR`` over the keyword and its runway tokens.
 * ``W15/S3``                     -> ``SEA_STATE``.
-* ``BLU``, ``YLO2``, ``BLACK``   -> ``COLOR_STATE``.
-* ``88290192``, ``R24L/290255``, ``R/SNOCLO`` (ICAO flavour only) -> ``RUNWAY_STATE``.
+* ``88290192``, ``R24L/290255``, ``R/SNOCLO`` (not in US-flavour reports) -> ``RUNWAY_STATE``.
 """
 
 from __future__ import annotations
 
-import re
+from dataclasses import dataclass
+from datetime import datetime
 
-from wxbrief.decode.model import Flavor, SemanticKind
-from wxbrief.decode.tables import COLOR_STATE_BASE_CODES, DESCRIPTOR_CODES, PHENOMENON_CODES
-from wxbrief.decode.tokens import Cursor
-
-TREND_KEYWORDS = frozenset({"NOSIG", "BECMG", "TEMPO"})
-
-_DESC = "|".join(DESCRIPTOR_CODES)
-_PHEN = "|".join(PHENOMENON_CODES)
-# Two-letter codes only, so the repeat is unambiguous (no catastrophic backtracking on junk input).
-_RECENT = re.compile(rf"^RE(?:[-+]?(?:{_DESC}|{_PHEN}))+$")
-_SEA_STATE = re.compile(r"^W(?:M?\d{2}|//)/(?:S[\d/]|H\d{1,3}|H///)$")
-_RUNWAY_STATE = re.compile(r"^(?:R\d{2}[LCR]?/(?:[\d/]{6}|CLRD(?:\d{2}|//))|R/SNOCLO|SNOCLO|\d{2}[\d/]{6})$")
-_WIND_SHEAR_ARGS = re.compile(r"^(?:ALL|RWY|(?:RWY)?\d{2}[LCR]?|R\d{2}[LCR]?)$")
-
-
-def is_color_state(text: str) -> bool:
-    """Colour-state codes (``BLU``, ``YLO2``, ``RED`` ...), optionally ``BLACK``-prefixed or ``+``-suffixed."""
-    if text == "BLACK":
-        return True
-    stem = text.removeprefix("BLACK").removesuffix("+")
-    return stem in COLOR_STATE_BASE_CODES
+from wxbrief.decode.groups.colorstate import parse_color_state_group
+from wxbrief.decode.groups.recentwx import parse_recent_weather, recent_weather_of
+from wxbrief.decode.groups.runwaystate import is_runway_state, parse_runway_state
+from wxbrief.decode.groups.seastate import parse_sea_state, sea_state_of
+from wxbrief.decode.groups.trend import TREND_KEYWORDS, parse_trend
+from wxbrief.decode.groups.windshear import parse_wind_shear
+from wxbrief.decode.model import (
+    ColorStateGroup,
+    Flavor,
+    RecentWeather,
+    RunwayState,
+    SeaState,
+    SemanticKind,
+    Trend,
+    WindShearRunway,
+)
+from wxbrief.decode.tokens import Cursor, Token
 
 
-def parse_tail_group(cur: Cursor, flavor: Flavor) -> SemanticKind | None:
-    """Consume one tail group at the cursor and return its kind, or ``None`` if nothing here is a tail group."""
+@dataclass(frozen=True)
+class TailResult:
+    """One decoded tail group; exactly one of the value fields is set. ``kind`` is the kind of its first token."""
+
+    kind: SemanticKind
+    trend: Trend | None = None
+    color_state: ColorStateGroup | None = None
+    runway_state: RunwayState | None = None
+    recent_weather: RecentWeather | None = None
+    wind_shear: tuple[WindShearRunway, ...] = ()
+    sea_state: SeaState | None = None
+
+
+def _starts_other_group(token: Token, flavor: Flavor) -> bool:
+    """Whether ``token`` begins a tail group that is not part of a trend body."""
+    text = token.text
+    return (
+        text == "RMK"
+        or text == "WS"
+        or token.kind is SemanticKind.TERMINATOR
+        or recent_weather_of(text) is not None
+        or sea_state_of(text) is not None
+        or (flavor is not Flavor.US and is_runway_state(text))
+    )
+
+
+def parse_tail_group(cur: Cursor, flavor: Flavor, observed: datetime | None = None) -> TailResult | None:
+    """Decode the tail group at the cursor, consuming and tagging its tokens."""
     token = cur.peek()
     if token is None:
         return None
-    text = token.text
 
-    if text == "NOSIG":
-        cur.take(SemanticKind.TREND)
-        return SemanticKind.TREND
+    # A colour group first: "TEMPO YLO" starts one, while "TEMPO 5000" starts a weather trend.
+    if (colors := parse_color_state_group(cur)) is not None:
+        return TailResult(SemanticKind.COLOR_STATE, color_state=colors)
 
-    if text in ("BECMG", "TEMPO"):
-        cur.take(SemanticKind.TREND)
-        while (nxt := cur.peek()) is not None:
-            if nxt.text == "RMK" or nxt.text in TREND_KEYWORDS or nxt.kind is SemanticKind.TERMINATOR:
-                break
-            cur.take(SemanticKind.COLOR_STATE if is_color_state(nxt.text) else SemanticKind.TREND)
-        return SemanticKind.TREND
+    if token.text in TREND_KEYWORDS:
+        trend = parse_trend(cur, observed, lambda tok: _starts_other_group(tok, flavor))
+        return None if trend is None else TailResult(SemanticKind.TREND, trend=trend)
 
-    if text == "WS":
-        cur.take(SemanticKind.WIND_SHEAR)
-        while (nxt := cur.peek()) is not None and _WIND_SHEAR_ARGS.match(nxt.text):
-            cur.take(SemanticKind.WIND_SHEAR)
-        return SemanticKind.WIND_SHEAR
+    if (shear := parse_wind_shear(cur)) is not None:
+        return TailResult(SemanticKind.WIND_SHEAR, wind_shear=shear)
 
-    if _RECENT.match(text):
-        cur.take(SemanticKind.RECENT_WEATHER)
-        return SemanticKind.RECENT_WEATHER
+    if (recent := parse_recent_weather(cur)) is not None:
+        return TailResult(SemanticKind.RECENT_WEATHER, recent_weather=recent)
 
-    if _SEA_STATE.match(text):
-        cur.take(SemanticKind.SEA_STATE)
-        return SemanticKind.SEA_STATE
+    if (sea := parse_sea_state(cur)) is not None:
+        return TailResult(SemanticKind.SEA_STATE, sea_state=sea)
 
-    if is_color_state(text):
-        cur.take(SemanticKind.COLOR_STATE)
-        return SemanticKind.COLOR_STATE
-
-    if flavor is not Flavor.US and _RUNWAY_STATE.match(text):
-        cur.take(SemanticKind.RUNWAY_STATE)
-        return SemanticKind.RUNWAY_STATE
+    if flavor is not Flavor.US and (runway := parse_runway_state(cur)) is not None:
+        return TailResult(SemanticKind.RUNWAY_STATE, runway_state=runway)
 
     return None

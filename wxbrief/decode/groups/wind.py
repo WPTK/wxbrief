@@ -16,11 +16,9 @@ _VARIATION = re.compile(r"^(\d{3})V(\d{3})$")
 _UNITS = {"KT": SpeedUnit.KT, "MPS": SpeedUnit.MPS, "KMH": SpeedUnit.KMH}
 
 
-def parse_wind(cur: Cursor) -> Wind | None:
-    token = cur.peek()
-    if token is None:
-        return None
-    match = _WIND.match(token.text)
+def wind_from_text(text: str) -> Wind | None:
+    """Decode one wind group from its text (``27015G25KT``); ``None`` if it is not one."""
+    match = _WIND.match(text)
     if match is None:
         return None
     direction: int | None = None
@@ -32,8 +30,18 @@ def parse_wind(cur: Cursor) -> Wind | None:
     unit = _UNITS[match.group("unit")]
     speed = None if match.group("spd") == "//" else Speed(int(match.group("spd")), unit)
     gust = Speed(int(match.group("gst")), unit) if match.group("gst") else None
-    cur.take(SemanticKind.WIND)
     return Wind(direction, speed, gust, variable=variable, speed_above=bool(match.group("above")))
+
+
+def parse_wind(cur: Cursor) -> Wind | None:
+    token = cur.peek()
+    if token is None:
+        return None
+    wind = wind_from_text(token.text)
+    if wind is None:
+        return None
+    cur.take(SemanticKind.WIND)
+    return wind
 
 
 def parse_wind_variation(cur: Cursor) -> WindVariation | None:
