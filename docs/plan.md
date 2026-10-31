@@ -173,7 +173,7 @@ Tick a row when the session has landed on `main` (S0 committed directly; later s
 | S2b | Decoder depth: TAF, timeline, `split.py`, Discord and JSON output | [x] 2026-10-31 |
 | S3 | Data layer | [x] 2026-10-31 |
 | S4 | TUI MVP | [x] 2026-10-31 |
-| S5 | Colorways | [ ] |
+| S5 | Colorways | [x] 2026-10-31 |
 | S6 | TAF timeline | [x] 2026-10-31 |
 | S7 | i18n | [ ] |
 | S8 | Polish | [ ] |
@@ -643,6 +643,66 @@ injects resolved hex.
 - Component classes in `app.tcss`, `RawReport` built from `get_component_rich_style()`, badges and timeline segments using
   `$fcat-*`, `t`/`T` over `THEME_CYCLE`, `ThemePickerScreen`, persistence (skipped when `--theme` was passed), snapshots in
   three themes, and the `--theme` flag on the TUI entry.
+
+### S5b (2026-10-31)
+
+The app half of S5. S5 is ticked: the aviation themes, the palette and the app wiring are all in. Screenshots:
+`docs/s5-paper-chart.svg`, `docs/s5-theme-picker.svg`; the guide is `docs/themes.md`.
+
+**Names as built.**
+
+- `WxBriefApp`: registers `AVIATION_THEMES` in `__init__`, starts in `options.view.theme` (an unknown name falls back to
+  `textual-dark` with a notice and the file is left alone), `get_css_variables()` adds `Palette.from_theme(...).css_variables()`.
+  Bindings `t` (`action_cycle_theme`, over `THEME_CYCLE`) and `T` (`action_theme_picker`) live on the app, not on
+  `BriefingScreen`. `AppOptions.theme_from_flag` marks a `--theme` run.
+- Theme changes: `theme_changed_signal` calls `_theme_changed`, which redraws the briefing and calls `_settle()`.
+  `_settle()` saves the theme unless the picker is open (`_previewing`) or it is the theme already settled; it reads
+  `self.theme`, not the signal's value, because the signal is published after a delay and a late message about a preview
+  must not be saved. `_save()` writes the watchlist and `[view] theme` together, only what changed, with the existing
+  unreadable-config, backup and `--no-config` rules; `_chosen_theme` is only set by a user choice, so a fallback theme or a
+  `--theme` run never reaches the file.
+- `ui/screens/theme_picker.py`: `ThemePickerScreen(names, current)`, dismisses with the kept name or `None`; highlighting
+  sets `app.theme`, Esc restores it. Opening it twice does nothing.
+- `ui/style.py`: `ViewPalette(palette)` replaces S4's `Palette`, `_SEMANTIC` and `_BADGES`. It reads the Rich theme of
+  `wxbrief.render.palette.Palette` (`style`, `badge`, `raw_text`, and `fresh`, `stale`, `offline`, `muted`).
+  `ViewContext.palette` builds it from `app.current_theme`, so the CLI and the TUI share every colour.
+- `--theme NAME` is a global flag (`dest=tui_theme`, validated by `_tui_theme` against the built-ins plus the aviation themes;
+  an unknown name is an argparse error, exit 2, with the names listed). `decode --theme` is unchanged.
+- `app.tcss`: a section at the end for the picker, the highlighted station row (`$primary` tint) and the `.fcat-*`/`.cs-*`
+  classes (`background: $fcat-ifr; color: auto`).
+- Tests: `tests/test_app_themes.py` (every theme applies and the wind colour in the raw text changes, `t` order, picker
+  preview/keep/revert, persistence, flag, unreadable config, `--no-config`, unknown saved theme, CLI/TUI parity in four
+  themes, stylesheet classes); `tests/test_snapshots.py` (three themes); `tests/test_themes.py` gained the legibility test.
+
+**Deviations.**
+
+- Raw-text colours are not component classes with `get_component_rich_style()`. `ViewPalette` reads the Rich theme directly:
+  one source of truth with the CLI, and no second table in the stylesheet to keep equal to it. The stylesheet carries the
+  `$fcat-*` and `$cs-*` classes for widgets Textual draws itself (S6's timeline).
+- `wx-*` tokens that come from `SEMANTIC_DEFAULTS` are now moved towards black or white until they reach 4.5:1 against the
+  surface and the panel (`Palette._legible`, `MIN_TEXT_CONTRAST`). The scan of all 18 themes found textual-dark's
+  wind group (`$secondary`, 1.5:1), solarized and latte tokens and the status-bar counters unreadable. Tokens a theme sets in
+  `variables` are untouched. This changes the CLI colours for `decode --theme` in the same way, which is wanted.
+- The freshness marks, "stale" and offline text used the ANSI names `green`, `yellow` and `red`, which follow the terminal and
+  not the theme (green on a blue highlight, 1.0:1). They now use the VFR colour, `wx.warning` and the IFR colour; the
+  secondary text (`dim`) became `wx.time` (`ViewPalette.muted`), and the highlighted station row is a tint of the primary colour
+  rather than a solid fill. The station name and the footer key hints are the theme's own colours and were not touched.
+- `ansi-dark` and `ansi-light` are unregistered in the app (`Palette.from_theme` cannot resolve `ansi_default`, which crashed the
+  redraw when Ctrl+P picked one), so `--theme` accepts exactly what `decode --theme` accepts.
+- Settings still shows the theme read-only; S7 makes it editable.
+
+**Snapshots (closes #13).** `pytest-textual-snapshot` 1.1.0 works with Textual 8.2.8: the same picture came out on every run,
+under `NO_COLOR=1`, under `pytest -n 3` (the app runs on an injected clock with polling off and the saved
+KDEN and EGLL reports; the test unsets `NO_COLOR`, which would otherwise turn every cell grey). The exporter's "Generated with Rich"
+comment is removed from the stored SVGs by patching `textual._doc.take_svg_screenshot` in the test. The fallback (comparing
+`export_screenshot()` text in-house) was not needed. Stored on Windows only; the other two systems are confirmed by CI. If the
+Linux or macOS job shows a diff, the likely causes are font metrics (not in the SVG, which has fixed cell sizes) or the time zone
+database; regenerate on one system, compare, and fall back to a text comparison of the screen rather than the SVG. Regenerate with
+`pytest tests/test_snapshots.py --snapshot-update` and read the diff.
+
+**For S6.** `$fcat-*` and `$cs-*` are in `get_css_variables()` and the classes `.fcat-vfr` ... `.cs-red` exist; a timeline segment
+only needs the class (or `background: $fcat-ifr; color: auto`). `ViewPalette.badge()` is the Rich badge. A new widget that draws
+Rich text takes colours from `ctx.palette`, never from ANSI names.
 
 ### S6 (2026-10-31)
 

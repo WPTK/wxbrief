@@ -37,12 +37,29 @@ def _parse_date(value: str) -> datetime:
 
 
 COMMANDS = ("decode", "get")
-_GLOBAL_WITH_VALUE = frozenset({"--glyphs", "--layout", "--units", "--time", "--lang", "--config"})
+_GLOBAL_WITH_VALUE = frozenset({"--theme", "--glyphs", "--layout", "--units", "--time", "--lang", "--config"})
+
+
+def _tui_theme(value: str) -> str:
+    """A theme name the TUI can show: an aviation theme or a Textual built-in (not ``ansi-dark`` or ``ansi-light``)."""
+    from wxbrief.render.palette import all_themes
+
+    names = sorted(all_themes())
+    if value not in names:
+        raise argparse.ArgumentTypeError(f"unknown theme {value!r} (choose from: {', '.join(names)})")
+    return value
 
 
 def _add_global_flags(parser: argparse.ArgumentParser) -> None:
     """The flags that apply to the TUI (and are accepted before a subcommand)."""
     parser.add_argument("--version", action="version", version=f"wxbrief {__version__}")
+    parser.add_argument(
+        "--theme",
+        dest="tui_theme",
+        type=_tui_theme,
+        metavar="NAME",
+        help="colourway for this run, such as paper-chart (not saved; default: from config, textual-dark)",
+    )
     parser.add_argument("--glyphs", choices=GLYPH_SETS, help="glyph set (default: from config, nerd)")
     parser.add_argument("--layout", choices=LAYOUTS, help="list or grid layout (v toggles it)")
     parser.add_argument("--units", dest="tui_units", choices=[m.value for m in UnitsMode], help="units mode")
@@ -235,6 +252,7 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
     demo = bool(args.demo)
     view = replace(loaded.config.view)
     for name, value in (
+        ("theme", args.tui_theme),
         ("glyph_set", args.glyphs),
         ("layout", args.layout),
         ("units", args.tui_units),
@@ -268,6 +286,7 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
         view=view,
         config_path=args.config,
         use_config=not args.no_config,
+        theme_from_flag=bool(args.tui_theme),
         config_warnings=loaded.warnings,
     )
 

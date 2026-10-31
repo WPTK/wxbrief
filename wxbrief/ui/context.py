@@ -10,8 +10,9 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from wxbrief.data.stations import Station, StationDB
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import Translator
+from wxbrief.render.palette import Palette
 from wxbrief.ui.glyphs import Glyphs
-from wxbrief.ui.style import Palette
+from wxbrief.ui.style import ViewPalette
 
 if TYPE_CHECKING:
     from textual.app import App
@@ -25,15 +26,15 @@ class ViewContext:
     glyphs: Glyphs
     time_mode: str
     stations: StationDB
-    _palette: Palette | None = None
+    _palette: ViewPalette | None = None
     _palette_theme: str | None = None
 
     @property
-    def palette(self) -> Palette:
+    def palette(self) -> ViewPalette:
         """The palette for the active theme, rebuilt when the theme changes."""
         name = self.app.theme
         if self._palette is None or self._palette_theme != name:
-            self._palette = Palette(self.app.get_css_variables())
+            self._palette = ViewPalette(Palette.from_theme(self.app.current_theme))
             self._palette_theme = name
         return self._palette
 

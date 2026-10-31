@@ -49,23 +49,23 @@ class StationHeader(Static):
         if name:
             title.append(f"  {name}")
         if place:
-            title.append(f" ({place})", style="dim")
+            title.append(f" ({place})", style=palette.muted)
         title.append("  ")
         title.append_text(palette.badge(metar.flight_category if metar else None))
-        title.append(f"   {position}", style="dim")
+        title.append(f"   {position}", style=palette.muted)
         lines = [title]
         if entry.awc_metar and entry.awc_metar.observed:
             observed = entry.awc_metar.observed
             state = entry.freshness(now)
             mark = ctx.glyphs.fresh if state is Freshness.FRESH else ctx.glyphs.stale
-            style = "green" if state is Freshness.FRESH else "bold yellow"
+            style = ctx.palette.fresh if state is Freshness.FRESH else ctx.palette.stale
             when = f"Observed {ctx.clock(observed, entry.icao)}, {age_text(now - observed)} ago  "
             line = Text.assemble(when, (f"{mark} {state.value}", style))
             if entry.from_cache and entry.updated is not None:
-                line.append(f"  (cached {age_text(now - entry.updated)} ago)", style="dim")
+                line.append(f"  (cached {age_text(now - entry.updated)} ago)", style=ctx.palette.muted)
             lines.append(line)
         else:
-            lines.append(Text("No METAR in the last 2 hours", style="yellow"))
+            lines.append(Text("No METAR in the last 2 hours", style=ctx.palette.stale))
         self.update(Text("\n").join(lines))
 
 
@@ -92,7 +92,7 @@ class RawReport(Static):
             parts.append(ctx.palette.raw_text(entry.metar))
         if entry.taf is not None:
             parts.append(ctx.palette.raw_text(entry.taf))
-        self.update(Text("\n\n").join(parts) if parts else Text("No report yet", style="dim"))
+        self.update(Text("\n\n").join(parts) if parts else Text("No report yet", style=ctx.palette.muted))
 
 
 class DecodedTable(DataTable[Text]):
