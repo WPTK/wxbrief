@@ -124,6 +124,15 @@ def test_wind(
     assert cur.tagged()[0].kind is SemanticKind.WIND
 
 
+def test_a_gust_above_the_reportable_limit_is_marked_as_a_floor() -> None:
+    wind, _ = run(parse_wind, "27015GP99KT")
+    assert wind is not None
+    assert (wind.gust, wind.gust_above, wind.speed_above) == (Speed(99, SpeedUnit.KT), True, False)
+    plain, _ = run(parse_wind, "27015G25KT")
+    assert plain is not None
+    assert plain.gust_above is False
+
+
 def test_wind_calm_property() -> None:
     wind, _ = run(parse_wind, "00000KT")
     assert wind is not None
@@ -258,6 +267,12 @@ def test_visibility_rejects(text: str) -> None:
             RVR("16", Distance(400, DistanceUnit.M), None, Distance(800, DistanceUnit.M), trend=RvrTrend.UP),
         ),
         ("R24C/////", RVR("24C", None)),
+        # Canadian form: a slash before the trend
+        ("R06L/2600FT/D", RVR("06L", Distance(2600, DistanceUnit.FT), trend=RvrTrend.DOWN)),
+        (
+            "R06L/2600V4000FT/U",
+            RVR("06L", Distance(2600, DistanceUnit.FT), None, Distance(4000, DistanceUnit.FT), trend=RvrTrend.UP),
+        ),
     ],
 )
 def test_rvr(text: str, expected: RVR) -> None:

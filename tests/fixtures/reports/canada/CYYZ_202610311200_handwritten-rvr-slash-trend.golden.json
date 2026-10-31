@@ -1,0 +1,218 @@
+{
+  "raw": "METAR CYYZ 311200Z 28008KT 1/2SM R06L/2600FT/D R06R/2600V4000FT/U FG VV002 03/03 A2997 RMK FG8 SLP152",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "CYYZ",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "311200Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "28008KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "1/2SM",
+      "start": 27,
+      "end": 32,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "R06L/2600FT/D",
+      "start": 33,
+      "end": 46,
+      "kind": "RVR"
+    },
+    {
+      "text": "R06R/2600V4000FT/U",
+      "start": 47,
+      "end": 65,
+      "kind": "RVR"
+    },
+    {
+      "text": "FG",
+      "start": 66,
+      "end": 68,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "VV002",
+      "start": 69,
+      "end": 74,
+      "kind": "SKY"
+    },
+    {
+      "text": "03/03",
+      "start": 75,
+      "end": 80,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2997",
+      "start": 81,
+      "end": 86,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 87,
+      "end": 90,
+      "kind": "REMARK"
+    },
+    {
+      "text": "FG8",
+      "start": 91,
+      "end": 94,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP152",
+      "start": 95,
+      "end": 101,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "CYYZ",
+  "observed": "2026-10-31T12:00:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 280,
+    "speed": {
+      "value": 8,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false,
+    "gust_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 0.5,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [
+    {
+      "runway": "06L",
+      "distance": {
+        "value": 2600,
+        "unit": "FT"
+      },
+      "prefix": null,
+      "variable_to": null,
+      "variable_to_prefix": null,
+      "trend": "DOWN"
+    },
+    {
+      "runway": "06R",
+      "distance": {
+        "value": 2600,
+        "unit": "FT"
+      },
+      "prefix": null,
+      "variable_to": {
+        "value": 4000,
+        "unit": "FT"
+      },
+      "variable_to_prefix": null,
+      "trend": "UP"
+    }
+  ],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "FG"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "VV",
+      "base": {
+        "value": 200,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 3,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 3,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.97,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 11,
+  "remarks_raw": "FG8 SLP152",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "FreeText",
+      "text": "FG8"
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1015.2,
+        "unit": "HPA"
+      }
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 200,
+    "unit": "FT"
+  },
+  "ceiling_status": "HEIGHT",
+  "flight_category": "LIFR",
+  "flags": [
+    "LOW_CEILING",
+    "LOW_VISIBILITY"
+  ],
+  "condition": "OBSCURATION",
+  "relative_humidity": 100.0,
+  "warnings": []
+}

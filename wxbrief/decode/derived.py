@@ -25,6 +25,7 @@ from wxbrief.decode.model import (
     Flag,
     ForecastElements,
     IcingIntensity,
+    Intensity,
     MaintenanceIndicator,
     Metar,
     Modifier,
@@ -83,10 +84,15 @@ def _on_field(groups: Sequence[WeatherGroup]) -> list[WeatherGroup]:
 
 def compute_condition(metar: Metar) -> Condition | None:
     """The dominant condition: thunderstorm, snow/freezing, rain, obscuration, then the densest cloud layer."""
+    present = _on_field(metar.weather)
+    # Tornado, waterspout and funnel cloud (+FC, FC) outrank everything.
+    if any(Phenomenon.FC in group.phenomena for group in present):
+        return Condition.TORNADO
     # Thunderstorms count even in the vicinity (VCTS); other vicinity weather does not.
     if any(group.descriptor is Descriptor.TS for group in metar.weather):
         return Condition.THUNDERSTORM
-    present = _on_field(metar.weather)
+    if any(Phenomenon.SQ in group.phenomena for group in present):
+        return Condition.SQUALL
     phenomena = {p for group in present for p in group.phenomena}
     if phenomena & _SNOW_PHENOMENA or any(
         group.descriptor is Descriptor.FZ and set(group.phenomena) & _FREEZING_PRECIP_PHENOMENA for group in present
@@ -162,6 +168,12 @@ def compute_flags(metar: Metar) -> tuple[Flag, ...]:
             found.add(Flag.FREEZING_PRECIP)
         if group.descriptor is Descriptor.TS:
             found.add(Flag.THUNDERSTORM)
+        if group.vicinity or group.nsw or group.not_observed:
+            continue
+        if Phenomenon.FC in group.phenomena:
+            found.add(Flag.TORNADO if group.intensity is Intensity.HEAVY else Flag.FUNNEL_CLOUD)
+        if Phenomenon.SQ in group.phenomena:
+            found.add(Flag.SQUALL)
     if _CORRECTION_MODIFIERS & set(metar.modifiers):
         found.add(Flag.CORRECTED)
     if Modifier.AUTO in metar.modifiers:

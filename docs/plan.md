@@ -65,7 +65,7 @@ Principles: **never raise** on real input (wrap each group parser; failures beco
 - `units.py`: `Speed`, `Distance`, `Pressure`, `Temperature` frozen dataclasses storing the reported unit; renderers convert per `UnitsMode` (us / metric / mixed). Stdlib only.
 - `times.py`: `resolve_report_time(day, hour, minute, reference)` picks the latest past occurrence, at most 3 hours after the reference (API `reportTime`, or `--date` end of day/now for pasted text); `resolve_day_time` (nearest month) remains for forecast groups; hour 24 rolls over; invalid day yields `None` + warning. Station-local rendering uses `Station.tz` from the bundled DB.
 - `model.py`: `Metar`, `Taf`, `TafPeriod`, `ForecastElements` (all-optional = "unchanged"), `Wind`, `Visibility` (prefix P/M, cavok, ndv, directional minimum), `RVR`, `WeatherGroup`, `CloudLayer`/`SkyCondition` (incl. VV, SKC/CLR/NSC/NCD, `///`), `Trend`, `ColorStateGroup`, `RunwayState`, ~30 `Remark` variants from `remarks.md` (SLP, T-group, 1/2-group 6-h extremes, 5-group tendency, 6/7-group precip, PK WND, WSHFT FROPA, lightning, precip timing, 4/### snow, 8/### cloud types, Canada `SC5AC2`, free text), `Modifier` (AUTO COR NIL AMD CNL CCA…), `Flag` (CB, TCU, LOW_CEILING, LOW_VIS, GUSTS, WIND_SHEAR, FREEZING_PRECIP, THUNDERSTORM, CORRECTED, AUTOMATED, SPECIAL_REPORT, …), `Condition` for the header glyph (thunderstorm > snow/freezing > rain > obscuration > overcast > broken > partly > clear day/night).
-- `flightcat.py`: FAA thresholds matching the COBOL `700-FLIGHT-RULES`; ceiling = lowest BKN/OVC/VV; one missing component computes from the other.
+- `flightcat.py`: FAA thresholds matching the COBOL `700-FLIGHT-RULES`; ceiling = lowest BKN/OVC/VV; a missing component is never assumed clear (no category unless the known one forces IFR or LIFR); see the review fixes below.
 - `colorstate.py`: NATO table BLU 2500 ft/8 km, WHT 1500/5 km, GRN 700/3.7 km, **YLO1 500/2.5 km, YLO2 300/1.6 km** (the skill's `international.md` lists YLO1 as 700/3.7, which collides with GRN; port the standard values and cite in `docs/decoding.md`), AMB 200/0.8 km, RED below; `computed_color_state()` lets military stations show reported vs computed.
 - `taf.py` + `timeline.py`: FM, BECMG, TEMPO, PROB30/40 [TEMPO], INTER (Australia), legacy 6-digit windows, WS wind shear, military icing/turb groups, TX/TN, NSW, AMD/COR/CNL. `expand_timeline(taf)` yields hourly-resamplable slices: BASE/FM replace prevailing, BECMG merges listed elements at window end (window tagged `becoming`), TEMPO/PROB/INTER overlay without altering prevailing and get a category computed from `merge(prevailing, overlay)` (COBOL `657-INHERIT-GROUP`); `worst_category` per slice.
 - `split.py`: `parse_any(text)` splits pasted blobs on METAR/SPECI/TAF keywords, `=` terminators, blank lines; joins TAF continuation lines.
@@ -910,3 +910,20 @@ and attribution") with every release. `scripts/make_screenshots.py` regenerates 
 - **Free-text remarks** are spelled out only when every word is known; otherwise the whole remark is shown as written
   in the "Remarks (not decoded)" row.
 - Not decoded, no official definition found: `VV003V006`, Japanese `1CU030`, `25012G//KT`.
+
+### Decode and render review fixes
+
+- **Unknown data never earns a good category (design call).** `classify` and `computed_color_state` used to treat an
+  unknown ceiling or visibility as unlimited, so `BKN///`, `//////` or `//// NCD` showed VFR and BLU. `math.inf` now
+  means "known to have no limit" and `None` means unknown. With a component unknown the result is no category (`--` in
+  the badge, `null` in JSON) unless the known component alone forces IFR or LIFR (colour: below GRN). IFR from one
+  component is a floor, not an exact category. Differs from AWC only for German AUTO `// //////` reports, where we show
+  the visibility's IFR or LIFR and AWC shows nothing (the `sky-not-observed` parity rule is narrowed to that). The
+  MISSING_DATA chip is unchanged.
+- **CB and TCU without a height** (`//////CB`, `BKN///TCU`) are stated in the text (`sky.layer_no_height_typed`).
+- **Canadian RVR** with a slash before the trend (`R06L/2600FT/D`) is decoded; the US flavour signal accepts it.
+- **`Wind.gust_above`** added: `GP99KT` renders as "more than 99 kt" instead of an exact gust.
+- **Tornado, funnel cloud, squall.** `Flag.TORNADO` (+FC), `Flag.FUNNEL_CLOUD` (FC), `Flag.SQUALL` (SQ) and
+  `Condition.TORNADO` / `Condition.SQUALL` (header emoji in Discord) added; tornado outranks thunderstorm, squall
+  follows it.
+- **Discord METAR** now carries runway state, recent weather and sea state lines.

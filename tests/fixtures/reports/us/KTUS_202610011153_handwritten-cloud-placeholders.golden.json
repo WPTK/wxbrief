@@ -94,7 +94,8 @@
     },
     "gust": null,
     "variable": false,
-    "speed_above": false
+    "speed_above": false,
+    "gust_above": false
   },
   "wind_variation": null,
   "visibility": {
@@ -171,7 +172,7 @@
   "military": false,
   "ceiling": null,
   "ceiling_status": "UNKNOWN",
-  "flight_category": "VFR",
+  "flight_category": null,
   "flags": [
     "TCU",
     "AUTOMATED",

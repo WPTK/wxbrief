@@ -71,7 +71,9 @@ TAF_EMOJI = "\U0001f4cb"
 NO_CONDITION_EMOJI = "\U0001f321️"
 
 CONDITION_EMOJI: dict[Condition, str] = {
+    Condition.TORNADO: "\U0001f32a️",
     Condition.THUNDERSTORM: "⛈️",
+    Condition.SQUALL: "\U0001f4a8",
     Condition.SNOW: "\U0001f328️",
     Condition.RAIN: "\U0001f327️",
     Condition.OBSCURATION: "\U0001f32b️",
@@ -121,6 +123,8 @@ def _wind(t: Translator, wind: Wind, units: UnitsMode, variation: WindVariation 
         return t.t(K.WIND_CALM)
     speed = format_speed(wind.speed, units, t.numbers)
     gust = format_speed(wind.gust, units, t.numbers) if wind.gust is not None else None
+    if wind.gust_above and gust is not None:
+        gust = t.t(K.COMMON_MORE_THAN, value=gust)
     if wind.speed_above:
         speed = t.t(K.COMMON_MORE_THAN, value=speed)
     if wind.variable:
@@ -260,6 +264,16 @@ def _metar_lines(
         extras.append(t.t(K.DISCORD_COLOR_STATE, value=phrases.describe_color_state(t, metar.color_state)))
     if metar.wind_shear:
         extras.append(t.t(K.DISCORD_WIND_SHEAR, value=phrases.describe_wind_shear(t, metar.wind_shear)))
+    extras.extend(
+        t.t(K.DISCORD_RUNWAY_STATE, value=phrases.describe_runway_state(t, state, units))
+        for state in metar.runway_states
+    )
+    extras.extend(
+        t.t(K.DISCORD_RECENT_WEATHER, value=phrases.describe_recent_weather(t, recent))
+        for recent in metar.recent_weather
+    )
+    if metar.sea_state is not None:
+        extras.append(t.t(K.DISCORD_SEA_STATE, value=phrases.describe_sea_state(t, metar.sea_state, units)))
     if extras:
         lines.append("")
         lines.extend(extras)
