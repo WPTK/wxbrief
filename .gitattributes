@@ -1,0 +1,15 @@
+# Normalise line endings across clones: LF everywhere unless listed below.
+* text=auto eol=lf
+
+*.py text eol=lf
+*.tcss text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+
+# PowerShell is happier with CRLF.
+*.ps1 text eol=crlf
+
+# Saved reports and API payloads are data; never rewrite them.
+tests/fixtures/**/*.json -text
+tests/fixtures/**/*.txt -text

@@ -1,0 +1,106 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wxbrief"
+dynamic = ["version"]
+description = "Terminal METAR/TAF briefing with colorways and plain-language translation"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+authors = [{ name = "Bill Kane" }]
+keywords = ["metar", "taf", "aviation", "weather", "tui", "terminal", "textual"]
+
+dependencies = [
+    "textual>=8.2,<9",
+    "httpx>=0.28,<1",
+    "platformdirs>=4,<5",
+    "tomli-w>=1,<2",
+    "pyperclip>=1.9,<2",
+    "tzdata; sys_platform == 'win32'",
+]
+
+[project.urls]
+Homepage = "https://github.com/WPTK/wxbrief"
+Issues = "https://github.com/WPTK/wxbrief/issues"
+Changelog = "https://github.com/WPTK/wxbrief/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    "respx>=0.22",
+    "pytest-xdist>=3.6",
+    "pytest-cov>=5",
+    "hypothesis>=6",
+    "pytest-textual-snapshot>=1",
+    "timezonefinder>=9,<10",
+    "pyinstaller>=6.22,<7",
+    "build>=1,<2",
+    "ruff>=0.8",
+    "vulture>=2.14",
+    "mypy>=1.13",
+    "types-pyperclip",
+]
+# Installed only when building a standalone binary, so every binary carries its own zone files.
+binary = ["tzdata>=2024.1"]
+
+[project.scripts]
+wxbrief = "wxbrief.__main__:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "wxbrief.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["wxbrief*"]
+
+[tool.setuptools.package-data]
+wxbrief = [
+    "ui/*.tcss",
+    "data/stations.json.gz",
+    "data/demo/*.txt",
+    "i18n/locales/*.toml",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "RUF"]
+ignore = [
+    # Textual widgets declare BINDINGS/DEFAULT_CSS as plain class attributes by convention.
+    "RUF012",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Long lines in tests are inline report fixtures; wrapping them hurts readability.
+"tests/**" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+
+# The decoder and the translation layer are typed end to end: the per-module flags that make up `--strict`.
+# (`strict = true` inside an override is applied to every module by mypy, so the flags are spelled out.)
+[[tool.mypy.overrides]]
+module = ["wxbrief.decode.*", "wxbrief.i18n.*"]
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = true
+warn_return_any = true
+implicit_reexport = false
+strict_equality = true
+extra_checks = true

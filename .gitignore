@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+htmlcov/
+
+# Build output: PyInstaller (work dir is redirected to .pyi-build) and `python -m build`
+build/
+dist/
+.pyi-build/
+
+# pytest-textual-snapshot writes a report next to failing snapshots
+snapshot_report.html
+
+# Editors / OS / local tooling
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+.claude/
