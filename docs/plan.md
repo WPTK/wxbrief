@@ -176,7 +176,7 @@ Tick a row when the session has landed on `main` (S0 committed directly; later s
 | S5 | Colorways | [x] 2026-10-31 |
 | S6 | TAF timeline | [x] 2026-10-31 |
 | S7 | i18n | [x] 2026-10-31 |
-| S8 | Polish | [ ] |
+| S8 | Polish | [x] 2026-10-31 |
 | S9 | Release | [ ] |
 
 ## Deviations from the design
@@ -805,3 +805,60 @@ Deviations from the design:
 **For S8.** Anything that adds user-visible text adds a key to `en.toml` first, then to all four catalogs (the completeness test
 fails otherwise) and regenerates `keys.py`. A new widget with key bindings uses `bind()` and calls `localize(self)` in `on_mount`.
 Native-speaker review of the four catalogs is open and would flip their `status` to `complete`.
+
+### S8 (2026-10-31)
+
+What landed: `g`, `u` and `z`, the AWC cross-check mark, responsive polish for short and narrow terminals, scrollbars in theme
+colours, the README with screenshots (`docs/img/`, made by `scripts/make_screenshots.py`), `docs/development.md`, the ODbL
+attribution for the time-zone data, the full `0.1.0` entry in `CHANGELOG.md`, the issue #22 nits, and tests:
+`tests/test_polish.py` and the journeys in `tests/uat/test_journeys.py` (headless pilot runs on `--demo`, offline).
+
+Direction from the owner during the session: remove or merge before adding; no new settings, modes, flags or panels beyond this
+row; no new translated text unless it replaces some; nothing whose meaning is colour alone.
+
+**Done as designed.** `g` `u` `z` cycle the glyph set, units and time mode through the existing `cycle_setting` (applied at once,
+saved like a Settings change). The footer does not show them (Help does). `[` and `]` are gone (`j` `k` and the arrows stay); the
+`c` copy key is now in the footer. The status bar shows live state only (freshness, next poll, request count); theme, glyphs,
+language, units and time are on Settings. Scrollbar track and bar use theme variables (`$surface`, `$primary-background-lighten-2`)
+in a marked S8 block of `app.tcss`; they still appear only when the content overflows.
+
+**Deviations.**
+
+- **AWC cross-check mark.** A station whose AWC `fltCat` differs from the decoded category shows `≠` and AWC's code next to the
+  badge (`≠MVFR`) in the list, the grid card and the detail header, in the stale colour and always with the code, so it does not
+  rest on colour. No new text (the glyph set has a `differs` mark: `≠`, `!=` in ascii). `[decode] show_awc_crosscheck`, unused until
+  now, switches it off. Only the METAR category is compared (AWC gives none for a TAF).
+- **Responsive.** The design's `-wide` raw METAR and TAF side by side is not built (it is a new layout). Added: a vertical
+  breakpoint `-short` (under 24 rows) that drops the spacing rows of the detail pane, and a compact footer without the palette
+  hint under 90 and 100 columns. At 60x20 the list gives way to the detail, `j` `k` change station, `3` reaches the timeline and
+  the footer shows the first keys only.
+- **Summary rows** (METAR "Summary", TAF "Summary:") are removed from the TUI only. The CLI `decode`/`get` output, `--json` and the
+  tests of it still carry them; the Discord blocks never used them.
+- **Period detail time base.** The span in each group header ("Prevailing: Base forecast, ...", `BECMG`, `TEMPO`) is now written
+  in the chosen time mode, as the header above it is, instead of UTC. It is not dropped: it is the group's own validity, which
+  differs from the cell window, and the catalog templates carry it. `phrases.describe_change_header` takes an optional `span`.
+  The TAF header rows (Issued, Valid) in the forecast block and the "All forecast groups" box remain UTC (they are the CLI rows).
+- **Digit keys.** `1` `2` `3` align the section header to the top of the pane when there is enough content below it; the last
+  sections cannot reach the top of a tall pane because there is nothing to scroll into (no padding was added). Focusing the
+  timeline no longer scrolls, and `StationDetailScreen` starts at the top.
+- **#22 done:** the 429 hold toast (`ui.toast.rate_limited`, replaces the "Refreshing" toast during a hold; `PollScheduler.hold_remaining`),
+  `_save` restores the in-memory config when the write fails (watchlist and view), `WXBRIEF_CACHE_DIR` is made absolute, ids that the
+  database does not know are documented in the README, `pytest-textual-snapshot` is pinned to `1.1.*`, the snapshot command is in
+  CLAUDE.md, CONTRIBUTING.md and `docs/development.md`, the `t` help text says when it is not saved, the zone label lists every zone name
+  of a TAF that crosses a clock change (`MDT/MST`), half-hour zones label their ticks `HH:MM`, a periodic redraw no longer scrolls the
+  grid back (it scrolls to the card only when the selection changes), and `action_focus_detail` ignores the hidden pane in the grid.
+- **#22 left:** the grid card's mini strip has no time label, and a station whose TAF has expired still reads `no TAF`.
+  `ansi-dark` and `ansi-light` stay unregistered (their colours cannot be resolved to the RGB the highlight colours need).
+- **New catalog keys:** `ui.binding.cycle_glyphs`, `cycle_units`, `cycle_time` (needed to label the hidden bindings) and
+  `ui.toast.rate_limited`; the Help text changed in all five catalogs (the `[` line removed, `g u z` added, the `t` line reworded).
+- **Changelog.** Only `### Added` is used: for a first release every entry is an addition, so Changed, Removed and Fixed are empty
+  and left out. #15 (contributor docs) has no user-visible change and no entry.
+- **UAT** is the pilot journeys above, not a browser or terminal-emulator run. Acceptance check done: with `NO_COLOR` and the
+  ascii glyph set the becoming mark (`▒`) and the temporary mark (`▀`) are different characters on different rows and in the
+  legend; asserted in `test_journeys.py`. No change was needed.
+- **Screenshots** are SVG from Textual's exporter, the credit comment removed. The S4 to S6 pictures in `docs/` are left as they
+  were; they predate the status bar and Summary changes.
+- **Not touched:** `__version__` stays `0.1.0` (the plan already starts at it); no tag.
+
+**For S9.** The `0.1.0` section of `CHANGELOG.md` exists and `release.yml` can check for it. Keep the ODbL attribution (README, "Data
+and attribution") with every release. `scripts/make_screenshots.py` regenerates `docs/img/` after any interface change.

@@ -42,6 +42,7 @@ class StationGrid(VerticalScroll, can_focus=True):
         self.ids: list[str] = []
         self.selected: str | None = None
         self._going: set[StationCard] = set()
+        self._revealed: str | None = None  # the card last scrolled into view
 
     def compose(self) -> ComposeResult:
         yield Container(id="cards")
@@ -93,7 +94,8 @@ class StationGrid(VerticalScroll, can_focus=True):
             if found is not None:
                 found.show(entry, ctx, now, selected=entry.icao == self.selected)
         chosen = self._card(self.selected) if self.selected else None
-        if chosen is not None:
+        if chosen is not None and self.selected != self._revealed:  # a periodic redraw must not undo a hand scroll
+            self._revealed = self.selected
             self.call_after_refresh(chosen.scroll_visible, animate=False)
 
     def _card(self, icao: str) -> StationCard | None:

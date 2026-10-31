@@ -78,6 +78,9 @@ class StationCard(Static):
         name = station.name if station else (entry.awc_metar.name if entry.awc_metar else None)
         head = Text.assemble((mark, mark_style), " ", (entry.icao, "bold"), " ")
         head.append_text(palette.badge(metar.flight_category if metar else None))
+        theirs = ctx.awc_differs(entry)
+        if theirs:
+            head.append(f" {glyphs.differs}{theirs}", style=palette.stale)
         if name:
             head.append(f" {name}", style=palette.muted)
         head.no_wrap = True

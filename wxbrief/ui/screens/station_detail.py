@@ -37,7 +37,9 @@ class StationDetailScreen(Screen[None]):
     def on_mount(self) -> None:
         localize(self)
         self.redraw()
-        self.query_one(DetailPane).focus()
+        pane = self.query_one(DetailPane)
+        pane.focus(scroll_visible=False)
+        pane.scroll_home(animate=False)  # open on the station header, whatever the first layout pass did
 
     def redraw(self) -> None:
         """Draw the snapshot again, e.g. after a theme change (the colours are baked into the Rich text)."""

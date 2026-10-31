@@ -1,4 +1,4 @@
-"""The status bar: freshness, next poll, request budget and the current view settings."""
+"""The status bar: freshness, next poll and request budget (the view settings are on the Settings screen)."""
 
 from __future__ import annotations
 
@@ -29,7 +29,6 @@ class StatusBar(Static):
         ctx: ViewContext,
         now: datetime,
         selected: StationReports | None,
-        glyph_set: str,
     ) -> None:
         glyphs = ctx.glyphs
         palette = ctx.palette
@@ -58,6 +57,4 @@ class StatusBar(Static):
             text.append(f" | {wait} | {used}", style=palette.muted)
         else:
             text.append(f" | {t.t(K.UI_STATUS_POLLING_OFF)}", style=palette.muted)
-        view = f"{ctx.app.theme} | {glyph_set} | {t.lang} | {ctx.units.value} | {ctx.time_mode}"
-        text.append(f" | {view}", style=palette.muted)
         self.update(text)

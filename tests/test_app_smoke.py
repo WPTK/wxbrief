@@ -131,9 +131,9 @@ async def test_keys_select_jump_and_copy(tmp_path: Path, copied: list[str]) -> N
         assert briefing.selected == "KDEN"
         await pilot.press("j")
         assert briefing.selected == "EGLL"
-        await pilot.press("right_square_bracket")
+        await pilot.press("k")
         assert briefing.selected == "KDEN"
-        await pilot.press("left_square_bracket")
+        await pilot.press("j")
         assert briefing.selected == "EGLL"
         await pilot.press("3", "2", "1")
         await pilot.press("c")
@@ -255,7 +255,7 @@ async def test_small_terminal_stays_usable(tmp_path: Path) -> None:
         assert not briefing.query_one(StationList).display
         assert briefing.query_one(DetailPane).display
         assert briefing.selected == "KDEN"
-        await pilot.press("right_square_bracket")
+        await pilot.press("j")
         assert briefing.selected == "EGLL"
         assert "EGLL" in str(briefing.query_one(StationHeader).render())
         await pilot.press("a")
@@ -303,13 +303,13 @@ async def test_enter_on_a_station_focuses_the_detail(tmp_path: Path) -> None:
         assert briefing.query_one(DetailPane).has_focus
 
 
-async def test_help_shows_the_bracket_keys(tmp_path: Path) -> None:
-    assert "\\[ and ]" in HELP_TEXT
+async def test_help_lists_the_view_keys(tmp_path: Path) -> None:
+    assert "g  u  z" in HELP_TEXT and "[ and ]" not in HELP_TEXT
     app = make_app(tmp_path, [])
     async with app.run_test(size=(100, 40)) as pilot:
         await pilot.press("question_mark")
         body = "\n".join(str(w.render()) for w in app.screen.query("Static"))
-        assert "[ and ]" in body
+        assert "g  u  z" in body and "--no-config" in body
 
 
 async def test_unknown_station_is_rejected_and_not_saved(tmp_path: Path) -> None:

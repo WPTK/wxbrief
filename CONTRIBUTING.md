@@ -23,6 +23,8 @@ Run these before opening a PR. CI runs the same steps on Windows, Linux and macO
 .venv\Scripts\python -m pytest
 ```
 
+More on tests, snapshots and screenshots is in [docs/development.md](docs/development.md).
+
 Changes that only touch Markdown, `docs/` or `LICENSE` skip CI.
 
 ## Branches and pull requests
@@ -44,6 +46,11 @@ in [docs/decoding.md](docs/decoding.md) under "Adding a fixture". `python -m pyt
 goldens from the current decoder, so read `git diff` against the raw report before committing; a golden only counts as
 a test once someone has checked it.
 
+## Snapshots
+
+`tests/test_snapshots.py` compares screenshots of the briefing screen. After a deliberate interface change, run
+`python -m pytest tests/test_snapshots.py --snapshot-update` and read each changed SVG before committing it.
+
 ## Versions and the changelog
 
 Versions follow ZeroVer: `0.MINOR.PATCH`, with the major staying 0. `__version__` in `wxbrief/__init__.py` is edited by
@@ -51,8 +58,8 @@ hand: minor for features, patch for fixes. Release tags are `v0.x.y` and match `
 
 `CHANGELOG.md` follows [Common Changelog](https://common-changelog.org/). Add an entry only for user-visible changes,
 as one imperative line with a `(#PR)` reference under Changed, Added, Removed or Fixed, in that order. Docs, dotfiles,
-dev-only dependency bumps and style edits get none. The first `0.1.0` entry is written when that release is prepared,
-so leave `CHANGELOG.md` alone until then.
+dev-only dependency bumps and style edits get none. The `0.1.0` entry is already written, so a user-visible change after it
+goes in the section of the release it will ship in.
 
 ## License
 

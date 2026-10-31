@@ -40,6 +40,7 @@ python -m venv .venv
 .venv\Scripts\python -m vulture wxbrief scripts --min-confidence 80
 .venv\Scripts\python -m mypy wxbrief
 .venv\Scripts\python -m pytest
+.venv\Scripts\python -m pytest tests\test_snapshots.py --snapshot-update   # rewrite the TUI snapshot SVGs; read each diff first
 .venv\Scripts\python -m pytest --update-goldens   # rewrite tests/fixtures/reports/**/*.golden.json; review the diff
 .venv\Scripts\python -m wxbrief --version
 .venv\Scripts\python -m wxbrief decode "METAR KDEN 131453Z 06007KT 3/4SM BR OVC003 09/08 A3001"

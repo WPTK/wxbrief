@@ -48,6 +48,9 @@ class StationList(OptionList):
                 mark, mark_style = glyphs.stale, palette.stale
             category = entry.metar.flight_category if entry.metar else None
             line = Text.assemble((mark, mark_style), " ", (f"{entry.icao:<4}", "bold"), " ", palette.badge(category))
+            theirs = ctx.awc_differs(entry)
+            if theirs:
+                line.append(f" {glyphs.differs}{theirs}", style=palette.stale)
             conditions = short_conditions(entry.metar)
             if conditions:
                 line.append(" " + conditions)

@@ -768,6 +768,9 @@ help = "Hilfe"
 quit = "Beenden"
 cycle_theme = "Design"
 theme_picker = "Designs"
+cycle_glyphs = "Symbole"
+cycle_units = "Einheiten"
+cycle_time = "Zeit"
 close = "Schließen"
 back = "Zurück"
 cancel = "Abbrechen"
@@ -832,6 +835,7 @@ config_title = "Konfiguration"
 fetch_failed = "{product} konnte nicht abgerufen werden: {error}"
 polling_off = "Die regelmäßige Abfrage ist ausgeschaltet"
 refreshing = "Wird aktualisiert"
+rate_limited = "Anfragelimit erreicht; neuer Versuch in {seconds} s"
 unknown_station = "Unbekannte Station {code}"
 already_listed = "{code} steht schon in der Liste"
 already_listed_saved = "{code} steht schon in der Liste (jetzt gespeichert)"
@@ -877,7 +881,6 @@ hint = "Esc schließt"
 body = """\
 [b]Stationen[/b]
   Hoch/Runter  j/k   eine Station wählen
-  \\[ und ]           vorige / nächste Station
   Enter              ins Detailfenster wechseln
   a                  eine Station hinzufügen (Code oder Name)
   d                  die gewählte Station entfernen
@@ -890,8 +893,9 @@ body = """\
   C                  METAR und TAF für Discord kopieren
   y                  den Originaltext der Meldung kopieren
 [b]Werkzeuge[/b]
-  t                  nächstes Design (wird in der Konfiguration gespeichert)
+  t                  nächstes Design (gespeichert, außer mit --theme oder --no-config)
   T                  ein Design wählen, mit Vorschau
+  g  u  z            nächster Symbolsatz, nächste Einheiten, Zeitmodus
   p                  ein beliebiges METAR oder TAF einfügen und dekodieren (offline)
   S                  Einstellungen: Sprache, Einheiten, Zeit, Symbole
   ?                  diese Hilfe

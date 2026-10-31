@@ -139,6 +139,10 @@ class PollScheduler:
             track.due = self.hold_until  # never earlier than a rate-limit hold
         self._wake.set()
 
+    def hold_remaining(self) -> float:
+        """Seconds left of a rate-limit hold (0 when nothing is on hold)."""
+        return max(0.0, self.hold_until - self._clock())
+
     def next_due_in(self) -> float:
         """Seconds until the earliest product is due (0 when something is due now)."""
         now = self._clock()

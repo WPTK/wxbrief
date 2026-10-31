@@ -58,10 +58,14 @@ class WxBriefApp(App[None]):
     CSS_PATH = "ui/app.tcss"
     TITLE = "wxbrief"
     HORIZONTAL_BREAKPOINTS = [(0, "-narrow"), (90, "-normal"), (140, "-wide")]
+    VERTICAL_BREAKPOINTS = [(0, "-short"), (24, "-tall")]
     BINDINGS = [
         bind("q", "quit", K.UI_BINDING_QUIT),
         bind("t", "cycle_theme", K.UI_BINDING_CYCLE_THEME),
         bind("T", "theme_picker", K.UI_BINDING_THEME_PICKER, show=False),
+        bind("g", "cycle_glyphs", K.UI_BINDING_CYCLE_GLYPHS, show=False),
+        bind("u", "cycle_units", K.UI_BINDING_CYCLE_UNITS, show=False),
+        bind("z", "cycle_time", K.UI_BINDING_CYCLE_TIME, show=False),
     ]
 
     def __init__(self, options: AppOptions | None = None) -> None:
@@ -98,6 +102,7 @@ class WxBriefApp(App[None]):
             glyphs=glyphs_for(view.glyph_set),
             time_mode=view.time,
             stations=bundled(),
+            crosscheck=self.options.config.decode.show_awc_crosscheck,
         )
         self.scheduler: PollScheduler | None = None
         self.briefing = BriefingScreen()
@@ -161,6 +166,15 @@ class WxBriefApp(App[None]):
         index = names.index(self.theme) + 1 if self.theme in names else 0
         self.theme = names[index % len(names)]
 
+    def action_cycle_glyphs(self) -> None:
+        self.cycle_setting("glyph_set")
+
+    def action_cycle_units(self) -> None:
+        self.cycle_setting("units")
+
+    def action_cycle_time(self) -> None:
+        self.cycle_setting("time")
+
     def action_theme_picker(self) -> None:
         if self._previewing:
             return
@@ -212,6 +226,10 @@ class WxBriefApp(App[None]):
     def refresh_now(self) -> None:
         if self.scheduler is None:
             self.notify(self.ctx.translator.t(K.UI_TOAST_POLLING_OFF), severity="warning")
+            return
+        held = self.scheduler.hold_remaining()
+        if held > 0:  # a 429 hold: nothing is fetched until it ends
+            self.notify(self.ctx.translator.t(K.UI_TOAST_RATE_LIMITED, seconds=int(held + 0.5)), severity="warning")
             return
         self.scheduler.poll_now()
         self.notify(self.ctx.translator.t(K.UI_TOAST_REFRESHING))
@@ -298,10 +316,16 @@ class WxBriefApp(App[None]):
                 return
             self._backed_up = True
             self.notify(t.t(K.UI_TOAST_BACKED_UP, path=backup), timeout=10)
+        # save_config writes the Config object, so set the new values first and put the old ones back if the write
+        # fails; otherwise the next save would find nothing changed and never retry.
+        previous = (options.config.stations.watchlist, {name: getattr(saved_view, name) for name in chosen})
         options.config.stations.watchlist = watchlist
         for name, value in chosen.items():
             setattr(saved_view, name, value)
         if not save_config(options.config, path):
+            options.config.stations.watchlist = previous[0]
+            for name, value in previous[1].items():
+                setattr(saved_view, name, value)
             self.notify(t.t(K.UI_TOAST_SAVE_FAILED, path=path), severity="error")
 
     # --- settings --------------------------------------------------------------------------------------------------

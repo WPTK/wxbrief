@@ -760,6 +760,9 @@ help = "Ajuda"
 quit = "Sair"
 cycle_theme = "Tema"
 theme_picker = "Temas"
+cycle_glyphs = "Símbolos"
+cycle_units = "Unidades"
+cycle_time = "Hora"
 close = "Fechar"
 back = "Voltar"
 cancel = "Cancelar"
@@ -824,6 +827,7 @@ config_title = "Configuração"
 fetch_failed = "Não foi possível obter {product}: {error}"
 polling_off = "A consulta periódica está desativada"
 refreshing = "Atualizando"
+rate_limited = "Limite de pedidos; nova tentativa em {seconds} s"
 unknown_station = "Estação desconhecida {code}"
 already_listed = "{code} já está na lista"
 already_listed_saved = "{code} já está na lista (agora salva)"
@@ -869,7 +873,6 @@ hint = "Esc fecha"
 body = """\
 [b]Estações[/b]
   Acima/Abaixo  j/k  escolher uma estação
-  \\[ e ]             estação anterior / próxima
   Enter              entrar no painel de detalhes
   a                  adicionar uma estação (código ou nome)
   d                  remover a estação escolhida
@@ -882,8 +885,9 @@ body = """\
   C                  copiar METAR e TAF para o Discord
   y                  copiar o texto original da mensagem
 [b]Ferramentas[/b]
-  t                  próximo tema (salvo na configuração)
+  t                  próximo tema (salvo, exceto com --theme ou --no-config)
   T                  escolher um tema, com prévia
+  g  u  z            próximo conjunto de símbolos, unidades, modo de hora
   p                  colar e decodificar qualquer METAR ou TAF (off-line)
   S                  ajustes: idioma, unidades, hora, símbolos
   ?                  esta ajuda
