@@ -49,14 +49,25 @@ def _resolve(codes: list[str]) -> list[str]:
     return ids
 
 
-async def _fetch(ids: list[str]) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf]]:
+async def _fetch(ids: list[str]) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf], list[str]]:
+    """Fetch each product on its own, so one failing does not hide what the other returned."""
+    errors: list[str] = []
+    metars: list[AwcMetar] = []
+    tafs: list[AwcTaf] = []
     async with AwcClient() as client:
-        metars = await client.metars(ids)
-        tafs = await client.tafs(ids)
-    return latest_by_station(metars), {taf.icao: taf for taf in tafs}
+        try:
+            metars = await client.metars(ids)
+        except AwcError as exc:
+            errors.append(f"METAR: {exc}")
+        try:
+            tafs = await client.tafs(ids)
+        except AwcError as exc:
+            errors.append(f"TAF: {exc}")
+    return latest_by_station(metars), {taf.icao: taf for taf in tafs}, errors
 
 
 def run_get(args: argparse.Namespace) -> int:
+    """Exit 0 when everything arrived, 3 when a product failed but some data arrived, 1 when no station got anything."""
     # TODO(S2b): render --discord with the Discord renderer and decode TAFs once s2b-taf-output has merged.
     if args.discord:
         sys.stderr.write("wxbrief get: --discord arrives with the TAF and output work (S2b)\n")
@@ -66,11 +77,10 @@ def run_get(args: argparse.Namespace) -> int:
         reconfigure(errors="replace")
 
     ids = _resolve(args.stations)
-    try:
-        metars, tafs = asyncio.run(_fetch(ids))
-    except AwcError as exc:
-        sys.stderr.write(f"wxbrief get: {exc}\n")
-        return 1
+    metars, tafs, errors = asyncio.run(_fetch(ids))
+    for message in errors:
+        sys.stderr.write(f"wxbrief get: {message}\n")
+    status = 1 if not (metars or tafs) else 3 if errors else 0
 
     now = datetime.now(UTC)
     translator = Translator.load("en")
@@ -86,7 +96,7 @@ def run_get(args: argparse.Namespace) -> int:
             for icao in ids
         }
         sys.stdout.write(json.dumps(document, indent=2, ensure_ascii=False) + "\n")
-        return 0
+        return status
 
     blocks: list[str] = []
     for icao in ids:
@@ -99,4 +109,4 @@ def run_get(args: argparse.Namespace) -> int:
             parts.append("TAF (raw):\n  " + tafs[icao].raw)  # TODO(S2b): decode
         blocks.append("\n".join(parts))
     sys.stdout.write("\n\n".join(blocks) + "\n")
-    return 0
+    return status

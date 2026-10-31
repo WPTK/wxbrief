@@ -92,3 +92,10 @@ def test_config_save_and_reload(tmp_path: Path) -> None:
     assert save_config(config, path)
     loaded = load_config(path)
     assert loaded.warnings == [] and loaded.config == config
+
+
+def test_config_with_a_bom_is_read(tmp_path: Path) -> None:
+    path = tmp_path / "config.toml"
+    path.write_bytes(b'\xef\xbb\xbf[view]\ntheme = "paper-chart"\n')
+    loaded = load_config(path)
+    assert loaded.warnings == [] and loaded.config.view.theme == "paper-chart"

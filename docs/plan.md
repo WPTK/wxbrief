@@ -471,3 +471,16 @@ fuzz test gained tail and remark inputs (it also passed 20,000 examples per prop
 - The ids callable is read at the start of each cycle, so watchlist edits need no restart.
 - `AwcMetar.flight_category` is AWC's `fltCat` for the cross-check indicator.
 - `tests/fixtures/awc/metar_kden_egll.json` and `taf_kden_egll.json` (2026-10-31) include a real TAF payload for S2b/S6.
+
+**Known limitations / S4 hand-off.**
+
+- `RateBudget` counts one request per product per cycle, not per 400-id chunk; `wait_time(count)` with `count` above the limit raises
+  `IndexError`. A 429 holds back every track, not only the product that got it.
+- `save_config` rewrites the file without comments or unknown keys, so S4 must not save after a load that produced a parse-error warning, or
+  must back the file up first.
+- `stations.json.gz`: the `tz` field comes from `timezonefinder` data (ODbL), so add attribution before 0.1.0; record the AWC cache date and
+  the `timezonefinder` version used for the build; add a test that every `tz` is a valid `zoneinfo` key. Seven IATA codes are ambiguous
+  (GWD, ISU, CEM, PTZ, GYA, VTZ, SRG), and `get()` returns `None` for them.
+- `DiskCache.read` accepts a naive `saved_at`; treat it as damaged or give it UTC.
+- Refocus after away mode should call `poll_now()`.
+- `wxbrief get` exit codes: 0 all arrived, 3 one product failed but some data arrived, 1 nothing arrived for any requested station.

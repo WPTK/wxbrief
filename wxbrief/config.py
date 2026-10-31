@@ -167,7 +167,7 @@ def load_config(path: Path | None = None) -> LoadedConfig:
     """Read the config file. A missing file is the defaults with no warning; an unreadable one is defaults plus one."""
     target = path or default_config_path()
     try:
-        text = target.read_text(encoding="utf-8")
+        text = target.read_text(encoding="utf-8-sig")
     except FileNotFoundError:
         return LoadedConfig(Config())
     except (OSError, UnicodeDecodeError) as exc:

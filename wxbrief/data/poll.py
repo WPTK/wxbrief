@@ -164,11 +164,16 @@ class PollScheduler:
             except AwcError as exc:
                 track.failures += 1
                 delay = backoff_delay(self._interval(product), track.failures - 1)
-                if isinstance(exc, RateLimited):
-                    delay = min(BACKOFF_CAP, max(delay, exc.retry_after))
                 track.due = self._clock() + delay
+                if isinstance(exc, RateLimited):
+                    # The limit is per client, not per product: hold every track back and end the cycle.
+                    hold = self._clock() + min(BACKOFF_CAP, max(delay, exc.retry_after))
+                    for other in self._tracks.values():
+                        other.due = max(other.due, hold)
                 if self._on_error:
                     self._on_error(product, exc)
+                if isinstance(exc, RateLimited):
+                    break
                 continue
             track.failures = 0
             track.due = self._clock() + self._interval(product)

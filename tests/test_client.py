@@ -153,3 +153,14 @@ def test_parsing_is_tolerant() -> None:
     assert parse_visibility(0.25) == (0.25, False)
     assert parse_visibility("garbage") == (None, False)
     assert json.loads(json.dumps(rows[0].source))["icaoId"] == "KABC"
+
+
+def test_non_finite_numbers_cannot_crash_parsing() -> None:
+    payload = json.loads(
+        '[{"icaoId": "KABC", "rawOb": "METAR KABC", "wdir": NaN, "wspd": 1e400, "obsTime": 1e400, '
+        '"temp": Infinity, "visib": NaN}]'
+    )
+    rows = parse_metars([*payload, {"icaoId": "KDEF", "rawOb": "METAR KDEF", "wspd": 10**400}])
+    assert [r.icao for r in rows] == ["KABC", "KDEF"]
+    assert all(r.wind_direction is None and r.wind_speed_kt is None and r.temperature_c is None for r in rows)
+    assert rows[0].observed is None and rows[0].visibility_sm is None

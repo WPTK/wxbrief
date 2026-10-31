@@ -127,11 +127,11 @@ async def test_retry_after_is_honoured_when_longer_than_the_backoff() -> None:
     clock, client = FakeClock(), FakeClient()
     client.errors = [RateLimited(1500)]
     scheduler, _ = make(clock, client)
-    await scheduler.run_cycle()  # metar gets a 429, taf succeeds
+    assert await scheduler.run_cycle() == [Product.METAR]  # 429 ends the cycle: taf is not tried
     clock.now += 1499
-    assert Product.METAR not in await scheduler.run_cycle()
+    assert await scheduler.run_cycle() == []  # taf was held back too
     clock.now += 1
-    assert Product.METAR in await scheduler.run_cycle()
+    assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
 
 
 async def test_empty_watchlist_makes_no_requests() -> None:

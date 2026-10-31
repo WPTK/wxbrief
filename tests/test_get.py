@@ -46,11 +46,31 @@ def test_get_json(awc: respx.MockRouter, capsys: pytest.CaptureFixture[str]) -> 
     assert document["ZZZZ"] == {"metar": None, "taf_raw": None}
 
 
-def test_get_reports_network_failure(capsys: pytest.CaptureFixture[str]) -> None:
+def test_get_total_failure_exits_1(capsys: pytest.CaptureFixture[str]) -> None:
     with respx.mock() as router:
         router.get(f"{BASE_URL}/metar").mock(return_value=httpx.Response(500))
+        router.get(f"{BASE_URL}/taf").mock(side_effect=httpx.ReadTimeout("slow"))
         assert main(["get", "KDEN"]) == 1
-    assert "server error 500" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "METAR: server error 500" in err and "TAF:" in err
+
+
+def test_get_partial_failure_prints_what_arrived_and_exits_3(capsys: pytest.CaptureFixture[str]) -> None:
+    metar = (FIXTURES / "metar_kden_egll.json").read_bytes()
+    with respx.mock() as router:
+        router.get(f"{BASE_URL}/metar").mock(return_value=httpx.Response(200, content=metar))
+        router.get(f"{BASE_URL}/taf").mock(return_value=httpx.Response(429))
+        assert main(["get", "KDEN", "--plain"]) == 3
+    captured = capsys.readouterr()
+    assert "KDEN" in captured.out and "TAF: rate limited" in captured.err
+
+
+def test_get_exits_1_when_no_station_has_a_report(capsys: pytest.CaptureFixture[str]) -> None:
+    with respx.mock() as router:
+        router.get(f"{BASE_URL}/metar").mock(return_value=httpx.Response(204))
+        router.get(f"{BASE_URL}/taf").mock(return_value=httpx.Response(204))
+        assert main(["get", "ZZZZ"]) == 1
+    assert "no METAR" in capsys.readouterr().out
 
 
 def test_get_discord_is_not_available_yet(capsys: pytest.CaptureFixture[str]) -> None:
