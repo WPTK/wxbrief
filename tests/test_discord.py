@@ -114,6 +114,17 @@ def test_weather_goes_into_the_visibility_line_and_the_peak_wind_into_the_tail()
     )
 
 
+def test_runway_state_recent_weather_and_sea_state_are_shown() -> None:
+    text = block("METAR EGLL 311050Z 24010KT 9999 FEW040 12/08 Q1013 REFZRA W15/S3 R24/290255")
+    assert "Runway:" in text
+    assert "Recent weather:" in text
+    assert "Sea:" in text
+
+
+def test_a_cloud_type_without_a_height_survives_in_the_block() -> None:
+    assert "cumulonimbus" in block("METAR EDDF 311150Z AUTO 24010KT 9999 //////CB 12/08 Q1013")
+
+
 def test_a_metar_without_a_tail_has_no_divider() -> None:
     text = block("METAR KDEN 311453Z 00000KT 10SM CLR M05/M12 A3001")
     assert DIVIDER not in text

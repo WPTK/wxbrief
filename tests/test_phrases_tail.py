@@ -145,7 +145,7 @@ def test_plain_decode_shows_the_computed_state_only_when_it_is_not_confirmed() -
     unreported = render_plain(decode("METAR ETNL 310820Z AUTO 35004KT 9999 // ////// 10/07 Q1032 ///"), T, MIXED)
     assert "Color state:" in unreported
     assert "Not reported" in unreported
-    assert "Color state (computed): Blue (BLU)" in unreported
+    assert "Color state (computed)" not in unreported  # the sky is not observed, so nothing is computed
 
 
 # --- runway state ----------------------------------------------------------------------------------------------

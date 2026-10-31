@@ -25,6 +25,7 @@ of older tables and has the YLO2 minimums.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from wxbrief.decode.model import ColorCode, ColorState, Visibility
@@ -59,18 +60,22 @@ BELOW_GRN = frozenset({ColorCode.YLO, ColorCode.YLO1, ColorCode.YLO2, ColorCode.
 def computed_color_state(ceiling_ft: float | None, visibility_m: float | None) -> ColorCode | None:
     """The best colour state whose cloud-base and visibility minimums both hold.
 
-    ``None`` for a component means it is unknown or imposes no limit (no ceiling): it never lowers the state, and
-    ``math.inf`` is the same thing. With both ``None`` there is nothing to compute and the result is ``None``.
-    Anything below the AMB minimums is ``RED``.
+    ``math.inf`` is a known absence of limit (no ceiling); ``None`` means unknown. While a component is unknown the
+    result is ``None``, unless the known component alone puts the state below GRN. Anything below the AMB minimums
+    is ``RED``.
     """
     if ceiling_ft is None and visibility_m is None:
         return None
+    ceiling = math.inf if ceiling_ft is None else ceiling_ft
+    visibility = math.inf if visibility_m is None else visibility_m
+    state = ColorCode.RED
     for row in THRESHOLDS:
-        ceiling_ok = ceiling_ft is None or ceiling_ft >= row.ceiling_ft
-        visibility_ok = visibility_m is None or visibility_m >= row.visibility_m
-        if ceiling_ok and visibility_ok:
-            return row.code
-    return ColorCode.RED
+        if ceiling >= row.ceiling_ft and visibility >= row.visibility_m:
+            state = row.code
+            break
+    if (ceiling_ft is None or visibility_m is None) and state not in BELOW_GRN:
+        return None
+    return state
 
 
 def visibility_meters(visibility: Visibility | None) -> float | None:

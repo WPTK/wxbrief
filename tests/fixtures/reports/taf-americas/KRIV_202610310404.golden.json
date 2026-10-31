@@ -19,7 +19,8 @@
         },
         "gust": null,
         "variable": false,
-        "speed_above": false
+        "speed_above": false,
+        "gust_above": false
       },
       "visibility": {
         "distance": {
@@ -79,7 +80,8 @@
           },
           "gust": null,
           "variable": false,
-          "speed_above": false
+          "speed_above": false,
+          "gust_above": false
         },
         "visibility": {
           "distance": {
@@ -138,7 +140,8 @@
           },
           "gust": null,
           "variable": false,
-          "speed_above": false
+          "speed_above": false,
+          "gust_above": false
         },
         "visibility": {
           "distance": {
@@ -216,7 +219,8 @@
           },
           "gust": null,
           "variable": false,
-          "speed_above": false
+          "speed_above": false,
+          "gust_above": false
         },
         "visibility": {
           "distance": {
@@ -292,7 +296,8 @@
           },
           "gust": null,
           "variable": false,
-          "speed_above": false
+          "speed_above": false,
+          "gust_above": false
         },
         "visibility": {
           "distance": {
@@ -354,7 +359,8 @@
             "unit": "KT"
           },
           "variable": false,
-          "speed_above": false
+          "speed_above": false,
+          "gust_above": false
         },
         "visibility": null,
         "weather": [],
@@ -382,7 +388,8 @@
           },
           "gust": null,
           "variable": false,
-          "speed_above": false
+          "speed_above": false,
+          "gust_above": false
         },
         "visibility": {
           "distance": {
@@ -516,7 +523,8 @@
           },
           "gust": null,
           "variable": true,
-          "speed_above": false
+          "speed_above": false,
+          "gust_above": false
         },
         "visibility": {
           "distance": {
@@ -652,7 +660,8 @@
           },
           "gust": null,
           "variable": false,
-          "speed_above": false
+          "speed_above": false,
+          "gust_above": false
         },
         "visibility": {
           "distance": {

@@ -52,12 +52,21 @@ def test_thresholds(ceiling: float, vis: float, expected: FlightCategory) -> Non
     assert classify(ceiling, vis) is expected
 
 
-def test_a_single_missing_component_is_computed_from_the_other() -> None:
+def test_a_missing_component_is_never_assumed_clear() -> None:
+    # the known component alone forces IFR or LIFR
     assert classify(None, 2) is IFR
-    assert classify(None, 10) is VFR
+    assert classify(None, 0.25) is LIFR
     assert classify(800, None) is IFR
-    assert classify(5000, None) is VFR
+    assert classify(300, None) is LIFR
+    # otherwise nothing is known well enough for a category
+    assert classify(None, 10) is None
+    assert classify(None, 4) is None
+    assert classify(5000, None) is None
+    assert classify(2000, None) is None
     assert classify(None, None) is None
+    # a known absence of limit is not unknown
+    assert classify(math.inf, 10) is VFR
+    assert classify(math.inf, math.inf) is VFR
 
 
 def test_ceiling_is_the_lowest_broken_overcast_or_vertical_visibility_layer() -> None:
@@ -88,11 +97,22 @@ def test_unknown_ceiling_height_is_ignored() -> None:
     sky = [CloudLayer(SkyCondition.VV, None)]
     assert lowest_ceiling(sky) is None
     assert flight_category(Visibility(Distance(150, DistanceUnit.M)), sky) is LIFR
-    assert flight_category(Visibility(Distance(10, DistanceUnit.SM)), sky) is VFR
+    assert flight_category(Visibility(Distance(10, DistanceUnit.SM)), sky) is None
 
 
-def test_clear_sky_without_visibility_is_vfr() -> None:
-    assert flight_category(None, [CloudLayer(SkyCondition.CLR)]) is VFR
+def test_unknown_sky_gives_no_category_unless_visibility_forces_one() -> None:
+    ten = Visibility(Distance(10, DistanceUnit.SM))
+    assert flight_category(ten, []) is None
+    assert flight_category(ten, [CloudLayer(SkyCondition.UNKNOWN)]) is None
+    assert flight_category(ten, [CloudLayer(SkyCondition.BKN, None)]) is None
+    assert flight_category(ten, [CloudLayer(SkyCondition.UNKNOWN, Distance(800, DistanceUnit.FT))]) is None
+    assert flight_category(Visibility(Distance(0.25, DistanceUnit.SM)), []) is LIFR
+
+
+def test_unknown_visibility_gives_no_category_even_with_a_clear_sky() -> None:
+    assert flight_category(None, [CloudLayer(SkyCondition.CLR)]) is None
+    assert flight_category(Visibility(not_reported=True), [CloudLayer(SkyCondition.NCD)]) is None
+    assert flight_category(None, [CloudLayer(SkyCondition.OVC, Distance(300, DistanceUnit.FT))]) is LIFR
     assert flight_category(None, []) is None
 
 
@@ -156,8 +176,8 @@ def test_a_sky_of_placeholders_is_not_a_clear_sky() -> None:
     unknown = CloudLayer(SkyCondition.UNKNOWN)
     assert flight_category(Visibility(), [unknown]) is None
     assert flight_category(Visibility(Distance(1000, DistanceUnit.M)), [unknown]) is LIFR  # from visibility alone
-    assert flight_category(Visibility(), [CloudLayer(SkyCondition.CLR)]) is VFR
-    assert flight_category(Visibility(), [unknown, CloudLayer(SkyCondition.FEW, Distance(1000, DistanceUnit.FT))]) is VFR
+    assert flight_category(Visibility(), [CloudLayer(SkyCondition.CLR)]) is None
+    assert flight_category(Visibility(), [unknown, CloudLayer(SkyCondition.FEW, Distance(1000, DistanceUnit.FT))]) is None
 
 
 # --- parity with the AWC API --------------------------------------------------------------------------------------
@@ -175,6 +195,7 @@ def _sky_not_observed(row: dict[str, Any], decoded: Metar) -> bool:
     """German military AUTO reports with ``// ////// ``: no weather and no sky, only a visibility."""
     return (
         _awc_has_no_category(row)
+        and decoded.flight_category is not None
         and bool(decoded.sky)
         and all(layer.cover is SkyCondition.UNKNOWN for layer in decoded.sky)
         and decoded.visibility is not None
@@ -190,8 +211,8 @@ def _undirectional_visibility_suffix(row: dict[str, Any], decoded: Metar) -> boo
 PARITY_RULES: dict[str, tuple[Callable[[dict[str, Any], Metar], bool], str]] = {
     "sky-not-observed": (
         _sky_not_observed,
-        "AWC gives no category when the sky is `//////`; the plan's missing-component rule classifies from the "
-        "visibility alone (the COBOL decoder does the same), so ours is the visibility category.",
+        "AWC gives no category when the sky is `//////`; we give IFR or LIFR when the visibility alone forces it "
+        "(an unknown ceiling cannot make it better) and none otherwise, so we differ only for those reports.",
     ),
     "ndv-suffix": (
         _undirectional_visibility_suffix,
@@ -239,3 +260,23 @@ def test_rules_only_excuse_a_difference() -> None:
         ours = decoded.flight_category.name if decoded.flight_category else None
         if _covering_rule(row, decoded) is not None:
             assert ours != row.get("fltCat"), row["rawOb"]
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "KXXX 311200Z 24005KT 10SM BKN/// 10/09 A2992",
+        "EXXX 311200Z AUTO 24005KT 9999 ////// 10/09 Q1020",
+        "EXXX 311200Z AUTO 24005KT 9999 ///008 10/09 Q1020",
+        "EXXX 311200Z AUTO 24005KT //// NCD 10/09 Q1020",
+    ],
+)
+def test_reports_with_unknown_data_get_no_category_and_no_colour_state(raw: str) -> None:
+    metar = parse_metar(raw + " BLU", datetime(2026, 10, 31, 12, 0))
+    assert metar.flight_category is None
+    assert metar.computed_color_state is None
+
+
+def test_a_known_low_component_still_forces_its_category_when_the_other_is_unknown() -> None:
+    metar = parse_metar("KXXX 311200Z 24005KT 1/4SM BKN/// 10/09 A2992", datetime(2026, 10, 31, 12, 0))
+    assert metar.flight_category is LIFR

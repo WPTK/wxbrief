@@ -114,6 +114,9 @@ class Flag(Enum):
     AMENDED = "AMENDED"
     ICING = "ICING"
     TURBULENCE = "TURBULENCE"
+    TORNADO = "TORNADO"  # +FC: tornado or waterspout
+    FUNNEL_CLOUD = "FUNNEL_CLOUD"  # FC
+    SQUALL = "SQUALL"  # SQ
 
 
 class CeilingStatus(Enum):
@@ -131,7 +134,9 @@ class Condition(Enum):
     ``CLEAR_NIGHT`` (see ``derived.refine_clear``).
     """
 
+    TORNADO = "TORNADO"  # tornado, waterspout or funnel cloud (+FC, FC)
     THUNDERSTORM = "THUNDERSTORM"
+    SQUALL = "SQUALL"  # SQ
     SNOW = "SNOW"  # snow, frozen or freezing precipitation
     RAIN = "RAIN"  # rain or drizzle
     OBSCURATION = "OBSCURATION"  # fog, mist, haze, smoke, dust, ash
@@ -236,6 +241,7 @@ class Wind:
     gust: Speed | None = None
     variable: bool = False  # VRB
     speed_above: bool = False  # P49MPS / ABV49MPS: the speed is a floor, not a value
+    gust_above: bool = False  # G P99KT / GABV99KT: the gust is a floor, not a value
 
     @property
     def calm(self) -> bool:

@@ -81,10 +81,15 @@ def test_yellow_one_is_not_the_green_minimums() -> None:
         # no ceiling is no limit
         (math.inf, 10000, BLU),
         (math.inf, 4000, GRN),
-        (None, 4000, GRN),
-        (900, None, GRN),
+        (math.inf, 100, RED),
+        (math.inf, math.inf, BLU),
+        # an unknown component: only what the known one forces
         (None, 100, RED),
-        (None, 10000, BLU),
+        (None, 2000, YLO2),
+        (800, None, None),
+        (None, 4000, None),
+        (None, 10000, None),
+        (299, None, AMB),
     ],
 )
 def test_computed_color_state(ceiling: float | None, visibility: float | None, expected: ColorCode) -> None:
@@ -106,8 +111,8 @@ def test_visibility_in_metres() -> None:
 
 
 def test_a_statute_mile_visibility_counts_in_metres() -> None:
-    assert computed_color_state(None, visibility_meters(Visibility(Distance(5, DistanceUnit.SM)))) is BLU
-    assert computed_color_state(None, visibility_meters(Visibility(Distance(3, DistanceUnit.SM)))) is GRN  # 4828 m
+    assert computed_color_state(math.inf, visibility_meters(Visibility(Distance(5, DistanceUnit.SM)))) is BLU
+    assert computed_color_state(math.inf, visibility_meters(Visibility(Distance(3, DistanceUnit.SM)))) is GRN  # 4828 m
 
 
 def test_below_green() -> None:
