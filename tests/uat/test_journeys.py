@@ -41,7 +41,8 @@ async def test_first_look_read_copy_and_leave(copied: list[str]) -> None:
         await pilot.press("right")
         assert plain(screen.query_one(PeriodDetail)) != ""
         await pilot.press("c")
-        assert copied and copied[-1].startswith("```") and "KDEN" in copied[-1]
+        assert copied and copied[-1].startswith("```\n") and copied[-1].endswith("\n```") and "KDEN" in copied[-1]
+        assert "````" not in copied[-1]
         await pilot.press("question_mark")
         assert isinstance(app.screen, HelpScreen)
         await pilot.press("escape")

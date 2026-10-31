@@ -19,7 +19,7 @@ from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n.keys import K
-from wxbrief.render.discord import render_discord
+from wxbrief.render.discord import discord_block
 from wxbrief.render.plain import decode_rows, render_plain, warning_lines
 from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
@@ -91,7 +91,7 @@ class PasteDecodeScreen(Screen[None]):
         self.decoded = parse_any(text, reference) if text.strip() else []
         ctx = self._ctx
         units = UnitsMode.US if ctx.units is UnitsMode.MIXED else ctx.units
-        self.discord_text = "\n\n".join(render_discord(r, ctx.translator, units) for r in self.decoded)
+        self.discord_text = "\n\n".join(discord_block(r, ctx.translator, units) for r in self.decoded)
         parts: list[RenderableType] = []
         if not valid:
             parts.append(Text(ctx.translator.t(K.UI_PASTE_BAD_DATE), style=ctx.palette.style("wx.warning")))

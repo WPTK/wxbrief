@@ -137,9 +137,10 @@ async def test_keys_select_jump_and_copy(tmp_path: Path, copied: list[str]) -> N
         assert briefing.selected == "EGLL"
         await pilot.press("3", "2", "1")
         await pilot.press("c")
-        assert copied and "EGLL" in copied[-1] and copied[-1].startswith("```")
+        assert copied and "EGLL" in copied[-1]
+        assert copied[-1].startswith("```\n") and copied[-1].endswith("\n```") and "````" not in copied[-1]
         await pilot.press("C")
-        assert "TAF" in copied[-1] and copied[-1].count("```") >= 4
+        assert "TAF" in copied[-1] and copied[-1].count("```") == 4 and "````" not in copied[-1]
         await pilot.press("y")
         assert copied[-1].startswith("METAR EGLL")
         await pilot.press("question_mark")
