@@ -129,8 +129,8 @@ class K:
     VIS_LOWEST = "vis.lowest"
     VIS_NDV = "vis.ndv"
     VIS_NOT_REPORTED = "vis.not_reported"
+    VIS_WITH_NDV = "vis.with_ndv"
 
-    WARN_EMPTY = "warn.empty"
     WARN_HEADING = "warn.heading"
     WARN_INVALID_DAY = "warn.invalid_day"
     WARN_INVALID_TIME = "warn.invalid_time"

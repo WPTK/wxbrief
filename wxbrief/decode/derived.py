@@ -119,7 +119,7 @@ def relative_humidity(temperature: Temperature | None, dewpoint: Temperature | N
     a, b = 17.625, 243.04
     t, td = temperature.celsius, dewpoint.celsius
     humidity = 100.0 * math.exp(a * td / (b + td)) / math.exp(a * t / (b + t))
-    return min(100.0, humidity)
+    return round(min(100.0, humidity), 1)
 
 
 def derive(metar: Metar) -> Metar:
