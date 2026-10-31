@@ -9,9 +9,9 @@ from textual.screen import Screen
 from wxbrief.clipboard import copy_text
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.units import UnitsMode
-from wxbrief.getcmd import local_hour
 from wxbrief.i18n.keys import K
 from wxbrief.render.discord import discord_block
+from wxbrief.solar import is_daylight
 from wxbrief.state import StationReports
 
 if TYPE_CHECKING:
@@ -28,11 +28,11 @@ class CopyActions(Screen[None]):
         ctx = cast("WxBriefApp", self.app).ctx
         station = ctx.station(entry.icao)
         name = station.name if station else None
-        hour = None
-        if isinstance(report, Metar) and entry.awc_metar is not None:
-            hour = local_hour(station.tz if station else None, entry.awc_metar.observed)
+        daylight = None
+        if isinstance(report, Metar) and entry.awc_metar is not None and station is not None:
+            daylight = is_daylight(station.lat, station.lon, entry.awc_metar.observed)
         units = ctx.units if ctx.units is not UnitsMode.MIXED else UnitsMode.US
-        return discord_block(report, ctx.translator, units, station_name=name, local_hour=hour)
+        return discord_block(report, ctx.translator, units, station_name=name, daylight=daylight)
 
     def action_copy_metar(self) -> None:
         t = cast("WxBriefApp", self.app).ctx.translator

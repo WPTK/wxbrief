@@ -24,7 +24,7 @@ with the elements that period states, its flight category in brackets.
 
 The header emoji follows the dominant condition (``Metar.condition``: thunderstorm, snow, rain, obscuration, overcast,
 broken, partly cloudy, clear). Times are UTC; the station's local time and airport name arrive with the station
-database (``station_name`` and ``local_hour`` are the hooks). Temperatures follow ``units``.
+database (``station_name`` and ``daylight`` are the hooks). Temperatures follow ``units``.
 """
 
 from __future__ import annotations
@@ -83,12 +83,12 @@ CONDITION_EMOJI: dict[Condition, str] = {
     Condition.CLEAR_NIGHT: "\U0001f319",
 }
 
-def condition_emoji(condition: Condition | None, local_hour: int | None = None) -> str:
-    """The header emoji; a clear sky is a sun or a moon once the station-local hour is known (a sun until then)."""
+def condition_emoji(condition: Condition | None, daylight: bool | None = None) -> str:
+    """The header emoji; a clear sky is a sun or a moon once it is known whether the sun is up (a sun until then)."""
     if condition is None:
         return NO_CONDITION_EMOJI
-    if local_hour is not None:
-        condition = refine_clear(condition, local_hour) or condition
+    if daylight is not None:
+        condition = refine_clear(condition, daylight) or condition
     return CONDITION_EMOJI[condition]
 
 
@@ -204,9 +204,9 @@ def _tendency(t: Translator, remark: PressureTendency) -> str:
 
 
 def _metar_lines(
-    metar: Metar, t: Translator, units: UnitsMode, station_name: str | None, local_hour: int | None
+    metar: Metar, t: Translator, units: UnitsMode, station_name: str | None, daylight: bool | None
 ) -> list[str]:
-    lines = [_title(condition_emoji(metar.condition, local_hour), metar.station, station_name)]
+    lines = [_title(condition_emoji(metar.condition, daylight), metar.station, station_name)]
     group = _first_time_group(metar)
     if metar.observed is not None and group is not None:
         obs = t.t(K.DISCORD_OBS, time=t.t(K.TIME_UTC, value=_clock(metar.observed)), group=group)
@@ -403,23 +403,23 @@ def discord_block(
     units: UnitsMode = UnitsMode.US,
     *,
     station_name: str | None = None,
-    local_hour: int | None = None,
+    daylight: bool | None = None,
 ) -> str:
     """The code block to paste into Discord (three backticks, the layout, three backticks).
 
     A report whose layout does not fit a 2000-character message comes out as several blocks, split between lines and
     separated by a blank line, each of which fits (also inside the outer fence ``render_discord`` adds).
     """
-    return "\n\n".join(_blocks(report, t, units, station_name, local_hour))
+    return "\n\n".join(_blocks(report, t, units, station_name, daylight))
 
 
 def _blocks(
-    report: Metar | Taf, t: Translator, units: UnitsMode, station_name: str | None, local_hour: int | None
+    report: Metar | Taf, t: Translator, units: UnitsMode, station_name: str | None, daylight: bool | None
 ) -> list[str]:
     if isinstance(report, Taf):
         lines = _taf_lines(report, t, units, station_name)
     else:
-        lines = _metar_lines(report, t, units, station_name, local_hour)
+        lines = _metar_lines(report, t, units, station_name, daylight)
     warnings = warning_lines(report, t)  # the decoder's note of every group it could not read
     if warnings:
         lines = [*lines, "", *warnings]
@@ -459,11 +459,11 @@ def render_discord(
     units: UnitsMode = UnitsMode.US,
     *,
     station_name: str | None = None,
-    local_hour: int | None = None,
+    daylight: bool | None = None,
     outer_fence: bool = True,
 ) -> str:
     """``discord_block`` inside an outer four-backtick fence, so the inner fence survives being shown in a chat."""
-    blocks = _blocks(report, t, units, station_name, local_hour)
+    blocks = _blocks(report, t, units, station_name, daylight)
     if not outer_fence:
         return "\n\n".join(blocks)
     return "\n\n".join(f"{OUTER_FENCE}\n{block}\n{OUTER_FENCE}" for block in blocks)

@@ -16,7 +16,7 @@ from wxbrief.config import LAYOUTS, TIME_MODES, Config, LoadedConfig, clean_watc
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
 from wxbrief.decode.units import UnitsMode
-from wxbrief.getcmd import add_get_parser, resolve_ids, run_get
+from wxbrief.getcmd import add_get_parser, run_get
 from wxbrief.i18n import DEFAULT_LANGUAGE, LANGUAGES, Translator, resolve_language
 from wxbrief.i18n.keys import K
 from wxbrief.render.discord import render_discord
@@ -271,7 +271,7 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
             now=lambda: DEMO_NOW,
         )
     return AppOptions(
-        ids=resolve_ids(cleaned),
+        ids=cleaned,
         notices=notices,
         config_usable=loaded.usable,
         config=loaded.config,
