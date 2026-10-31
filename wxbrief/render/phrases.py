@@ -14,6 +14,7 @@ from wxbrief.decode.model import (
     RVR,
     AltimeterSetting,
     AutomatedStationType,
+    ChangeType,
     CloudLayer,
     CloudOpacity,
     CloudTypes,
@@ -30,6 +31,7 @@ from wxbrief.decode.model import (
     FreeText,
     HailSize,
     HourlyPrecipitation,
+    IcingGroup,
     Intensity,
     Lightning,
     MaintenanceIndicator,
@@ -62,12 +64,17 @@ from wxbrief.decode.model import (
     StationPressure,
     StationPressureKind,
     SurfaceVisibility,
+    Taf,
+    TafPeriod,
+    TafTemperature,
+    TemperatureExtreme,
     TendencyDirection,
     TimingSegment,
     TowerVisibility,
     Trend,
     TrendKind,
     TrendTime,
+    TurbulenceGroup,
     VariableCeiling,
     VariableVisibility,
     Visibility,
@@ -76,12 +83,14 @@ from wxbrief.decode.model import (
     WeatherTiming,
     Wind,
     WindAtHeight,
+    WindShearLayer,
     WindShearRunway,
     WindShift,
     WindVariation,
 )
 from wxbrief.decode.tables import (
     BRAKING_ACTION_KEYS,
+    CHANGE_KEYS,
     CLOUD_HIGH_KEYS,
     CLOUD_LOW_KEYS,
     CLOUD_MIDDLE_KEYS,
@@ -93,6 +102,7 @@ from wxbrief.decode.tables import (
     FLAG_KEYS,
     FLIGHT_CATEGORY_KEYS,
     FREE_TEXT_WORD_KEYS,
+    ICING_KEYS,
     INTENSITY_KEYS,
     LIGHTNING_FREQUENCY_KEYS,
     LIGHTNING_TYPE_KEYS,
@@ -109,6 +119,7 @@ from wxbrief.decode.tables import (
     SKY_COVER_KEYS,
     TENDENCY_NAME_KEYS,
     TREND_TIME_KEYS,
+    TURBULENCE_KEYS,
     compass_point,
 )
 from wxbrief.decode.units import Distance, DistanceUnit, Pressure, Temperature, UnitsMode
@@ -133,7 +144,8 @@ _WARNING_KEYS = {
     "invalid_day": K.WARN_INVALID_DAY,
     "invalid_time": K.WARN_INVALID_TIME,
     "parser_error": K.WARN_PARSER_ERROR,
-    "unsupported_report": K.WARN_UNSUPPORTED_REPORT,
+    "legacy_format": K.WARN_LEGACY_FORMAT,
+    "missing_time": K.WARN_MISSING_TIME,
 }
 
 
@@ -409,8 +421,35 @@ def describe_trend_time(t: Translator, item: TrendTime) -> str:
     return t.t(TREND_TIME_KEYS[item.kind], time=t.t(K.TIME_UTC, value=clock))
 
 
+def describe_wind_shear_layer(t: Translator, shear: WindShearLayer, units: UnitsMode) -> str:
+    """``At 2,000 ft above ground the wind is from 300° (WNW) at 35 kt``."""
+    wind = Wind(shear.direction, shear.speed, shear.gust, variable=shear.direction is None)
+    return t.t(
+        K.SHEAR_LAYER,
+        height=format_short_distance(shear.height, units),
+        wind=lower_first(describe_wind(t, wind, units)),
+    )
+
+
+def _hazard_layer(t: Translator, intensity: str, base: Distance, thickness: Distance | None, units: UnitsMode) -> str:
+    """``light icing, 5,000 ft to 10,000 ft above ground``; a base of 0 reads ``the surface``."""
+    start = t.t(K.HAZARD_SURFACE) if base.value == 0 else format_short_distance(base, units)
+    if thickness is None:
+        return t.t(K.HAZARD_LAYER_OPEN, intensity=intensity, base=start)
+    top = Distance(base.value + thickness.value, base.unit)
+    return t.t(K.HAZARD_LAYER, intensity=intensity, base=start, top=format_short_distance(top, units))
+
+
+def describe_icing(t: Translator, group: IcingGroup, units: UnitsMode) -> str:
+    return _hazard_layer(t, t.t(ICING_KEYS[group.intensity]), group.base, group.thickness, units)
+
+
+def describe_turbulence(t: Translator, group: TurbulenceGroup, units: UnitsMode) -> str:
+    return _hazard_layer(t, t.t(TURBULENCE_KEYS[group.intensity]), group.base, group.thickness, units)
+
+
 def describe_forecast_elements(t: Translator, elements: ForecastElements, units: UnitsMode) -> str:
-    """The elements a trend states, as one fragment (``visibility 350 m; broken clouds at 1,000 ft``)."""
+    """The elements a trend or TAF group states, as one fragment (``visibility 350 m; broken clouds at 1,000 ft``)."""
     items: list[str] = []
     if elements.wind is not None:
         items.append(t.t(K.TREND_WIND, value=lower_first(describe_wind(t, elements.wind, units))))
@@ -423,6 +462,16 @@ def describe_forecast_elements(t: Translator, elements: ForecastElements, units:
         items.append(t.t(K.TREND_SKY, value=lower_first(describe_sky(t, elements.sky, units))))
     if elements.color_state is not None:
         items.append(t.t(K.TREND_COLOR, value=describe_color_code(t, elements.color_state)))
+    if elements.wind_shear is not None:
+        items.append(t.t(K.TREND_SHEAR, value=lower_first(describe_wind_shear_layer(t, elements.wind_shear, units))))
+    if elements.altimeter is not None:
+        items.append(t.t(K.TREND_PRESSURE, value=format_pressure(elements.altimeter, units)))
+    if elements.icing:
+        layers = "; ".join(describe_icing(t, group, units) for group in elements.icing)
+        items.append(t.t(K.TREND_ICING, value=layers))
+    if elements.turbulence:
+        layers = "; ".join(describe_turbulence(t, group, units) for group in elements.turbulence)
+        items.append(t.t(K.TREND_TURBULENCE, value=layers))
     return "; ".join(items)
 
 
@@ -435,6 +484,91 @@ def describe_trend(t: Translator, trend: Trend, units: UnitsMode) -> str:
     if trend.kind is TrendKind.BECMG:
         return t.t(K.TREND_BECMG_WHEN, when=when, details=details) if when else t.t(K.TREND_BECMG, details=details)
     return t.t(K.TREND_TEMPO_WHEN, when=when, details=details) if when else t.t(K.TREND_TEMPO, details=details)
+
+
+# --- TAF -------------------------------------------------------------------------------------------------------
+
+_WATCH_FLAGS = (
+    Flag.THUNDERSTORM,
+    Flag.CB,
+    Flag.TCU,
+    Flag.LOW_CEILING,
+    Flag.LOW_VISIBILITY,
+    Flag.FREEZING_PRECIP,
+    Flag.ICING,
+    Flag.TURBULENCE,
+    Flag.WIND_SHEAR,
+    Flag.GUSTS,
+    Flag.VOLCANIC_ASH,
+)
+
+
+def describe_span(t: Translator, start: datetime | None, end: datetime | None) -> str:
+    """``2026-10-31 12:00 UTC to 15:00 UTC``; the date of the end is left out when it is the start's."""
+    if start is None:
+        return t.t(K.TAF_SPAN_NONE)
+    first = describe_time(t, start)
+    if end is None:
+        return t.t(K.TAF_SPAN_START_ONLY, start=first)
+    last = t.t(K.TIME_UTC, value=end.strftime("%H:%M")) if end.date() == start.date() else describe_time(t, end)
+    return t.t(K.TAF_SPAN_BOTH, start=first, end=last)
+
+
+def describe_period_span(t: Translator, period: TafPeriod) -> str:
+    """The time span a group covers: the transition window of a ``BECMG``, otherwise ``start`` to ``end``."""
+    end = period.becoming_end if period.change is ChangeType.BECMG else period.end
+    return describe_span(t, period.start, end)
+
+
+def describe_change_header(t: Translator, period: TafPeriod) -> str:
+    """``Becoming, 2026-10-31 09:00 UTC to 11:00 UTC``, ``30% chance, ...``, ``Base forecast, ...``."""
+    return t.t(
+        CHANGE_KEYS[period.change],
+        span=describe_period_span(t, period),
+        probability=period.probability if period.probability is not None else "",
+    )
+
+
+def describe_taf_period(t: Translator, period: TafPeriod, units: UnitsMode) -> str:
+    """A group as one sentence: its header, then the elements it states."""
+    details = describe_forecast_elements(t, period.elements, units) or t.t(K.TREND_NO_DETAILS)
+    return t.t(K.TAF_PERIOD, header=describe_change_header(t, period), details=details)
+
+
+def describe_taf_temperature(t: Translator, item: TafTemperature, units: UnitsMode) -> str:
+    """``21 °C (70 °F) at 2026-10-31 15:00 UTC``."""
+    moment = describe_time(t, item.time) if item.time is not None else f"{item.day:02d}{item.hour:02d}Z"
+    return t.t(K.TAF_TEMPERATURE_AT, value=format_temperature(item.temperature, units), time=moment)
+
+
+def describe_taf_temperature_label(t: Translator, item: TafTemperature) -> str:
+    return t.t(K.LABEL_MAX_TEMPERATURE if item.kind is TemperatureExtreme.MAX else K.LABEL_MIN_TEMPERATURE)
+
+
+def describe_taf_summary(t: Translator, taf: Taf, units: UnitsMode) -> str:
+    """One or two sentences: the station, the period, the worst flight category and what to watch for."""
+    if taf.nil:
+        return t.t(K.TAF_SUMMARY_NIL, station=taf.station) if taf.station else t.t(K.TAF_SUMMARY_NIL_NO_STATION)
+    if taf.cancelled:
+        if taf.station:
+            return t.t(K.TAF_SUMMARY_CANCELLED, station=taf.station)
+        return t.t(K.TAF_SUMMARY_CANCELLED_NO_STATION)
+    if not taf.periods:
+        return t.t(K.TAF_SUMMARY_NOTHING)
+    span = describe_span(t, taf.valid_from, taf.valid_to)
+    category = describe_flight_category(t, taf.worst_category) if taf.worst_category is not None else None
+    if taf.station and category:
+        text = t.t(K.TAF_SUMMARY_LINE, station=taf.station, span=span, category=category)
+    elif taf.station:
+        text = t.t(K.TAF_SUMMARY_LINE_NO_CATEGORY, station=taf.station, span=span)
+    elif category:
+        text = t.t(K.TAF_SUMMARY_NO_STATION, span=span, category=category)
+    else:
+        text = t.t(K.TAF_SUMMARY_NO_STATION_NO_CATEGORY, span=span)
+    watch = [lower_first(describe_flag(t, flag)) for flag in _WATCH_FLAGS if flag in taf.flags]
+    if watch:
+        text += " " + t.t(K.TAF_SUMMARY_WATCH, items=join_list(t, watch))
+    return text
 
 
 def _runway_braking(t: Translator, braking: RunwayBraking) -> str | None:

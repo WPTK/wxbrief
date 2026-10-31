@@ -1,11 +1,24 @@
-"""Readable plain-text decode: one labelled line per field, flags, a one-line summary and any parse warnings."""
+"""Readable plain-text decode: one labelled line per field, flags, a one-line summary and any parse warnings.
+
+A METAR is a list of rows. A TAF is a header (station, issue time, valid period, worst category ...) followed by one
+block per forecast period: its change type and time span in UTC, the decoded elements and its flight category.
+"""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 from wxbrief.decode.colorstate import reported_matches_computed
-from wxbrief.decode.model import ColorState, FlightCategory, Metar, Modifier, SemanticKind
+from wxbrief.decode.model import (
+    ChangeType,
+    ColorState,
+    FlightCategory,
+    Metar,
+    Modifier,
+    SemanticKind,
+    Taf,
+    TafPeriod,
+)
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import Translator
 from wxbrief.i18n.keys import K
@@ -121,21 +134,133 @@ def decode_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRow
     return rows
 
 
-def warning_lines(metar: Metar, t: Translator) -> list[str]:
+@dataclass(frozen=True)
+class DecodeBlock:
+    """A titled group of rows: one forecast period of a TAF."""
+
+    title: str
+    rows: list[DecodeRow]
+    change: ChangeType
+    category: FlightCategory | None = None
+
+
+def _period_rows(period: TafPeriod, t: Translator, units: UnitsMode) -> list[DecodeRow]:
+    """The elements a forecast period states, one row each, then its flight category."""
+    elements = period.elements
+    rows: list[DecodeRow] = []
+
+    def add(label_key: str, value: str, kind: SemanticKind) -> None:
+        rows.append(DecodeRow(t.t(label_key), value, style_name(kind)))
+
+    if elements.wind is not None:
+        add(K.LABEL_WIND, phrases.describe_wind(t, elements.wind, units), SemanticKind.WIND)
+    if elements.visibility is not None:
+        add(K.LABEL_VISIBILITY, phrases.describe_visibility(t, elements.visibility, units), SemanticKind.VISIBILITY)
+    if elements.weather:
+        add(K.LABEL_WEATHER, phrases.describe_weather(t, elements.weather), SemanticKind.WEATHER)
+    for layer in elements.sky:
+        add(K.LABEL_SKY, phrases.describe_cloud_layer(t, layer, units), SemanticKind.SKY)
+    if elements.color_state is not None:
+        add(K.LABEL_COLOR_STATE, phrases.describe_color_code(t, elements.color_state), SemanticKind.COLOR_STATE)
+    if elements.wind_shear is not None:
+        shear = phrases.describe_wind_shear_layer(t, elements.wind_shear, units)
+        add(K.LABEL_WIND_SHEAR, shear, SemanticKind.WIND_SHEAR)
+    if elements.altimeter is not None:
+        add(K.LABEL_ALTIMETER, phrases.describe_pressure(t, elements.altimeter, units), SemanticKind.PRESSURE)
+    for icing in elements.icing:
+        add(K.LABEL_ICING, phrases.describe_icing(t, icing, units), SemanticKind.HAZARD)
+    for turbulence in elements.turbulence:
+        add(K.LABEL_TURBULENCE, phrases.describe_turbulence(t, turbulence, units), SemanticKind.HAZARD)
+    if not rows:
+        rows.append(DecodeRow(t.t(K.LABEL_DETAILS), t.t(K.TREND_NO_DETAILS)))
+    if period.flight_category is not None:
+        category = phrases.describe_flight_category(t, period.flight_category)
+        rows.append(DecodeRow(t.t(K.LABEL_CATEGORY), category, category=period.flight_category))
+    return rows
+
+
+def taf_header_rows(taf: Taf, t: Translator, units: UnitsMode) -> list[DecodeRow]:
+    """The report-level fields of a TAF: station, type, issue time, valid period, worst category, flags, extremes."""
+    rows: list[DecodeRow] = []
+
+    def add(label_key: str, value: str, kind: SemanticKind | None = None) -> None:
+        rows.append(DecodeRow(t.t(label_key), value, style_name(kind) if kind is not None else None))
+
+    if taf.station:
+        add(K.LABEL_STATION, taf.station, SemanticKind.STATION)
+    add(K.LABEL_REPORT, phrases.describe_report_type(t, taf.report_type), SemanticKind.TYPE)
+    if taf.modifiers:
+        notes = "; ".join(phrases.describe_modifier(t, modifier) for modifier in taf.modifiers)
+        add(K.LABEL_MODIFIERS, notes, SemanticKind.MODIFIER)
+    if taf.issue_time is not None:
+        add(K.LABEL_ISSUED, phrases.describe_time(t, taf.issue_time), SemanticKind.TIME)
+    if taf.valid_from is not None:
+        add(K.LABEL_VALID, phrases.describe_span(t, taf.valid_from, taf.valid_to), SemanticKind.TIME)
+    if taf.worst_category is not None:
+        worst = phrases.describe_flight_category(t, taf.worst_category)
+        rows.append(DecodeRow(t.t(K.LABEL_WORST_CATEGORY), worst, category=taf.worst_category))
+    if taf.flags:
+        add(K.LABEL_FLAGS, ", ".join(phrases.describe_flag(t, flag) for flag in taf.flags))
+    for item in taf.temperatures:
+        label = phrases.describe_taf_temperature_label(t, item)
+        value = phrases.describe_taf_temperature(t, item, units)
+        rows.append(DecodeRow(label, value, style_name(SemanticKind.TEMPERATURE)))
+    if taf.remarks:
+        add(K.LABEL_REMARK, taf.remarks, SemanticKind.REMARK)
+    return rows
+
+
+def taf_blocks(taf: Taf, t: Translator, units: UnitsMode) -> list[DecodeBlock]:
+    """One block per forecast period, in report order."""
+    return [
+        DecodeBlock(
+            phrases.describe_change_header(t, period),
+            _period_rows(period, t, units),
+            period.change,
+            period.flight_category,
+        )
+        for period in taf.periods
+    ]
+
+
+def taf_summary_row(taf: Taf, t: Translator, units: UnitsMode) -> DecodeRow:
+    return DecodeRow(t.t(K.LABEL_SUMMARY), phrases.describe_taf_summary(t, taf, units))
+
+
+def warning_lines(report: Metar | Taf, t: Translator) -> list[str]:
     """A heading with the warning count followed by one line per warning; empty when there are none."""
-    if not metar.warnings:
+    if not report.warnings:
         return []
-    lines = [t.plural(K.WARN_HEADING, len(metar.warnings))]
-    lines.extend(f"  - {phrases.describe_warning(t, warning)}" for warning in metar.warnings)
+    lines = [t.plural(K.WARN_HEADING, len(report.warnings))]
+    lines.extend(f"  - {phrases.describe_warning(t, warning)}" for warning in report.warnings)
     return lines
 
 
-def render_plain(metar: Metar, t: Translator, units: UnitsMode = UnitsMode.MIXED) -> str:
+def _render_taf(taf: Taf, t: Translator, units: UnitsMode) -> list[str]:
+    header = taf_header_rows(taf, t, units)
+    blocks = taf_blocks(taf, t, units)
+    summary = taf_summary_row(taf, t, units)
+    every_row = [*header, summary, *(row for block in blocks for row in block.rows)]
+    width = max((len(row.label) for row in every_row), default=0) + 2
+    lines = [f"{row.label + ':':<{width}}{row.value}" for row in header]
+    for block in blocks:
+        lines.append("")
+        lines.append(block.title)
+        lines.extend(f"  {row.label + ':':<{width - 2}}{row.value}" for row in block.rows)
+    lines.append("")
+    lines.append(f"{summary.label + ':':<{width}}{summary.value}")
+    return lines
+
+
+def render_plain(report: Metar | Taf, t: Translator, units: UnitsMode = UnitsMode.MIXED) -> str:
     """The whole decode as plain text (no colour, no markup)."""
-    rows = decode_rows(metar, t, units)
-    width = max((len(row.label) for row in rows), default=0) + 2
-    lines = [f"{row.label + ':':<{width}}{row.value}" for row in rows]
-    warnings = warning_lines(metar, t)
+    if isinstance(report, Taf):
+        lines = _render_taf(report, t, units)
+    else:
+        rows = decode_rows(report, t, units)
+        width = max((len(row.label) for row in rows), default=0) + 2
+        lines = [f"{row.label + ':':<{width}}{row.value}" for row in rows]
+    warnings = warning_lines(report, t)
     if warnings:
         lines.append("")
         lines.extend(warnings)

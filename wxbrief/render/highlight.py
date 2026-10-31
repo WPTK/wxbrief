@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 
-from wxbrief.decode.model import SemanticKind
+from wxbrief.decode.model import ChangeType, SemanticKind, Taf
 from wxbrief.decode.tokens import Token
 
 # Style key per kind; the full style name is ``wx.<key>`` (and ``$wx-<key>`` as a Textual CSS variable).
@@ -32,6 +32,7 @@ STYLE_KEYS: dict[SemanticKind, str] = {
     SemanticKind.RUNWAY_STATE: "vis",
     SemanticKind.TREND: "trend",
     SemanticKind.COLOR_STATE: "color-state",
+    SemanticKind.HAZARD: "wx",
     SemanticKind.REMARK: "remark",
     SemanticKind.TERMINATOR: "remark",
     SemanticKind.UNKNOWN: "unknown",
@@ -50,6 +51,25 @@ class HighlightSpan:
 def highlight_spans(tokens: Iterable[Token]) -> list[HighlightSpan]:
     """One span per token, in order. Whitespace between tokens belongs to no span."""
     return [HighlightSpan(token.start, token.end, token.kind) for token in tokens]
+
+
+@dataclass(frozen=True)
+class PeriodSpan:
+    """``raw[start:end]`` is the text of one forecast period of a TAF (``index`` points into ``Taf.periods``)."""
+
+    start: int
+    end: int
+    index: int
+    change: ChangeType
+
+
+def period_spans(taf: Taf) -> list[PeriodSpan]:
+    """The stretch of the raw TAF each forecast period covers, for hover linking and block highlighting."""
+    return [
+        PeriodSpan(period.tokens[0].start, period.tokens[-1].end, index, period.change)
+        for index, period in enumerate(taf.periods)
+        if period.tokens
+    ]
 
 
 def style_key(kind: SemanticKind) -> str:
