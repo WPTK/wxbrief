@@ -589,3 +589,36 @@ Screenshot of the briefing screen (120x36, `textual-dark`, saved KDEN and EGLL r
 **For S7.** `SettingsScreen(lines)` takes `(name, value)` pairs; replace it. Only `en` exists, `Translator.load(view.lang)` falls back to it.
 
 **Known limits.** The decoded table wraps values to the width at the last resize. `StationList` is rebuilt on each redraw. No snapshot tests yet.
+
+### S5a (2026-10-31)
+
+The app-independent half of S5, in new files only, so it could land beside S4. Nothing is ticked: S5 is not done.
+
+**What exists.**
+
+- `wxbrief/ui/themes/aviation.py`: the six `Theme` objects (`cockpit-night`, `phosphor-green`, `phosphor-amber`,
+  `paper-chart`, `high-contrast-dark`, `high-contrast-light`) and `AVIATION_THEMES`.
+- `wxbrief/ui/themes/semantic.py`: `SEMANTIC_DEFAULTS` (the `wx-*` tokens, plus `wx-label` and `wx-warning` which the
+  Rich renderer also uses), the `(dark, light)` flight-category and colour-state pairs, `BUILTIN_THEME_NAMES`, and
+  `semantic_variables(dark)` returning `fcat-*` and `cs-*` as hex. `wxbrief.ui.themes.THEME_CYCLE` is the order `t` cycles.
+- `wxbrief/render/palette.py`: `Palette.from_theme(theme)` does the three-way merge (semantic defaults and fixed colours,
+  then `generate()`, then `theme.variables`), resolves `$name` references and `auto N%` itself, and builds a Rich `Theme`
+  on `wx.*`, `fcat.*` and `fcat.*.badge`. `all_themes()` lists the built-ins plus the aviation themes.
+- `wxbrief decode --theme NAME` (coloured terminal output only; an unknown name exits 2).
+- `tests/test_themes.py` and `docs/themes.md`.
+
+**Deviation: Textual does not resolve references in a variables dict.** The S0 check said a default such as
+`{"wx-wind": "$secondary"}` resolves through the stylesheet. It does not: `$name` is expanded in CSS text only, so
+`color: $wx-wind` fails with "Invalid value ('$secondary')" when the value comes from `get_theme_variable_defaults()` or
+`get_css_variables()`. `SEMANTIC_DEFAULTS` therefore stays a table of references that only `Palette` reads, and the app
+injects resolved hex.
+
+**What S5b must wire.**
+
+- Register `AVIATION_THEMES` in `WxBriefApp.__init__`.
+- Override `get_css_variables()` to return `{**super().get_css_variables(), **Palette.from_theme(self.current_theme).css_variables()}`
+  (this supplies every `$wx-*`, `$fcat-*` and `$cs-*`). Do not return `SEMANTIC_DEFAULTS` from
+  `get_theme_variable_defaults()`.
+- Component classes in `app.tcss`, `RawReport` built from `get_component_rich_style()`, badges and timeline segments using
+  `$fcat-*`, `t`/`T` over `THEME_CYCLE`, `ThemePickerScreen`, persistence (skipped when `--theme` was passed), snapshots in
+  three themes, and the `--theme` flag on the TUI entry.
