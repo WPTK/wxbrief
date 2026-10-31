@@ -36,7 +36,8 @@ class StatusBar(Static):
         text = Text()
         if state.errors:
             message = next(iter(state.errors.values()))
-            text.append(f"{glyphs.error} {t.t(K.UI_STATUS_OFFLINE)}", style=palette.offline)
+            label = f" {t.t(K.UI_STATUS_OFFLINE)}" if state.offline else ""  # only a network failure means offline
+            text.append(f"{glyphs.error}{label}", style=palette.offline)
             text.append(f" ({message})  ", style=palette.muted)
         if selected is not None and selected.metar is not None:
             if selected.freshness(now) is Freshness.FRESH:

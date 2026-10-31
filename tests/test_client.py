@@ -164,3 +164,43 @@ def test_non_finite_numbers_cannot_crash_parsing() -> None:
     assert [r.icao for r in rows] == ["KABC", "KDEF"]
     assert all(r.wind_direction is None and r.wind_speed_kt is None and r.temperature_c is None for r in rows)
     assert rows[0].observed is None and rows[0].visibility_sm is None
+
+
+@respx.mock
+@pytest.mark.parametrize("body", [{"error": "Invalid ids"}, "text", 5, None])
+async def test_a_200_body_that_is_not_a_list_is_a_client_error(body: object) -> None:
+    respx.get(METAR_URL).mock(return_value=httpx.Response(200, json=body))
+    async with AwcClient() as client:
+        with pytest.raises(ClientError):
+            await client.metars(["KDEN"])
+
+
+@respx.mock
+async def test_retry_after_accepts_an_http_date_and_is_capped_at_a_day() -> None:
+    from datetime import UTC, datetime, timedelta
+    from email.utils import format_datetime
+
+    when = format_datetime(datetime.now(UTC) + timedelta(seconds=300), usegmt=True)
+    for header, low, high in ((when, 280, 301), ("999999999", 86400, 86400), ("inf", 60, 60), ("nan", 60, 60)):
+        respx.get(METAR_URL).mock(return_value=httpx.Response(429, headers={"Retry-After": header}))
+        async with AwcClient() as client:
+            with pytest.raises(RateLimited) as caught:
+                await client.metars(["KDEN"])
+        assert low <= caught.value.retry_after <= high, header
+
+
+async def test_a_dripping_body_hits_the_total_deadline() -> None:
+    import asyncio
+
+    async def drip() -> object:
+        yield b"["
+        await asyncio.sleep(5)
+        yield b"]"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=drip())
+
+    http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    async with AwcClient(client=http, deadline=0.2) as client:
+        with pytest.raises(TransportError):
+            await client.metars(["KDEN"])

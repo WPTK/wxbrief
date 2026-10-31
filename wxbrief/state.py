@@ -55,7 +55,7 @@ class AppState:
         self.now = now
         self.stations: dict[str, StationReports] = {}
         self.errors: dict[Product, str] = {}
-        self.last_success: datetime | None = None
+        self.offline: set[Product] = set()  # products whose last failure was the network, not the server or the disk
         self._metar_rows: dict[str, AwcMetar] = {}
         self._taf_rows: dict[str, AwcTaf] = {}
 
@@ -123,7 +123,7 @@ class AppState:
         """Take a successful fetch: newest report per station, then write the cache."""
         now = self.now()
         self.errors.pop(product, None)
-        self.last_success = now
+        self.offline.discard(product)
         if product is Product.METAR:
             for row in latest_by_station(rows).values():
                 self._set_metar(row, now, from_cache=False)
@@ -132,8 +132,8 @@ class AppState:
             for row in rows:
                 self._set_taf(row, now, from_cache=False)
             payload = [row.source for row in self._taf_rows.values()]
-        if self.cache is not None:
-            self.cache.write(CACHE_KEYS[product], payload)
+        if self.cache is not None and not self.cache.write(CACHE_KEYS[product], payload):
+            self.record_error(product, f"{product.value}: could not write the cache in {self.cache.directory}")
 
     def load_demo(self, stations: Iterable[DemoStation]) -> None:
         """Fill the state from the bundled demo reports. Nothing is cached or fetched."""
@@ -141,10 +141,12 @@ class AppState:
             self.stations[demo.icao] = StationReports(
                 demo.icao, demo.awc_metar, demo.awc_taf, demo.metar, demo.taf, self.now(), from_cache=False
             )
-        self.last_success = self.now()
 
-    def record_error(self, product: Product, message: str) -> None:
+    def record_error(self, product: Product, message: str, *, offline: bool = False) -> None:
         self.errors[product] = message
+        self.offline.discard(product)
+        if offline:
+            self.offline.add(product)
 
     def load_cache(self) -> int:
         """Fill the state from the cache files; returns how many stations got a report. Damaged files are skipped."""

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import shutil
-import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -14,7 +13,7 @@ from textual.app import App
 from textual.theme import Theme
 
 from wxbrief.config import TIME_MODES, WATCHLIST_CAP, Config, ViewConfig, default_config_path, save_config
-from wxbrief.data.awc import AwcClient, AwcError
+from wxbrief.data.awc import AwcClient, AwcError, TransportError
 from wxbrief.data.cache import DiskCache, default_cache_dir
 from wxbrief.data.demo import load_demo
 from wxbrief.data.poll import PollScheduler, Product
@@ -108,8 +107,6 @@ class WxBriefApp(App[None]):
         self.scheduler: PollScheduler | None = None
         self.briefing = BriefingScreen()
         self._backed_up = False
-        self._monotonic: Callable[[], float] = time.monotonic
-        self._blurred_at: float | None = None
         self._warned_unusable = False
 
     def now(self) -> datetime:
@@ -216,7 +213,11 @@ class WxBriefApp(App[None]):
 
     def _on_error(self, product: Product, error: AwcError) -> None:
         first = product not in self.state.errors
-        self.state.record_error(product, f"{product.value}: {error}" if str(error) else type(error).__name__)
+        self.state.record_error(
+            product,
+            f"{product.value}: {error}" if str(error) else type(error).__name__,
+            offline=isinstance(error, TransportError),
+        )
         if first:
             fetch = self.ctx.translator.t(
                 K.UI_TOAST_FETCH_FAILED, product=product.value.upper(), error=error or type(error).__name__
@@ -238,17 +239,10 @@ class WxBriefApp(App[None]):
     def on_app_blur(self, event: events.AppBlur) -> None:
         if self.scheduler is not None:
             self.scheduler.away = True
-            self._blurred_at = self._monotonic()
 
     def on_app_focus(self, event: events.AppFocus) -> None:
-        scheduler = self.scheduler
-        if scheduler is None or not scheduler.away:
-            return
-        scheduler.away = False
-        away_for = self._monotonic() - self._blurred_at if self._blurred_at is not None else 0.0
-        self._blurred_at = None
-        if away_for >= self.options.config.poll.metar_interval:
-            scheduler.poll_now()  # data is a full poll interval old: catch up (a rate-limit hold still applies)
+        if self.scheduler is not None and self.scheduler.away:
+            self.scheduler.return_from_away()  # polls at once what the away interval kept waiting past its normal time
 
     # --- the list --------------------------------------------------------------------------------------------------
 

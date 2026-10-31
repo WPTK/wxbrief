@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import asyncio
+import math
 from collections.abc import Sequence
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from typing import Any, Self
 
 import httpx
@@ -19,9 +23,11 @@ from wxbrief.data.models import (
 
 BASE_URL = "https://aviationweather.gov/api/data"
 USER_AGENT = f"wxbrief/{__version__} (+https://github.com/WPTK/wxbrief)"
-TIMEOUT_SECONDS = 10.0
+TIMEOUT_SECONDS = 10.0  # httpx's limit on each connect, read and write
+DEADLINE_SECONDS = 30.0  # the limit on one whole request, however slowly the server drips its body
 MAX_IDS_PER_REQUEST = 400
 DEFAULT_RETRY_AFTER = 60.0
+MAX_RETRY_AFTER = 86400.0
 
 
 class AwcError(Exception):
@@ -45,7 +51,7 @@ class ServerError(AwcError):
 
 
 class ClientError(AwcError):
-    """Any other unexpected status (a 4xx that is not 429) or a body that is not JSON."""
+    """Any other unexpected status (a 4xx that is not 429), or a body that is not a JSON list."""
 
 
 class TransportError(AwcError):
@@ -53,10 +59,18 @@ class TransportError(AwcError):
 
 
 def _retry_after(response: httpx.Response) -> float:
+    """Seconds from a ``Retry-After`` header (a number or an HTTP date), at most a day; a default when unusable."""
+    value = response.headers.get("Retry-After", "").strip()
     try:
-        return max(0.0, float(response.headers.get("Retry-After", "")))
+        seconds = float(value)
     except ValueError:
+        try:
+            seconds = (parsedate_to_datetime(value) - datetime.now(UTC)).total_seconds()
+        except (TypeError, ValueError):
+            return DEFAULT_RETRY_AFTER
+    if not math.isfinite(seconds):
         return DEFAULT_RETRY_AFTER
+    return min(MAX_RETRY_AFTER, max(0.0, seconds))
 
 
 def _chunks(ids: Sequence[str], size: int) -> list[list[str]]:
@@ -81,7 +95,9 @@ class AwcClient:
         base_url: str = BASE_URL,
         client: httpx.AsyncClient | None = None,
         timeout: float = TIMEOUT_SECONDS,
+        deadline: float = DEADLINE_SECONDS,
     ) -> None:
+        self._deadline = deadline
         self._owns_client = client is None
         self._base_url = base_url.rstrip("/")
         self._client = client or httpx.AsyncClient(timeout=timeout, headers={"User-Agent": USER_AGENT})
@@ -98,9 +114,12 @@ class AwcClient:
 
     async def _get(self, endpoint: str, params: dict[str, str]) -> list[Any]:
         try:
-            response = await self._client.get(f"{self._base_url}/{endpoint}", params=params)
+            async with asyncio.timeout(self._deadline):  # httpx's timeout restarts on every read
+                response = await self._client.get(f"{self._base_url}/{endpoint}", params=params)
         except httpx.HTTPError as exc:
             raise TransportError(f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__) from exc
+        except TimeoutError as exc:
+            raise TransportError(f"no complete response within {self._deadline:g} s") from exc
         status = response.status_code
         if status == 204:
             return []
@@ -114,7 +133,9 @@ class AwcClient:
             body = response.json()
         except ValueError as exc:
             raise ClientError("response is not JSON") from exc
-        return body if isinstance(body, list) else []
+        if not isinstance(body, list):
+            raise ClientError("response is not a list")
+        return body
 
     async def _fetch(self, endpoint: str, ids: Sequence[str], extra: dict[str, str]) -> list[Any]:
         rows: list[Any] = []

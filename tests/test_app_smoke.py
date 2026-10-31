@@ -396,25 +396,56 @@ def test_command_line_ids_are_resolved_and_bad_ones_reported() -> None:
     assert len(options.notices) == 2 and not options.config_warnings
 
 
-async def test_refocus_polls_only_after_a_long_absence(tmp_path: Path) -> None:
+async def test_refocus_returns_the_scheduler_to_its_normal_interval(tmp_path: Path) -> None:
     app = make_app(tmp_path, ["KDEN"], online_client())
     async with app.run_test(size=(100, 30)) as pilot:
         await wait_for(pilot, lambda: app.state.stations.get("KDEN") and app.state.stations["KDEN"].metar)
         scheduler = app.scheduler
         assert scheduler is not None
-        calls: list[int] = []
-        scheduler.poll_now = lambda: calls.append(1)  # type: ignore[method-assign]
-        clock = [1000.0]
-        app._monotonic = lambda: clock[0]
         app.on_app_blur(events.AppBlur())
         assert scheduler.away
-        clock[0] += 30
         app.on_app_focus(events.AppFocus())
-        assert not scheduler.away and calls == []
-        app.on_app_blur(events.AppBlur())
-        clock[0] += app.options.config.poll.metar_interval + 1
-        app.on_app_focus(events.AppFocus())
-        assert calls == [1]
+        assert not scheduler.away
+
+
+async def test_a_server_error_is_not_labelled_offline(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(503)
+
+    client = AwcClient(client=httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+    app = make_app(tmp_path, ["KDEN"], client)
+    async with app.run_test(size=(120, 40)) as pilot:
+        await wait_for(pilot, lambda: app.state.errors)
+        await pilot.pause()
+        status = str(app.screen.query_one(StatusBar).render())
+        assert "503" in status and "offline" not in status
+
+
+async def test_a_deeply_nested_reply_does_not_close_the_app(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"[" * 100000 + b"]" * 100000)
+
+    client = AwcClient(client=httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+    app = make_app(tmp_path, ["KDEN"], client)
+    async with app.run_test(size=(100, 30)) as pilot:
+        await wait_for(pilot, lambda: app.state.errors)
+        assert app.is_running
+
+
+async def test_a_config_with_unknown_keys_is_backed_up_before_saving(tmp_path: Path) -> None:
+    from wxbrief.config import load_config
+
+    path = tmp_path / "config.toml"
+    path.write_text("[view]\ntheem = 'nord'\n\n[alerts]\nwebhook = 'x'\n", encoding="utf-8")
+    loaded = load_config(path)
+    app = make_app(tmp_path, [])
+    app.options.config_warnings = loaded.warnings
+    async with app.run_test(size=(100, 30)) as pilot:
+        await pilot.pause()
+        app.add_station("EGLL")
+        await pilot.pause()
+    assert "alerts" in (tmp_path / "config.toml.bak").read_text(encoding="utf-8")
+    assert "alerts" not in path.read_text(encoding="utf-8")
 
 
 async def test_flight_category_row_wraps_in_a_narrow_pane(tmp_path: Path) -> None:

@@ -6,12 +6,14 @@ import os
 import re
 import tempfile
 import tomllib
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any
 
 import platformdirs
 import tomli_w
+
+from wxbrief.data.stations import resolve_id
 
 WATCHLIST_CAP = 60
 UNITS = ("us", "metric", "mixed")
@@ -75,6 +77,13 @@ def _section(data: dict[str, Any], name: str, warnings: list[str]) -> dict[str, 
     return {}
 
 
+def _unknown(table: dict[str, Any], section: type, where: str, warns: list[str]) -> None:
+    known = {f.name for f in fields(section)}
+    for key in table:
+        if key not in known:
+            warns.append(f"{where}.{key} is not a setting; ignoring it")
+
+
 def _choice(
     table: dict[str, Any], key: str, allowed: tuple[str, ...], default: str, where: str, warns: list[str]
 ) -> str:
@@ -124,7 +133,9 @@ def clean_watchlist(values: object, warnings: list[str] | None = None) -> list[s
         code = value.strip().upper() if isinstance(value, str) else ""
         if not _STATION_ID.match(code):
             warns.append(f"stations.watchlist: ignoring {value!r}")
-        elif code not in result:
+            continue
+        code = resolve_id(code)  # DEN is KDEN: the list holds ICAO ids only
+        if code not in result:
             result.append(code)
     if len(result) > WATCHLIST_CAP:
         warns.append(f"stations.watchlist: keeping the first {WATCHLIST_CAP} of {len(result)}")
@@ -137,11 +148,21 @@ def parse_config(data: dict[str, Any]) -> LoadedConfig:
     warns: list[str] = []
     config = Config()
 
+    for name in data:
+        if name not in {f.name for f in fields(Config)}:
+            warns.append(f"[{name}] is not a section; ignoring it")
     stations = _section(data, "stations", warns)
+    _unknown(stations, StationsConfig, "stations", warns)
     if "watchlist" in stations:
         config.stations.watchlist = clean_watchlist(stations["watchlist"], warns)
 
     poll, view, decode = (_section(data, name, warns) for name in ("poll", "view", "decode"))
+    for table, section, name in (
+        (poll, PollConfig, "poll"),
+        (view, ViewConfig, "view"),
+        (decode, DecodeConfig, "decode"),
+    ):
+        _unknown(table, section, name, warns)
     defaults = PollConfig()
     config.poll = PollConfig(
         metar_interval=_seconds(poll, "metar_interval", defaults.metar_interval, "poll", warns),
