@@ -219,11 +219,18 @@ def _run_pressure(cur: Cursor, draft: _Draft) -> bool:
     return True
 
 
+def _is_lone_slashes(group: ColorStateGroup | None) -> bool:
+    """A colour-state group that is only ``///``."""
+    return group is not None and not group.forecast and group.current is not None and group.current.not_reported
+
+
 def _run_tail(cur: Cursor, draft: _Draft) -> bool:
     start = cur.pos
     result = parse_tail_group(cur, draft.flavor, draft.observed)
     if result is None:
         return False
+    if _is_lone_slashes(result.color_state) and not draft.altimeters:
+        return False  # "///" ahead of the pressure is a stray placeholder; the colour state comes after it
     if draft.tail_index is None:
         draft.tail_index = start
     if result.trend is not None:

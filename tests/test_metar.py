@@ -356,3 +356,16 @@ def test_corpus_reports_decode_cleanly(path: Path) -> None:
         assert m.observed is not None
         assert m.observed.strftime("%d%H%MZ") == time_token.text
     assert_complete(raw)
+
+
+def test_slashes_are_a_colour_state_only_after_the_pressure() -> None:
+    """``///`` closes German AUTO reports; ahead of the pressure it is a stray placeholder and must not end the body."""
+    after = parse_metar("METAR ETHS 310820Z AUTO 31001KT 5000 // ////// 09/08 Q1032 ///", REF)
+    assert after.color_state is not None
+    assert after.color_state.current is not None
+    assert after.color_state.current.not_reported
+    assert after.warnings == ()
+    before = parse_metar("METAR XXXX 310820Z AUTO 31001KT 9999 09/08 /// Q1032", REF)
+    assert before.color_state is None
+    assert before.altimeter is not None  # the pressure group after the stray token is still read
+    assert [(w.code, w.text) for w in before.warnings] == [("unknown_token", "///")]

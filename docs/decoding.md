@@ -87,7 +87,7 @@ another tail group (`RESHRA`, `WS`, a sea or runway state). A second wind or col
 keyword belongs to the colour group only when a colour code follows it, so `BLU TEMPO YLO` is one group while
 `BLU TEMPO 5000 -RA` is a group and a weather trend. A group may begin with a keyword (`TEMPO YLO`, `current` is
 `None`). `BLACK` before a code means the airfield is closed for non-weather reasons; a bare `BLACK` has `code=None`.
-`///` in the colour position (German AUTO reports: `... Q1033 ///`) is a state that was not reported. The `+` suffix
+`///` in the colour position (German AUTO reports: `... Q1033 ///`, accepted only after the pressure) is a state that was not reported. The `+` suffix
 (`BLU+`, seen on Bundeswehr reports) is kept as `plus`; its meaning is not defined in the NATO tables we could find,
 so it is displayed as reported and not interpreted. RAF and Dutch stations differ in position: UK military reports
 put the group after `RMK`, where `remarks.py` parses it with the same function (`ColorStateRemark`) and the decoder
