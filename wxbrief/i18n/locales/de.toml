@@ -9,6 +9,13 @@ decimal = ","
 group = "."
 clock = "24h"
 keep_case = true
+# first words that are not nouns, so they lose their capital in the middle of a sentence ("Wind aus 240°")
+lowercase_starts = [
+    "Ab", "Alle", "Alte", "Auf", "Aufgehobene", "Aufgelockerte", "Aus", "Automatische", "Bedeckt", "Berichtigte",
+    "Böiger", "Das", "Dauerhafte", "Der", "Die", "Diese", "Einige", "Es", "Gefrierender", "Geringe", "Geänderte",
+    "In", "Kein", "Keine", "Konnte", "Nicht", "Niedrige", "Verspätete", "Veränderliche", "Vorübergehend",
+    "Vorübergehende", "Wenige", "Windstill", "Wolkenfrei", "Wolkenlos", "Zeitweise", "Überwiegend",
+]
 
 [label]
 report = "Meldung"
@@ -127,11 +134,11 @@ none = "Kein bedeutsames Wetter"
 not_observed = "Nicht beobachtet"
 tornado = "Tornado oder Wasserhose"
 vicinity = "{body} in der Umgebung"
-with_intensity = "{intensity} {body}"
+with_intensity = "{body} {intensity}"
 
 [wx.intensity]
-LIGHT = "leicht"
-HEAVY = "stark"
+LIGHT = "von leichter Intensität"
+HEAVY = "von starker Intensität"
 
 [wx.descriptor]
 MI = "flach"

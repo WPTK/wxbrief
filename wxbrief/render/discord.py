@@ -194,8 +194,8 @@ def _tendency(t: Translator, remark: PressureTendency) -> str:
     if remark.direction is TendencyDirection.SAME or remark.change_hpa == 0:
         return t.t(K.DISCORD_TENDENCY_STEADY)
     if remark.direction is TendencyDirection.HIGHER:
-        return t.t(K.DISCORD_TENDENCY_RISING, change=f"+{remark.change_hpa:.1f}")
-    return t.t(K.DISCORD_TENDENCY_FALLING, change=f"-{remark.change_hpa:.1f}")
+        return t.t(K.DISCORD_TENDENCY_RISING, change="+" + t.numbers.fixed(remark.change_hpa, 1))
+    return t.t(K.DISCORD_TENDENCY_FALLING, change="-" + t.numbers.fixed(remark.change_hpa, 1))
 
 
 def _metar_lines(
@@ -262,7 +262,7 @@ def _metar_lines(
     tail: list[str] = []
     slp = metar.remarks_of(SeaLevelPressure)
     if slp and slp[0].pressure is not None:
-        value = f"{slp[0].pressure.hpa:.1f} mb"
+        value = f"{t.numbers.fixed(slp[0].pressure.hpa, 1)} mb"
         tendency = metar.remarks_of(PressureTendency)
         if tendency:
             value = t.t(K.DISCORD_PRESSURE_WITH_TENDENCY, value=value, tendency=_tendency(t, tendency[0]))

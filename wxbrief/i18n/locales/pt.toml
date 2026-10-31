@@ -129,8 +129,8 @@ vicinity = "{body} nas proximidades"
 with_intensity = "{body} {intensity}"
 
 [wx.intensity]
-LIGHT = "fraco"
-HEAVY = "forte"
+LIGHT = "de intensidade fraca"
+HEAVY = "de intensidade forte"
 
 [wx.descriptor]
 MI = "raso"

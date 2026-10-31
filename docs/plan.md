@@ -791,7 +791,7 @@ Deviations from the design:
 - **`--help` is translated** for the TUI flags, in the language named by `--lang` on the command line (English otherwise, the config is not read for `--help`), which reverses the design's "CLI
   `--help` English-only at v1". The `decode` and `get` subparser help, argparse's own headings and config/AWC error text stay
   English.
-- **New `[meta]` keys.** `keep_case` (German capitalises nouns, so `lower_first` must not run) and `min_grouping` (Spanish
+- **New `[meta]` keys.** `keep_case` (German capitalises nouns, so `lower_first` lowers only the first words listed in `lowercase_starts`; `[meta]` falls back along the `pt-BR` -> `pt` -> `en` chain; intensity is worded "von leichter Intensität" / "d'intensité faible" / "de intensidade fraca" to avoid gender agreement) and `min_grouping` (Spanish
   groups thousands from five digits). `Translator.lower_first` replaces `phrases.lower_first`.
 - **New plural rule `one_below_two`** for French and Portuguese, and `RULE_CATEGORIES` so the completeness test knows which
   forms a rule can return.

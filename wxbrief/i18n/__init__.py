@@ -134,22 +134,32 @@ class Translator:
 
     @property
     def meta(self) -> dict[str, object]:
-        return self._catalogs[0].meta
+        """``[meta]`` of the primary catalog; a key it lacks comes from the next catalog in the chain (``pt``)."""
+        merged: dict[str, object] = {}
+        for catalog in reversed(self._catalogs):
+            merged.update(catalog.meta)
+        return merged
 
     @property
     def numbers(self) -> NumberFormat:
-        """The primary catalog's number format (English separators when it names none)."""
-        meta = self._catalogs[0].meta
+        """The number format of the language (a regional catalog without its own ``[meta]`` uses its base language)."""
+        meta = self.meta
         return NumberFormat.from_meta(meta) if meta else ENGLISH
 
     @property
     def language_name(self) -> str:
         """The language's own name (``Deutsch``) from the catalog's ``[meta]``."""
-        return str(self._catalogs[0].meta.get("language", self.lang))
+        return str(self.meta.get("language", self.lang))
 
     def lower_first(self, text: str) -> str:
-        """``lower_first``, unless the language capitalises nouns mid-sentence (``keep_case`` in ``[meta]``)."""
-        return text if self._catalogs[0].meta.get("keep_case") is True else lower_first(text)
+        """``lower_first``; where nouns keep their capital (``keep_case`` in ``[meta]``) only a first word listed in
+        ``lowercase_starts`` (an article, adjective or preposition) is lowered."""
+        meta = self.meta
+        if meta.get("keep_case") is not True:
+            return lower_first(text)
+        starts = meta.get("lowercase_starts")
+        first = text.split(" ", 1)[0].rstrip(",:;")
+        return lower_first(text) if isinstance(starts, list) and first in starts else text
 
     @property
     def keys(self) -> frozenset[str]:
@@ -185,6 +195,6 @@ class Translator:
             return key
         if isinstance(entry, str):
             return self._fill(entry, {"n": n, **params})
-        rule = str(self._catalogs[0].meta.get("plural_rule", "one_other"))
+        rule = str(self.meta.get("plural_rule", "one_other"))
         template = entry.get(plural_category(rule, n), entry["other"])
         return self._fill(template, {"n": n, **params})
