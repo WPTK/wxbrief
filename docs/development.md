@@ -47,6 +47,26 @@ Changes that only touch Markdown, `docs/` or `LICENSE` skip CI.
   `z`, the grid, a 60x20 terminal, and the timeline markers without colour.
 - A test that fails is run alone before it is called a flake.
 
+## UAT suite
+
+`tests/uat/test_uat.py` drives the real app on `--demo` data at the sizes users have: 120x30 (the main case), 200x50,
+100x50, 280x70, the 80x24 floor, and 60x20, 50x14 and 40x12. The journeys live in `tests/uat/journeys.py` (list, grid,
+station detail, paste, add station, help, themes, settings, copy keys, quit, and a live resize 120x30 to 100x50 to
+200x50 to 80x24 and back); `harness.py` holds the app setup and screen reading. Each journey asserts what is on screen
+and where focus is, and any saved config goes to a temp directory. Waits poll with a deadline, never a fixed sleep.
+
+```powershell
+.venv\Scripts\python -m pytest tests/uat
+.venv\Scripts\python -m pytest tests/uat -m "not slow"    # skip the theme cycle and the resize journey
+```
+
+`tests/uat/test_known_bugs.py` holds defects the journeys found as `xfail(strict=True)` tests named after their GitHub
+issue. When a fix lands the test XPASSes and fails the run: remove its `xfail` mark and keep it as a regression test.
+
+`scripts/uat_screenshots.py OUT_DIR` runs the same journeys and writes each state as SVG and PNG (the PNGs need
+Playwright with Chromium; `--no-png` and `--png-only` split the two steps). The folder is for looking at, so pass one
+outside the checkout.
+
 ## Snapshots
 
 `tests/test_snapshots.py` compares screenshots of the briefing screen in three themes
