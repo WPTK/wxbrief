@@ -33,11 +33,20 @@ def short_conditions(metar: Metar | None) -> str:
     return " ".join(part for part in (wind, " ".join(vis)) if part)
 
 
+LIST_MIN, LIST_MAX = 38, 56  # columns: the list takes a quarter of the terminal, between these
 NAME_FROM = 46  # columns: a list this wide has room for the station name after the conditions
 
 
 class StationList(OptionList):
     """Selecting a row (or moving the highlight) shows that station in the detail pane."""
+
+    DEFAULT_CSS = f"""
+    StationList {{
+        width: 26%;
+        min-width: {LIST_MIN};
+        max-width: {LIST_MAX};
+    }}
+    """
 
     BINDINGS = [
         bind("a", "screen.add_station", K.UI_BINDING_ADD_STATION),

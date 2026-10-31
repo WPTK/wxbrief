@@ -21,7 +21,7 @@ from wxbrief.app import WxBriefApp
 from wxbrief.config import Config
 from wxbrief.ui.screens.briefing import BriefingScreen
 
-# Terminal sizes (columns, rows): the common ones first, then the floor, then the too-small ones.
+# Terminal sizes (columns, rows): the common ones first, then the floor, then the smallest supported.
 SIZES: dict[str, tuple[int, int]] = {
     "120x30": (120, 30),  # Windows Terminal default
     "200x50": (200, 50),  # maximized on a 1080p screen
@@ -29,11 +29,10 @@ SIZES: dict[str, tuple[int, int]] = {
     "280x70": (280, 70),  # large monitor
     "80x24": (80, 24),  # the floor
     "60x20": (60, 20),
-    "50x14": (50, 14),
-    "40x12": (40, 12),
+    "60x16": (60, 16),  # the smallest the app draws; below it a notice asks for a larger window
 }
 COMMON = ("120x30", "200x50", "100x50", "280x70", "80x24")
-SMALL = ("60x20", "50x14", "40x12")
+SMALL = ("60x20", "60x16")
 WIDE_FROM = 90  # app.tcss: HORIZONTAL_BREAKPOINTS; below this the station list gives way to the detail
 TALL_FROM = 24  # VERTICAL_BREAKPOINTS
 

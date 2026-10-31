@@ -26,7 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 COMMENT = re.compile(r"[ \t]*<!-- Generated with Rich [^>]*-->\r?\n")
 ENDS_WITH_SIZE = re.compile(r"\d+x\d+$")
-EVERY_SIZE = ("120x30", "200x50", "100x50", "280x70", "80x24", "60x20", "50x14", "40x12")
+EVERY_SIZE = ("120x30", "200x50", "100x50", "280x70", "80x24", "60x20", "60x16")
 
 # (journey, state) -> the sizes the default plan pictures it at; a state not listed here is only shot with --all.
 PLAN: dict[tuple[str, str], tuple[str, ...]] = {
@@ -35,19 +35,19 @@ PLAN: dict[tuple[str, str], tuple[str, ...]] = {
     ("grid", "scrolled"): ("120x30", "80x24", "60x20"),
     ("grid_detail", "top"): ("120x30", "80x24", "60x20"),
     ("grid_detail", "taf"): ("120x30", "80x24"),
-    ("sections", "decoded"): ("120x30", "80x24", "40x12"),
-    ("sections", "taf"): ("120x30", "100x50", "80x24", "40x12"),
+    ("sections", "decoded"): ("120x30", "80x24", "60x16"),
+    ("sections", "taf"): ("120x30", "100x50", "80x24", "60x16"),
     ("sections", "taf-period"): ("120x30", "80x24"),
     ("paste", "empty"): ("120x30", "80x24"),
-    ("paste", "decoded"): ("120x30", "80x24", "50x14"),
-    ("add_station", "matches"): ("120x30", "80x24", "40x12"),
+    ("paste", "decoded"): ("120x30", "80x24", "60x16"),
+    ("add_station", "matches"): ("120x30", "80x24", "60x16"),
     ("add_station", "added"): ("120x30", "80x24"),
-    ("help", "top"): ("120x30", "80x24", "50x14"),
+    ("help", "top"): ("120x30", "80x24", "60x16"),
     ("help", "end"): ("80x24",),
     ("theme_cycle", "*"): ("120x30",),
     ("theme_picker", "preview"): ("120x30", "80x24"),
-    ("settings", "open"): ("120x30", "80x24", "50x14"),
-    ("settings", "german"): ("120x30", "80x24", "50x14"),
+    ("settings", "open"): ("120x30", "80x24", "60x16"),
+    ("settings", "german"): ("120x30", "80x24", "60x16"),
     ("copy_keys", "copied"): ("120x30",),
     ("resize", "*"): ("120x30",),
 }
@@ -91,6 +91,30 @@ def export_svgs(out: Path, sizes: list[str], journeys: list[str], everything: bo
     return written
 
 
+def export_notices(out: Path, sizes: list[str]) -> list[Path]:
+    """The too-small notice at two sizes below the smallest the app draws (the journeys cannot run there)."""
+    sys.path.insert(0, str(ROOT))
+    sys.path.insert(0, str(ROOT / "tests" / "uat"))
+    from harness import demo_app  # type: ignore[import-not-found]
+
+    async def shoot(size: tuple[int, int]) -> str:
+        app = demo_app()
+        async with app.run_test(size=size) as pilot:
+            await pilot.pause(0.4)
+            return str(app.export_screenshot(title="wxbrief"))
+
+    written: list[Path] = []
+    for name in ("50x14", "40x12"):
+        if sizes and name not in sizes:
+            continue
+        width, height = (int(part) for part in name.split("x"))
+        path = out / f"too_small-notice-{name}.svg"
+        path.write_text(COMMENT.sub("", asyncio.run(shoot((width, height)))), encoding="utf-8", newline="\n")
+        written.append(path)
+        print(f"too_small notice at {name}: done")
+    return written
+
+
 def to_png(svgs: list[Path]) -> int:
     try:
         from playwright.sync_api import sync_playwright
@@ -128,6 +152,8 @@ def main() -> int:
         svgs = sorted(args.out.glob("*.svg"))
     else:
         svgs = export_svgs(args.out, args.sizes, args.journeys, args.all)
+        if not args.journeys:
+            svgs += export_notices(args.out, args.sizes)
     print(f"{len(svgs)} SVG files in {args.out}")
     if not args.no_png:
         print(f"{to_png(svgs)} PNG files written")

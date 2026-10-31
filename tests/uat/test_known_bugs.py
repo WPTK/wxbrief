@@ -1,4 +1,7 @@
-"""Regression tests for the defects the UAT journeys found (#59 to #66, #70, #71); each states what should be true."""
+"""Regression tests for the defects the UAT journeys found (#59 to #66, #70, #71); each states what should be true.
+
+The terminals below 60x16 (where #71 and the dialog defects at 50x14 and 40x12 lived) now show a notice instead; see
+tests/test_layout.py."""
 
 from __future__ import annotations
 
@@ -35,7 +38,7 @@ async def test_grid_cards_hold_their_content(size: str, tmp_path: Path) -> None:
 
 @pytest.mark.parametrize(
     "size",
-    ["120x30", "80x24", "200x50", "40x12", "100x50"],
+    ["120x30", "80x24", "200x50", "60x16", "100x50"],
 )
 async def test_taf_header_values_do_not_wrap_a_unit_alone(size: str, tmp_path: Path) -> None:
     """The forecast header's dates fit on their line: no line of the screen is just ``UTC`` or a lone time."""
@@ -48,7 +51,7 @@ async def test_taf_header_values_do_not_wrap_a_unit_alone(size: str, tmp_path: P
     await _check(probe, size, tmp_path)
 
 
-async def test_add_station_results_visible_at_40x12(tmp_path: Path) -> None:
+async def test_add_station_results_visible_at_60x16(tmp_path: Path) -> None:
     async def probe(run: Run) -> None:
         await run.press("a")
         for char in "ksea":
@@ -57,7 +60,7 @@ async def test_add_station_results_visible_at_40x12(tmp_path: Path) -> None:
         await run.settle()
         assert "Seattle" in run.text(), "the match list has no room in a 12-row terminal"
 
-    await _check(probe, "40x12", tmp_path)
+    await _check(probe, "60x16", tmp_path)
 
 
 @pytest.mark.parametrize("size", ["120x30", "80x24"])
@@ -91,17 +94,17 @@ async def test_settings_hint_is_whole_in_german(tmp_path: Path) -> None:
     await _check(probe, "120x30", tmp_path)
 
 
-async def test_settings_values_stay_beside_their_labels_at_50x14(tmp_path: Path) -> None:
+async def test_settings_values_stay_beside_their_labels_at_60x16(tmp_path: Path) -> None:
     async def probe(run: Run) -> None:
         await run.press("S", "enter", "enter", "enter")
         assert run.app.ctx.translator.lang == "de"
         row = next((line for line in run.text().splitlines() if "Sprache:" in line), "")
         assert "Deutsch" in row, f"the language value is not on its row: {row!r}"
 
-    await _check(probe, "50x14", tmp_path)
+    await _check(probe, "60x16", tmp_path)
 
 
-@pytest.mark.parametrize("size", ["50x14", "40x12"])
+@pytest.mark.parametrize("size", ["60x16", "60x20"])
 async def test_footer_shows_help_and_quit(size: str, tmp_path: Path) -> None:
     """A tiny terminal still tells the user how to get help and how to leave."""
 
@@ -113,7 +116,7 @@ async def test_footer_shows_help_and_quit(size: str, tmp_path: Path) -> None:
     await _check(probe, size, tmp_path)
 
 
-@pytest.mark.parametrize("size", ["50x14", "40x12"])
+@pytest.mark.parametrize("size", ["60x16", "60x20"])
 async def test_footer_does_not_cut_a_label_in_half(size: str, tmp_path: Path) -> None:
     async def probe(run: Run) -> None:
         await run.until(lambda: "Raw" in footer_text(run.app), "the detail keys in the footer")
@@ -161,9 +164,9 @@ async def test_no_stale_horizontal_scrollbar_after_resize(tmp_path: Path) -> Non
     await _check(probe, "120x30", tmp_path)
 
 
-async def test_text_is_not_hidden_under_the_scrollbar_at_40x12(tmp_path: Path) -> None:
+async def test_text_is_not_hidden_under_the_scrollbar_at_60x16(tmp_path: Path) -> None:
     async def probe(run: Run) -> None:
         await run.press("2")
         assert "11:53" in run.text(), "the observed time is covered by the scrollbar"
 
-    await _check(probe, "40x12", tmp_path)
+    await _check(probe, "60x16", tmp_path)

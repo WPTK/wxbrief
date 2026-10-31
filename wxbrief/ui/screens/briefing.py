@@ -29,8 +29,6 @@ if TYPE_CHECKING:
     from wxbrief.app import WxBriefApp
 
 
-NARROW = 90  # columns: the station list gives way to the detail (the breakpoint in WxBriefApp)
-
 
 class BriefingScreen(CopyActions):
     BINDINGS = [
@@ -143,7 +141,7 @@ class BriefingScreen(CopyActions):
 
     def _hint_steps(self) -> None:
         """Show ``j/k`` in the key bar while the list is hidden (narrow terminal): the only way to change station."""
-        hidden = self.layout_mode == "list" and self.size.width < NARROW
+        hidden = self.layout_mode == "list" and self.has_class("-narrow")
         for key, bindings in self._bindings.key_to_bindings.items():
             if key == "j":
                 bindings[:] = [replace(item, show=hidden) for item in bindings]

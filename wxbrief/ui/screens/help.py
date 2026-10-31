@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import textwrap
 from typing import TYPE_CHECKING, cast
 
 from rich.text import Text
@@ -15,6 +14,7 @@ from textual.widgets import Label, Static
 
 from wxbrief.i18n.keys import K
 from wxbrief.ui.bindings import bind, localize
+from wxbrief.ui.wrap import wrap
 
 if TYPE_CHECKING:
     from wxbrief.app import WxBriefApp
@@ -33,11 +33,11 @@ class HelpBody(Static):
         self._body = body
 
     def render(self) -> Text:
-        return self._wrapped(max(20, self.size.width))
+        return self._wrapped(max(20, self.size.width - 1))
 
     def get_content_height(self, container: Size, viewport: Size, width: int) -> int:
         del container, viewport
-        return len(self._wrapped(max(20, width)).plain.splitlines())
+        return len(self._wrapped(max(20, width - 1)).plain.splitlines())
 
     def _wrapped(self, width: int) -> Text:
         lines: list[Text] = []
@@ -46,9 +46,13 @@ class HelpBody(Static):
             if found is None:  # a heading
                 lines.append(Text.from_markup(line))
                 continue
-            hang = " " * (len(found.group(1)) if len(found.group(1)) <= width // 2 else 4)  # no room: a plain indent
-            wrapped = textwrap.wrap(line, width, subsequent_indent=hang, drop_whitespace=True, break_long_words=False)
-            lines.append(Text("\n".join(wrapped)))
+            keys = found.group(1)
+            if len(keys) > width // 2:  # no room beside the keys: the description goes under them, indented
+                parts = [keys.rstrip(), *("    " + part for part in wrap(line[len(keys) :], width - 4))]
+            else:
+                first, *rest = wrap(line[len(keys) :], width - len(keys))
+                parts = [keys + first, *(" " * len(keys) + part for part in rest)]
+            lines.append(Text("\n".join(parts)))
         return Text("\n").join(lines)
 
 

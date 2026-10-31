@@ -4,11 +4,8 @@ BriefingScreen #main {
     height: 1fr;
 }
 
-/* The list takes a quarter of the terminal, between 38 and 56 columns; the rows add the station name when there is room. */
+/* The list's width is set in StationList.DEFAULT_CSS; its rows add the station name when there is room. */
 StationList {
-    width: 26%;
-    min-width: 38;
-    max-width: 56;
     border-right: tall $primary-background-lighten-2;
     background: $surface;
 }
@@ -106,11 +103,6 @@ BriefingScreen.-narrow DetailPane {
     background: $surface;
 }
 
-.dialog-title,
-.hint {
-    width: 100%;
-}
-
 /* A row is one line: a long value is cut with an ellipsis, not wrapped away from its label. */
 OptionList {
     text-wrap: nowrap;
@@ -118,12 +110,14 @@ OptionList {
 }
 
 .dialog-title {
+    width: 100%;
     text-style: bold;
     color: $primary;
     margin-bottom: 1;
 }
 
 .hint {
+    width: 100%;
     color: $text-muted;
     margin-top: 1;
 }
@@ -199,7 +193,8 @@ ThemePickerScreen .dialog {
     margin-right: 2;
 }
 
-#theme-list {
+#theme-list,
+#settings-options {
     height: auto;
     max-height: 12;
     border: none;
@@ -354,4 +349,10 @@ StationGrid:focus {
 .-short .hint,
 .-short #add-box #results {
     margin-top: 0;
+}
+
+/* Roomy terminals (40 rows or more): a card gets a blank row above and below its lines instead of a void under the grid. */
+BriefingScreen.-roomy StationCard {
+    height: 9;
+    padding: 1 1;
 }

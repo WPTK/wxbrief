@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import textwrap
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -17,13 +16,14 @@ from wxbrief.decode.model import Metar, Taf
 from wxbrief.i18n import Translator
 from wxbrief.i18n.keys import K
 from wxbrief.render import phrases
-from wxbrief.render.plain import DecodeRow, decode_rows, taf_blocks, taf_header_rows, warning_lines
+from wxbrief.render.plain import DecodeBlock, DecodeRow, decode_rows, taf_blocks, taf_header_rows, warning_lines
 from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.widgets.period_detail import PeriodDetail, RowBlocks
 from wxbrief.ui.widgets.status_bar import STATE_KEYS
 from wxbrief.ui.widgets.taf_timeline import TafTimeline
+from wxbrief.ui.wrap import wrap
 
 
 def age_text(delta: timedelta, t: Translator) -> str:
@@ -109,10 +109,12 @@ class DecodedTable(DataTable[Text]):
         super().__init__(show_header=False, cursor_type="none", zebra_stripes=False, **kwargs)
         self._rows: list[DecodeRow] = []
         self._ctx: ViewContext | None = None
+        self._labels = 0  # the longest label in the pane (see rows_text)
 
-    def set_rows(self, rows: list[DecodeRow], ctx: ViewContext) -> None:
+    def set_rows(self, rows: list[DecodeRow], ctx: ViewContext, labels: int = 0) -> None:
         self._rows = rows
         self._ctx = ctx
+        self._labels = labels
         self._fill()
 
     def _fill(self) -> None:
@@ -121,7 +123,7 @@ class DecodedTable(DataTable[Text]):
         if ctx is None or not self._rows:
             return
         palette = ctx.palette
-        label_width = max(len(row.label) for row in self._rows) + 1
+        label_width = max(self._labels, max(len(row.label) for row in self._rows)) + 1
         width = max(8, self.size.width - label_width - 6)  # each column has a cell padding of 1 on both sides
         self.add_column("Field", width=label_width)
         self.add_column("Value", width=width)
@@ -132,12 +134,12 @@ class DecodedTable(DataTable[Text]):
                 indent = len(badge.plain) + 1
                 text = row.value.removeprefix(code).strip()
                 if width - indent < 12:  # too narrow for a hanging indent: the badge gets its own line
-                    value = Text.assemble(badge, "\n", "\n".join(textwrap.wrap(text, width) or [""]))
+                    value = Text.assemble(badge, "\n", "\n".join(wrap(text, width)))
                 else:
-                    lines = textwrap.wrap(text, width - indent) or [""]
+                    lines = wrap(text, width - indent)
                     value = Text.assemble(badge, " ", ("\n" + " " * indent).join(lines))
             else:
-                wrapped = "\n".join(textwrap.wrap(row.value, width) or [""])
+                wrapped = "\n".join(wrap(row.value, width))
                 value = Text(wrapped, style=palette.style(row.style))
             self.add_row(Text(row.label, style=palette.style("wx.label")), value, height=None)
 
@@ -211,7 +213,11 @@ class DetailPane(VerticalScroll):
         remark_labels = {t.t(K.LABEL_REMARK), t.t(K.LABEL_REMARKS)}
         skipped = remark_labels | {t.t(K.LABEL_FLAGS), t.t(K.LABEL_SUMMARY)}  # the summary restates the rows around it
         rows = decode_rows(metar, t, ctx.units) if metar else []
-        self.query_one(DecodedTable).set_rows([r for r in rows if r.label not in skipped], ctx)
+        decoded = [r for r in rows if r.label not in skipped]
+        taf_rows, blocks = self._taf_rows(entry, ctx)
+        labels = max((len(r.label) for r in (*decoded, *taf_rows, *(r for b in blocks for r in b.rows))), default=0)
+        self.query_one(PeriodDetail).labels = labels
+        self.query_one(DecodedTable).set_rows(decoded, ctx, labels)
         self.query_one("#decoded-title").display = metar is not None
         self.query_one(DecodedTable).display = metar is not None
         remarks = [r for r in rows if r.label in remark_labels]
@@ -223,14 +229,33 @@ class DetailPane(VerticalScroll):
             Text("\n").join(Text(r.value, style=palette.style(r.style)) for r in remarks)
         )
 
-        self._show_taf(entry, ctx, now)
+        self._show_taf(entry, ctx, now, taf_rows, blocks, labels)
 
         warnings = warning_lines(metar, t) if metar else []
         warn_box = self.query_one("#warnings", Static)
         warn_box.display = bool(warnings)
         warn_box.update(Text("\n".join(warnings), style=palette.style("wx.warning")))
 
-    def _show_taf(self, entry: StationReports, ctx: ViewContext, now: datetime) -> None:
+    @staticmethod
+    def _taf_rows(entry: StationReports, ctx: ViewContext) -> tuple[list[DecodeRow], list[DecodeBlock]]:
+        """The forecast header rows and the blocks of every group (none without a forecast)."""
+        taf = entry.taf if isinstance(entry.taf, Taf) else None
+        if taf is None:
+            return [], []
+        t = ctx.translator
+        skipped = {t.t(K.LABEL_STATION), t.t(K.LABEL_REPORT), t.t(K.LABEL_FLAGS)}
+        rows = [row for row in taf_header_rows(taf, t, ctx.units) if row.label not in skipped]
+        return rows, taf_blocks(taf, t, ctx.units)
+
+    def _show_taf(
+        self,
+        entry: StationReports,
+        ctx: ViewContext,
+        now: datetime,
+        rows: list[DecodeRow],
+        blocks: list[DecodeBlock],
+        labels: int,
+    ) -> None:
         """The forecast section: summary, timeline with the period under the cursor, and every group in plain words."""
         taf = entry.taf if isinstance(entry.taf, Taf) else None
         t = ctx.translator
@@ -245,12 +270,9 @@ class DetailPane(VerticalScroll):
             timeline.set_taf(None, ctx, entry.icao, now)
             self._release_focus(timeline)
             return
-        skipped = {t.t(K.LABEL_STATION), t.t(K.LABEL_REPORT), t.t(K.LABEL_FLAGS)}
-        rows = [row for row in taf_header_rows(taf, ctx.translator, ctx.units) if row.label not in skipped]
-        self.query_one("#taf-summary", RowBlocks).set_blocks([(None, rows)], ctx, indent=0)
-        blocks = taf_blocks(taf, t, ctx.units)
+        self.query_one("#taf-summary", RowBlocks).set_blocks([(None, rows)], ctx, labels=labels)
         self.query_one("#taf-groups-box", Collapsible).title = t.t(K.UI_SECTION_GROUPS, n=len(blocks))
-        self.query_one("#taf-groups", RowBlocks).set_blocks([(b.title, b.rows) for b in blocks], ctx)
+        self.query_one("#taf-groups", RowBlocks).set_blocks([(b.title, b.rows) for b in blocks], ctx, labels=labels)
         drawn = timeline.set_taf(taf, ctx, entry.icao, now)
         timeline.display = period.display = drawn
         note.display = not drawn

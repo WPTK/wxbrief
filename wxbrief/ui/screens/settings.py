@@ -14,7 +14,7 @@ from textual.widgets.option_list import Option
 from wxbrief.i18n.keys import K
 from wxbrief.render.plain import DecodeRow
 from wxbrief.ui.bindings import bind, localize
-from wxbrief.ui.widgets.period_detail import RowBlocks
+from wxbrief.ui.widgets.period_detail import ROW_LABEL_PAD, RowBlocks
 
 if TYPE_CHECKING:
     from wxbrief.app import WxBriefApp
@@ -59,7 +59,9 @@ class SettingsScreen(ModalScreen[None]):
         keep = options.highlighted if highlight is None else highlight
         editable = [(name, t.t(label), wx.setting_text(name)) for name, label in EDITABLE]
         extras = wx.settings_extra_lines()
-        width = max((len(label) for _, label, _ in editable), default=0) + 2
+        rows = [DecodeRow(label, value) for label, value in extras]
+        labels = max(len(label) for label in [*(label for _, label, _ in editable), *(row.label for row in rows)])
+        width = labels + ROW_LABEL_PAD  # the same label column as the rows below the list
         with options.prevent(OptionList.OptionHighlighted):
             options.clear_options()
             options.add_options(
@@ -69,8 +71,7 @@ class SettingsScreen(ModalScreen[None]):
                 ]
             )
             options.highlighted = keep
-        rows = [DecodeRow(label, value) for label, value in extras]
-        self.query_one("#settings-info", RowBlocks).set_blocks([(None, rows)], wx.ctx, indent=0)
+        self.query_one("#settings-info", RowBlocks).set_blocks([(None, rows)], wx.ctx, labels=labels)
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         event.stop()

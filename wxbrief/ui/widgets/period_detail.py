@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import textwrap
 from datetime import datetime
 
 from rich.text import Text
@@ -15,12 +14,20 @@ from wxbrief.render import phrases
 from wxbrief.render.plain import DecodeRow, element_rows
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.strip import StripCell
+from wxbrief.ui.wrap import wrap
+
+ROW_INDENT = 1  # the decoded table's cell padding: every label in the detail pane starts at this column
+ROW_LABEL_PAD = 3  # a label's colon and the two columns of cell padding before the value
 
 
-def rows_text(rows: list[DecodeRow], ctx: ViewContext, width: int, indent: int = 2) -> Text:
-    """Rows as ``Label:  value`` lines with wrapped values hanging under the value column."""
+def rows_text(rows: list[DecodeRow], ctx: ViewContext, width: int, indent: int = ROW_INDENT, labels: int = 0) -> Text:
+    """Rows as ``Label:  value`` lines with wrapped values hanging under the value column.
+
+    ``labels`` is the longest label anywhere in the pane, so every value starts in the same column as the decoded
+    table's (its cell padding is one column each side: the value column starts ``labels + 3`` after the label's start).
+    """
     palette = ctx.palette
-    label_width = max((len(row.label) for row in rows), default=0) + 2
+    label_width = max(labels, max((len(row.label) for row in rows), default=0)) + ROW_LABEL_PAD
     width -= 1  # a line that is one column too long wraps badly
     room = width - indent - label_width
     stacked = room < 28  # a narrow pane: the label gets its own line and the value is indented under it
@@ -35,15 +42,21 @@ def rows_text(rows: list[DecodeRow], ctx: ViewContext, width: int, indent: int =
             line.append(f"{row.label + ':':<{label_width}}", style=palette.style("wx.label"))
             hang = indent + label_width
         if row.category is not None:
-            line.append_text(palette.badge(row.category))
+            badge = palette.badge(row.category)
+            line.append_text(badge)
             rest = row.value.removeprefix(row.category.value).strip()
-            if rest:
-                line.append(" " + rest)
+            if rest:  # the words hang under themselves, not under the badge
+                pad = len(badge.plain) + 1
+                line.append(" " + ("\n" + " " * (hang + pad)).join(wrap(rest, max(16, room - pad))))
         else:
-            wrapped = textwrap.wrap(row.value, max(16, room)) or [""]
-            line.append(("\n" + " " * hang).join(wrapped), style=palette.style(row.style))
+            line.append(("\n" + " " * hang).join(wrap(row.value, max(16, room))), style=palette.style(row.style))
         lines.append(line)
     return Text("\n").join(lines)
+
+
+def heading(text: str, width: int) -> Text:
+    """A bold line of text; when it wraps the next lines hang two columns in."""
+    return Text("\n  ".join(wrap(text, width - 1, hang=2)), style="bold")
 
 
 class RowBlocks(Static):
@@ -53,12 +66,12 @@ class RowBlocks(Static):
         super().__init__(**kwargs)  # type: ignore[arg-type]
         self._blocks: list[tuple[str | None, list[DecodeRow]]] = []
         self._ctx: ViewContext | None = None
-        self._indent = 2
+        self._labels = 0
 
     def set_blocks(
-        self, blocks: list[tuple[str | None, list[DecodeRow]]], ctx: ViewContext, *, indent: int = 2
+        self, blocks: list[tuple[str | None, list[DecodeRow]]], ctx: ViewContext, *, labels: int = 0
     ) -> None:
-        self._blocks, self._ctx, self._indent = blocks, ctx, indent
+        self._blocks, self._ctx, self._labels = blocks, ctx, labels
         self._draw()
 
     def on_resize(self) -> None:
@@ -71,8 +84,8 @@ class RowBlocks(Static):
         parts: list[Text] = []
         for title, rows in self._blocks:
             if title:
-                parts.append(Text(title, style="bold"))
-            parts.append(rows_text(rows, self._ctx, width, self._indent))
+                parts.append(heading(title, width))
+            parts.append(rows_text(rows, self._ctx, width, labels=self._labels))
         self.update(Text("\n").join(parts))
 
 
@@ -82,6 +95,7 @@ class PeriodDetail(Static):
     def __init__(self, **kwargs: object) -> None:
         super().__init__(**kwargs)  # type: ignore[arg-type]
         self._args: tuple[Taf, Timeline, StripCell | None, ViewContext, str] | None = None
+        self.labels = 0  # the longest label in the pane, set by the pane (see rows_text)
 
     def show_cell(self, taf: Taf, timeline: Timeline, cell: StripCell | None, ctx: ViewContext, icao: str) -> None:
         self._args = (taf, timeline, cell, ctx, icao)
@@ -90,6 +104,9 @@ class PeriodDetail(Static):
     def on_resize(self) -> None:
         if self._args is not None:
             self._draw()
+
+    def _rows(self, rows: list[DecodeRow], ctx: ViewContext, width: int) -> Text:
+        return rows_text(rows, ctx, width, labels=self.labels)
 
     def _stamp(self, ctx: ViewContext, icao: str, moment: datetime) -> str:
         return f"{ctx.localize(moment, icao):%Y-%m-%d} {ctx.clock(moment, icao)}"
@@ -143,8 +160,8 @@ class PeriodDetail(Static):
                 else t.t(K.TIMELINE_PREVAILING, header=header)
             )
             seen.add(item.period)
-            parts.append(Text(text, style="bold"))
-            parts.append(rows_text(element_rows(item.prevailing, item.category, t, ctx.units), ctx, width))
+            parts.append(heading(text, width))
+            parts.append(self._rows(element_rows(item.prevailing, item.category, t, ctx.units), ctx, width))
 
         # A change under way (BECMG), then temporary groups, each once.
         becoming: set[int] = set()
@@ -155,14 +172,14 @@ class PeriodDetail(Static):
                 becoming.add(item.becoming_index)
                 group = taf.periods[item.becoming_index]
                 category = category_of(merge(item.prevailing, group.elements))
-                parts.append(Text(self._header(ctx, icao, group), style="bold"))
-                parts.append(rows_text(element_rows(group.elements, category, t, ctx.units), ctx, width))
+                parts.append(heading(self._header(ctx, icao, group), width))
+                parts.append(self._rows(element_rows(group.elements, category, t, ctx.units), ctx, width))
             for overlay in item.overlays:
                 if overlay.index in overlays:
                     continue
                 overlays.add(overlay.index)
                 group = taf.periods[overlay.index]
-                parts.append(Text(self._header(ctx, icao, group), style="bold"))
+                parts.append(heading(self._header(ctx, icao, group), width))
                 rows = element_rows(overlay.elements, overlay.category, t, ctx.units)
-                parts.append(rows_text(rows, ctx, width))
+                parts.append(self._rows(rows, ctx, width))
         self.update(Text("\n").join(parts))

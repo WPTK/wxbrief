@@ -60,7 +60,7 @@ class WxBriefApp(App[None]):
     CSS_PATH = "ui/app.tcss"
     TITLE = "wxbrief"
     HORIZONTAL_BREAKPOINTS = [(0, "-narrow"), (90, "-normal"), (140, "-wide")]
-    VERTICAL_BREAKPOINTS = [(0, "-short"), (24, "-tall")]
+    VERTICAL_BREAKPOINTS = [(0, "-short"), (24, "-tall"), (40, "-roomy")]
     BINDINGS = [
         bind("q", "quit", K.UI_BINDING_QUIT),
         bind("t", "cycle_theme", K.UI_BINDING_CYCLE_THEME),
@@ -144,13 +144,14 @@ class WxBriefApp(App[None]):
     def _check_size(self, size: Size) -> None:
         """Cover the app with the too-small notice while the terminal cannot hold it; take it away when it can."""
         small = size.width < MIN_SIZE.width or size.height < MIN_SIZE.height
-        top = self.screen_stack[-1]
-        if small and isinstance(top, TooSmallScreen):
-            top.show_size(size)
+        notices = [screen for screen in self.screen_stack if isinstance(screen, TooSmallScreen)]
+        if not small and notices:
+            while notices[0] in self.screen_stack:  # the palette may sit above it: that goes too
+                self.pop_screen()
+        elif small and notices:
+            notices[0].show_size(size)
         elif small and len(self.screen_stack) > 1:  # not before the briefing screen is up
             self.push_screen(TooSmallScreen())
-        elif not small and isinstance(top, TooSmallScreen):
-            self.pop_screen()
 
     # --- themes ----------------------------------------------------------------------------------------------------
 
