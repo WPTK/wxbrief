@@ -295,6 +295,7 @@
   "flavor": "ICAO",
   "military": false,
   "ceiling": null,
+  "ceiling_status": "NONE",
   "flight_category": "MVFR",
   "flags": [
     "CB",

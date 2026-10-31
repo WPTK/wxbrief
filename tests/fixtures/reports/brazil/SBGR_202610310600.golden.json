@@ -134,6 +134,7 @@
     "value": 900,
     "unit": "FT"
   },
+  "ceiling_status": "HEIGHT",
   "flight_category": "IFR",
   "flags": [
     "LOW_CEILING"

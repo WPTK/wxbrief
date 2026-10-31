@@ -13,8 +13,10 @@ from wxbrief.decode.flightcat import ceiling_for_classification
 from wxbrief.decode.model import (
     ChangeType,
     ColorState,
+    ColorStateRemark,
     FlightCategory,
     ForecastElements,
+    FreeText,
     Metar,
     Modifier,
     SemanticKind,
@@ -81,7 +83,16 @@ def _remark_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRo
         return []
     style = style_name(SemanticKind.REMARK)
     label = t.t(K.LABEL_REMARK)
-    rows = [DecodeRow(label, phrases.describe_remark(t, remark, units), style) for remark in metar.remarks]
+    # A colour state found in the remarks is already the report's Color state row; it is not shown a second time.
+    shown = [r for r in metar.remarks if not (isinstance(r, ColorStateRemark) and r.group == metar.color_state)]
+    rows: list[DecodeRow] = []
+    for remark in shown:
+        if isinstance(remark, FreeText):  # spelled out only when every word is known; else the not-decoded row
+            words = phrases.decoded_free_text(t, remark.text)
+            if words is not None:
+                rows.append(DecodeRow(label, words, style))
+        else:
+            rows.append(DecodeRow(label, phrases.describe_remark(t, remark, units), style))
     undecoded = phrases.undecoded_free_text(t, metar)
     if undecoded:
         rows.append(DecodeRow(t.t(K.LABEL_REMARKS), " ".join(undecoded), style))
@@ -124,7 +135,7 @@ def decode_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRow
     for layer in metar.sky:
         add(K.LABEL_SKY, phrases.describe_cloud_layer(t, layer, units), SemanticKind.SKY)
     if metar.sky:
-        add(K.LABEL_CEILING, phrases.describe_ceiling(t, metar.ceiling, units), SemanticKind.SKY)
+        add(K.LABEL_CEILING, phrases.describe_ceiling(t, metar, units), SemanticKind.SKY)
     if metar.temperature is not None:
         add(K.LABEL_TEMPERATURE, phrases.describe_temperature(t, metar.temperature, units), SemanticKind.TEMPERATURE)
     if metar.dewpoint is not None:

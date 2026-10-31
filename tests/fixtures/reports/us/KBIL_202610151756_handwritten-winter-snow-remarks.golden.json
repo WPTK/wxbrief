@@ -101,7 +101,7 @@
       "text": "933008",
       "start": 94,
       "end": 100,
-      "kind": "REMARK"
+      "kind": "WEATHER"
     },
     {
       "text": "T10281039",
@@ -216,8 +216,8 @@
       "inches": 12.0
     },
     {
-      "variant": "FreeText",
-      "text": "933008"
+      "variant": "SnowWaterEquivalent",
+      "inches": 0.8
     },
     {
       "variant": "PreciseTemperature",
@@ -237,6 +237,7 @@
     "value": 200,
     "unit": "FT"
   },
+  "ceiling_status": "HEIGHT",
   "flight_category": "LIFR",
   "flags": [
     "LOW_CEILING",

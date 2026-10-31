@@ -34,6 +34,7 @@ from wxbrief.decode.model import (
     FreeText,
     HailSize,
     HourlyPrecipitation,
+    IceAccretion,
     Intensity,
     Lightning,
     LightningFrequency,
@@ -58,8 +59,10 @@ from wxbrief.decode.model import (
     SensorStatus,
     SnowDepth,
     SnowIncrease,
+    SnowWaterEquivalent,
     StationPressure,
     StationPressureKind,
+    SunshineDuration,
     SurfaceVisibility,
     TendencyDirection,
     TimingEvent,
@@ -590,6 +593,38 @@ def _snow_increase(cur: Cursor, _ctx: Context) -> Remark | None:
     return SnowIncrease(float(int(match.group("hour"))), float(int(match.group("total"))))
 
 
+_SNOW_WATER = re.compile(r"^933(?P<v>\d{3})$")
+_ICE = re.compile(r"^I(?P<hours>[136])(?P<v>\d{3})$")
+_SUNSHINE = re.compile(r"^98(?P<v>\d{3})$")
+
+
+def _snow_water_equivalent(cur: Cursor, _ctx: Context) -> Remark | None:
+    token = cur.peek()
+    match = _SNOW_WATER.match(token.text) if token is not None else None
+    if match is None:
+        return None
+    cur.take(SemanticKind.WEATHER)
+    return SnowWaterEquivalent(int(match.group("v")) / 10)
+
+
+def _ice_accretion(cur: Cursor, _ctx: Context) -> Remark | None:
+    token = cur.peek()
+    match = _ICE.match(token.text) if token is not None else None
+    if match is None:
+        return None
+    cur.take(SemanticKind.WEATHER)
+    return IceAccretion(int(match.group("hours")), int(match.group("v")) / 100)
+
+
+def _sunshine(cur: Cursor, _ctx: Context) -> Remark | None:
+    token = cur.peek()
+    match = _SUNSHINE.match(token.text) if token is not None else None
+    if match is None:
+        return None
+    cur.take(SemanticKind.REMARK)
+    return SunshineDuration(int(match.group("v")))
+
+
 _CLOUD_TYPES = re.compile(r"^8/(?P<l>[\d/])(?P<m>[\d/])(?P<h>[\d/])$")
 
 
@@ -793,6 +828,9 @@ _PARSERS: tuple[Parser, ...] = (
     _maintenance,
     _snow_depth,
     _snow_increase,
+    _snow_water_equivalent,
+    _ice_accretion,
+    _sunshine,
     _cloud_types,
     _hail_size,
     _density_altitude,

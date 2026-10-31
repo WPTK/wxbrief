@@ -237,6 +237,7 @@
     "value": 7400,
     "unit": "FT"
   },
+  "ceiling_status": "HEIGHT",
   "flight_category": "VFR",
   "flags": [
     "CB"

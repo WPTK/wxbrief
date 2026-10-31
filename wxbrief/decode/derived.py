@@ -17,6 +17,7 @@ from wxbrief.decode.flightcat import (
     worst_of,
 )
 from wxbrief.decode.model import (
+    CeilingStatus,
     CloudType,
     ColorCode,
     Condition,
@@ -202,11 +203,19 @@ def _computed_color(metar: Metar) -> ColorCode | None:
     return computed_color_state(ceiling_ft, visibility_meters(metar.visibility))
 
 
+def _ceiling_status(metar: Metar, ceiling: Distance | None) -> CeilingStatus | None:
+    if ceiling is not None:
+        return CeilingStatus.HEIGHT
+    if not metar.sky and not metar.cavok:
+        return None
+    return CeilingStatus.UNKNOWN if ceiling_for_classification(metar.sky, metar.cavok) is None else CeilingStatus.NONE
+
+
 def derive(metar: Metar) -> Metar:
     """Fill in the derived fields of a parsed ``Metar``."""
     layer = lowest_ceiling(metar.sky)
     ceiling: Distance | None = layer.base if layer is not None else None
-    staged = replace(metar, ceiling=ceiling)
+    staged = replace(metar, ceiling=ceiling, ceiling_status=_ceiling_status(metar, ceiling))
     return replace(
         staged,
         flight_category=flight_category(metar.visibility, metar.sky),

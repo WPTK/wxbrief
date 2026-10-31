@@ -41,6 +41,7 @@ _ISSUE_TIME = re.compile(r"^\d{6}Z$")
 _VALID_PERIOD = re.compile(r"^\d{4}/\d{4}$")
 _TAF_GROUP = re.compile(r"^(?:FM\d{6}|PROB[1-9]0)$")
 _TEMPERATURE_DEW_POINT = re.compile(r"^(?:M?\d{2}|//)/(?:M?\d{2}|//)$")
+_PRESSURE_GROUP = re.compile(r"^[QA]\d{4}$")  # only a METAR reports the pressure as Q1018 or A2992
 
 
 class Kind(Enum):
@@ -162,7 +163,7 @@ def detect_kind(report: str) -> Kind:
     if any(_VALID_PERIOD.match(word) or _TAF_GROUP.match(word) for word in words):
         return Kind.TAF
     has_trend = any(word in ("BECMG", "TEMPO", "INTER") for word in words)
-    if has_trend and not any(_TEMPERATURE_DEW_POINT.match(word) for word in words):
+    if has_trend and not any(_TEMPERATURE_DEW_POINT.match(word) or _PRESSURE_GROUP.match(word) for word in words):
         return Kind.TAF
     return Kind.METAR
 

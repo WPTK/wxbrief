@@ -63,7 +63,7 @@ Principles: **never raise** on real input (wrap each group parser; failures beco
 - `metar.py`: ordered section state machine (TYPE, STATION, TIME, MODIFIERS, WIND, WIND_VARIATION, VISIBILITY, RVR*, WEATHER*, SKY*, TEMP_DEW, PRESSURE, ICAO tail: RECENT_WX, WINDSHEAR, SEA_STATE, RUNWAY_STATE, TREND, COLOR_STATE, then `RMK`). Each section tries its regexes; unmatched tokens skip forward to later sections, with a small allowlist permitted to match earlier ones; otherwise `Unknown` + warning and advance one token. Same driver pattern reused by `remarks.py` and `taf.py`.
 - `detect.py`: flavor (US / ICAO / mixed, `military` flag) scored from tokens (`SM`, `A####` vs `Q####`, 4-digit meters, `CAVOK`, `MPS`, color-state codes), never from the station prefix. Used only to disambiguate (RVR feet vs meters, `M1/4SM` vs `M0050`, runway-state group only in ICAO flavor).
 - `units.py`: `Speed`, `Distance`, `Pressure`, `Temperature` frozen dataclasses storing the reported unit; renderers convert per `UnitsMode` (us / metric / mixed). Stdlib only.
-- `times.py`: `resolve_day_time(day, hour, minute, reference)` picks the candidate month nearest the reference (API `reportTime`, or `--date`/now for pasted text); hour 24 rolls over; invalid day yields `None` + warning. Station-local rendering uses `Station.tz` from the bundled DB.
+- `times.py`: `resolve_report_time(day, hour, minute, reference)` picks the latest past occurrence, at most 3 hours after the reference (API `reportTime`, or `--date` end of day/now for pasted text); `resolve_day_time` (nearest month) remains for forecast groups; hour 24 rolls over; invalid day yields `None` + warning. Station-local rendering uses `Station.tz` from the bundled DB.
 - `model.py`: `Metar`, `Taf`, `TafPeriod`, `ForecastElements` (all-optional = "unchanged"), `Wind`, `Visibility` (prefix P/M, cavok, ndv, directional minimum), `RVR`, `WeatherGroup`, `CloudLayer`/`SkyCondition` (incl. VV, SKC/CLR/NSC/NCD, `///`), `Trend`, `ColorStateGroup`, `RunwayState`, ~30 `Remark` variants from `remarks.md` (SLP, T-group, 1/2-group 6-h extremes, 5-group tendency, 6/7-group precip, PK WND, WSHFT FROPA, lightning, precip timing, 4/### snow, 8/### cloud types, Canada `SC5AC2`, free text), `Modifier` (AUTO COR NIL AMD CNL CCA…), `Flag` (CB, TCU, LOW_CEILING, LOW_VIS, GUSTS, WIND_SHEAR, FREEZING_PRECIP, THUNDERSTORM, CORRECTED, AUTOMATED, SPECIAL_REPORT, …), `Condition` for the header glyph (thunderstorm > snow/freezing > rain > obscuration > overcast > broken > partly > clear day/night).
 - `flightcat.py`: FAA thresholds matching the COBOL `700-FLIGHT-RULES`; ceiling = lowest BKN/OVC/VV; one missing component computes from the other.
 - `colorstate.py`: NATO table BLU 2500 ft/8 km, WHT 1500/5 km, GRN 700/3.7 km, **YLO1 500/2.5 km, YLO2 300/1.6 km** (the skill's `international.md` lists YLO1 as 700/3.7, which collides with GRN; port the standard values and cite in `docs/decoding.md`), AMB 200/0.8 km, RED below; `computed_color_state()` lets military stations show reported vs computed.
@@ -263,7 +263,7 @@ and review the diff).
 
 **Final model names S2 builds on.** `decode/model.py`: `Metar(raw, tokens, report_type, station, observed, modifiers,
 wind, wind_variation, visibility, rvr, weather, sky, temperature, dewpoint, altimeters, tail_index, remarks_index,
-remarks_raw, flavor, military, ceiling, flight_category, flags, condition, relative_humidity, warnings)` with
+remarks_raw, flavor, military, ceiling, ceiling_status, flight_category, flags, condition, relative_humidity, warnings)` with
 `altimeter`, `cavok`, `tail_tokens`, `remarks_tokens` as properties; `Wind(direction, speed, gust, variable,
 speed_above)`; `WindVariation(start, end)`; `Visibility(distance, prefix, cavok, unlimited, ndv, directional,
 not_reported)`; `DirectionalVisibility(distance, direction)`; `RVR(runway, distance, prefix, variable_to,
@@ -410,7 +410,7 @@ fuzz test gained tail and remark inputs (it also passed 20,000 examples per prop
   `FM`/`BECMG`/`TEMPO`/`PROB`/`INTER`/`RMK`), and reuse `ForecastElements` as the period payload. TAF-only elements
   (temperatures `TX`/`TN`, `WS020/30035KT`, icing and turbulence groups) are S2b's to add around it.
 - `decode/times.py`: `resolve_clock_time(hour, minute, reference)` picks the day for a bare time; a TAF should resolve
-  against its issue time, not an observation. `resolve_day_time` handles `DDHHMMZ`.
+  against its issue time, not an observation. `resolve_report_time` handles a report's `DDHHMMZ`; `resolve_day_time` (nearest) the forecast groups.
 - `decode/colorstate.py` and `flightcat.py`: `computed_color_state(ceiling_ft, visibility_m)`, `visibility_meters`,
   `classify`, `ceiling_for_classification` give per-slice categories and colours for the timeline.
 - `Cursor.token_at(index)` and `Cursor.kind_at(index)` exist for warnings after a group parser.
@@ -900,3 +900,13 @@ and attribution") with every release. `scripts/make_screenshots.py` regenerates 
   writes (comments, other layout) when none exists. Watchlist IATA/FAA codes resolve to ICAO at load.
 - **Status bar** says Offline only for a network failure, and the label and message come from the same error.
 - Two app instances sharing one cache folder is unsupported (not fixed).
+
+### Decoder review fixes (#53 to #57)
+
+- **Report dates.** The nearest-month rule of `resolve_day_time` put reports older than about 15 days next month. Report
+  and TAF issue times now use `resolve_report_time` (latest past occurrence, at most 3 hours after the reference); a date
+  without a time (`--date`, the paste field) is the end of that day. Forecast groups keep the nearest rule.
+- **`ceiling_status`** added to `Metar` (HEIGHT, NONE, UNKNOWN or null) so an unknown-height ceiling is not "None".
+- **Free-text remarks** are spelled out only when every word is known; otherwise the whole remark is shown as written
+  in the "Remarks (not decoded)" row.
+- Not decoded, no official definition found: `VV003V006`, Japanese `1CU030`, `25012G//KT`.
