@@ -262,6 +262,18 @@ async def test_card_mini_strip_text() -> None:
         shown = text_of(card)
         assert "KDEN" in shown and "LIFR" in shown and "32005KT 1/4SM" in shown
         assert "L " in shown  # the strip starts on LIFR
+        tick_row = shown.splitlines()[2]
+        assert tick_row.startswith("0") or tick_row.startswith("1") or tick_row.startswith("2")  # hour labels
+        assert "MDT" in tick_row or "MST" in tick_row  # the zone the labels are in
+
+
+async def test_card_says_when_the_taf_has_expired() -> None:
+    app = demo_app("--layout", "grid")
+    app.options.now = lambda: DEMO_NOW + timedelta(days=3)
+    async with app.run_test(size=(140, 40)) as pilot:
+        await settle(pilot)
+        shown = text_of(next(c for c in app.screen.query(StationCard) if c.icao == "KDEN"))
+        assert "TAF expired" in shown and "no TAF" not in shown
 
 
 # --- review fixes --------------------------------------------------------------------------------------------------

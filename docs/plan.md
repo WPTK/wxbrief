@@ -847,8 +847,10 @@ in a marked S8 block of `app.tcss`; they still appear only when the content over
   CLAUDE.md, CONTRIBUTING.md and `docs/development.md`, the `t` help text says when it is not saved, the zone label lists every zone name
   of a TAF that crosses a clock change (`MDT/MST`), half-hour zones label their ticks `HH:MM`, a periodic redraw no longer scrolls the
   grid back (it scrolls to the card only when the selection changes), and `action_focus_detail` ignores the hidden pane in the grid.
-- **#22 left:** the grid card's mini strip has no time label, and a station whose TAF has expired still reads `no TAF`.
-  `ansi-dark` and `ansi-light` stay unregistered (their colours cannot be resolved to the RGB the highlight colours need).
+- **#22 left, since done:** the grid card's mini strip now has an hour-label row with the zone name (the same `tick_labels` as the
+  full timeline; the card is one line taller), and a card whose TAF has expired reads `TAF expired` (`timeline.expired`) instead of
+  `no TAF`. `ansi-dark` and `ansi-light` stay unregistered by design (their colours cannot be resolved to the RGB the highlight
+  colours need). #30 (a "terminal too small" screen) was not built: the app degrades acceptably down to 40x12.
 - **New catalog keys:** `ui.binding.cycle_glyphs`, `cycle_units`, `cycle_time` (needed to label the hidden bindings) and
   `ui.toast.rate_limited`; the Help text changed in all five catalogs (the `[` line removed, `g u z` added, the `t` line reworded).
 - **Changelog.** Only `### Added` is used: for a first release every entry is an addition, so Changed, Removed and Fixed are empty

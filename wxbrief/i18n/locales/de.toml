@@ -637,6 +637,7 @@ legend_becoming = "Übergang"
 legend_temporary = "vorübergehend"
 none = "Keine Zeitleiste: Die Vorhersage hat keinen nutzbaren Gültigkeitszeitraum."
 no_taf = "kein TAF"
+expired = "TAF abgelaufen"
 
 [timeline.letter]
 VFR = "V"

@@ -629,6 +629,7 @@ legend_becoming = "évolution"
 legend_temporary = "temporaire"
 none = "Pas de frise chronologique : la prévision n'a pas de période de validité exploitable."
 no_taf = "pas de TAF"
+expired = "TAF expiré"
 
 [timeline.letter]
 VFR = "V"

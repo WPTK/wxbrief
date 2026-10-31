@@ -630,6 +630,7 @@ legend_becoming = "pasando a"
 legend_temporary = "temporal"
 none = "Sin línea de tiempo: el pronóstico no tiene un período de validez utilizable."
 no_taf = "sin TAF"
+expired = "TAF caducado"
 
 [timeline.letter]
 VFR = "V"

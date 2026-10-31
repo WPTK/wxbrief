@@ -541,6 +541,7 @@ class K:
     TIME_UTC = "time.utc"
     TIME_ZONE_UTC = "time.zone_utc"
 
+    TIMELINE_EXPIRED = "timeline.expired"
     TIMELINE_LEGEND_BECOMING = "timeline.legend_becoming"
     TIMELINE_LEGEND_TEMPORARY = "timeline.legend_temporary"
     TIMELINE_LETTER_IFR = "timeline.letter.IFR"
