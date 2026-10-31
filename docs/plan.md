@@ -177,7 +177,7 @@ Tick a row when the session has landed on `main` (S0 committed directly; later s
 | S6 | TAF timeline | [x] 2026-10-31 |
 | S7 | i18n | [x] 2026-10-31 |
 | S8 | Polish | [x] 2026-10-31 |
-| S9 | Release | [ ] |
+| S9 | Release | [x] 2026-10-31 (tag `v0.1.0` waits for the owner) |
 
 ## Deviations from the design
 
@@ -862,3 +862,25 @@ in a marked S8 block of `app.tcss`; they still appear only when the content over
 
 **For S9.** The `0.1.0` section of `CHANGELOG.md` exists and `release.yml` can check for it. Keep the ODbL attribution (README, "Data
 and attribution") with every release. `scripts/make_screenshots.py` regenerates `docs/img/` after any interface change.
+
+### S9 (2026-10-31)
+
+**Deviations.**
+
+- **`--selftest`** is `wxbrief/selftest.py`, called from `main()` when `--selftest` is the only argument. It is not an argparse
+  option, so it stays out of `--help` and adds no translated string; that is how it is hidden.
+- **Dev extras already held PyInstaller** (S0), so there is no new `build` extra. The binary jobs install `.[binary]` plus
+  `pyinstaller>=6.22,<7` instead of the whole dev list.
+- **`scripts/version_info.py`** (a Windows version resource, in the layout sketch) is not written: nothing needs it. The spec
+  sets no icon either.
+- **Canary** is weekly, as asked for S9, not monthly as in the Data layer note, and is a script
+  (`scripts/check_stations_source.py`, standard library only) rather than a rebuild: it checks the source is reachable and
+  parsable and keeps the plan's 2 % drift test, comparing the usable-row count with the bundled database. It does not run
+  `timezonefinder`.
+- **Release assets:** Windows is a bare `.exe`; Linux and macOS are `.tar.gz` (keeps the executable bit). Provenance is
+  attested for every file except `SHA256SUMS`. macOS x86_64 builds on `macos-15-intel`, Linux arm64 on `ubuntu-24.04-arm`,
+  both Linux builds in the `python:3.12-bullseye` container.
+- **Verified locally:** ruff, vulture, mypy, pytest, actionlint on all three workflows, and `scripts\build_exe.ps1` on Windows
+  (`dist\wxbrief.exe --selftest`, `--version` and `decode --lang de` pass). The Linux, macOS and arm64 builds and the publish job
+  run for the first time on the first tag; nothing was tagged or released.
+- **Not touched:** `__version__` stays `0.1.0`; `CHANGELOG.md` is unchanged (workflows and docs are not user-visible).

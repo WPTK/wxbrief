@@ -323,6 +323,10 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line and return the process exit code."""
     words = list(sys.argv[1:] if argv is None else argv)
+    if words == ["--selftest"]:  # hidden: the smoke test of a built binary
+        from wxbrief.selftest import run_selftest
+
+        return run_selftest()
     translator = _help_translator(words)
     if _first_positional(words) not in COMMANDS:
         tui_args = build_tui_parser(translator).parse_args(words)

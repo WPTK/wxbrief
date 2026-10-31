@@ -71,6 +71,7 @@ The cache folder can be moved with the `WXBRIEF_CACHE_DIR` environment variable.
 - [docs/i18n.md](docs/i18n.md): languages and how to add or fix a translation.
 - [docs/decoding.md](docs/decoding.md): how the decoder works and how to add a test report.
 - [docs/development.md](docs/development.md): setup, checks, tests, snapshots and screenshots.
+- [docs/release.md](docs/release.md): cutting a release, what the release workflow does, the smoke checklist.
 - [docs/plan.md](docs/plan.md): architecture, session plan, checklist and deviations from the design.
 - [CONTRIBUTING.md](CONTRIBUTING.md): the workflow for changes.
 
