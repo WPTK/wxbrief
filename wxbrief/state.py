@@ -39,11 +39,6 @@ class StationReports:
         return freshness(observed, now)
 
 
-def _aware(moment: datetime) -> datetime | None:
-    """A cache time without a zone is treated as damaged (``None``), never guessed."""
-    return moment if moment.tzinfo is not None else None
-
-
 class AppState:
     """The watchlist (saved), the ids added for this run only, and the reports for every id."""
 
@@ -161,8 +156,8 @@ class AppState:
             if found is None:
                 continue
             saved_at, payload = found
-            stamp = _aware(saved_at)
-            if stamp is None or not isinstance(payload, list):
+            stamp = saved_at
+            if not isinstance(payload, list):
                 continue
             if product is Product.METAR:
                 for row in latest_by_station(parse_metars(payload)).values():

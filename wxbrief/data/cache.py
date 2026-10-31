@@ -50,9 +50,11 @@ class DiskCache:
         return True
 
     def read(self, key: str) -> tuple[datetime, Any] | None:
-        """The stored payload and when it was saved, or ``None``."""
+        """The stored payload and when it was saved (always timezone-aware), or ``None``; a naive time is damaged."""
         try:
             document = json.loads(self._path(key).read_text(encoding="utf-8"))
-            return datetime.fromisoformat(document["saved_at"]), document["payload"]
+            saved_at = datetime.fromisoformat(document["saved_at"])
+            payload = document["payload"]
         except (OSError, ValueError, KeyError, TypeError):
             return None
+        return (saved_at, payload) if saved_at.tzinfo is not None else None
