@@ -140,9 +140,9 @@ def test_every_condition_has_an_emoji_and_a_clear_sky_turns_into_a_moon_at_night
     assert set(CONDITION_EMOJI) == set(Condition)
     assert condition_emoji(None) == NO_CONDITION_EMOJI
     assert condition_emoji(Condition.CLEAR) == "☀️"
-    assert condition_emoji(Condition.CLEAR, 3) == "🌙"
-    assert condition_emoji(Condition.CLEAR, 13) == "☀️"
-    assert condition_emoji(Condition.RAIN, 3) == CONDITION_EMOJI[Condition.RAIN]
+    assert condition_emoji(Condition.CLEAR, False) == "🌙"
+    assert condition_emoji(Condition.CLEAR, True) == "☀️"
+    assert condition_emoji(Condition.RAIN, False) == CONDITION_EMOJI[Condition.RAIN]
 
 
 # --- TAF -----------------------------------------------------------------------------------------------------------------
