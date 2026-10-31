@@ -11,8 +11,7 @@ from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.geometry import Size
 from textual.screen import ModalScreen
-from textual.widget import Widget
-from textual.widgets import Label
+from textual.widgets import Label, Static
 
 from wxbrief.i18n.keys import K
 from wxbrief.ui.bindings import bind, localize
@@ -24,7 +23,7 @@ if TYPE_CHECKING:
 DESCRIPTION = re.compile(r"^( +\S.*? {3,})(?=\S)")  # the keys, then three or more spaces, then the text
 
 
-class HelpBody(Widget):
+class HelpBody(Static):
     """The help text, wrapped to the widget's width with a wrapped line hanging under its description."""
 
     DEFAULT_CSS = "HelpBody { height: auto; }"

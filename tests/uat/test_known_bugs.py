@@ -131,10 +131,8 @@ async def test_help_wrapped_lines_keep_their_indent_at_80x24(tmp_path: Path) -> 
         assert isinstance(run.app.screen, HelpScreen)
         lines = run.text().splitlines()
         first = next(line for line in lines if "Left/Right" in line)
-        if "(the mouse works too)" in first:
-            return  # wide enough that nothing wraps
-        wrapped = next(line for line in lines if "(the mouse works too)" in line)
-        assert wrapped.index("(the mouse") == first.index("move the"), "a wrapped help line starts at the left edge"
+        wrapped = next(line for line in lines if "mouse works too)" in line and "Left/Right" not in line)
+        assert wrapped.index("mouse") == first.index("move the"), "a wrapped help line starts at the left edge"
 
     await _check(probe, "80x24", tmp_path)
 
