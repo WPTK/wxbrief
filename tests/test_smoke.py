@@ -21,7 +21,7 @@ def test_version_flag_in_process(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as excinfo:
         main(["--version"])
     assert excinfo.value.code == 0
-    assert capsys.readouterr().out.strip() == "wxbrief 0.2.0"
+    assert capsys.readouterr().out.strip() == f"wxbrief {wxbrief.__version__}"
 
 
 def test_no_arguments_prints_help(capsys: pytest.CaptureFixture[str]) -> None:

@@ -19,6 +19,7 @@ from wxbrief.decode.metar import parse_metar
 from wxbrief.decode.model import (
     DailyPrecipitation,
     DailyTemperatureExtremes,
+    FlightCategory,
     HourlyPrecipitation,
     MaxTemperature6Hour,
     Metar,
@@ -40,7 +41,9 @@ def decode(row: dict[str, Any]) -> Metar:
     return parse_metar(row["rawOb"], datetime.fromisoformat(row["reportTime"].replace("Z", "+00:00")))
 
 
-NORWAY_WIND = "Norwegian `RMK WIND <height>FT <wind>` remarks: AWC fills maxT/minT with values that are not in the text."
+NORWAY_WIND = (
+    "Norwegian `RMK WIND <height>FT <wind>` remarks: AWC fills maxT/minT with values that are not in the text."
+)
 ZERO_TENDENCY = "A pressure tendency of 0.0 hPa: AWC leaves presTend empty, we keep the group (character and zero)."
 RECENT_MERGED = "AWC adds the recent-weather group RESHRA to wxString as SHRA; we keep recent weather separate."
 
@@ -65,6 +68,47 @@ EXCEPTIONS: dict[tuple[str, str], str] = {
         "SPECI YSCB 310759Z AUTO 33009KT 9999 VCTS -SHRA FEW026 SCT061 18/15 Q1011 RETS RESHRA",
     ): RECENT_MERGED,
 }
+
+NO_SKY = "The sky was not observed (`//////`): AWC gives no flight category, we classify on the visibility alone."
+NO_CATEGORY = "AWC gives no flight category for a report whose cloud layers carry only `///` types; we classify it."
+NO_VISIBILITY = "AWC leaves visib empty for a 9999 report whose cloud layers carry only `///` types."
+ZERO_CEILING = "A layer at 0 ft (`OVC000`, `BKN000`): AWC drops it from `clouds`, we report a ceiling of 0 ft."
+BGSF = (
+    "METAR BGSF 310820Z AUTO 05008KT 9999NDV SCT080/// OVC100/// M01/M08 Q1001",
+    "METAR BGSF 310750Z AUTO 04007KT 010V070 9999NDV BKN100/// BKN120/// M01/M07 Q1001",
+    "METAR BGSF 310720Z AUTO 04007KT 9999NDV BKN110/// BKN120/// M01/M07 Q1001",
+)
+EXCEPTIONS.update(
+    {
+        ("fltCat", raw): NO_SKY
+        for raw in (
+            "METAR ETHB 310820Z AUTO 30002KT 1000 // ////// 08/07 Q1033 ///",
+            "METAR ETHC 310820Z AUTO 27002KT 0900 // ////// 08/08 Q1033 ///",
+            "METAR ETNW 310820Z AUTO 29005KT 3500 // ////// 08/08 Q1033 ///",
+            "METAR ETNW 310720Z AUTO 28005KT 3200 // ////// 08/08 Q1033 ///",
+            "METAR ETSL 310720Z AUTO 06001KT 2700 // ////// 03/03 Q1029 ///",
+            "METAR ETHB 310720Z AUTO 27003KT 3000 // ////// 07/07 Q1033 ///",
+            "METAR ETHC 310720Z AUTO VRB01KT 0600 // ////// 08/08 Q1033 ///",
+            "METAR ETHS 310720Z AUTO 00000KT 4800 // ////// 09/08 Q1033 ///",
+        )
+    }
+    | {("visib", raw): NO_VISIBILITY for raw in BGSF}
+    | {("fltCat", raw): NO_CATEGORY for raw in BGSF}
+    | {
+        ("ceiling", raw): ZERO_CEILING
+        for raw in (
+            "METAR LFLL 310530Z 16001KT 5000 1700 BR BKN000 OVC003 07/07 Q1025 TEMPO 0300 FG VV///",
+            "METAR EHVK 310825Z AUTO 05006KT 0300 FG OVC000 06/06 Q1033 RED",
+            "METAR EHVK 310755Z AUTO 08007KT 0350 FG OVC000 07/07 Q1033 RED",
+            "METAR ETNG 310750Z AUTO 07004KT 0350 // OVC000/// 05/04 Q1032",
+            "METAR EHVK 310725Z AUTO 06006KT 0500 FG OVC000 06/06 Q1033 RED",
+            "METAR EHVK 310655Z AUTO 09006KT 050V130 0550 FG OVC000 07/07 Q1033 RED",
+        )
+    }
+)
+
+KNOT_TOLERANCE = 0.51  # AWC reports whole knots
+MILE_TOLERANCE = 0.06  # and visibility to a hundredth of a mile at most
 
 
 def near(ours: float | None, theirs: float | None, tolerance: float = TOLERANCE) -> bool:
@@ -157,6 +201,61 @@ def precise_dewpoint(metar: Metar, row: dict[str, Any]) -> tuple[float | None, f
     return row.get("dewp"), row.get("dewp")
 
 
+def wind_direction(metar: Metar, row: dict[str, Any]) -> tuple[float | None, float | None]:
+    wind = metar.wind
+    theirs = row.get("wdir")
+    return (wind.direction if wind and not wind.variable else None), (None if theirs == "VRB" else theirs)
+
+
+def wind_speed(metar: Metar, row: dict[str, Any]) -> tuple[float | None, float | None]:
+    wind = metar.wind
+    return (wind.speed.knots if wind and wind.speed else None), row.get("wspd")
+
+
+def wind_gust(metar: Metar, row: dict[str, Any]) -> tuple[float | None, float | None]:
+    wind = metar.wind
+    return (wind.gust.knots if wind and wind.gust else None), row.get("wgst")
+
+
+def visibility(metar: Metar, row: dict[str, Any]) -> tuple[float | None, float | None]:
+    """AWC caps what it reports at ``6+`` (a 9999 report) or ``10+``; ours is capped the same way before comparing."""
+    seen = metar.visibility
+    ours = None
+    if seen is not None and seen.distance is not None:
+        ours = seen.distance.statute_miles
+    elif seen is not None and (seen.cavok or seen.unlimited):
+        ours = 10.0
+    theirs = row.get("visib")
+    if isinstance(theirs, str):
+        cap = float(theirs.rstrip("+"))
+        return (None if ours is None else min(ours, cap)), cap
+    return ours, theirs
+
+
+def ceiling(metar: Metar, row: dict[str, Any]) -> tuple[float | None, float | None]:
+    heights = [
+        layer["base"]
+        for layer in row.get("clouds") or []
+        if layer["cover"] in ("BKN", "OVC", "OVX") and layer.get("base") is not None
+    ]
+    if row.get("vertVis") is not None:
+        heights.append(row["vertVis"] * 100)
+    return (metar.ceiling.value if metar.ceiling else None), (min(heights) if heights else None)
+
+
+def altimeter(metar: Metar, row: dict[str, Any]) -> tuple[float | None, float | None]:
+    return (metar.altimeter.hpa if metar.altimeter else None), row.get("altim")
+
+
+def flight_category(metar: Metar, row: dict[str, Any]) -> tuple[float | None, float | None]:
+    """The categories as severity ranks (VFR 0 to LIFR 3), so one comparison serves every field."""
+    theirs = row.get("fltCat")
+    return (
+        None if metar.flight_category is None else metar.flight_category.rank,
+        None if theirs is None else FlightCategory(theirs).rank,
+    )
+
+
 FIELDS: dict[str, Callable[[Metar, dict[str, Any]], tuple[float | None, float | None]]] = {
     "slp": slp,
     "presTend": tendency,
@@ -171,11 +270,26 @@ FIELDS: dict[str, Callable[[Metar, dict[str, Any]], tuple[float | None, float | 
     "snow": snow_depth,
     "temp": precise_temperature,
     "dewp": precise_dewpoint,
+    "wdir": wind_direction,
+    "wspd": wind_speed,
+    "wgst": wind_gust,
+    "visib": visibility,
+    "ceiling": ceiling,
+    "altim": altimeter,
+    "fltCat": flight_category,
 }
 
 # Fields AWC lists but the saved reports never populate (no 15Z/21Z, 12Z or snow-reporting station was in the
 # batches); the checks still run and pass vacuously, and the decoders are covered by tests/test_remarks.py.
 SPARSE = {"pcp3hr", "pcp24hr", "snow"}
+
+
+def tolerance_for(field: str) -> float:
+    if field in ("precip", "pcp6hr", "pcp3hr", "pcp24hr"):
+        return 0.0051
+    return {"wspd": KNOT_TOLERANCE, "wgst": KNOT_TOLERANCE, "altim": KNOT_TOLERANCE, "visib": MILE_TOLERANCE}.get(
+        field, TOLERANCE
+    )
 
 
 def mismatches(field: str) -> list[str]:
@@ -185,8 +299,7 @@ def mismatches(field: str) -> list[str]:
         if (field, row["rawOb"]) in EXCEPTIONS:
             continue
         ours, theirs = compare(decode(row), row)
-        tolerance = 0.0051 if field in ("precip", "pcp6hr", "pcp3hr", "pcp24hr") else TOLERANCE
-        if not near(ours, theirs, tolerance):
+        if not near(ours, theirs, tolerance_for(field)):
             found.append(f"{field}: ours={ours} awc={theirs} :: {row['rawOb']}")
     return found
 
@@ -199,8 +312,9 @@ def test_decoded_field_matches_awc(field: str) -> None:
 @pytest.mark.parametrize("field", sorted(set(FIELDS) - SPARSE))
 def test_enough_reports_carry_the_field(field: str) -> None:
     """The check is only worth something if AWC supplied the field on a good number of saved reports."""
-    populated = sum(1 for row in awc_rows() if row.get(field) is not None)
-    assert populated >= 20, field
+    key = {"ceiling": "clouds"}.get(field, field)
+    populated = sum(1 for row in awc_rows() if row.get(key) is not None)
+    assert populated >= (10 if field == "wgst" else 20), field
 
 
 def test_weather_strings_match_awc() -> None:
@@ -227,7 +341,7 @@ def test_exceptions_are_not_stale() -> None:
         if field == "wxString":
             continue  # covered by the explicit comparison above
         ours, theirs = FIELDS[field](decode(rows[raw]), rows[raw])
-        assert not near(ours, theirs, 0.0051 if field.startswith(("precip", "pcp")) else TOLERANCE), (field, raw)
+        assert not near(ours, theirs, tolerance_for(field)), (field, raw)
 
 
 def test_the_synoptic_groups_fall_on_synoptic_reports() -> None:

@@ -16,7 +16,7 @@ _SM = re.compile(r"^(?P<prefix>[PM])?(?P<num>\d{1,2})(?:/(?P<den>\d{1,2}))?SM$")
 _FRACTION_SM = re.compile(r"^(?P<num>\d{1,2})/(?P<den>\d{1,2})SM$")
 _WHOLE = re.compile(r"^\d{1,2}$")
 _FRACTION = re.compile(r"^(?P<num>\d{1,2})/(?P<den>\d{1,2})$")
-_METERS = re.compile(r"^(?P<m>\d{4})(?P<ndv>NDV)?$")
+_METERS = re.compile(r"^(?P<prefix>M)?(?P<m>\d{4})(?P<ndv>NDV)?$")
 _KM = re.compile(r"^(?P<km>\d{1,2})KM$")
 _DIRECTIONAL = re.compile(r"^(?P<m>\d{4})(?P<dir>NE|NW|SE|SW|N|E|S|W)?$")
 _PREFIXES = {"P": VisPrefix.GREATER_THAN, "M": VisPrefix.LESS_THAN}
@@ -135,6 +135,7 @@ def parse_visibility(cur: Cursor) -> Visibility | None:
             return Visibility(Distance(10000, DistanceUnit.M), unlimited=True, ndv=ndv, directional=directional)
         if meters == 0:
             return Visibility(Distance(50, DistanceUnit.M), VisPrefix.LESS_THAN, ndv=ndv, directional=directional)
-        return Visibility(Distance(meters, DistanceUnit.M), ndv=ndv, directional=directional)
+        prefix = _PREFIXES.get(match.group("prefix") or "")  # ``M0200``: less than 200 m, as some sources write it
+        return Visibility(Distance(meters, DistanceUnit.M), prefix, ndv=ndv, directional=directional)
 
     return None

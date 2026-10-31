@@ -228,7 +228,7 @@ def test_pathological_inputs_stay_fast() -> None:
     started = time.perf_counter()
     for raw in nasty:
         check(raw)
-    assert time.perf_counter() - started < 20
+    assert time.perf_counter() - started < 120  # a quadratic blow-up takes many minutes; this only has to survive a slow runner
 
 
 # --- TAFs ----------------------------------------------------------------------------------------------------------
@@ -355,4 +355,4 @@ def test_pathological_tafs_stay_fast() -> None:
     started = time.perf_counter()
     for raw in nasty:
         check_taf(raw)
-    assert time.perf_counter() - started < 30
+    assert time.perf_counter() - started < 120

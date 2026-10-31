@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, tzinfo
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -30,6 +30,7 @@ class ViewContext:
     time_mode: str
     stations: StationDB
     crosscheck: bool = True  # mark a station whose AWC flight category differs from ours
+    local_zone: tzinfo | None = None  # the zone of ``local`` time mode; ``None`` is the computer's own
     _palette: ViewPalette | None = None
     _palette_theme: str | None = None
 
@@ -74,7 +75,7 @@ class ViewContext:
         if self.is_zulu(icao):
             return moment.astimezone(UTC)
         zone = self._zone(icao)
-        return moment.astimezone(zone) if zone is not None else moment.astimezone()
+        return moment.astimezone(zone) if zone is not None else moment.astimezone(self.local_zone)
 
     def clock(self, moment: datetime | None, icao: str | None = None) -> str:
         """``14:53Z``, or the same moment in station-local or computer-local time per the time mode."""
