@@ -13,7 +13,6 @@ from wxbrief.ui.screens.add_station import AddStationScreen
 from wxbrief.ui.screens.briefing import BriefingScreen
 from wxbrief.ui.screens.too_small import TooSmallScreen
 from wxbrief.ui.widgets.key_bar import KeyBar
-from wxbrief.ui.widgets.period_detail import RowBlocks
 from wxbrief.ui.widgets.station_card import StationCard
 from wxbrief.ui.widgets.station_list import StationList
 from wxbrief.ui.widgets.status_bar import StatusBar
@@ -26,6 +25,15 @@ def _offline(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 
     monkeypatch.setattr(httpx.AsyncHTTPTransport, "handle_async_request", refuse)
     monkeypatch.setenv(CACHE_DIR_ENV, str(tmp_path / "cache"))
+
+
+async def key_line(app: object, pilot: object) -> str:
+    """The bottom row once the key bar has drawn (it is recomposed after the first layout pass)."""
+    for _ in range(40):
+        await pilot.pause(0.05)  # type: ignore[attr-defined]
+        if screen_lines(app)[-1].strip():
+            break
+    return screen_lines(app)[-1]
 
 
 def screen_lines(app: object) -> list[str]:
@@ -69,7 +77,7 @@ async def test_the_key_bar_keeps_help_and_quit(size: tuple[int, int]) -> None:
     app = demo_app()
     async with app.run_test(size=size) as pilot:
         await pilot.pause(0.3)
-        last = screen_lines(app)[-1]
+        last = await key_line(app, pilot)
         assert "? Help" in last and "q Quit" in last
         keys = [key for key in app.screen.query_one(KeyBar).children if key.display]
         assert all(key.region.right <= size[0] for key in keys)  # no label cut by the edge
@@ -80,13 +88,14 @@ async def test_the_status_bar_says_which_station_and_j_k_are_in_the_key_bar_when
     async with app.run_test(size=(80, 24)) as pilot:
         await pilot.pause(0.3)
         assert not app.screen.query_one(StationList).display
+        await pilot.pause(0.3)
         assert screen_lines(app)[-2].lstrip().startswith("1/10")
-        assert "j/k" in screen_lines(app)[-1]
+        assert "j/k" in await key_line(app, pilot)
         await pilot.press("j")
         assert screen_lines(app)[-2].lstrip().startswith("2/10")
         await pilot.resize_terminal(120, 30)
         await pilot.pause(0.2)
-        assert "j/k" not in screen_lines(app)[-1]
+        assert "j/k" not in await key_line(app, pilot)
         assert app.screen.query_one(StatusBar)
 
 
@@ -103,13 +112,14 @@ async def test_a_wide_terminal_widens_the_list_and_caps_the_report() -> None:
 
 async def test_a_wrapped_help_line_hangs_under_its_description() -> None:
     app = demo_app()
-    async with app.run_test(size=(80, 40)) as pilot:
+    async with app.run_test(size=(60, 40)) as pilot:
         await pilot.pause(0.3)
         await pilot.press("question_mark")
         await pilot.pause(0.3)
         lines = screen_lines(app)
-        mouse = next(i for i, line in enumerate(lines) if "(the mouse works too)" in line)
-        assert lines[mouse].index("(the") == lines[mouse - 1].index("move the forecast")
+        first = next(line for line in lines if "Left/Right" in line)
+        wrapped = next(line for line in lines if "mouse works too)" in line)
+        assert wrapped.index("mouse") == first.index("move the")
 
 
 async def test_add_station_keeps_a_result_row_and_its_hint_at_40x12() -> None:

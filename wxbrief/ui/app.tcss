@@ -97,7 +97,7 @@ BriefingScreen.-narrow DetailPane {
 }
 
 .dialog {
-    width: 80%;
+    width: 90%;
     max-width: 90;
     height: auto;
     max-height: 90%;
@@ -195,7 +195,7 @@ ThemePickerScreen {
 }
 
 ThemePickerScreen .dialog {
-    width: 34;
+    width: 46;
     margin-right: 2;
 }
 
@@ -346,7 +346,8 @@ StationGrid:focus {
     max-height: 100%;
 }
 
-.-short .dialog-title {
+.-short #add-box .dialog-title,
+.-short #theme-box .dialog-title {
     display: none;
 }
 
