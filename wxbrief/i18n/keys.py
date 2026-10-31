@@ -719,6 +719,7 @@ class K:
     WARN_INVALID_TIME = "warn.invalid_time"
     WARN_LEGACY_FORMAT = "warn.legacy_format"
     WARN_MISSING_TIME = "warn.missing_time"
+    WARN_OUTSIDE_PERIOD = "warn.outside_period"
     WARN_PARSER_ERROR = "warn.parser_error"
     WARN_UNKNOWN_TOKEN = "warn.unknown_token"
 

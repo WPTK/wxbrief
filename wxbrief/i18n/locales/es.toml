@@ -258,6 +258,7 @@ invalid_time = "La hora de {text} no es válida"
 parser_error = "No se pudo leer: {text}"
 legacy_format = "Grupo horario antiguo, leído tal como está escrito: {text}"
 missing_time = "No se indica la hora de {text}"
+outside_period = "El grupo de cambio empieza fuera del período de validez y no figura en la cronología: {text}"
 
 [trend]
 nosig = "No se esperan cambios significativos en las próximas 2 horas"

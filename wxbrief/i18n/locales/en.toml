@@ -259,6 +259,7 @@ invalid_time = "The time in {text} is not valid"
 parser_error = "Could not read: {text}"
 legacy_format = "Old-style time group, read as written: {text}"
 missing_time = "No time given for {text}"
+outside_period = "Change group starts outside the forecast period and is not on the timeline: {text}"
 
 [trend]
 nosig = "No significant change expected in the next 2 hours"

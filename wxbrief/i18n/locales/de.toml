@@ -265,6 +265,7 @@ invalid_time = "Die Uhrzeit in {text} ist ungültig"
 parser_error = "Konnte nicht gelesen werden: {text}"
 legacy_format = "Alte Zeitgruppe, wie geschrieben gelesen: {text}"
 missing_time = "Keine Zeit angegeben für {text}"
+outside_period = "Die Änderungsgruppe beginnt außerhalb des Gültigkeitszeitraums und fehlt im Zeitverlauf: {text}"
 
 [trend]
 nosig = "In den nächsten 2 Stunden werden keine bedeutsamen Änderungen erwartet"

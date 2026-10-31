@@ -362,6 +362,16 @@ def test_worst_category_includes_the_overlays() -> None:
     assert taf.worst_category is FlightCategory.IFR
 
 
+def test_a_change_group_before_the_valid_period_is_reported_not_dropped_silently() -> None:
+    taf = decode("TAF KXYZ 141130Z 1412/1512 06007KT P6SM SKC FM140600 18010KT 1SM OVC005", utc(14, 12))
+    assert [(w.code, w.text) for w in taf.warnings] == [("outside_period", "FM140600")]
+
+
+def test_change_groups_inside_the_period_raise_no_warning() -> None:
+    taf = decode("TAF KXYZ 141130Z 1412/1512 06007KT P6SM SKC FM141800 18010KT 1SM OVC005 TEMPO 1500/1503 2SM", utc(14, 12))
+    assert taf.warnings == ()
+
+
 def test_a_two_week_old_report_is_not_placed_in_next_month() -> None:
     # The nearest-month rule read these as 14 November, so a pasted TAF looked upcoming and never expired.
     now = utc(31, 12)

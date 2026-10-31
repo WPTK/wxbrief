@@ -66,6 +66,11 @@ def test_format_speed(speed: Speed, units: UnitsMode, expected: str) -> None:
         (Distance(10, DistanceUnit.KM), MIXED, "10 km (6.2 SM)"),
         (Distance(50, DistanceUnit.M), MIXED, "50 m (1/16 SM)"),
         (Distance(0, DistanceUnit.SM), US, "0 SM"),
+        # a converted figure is never rounded across a flight-category limit (1, 3 and 5 SM)
+        (Distance(1600, DistanceUnit.M), MIXED, "1.6 km (15/16 SM)"),
+        (Distance(4800, DistanceUnit.M), MIXED, "4.8 km (2.9 SM)"),
+        (Distance(8000, DistanceUnit.M), MIXED, "8 km (4.9 SM)"),
+        (Distance(1700, DistanceUnit.M), MIXED, "1.7 km (1.1 SM)"),
     ],
 )
 def test_format_visibility(distance: Distance, units: UnitsMode, expected: str) -> None:

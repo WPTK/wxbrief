@@ -55,13 +55,22 @@ def format_decimal(value: float, places: int = 1, nf: NumberFormat = ENGLISH) ->
     return nf.trimmed(value, places)
 
 
+# Flight-category limits in statute miles (LIFR/IFR, IFR/MVFR, MVFR/VFR).
+_CATEGORY_LIMITS_SM = (1, 3, 5)
+
+
 def format_miles(value: float, *, exact: bool, nf: NumberFormat = ENGLISH) -> str:
-    """Statute miles. Reported values are shown as written (fractions); converted ones as decimals above 1 SM."""
+    """Statute miles. Reported values are shown as written (fractions); converted ones as decimals above 1 SM.
+
+    A converted value is rounded, but never across a flight-category limit: 1,600 m is 15/16 SM (LIFR), not "1 SM".
+    """
     if value == 0:
         return "0"
     if exact or value < 1:
         # A converted value is rounded to the nearest sixteenth and never shown as zero.
         fraction = Fraction(value).limit_denominator(16) if exact else Fraction(max(1, round(value * 16)), 16)
+        if not exact:
+            fraction = _below_limit(value, fraction, Fraction(1, 16))
         whole, rest = divmod(fraction.numerator, fraction.denominator)
         if rest == 0:
             return str(whole)
@@ -69,7 +78,16 @@ def format_miles(value: float, *, exact: bool, nf: NumberFormat = ENGLISH) -> st
         return f"{whole} {part}" if whole else part
     if value >= 10:
         return str(round(value))
-    return format_decimal(value, 1, nf)
+    tenths = _below_limit(value, Fraction(round(value * 10), 10), Fraction(1, 10))
+    return format_decimal(float(tenths), 1, nf)
+
+
+def _below_limit(value: float, shown: Fraction, step: Fraction) -> Fraction:
+    """``shown`` (``value`` rounded), stepped down by ``step`` if rounding carried it up to a category limit."""
+    for limit in _CATEGORY_LIMITS_SM:
+        if value < limit <= shown:
+            return shown - step
+    return shown
 
 
 def format_visibility(distance: Distance, units: UnitsMode, nf: NumberFormat = ENGLISH) -> str:

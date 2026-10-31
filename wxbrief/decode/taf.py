@@ -54,6 +54,7 @@ WARN_UNKNOWN_TOKEN = "unknown_token"
 WARN_PARSER_ERROR = "parser_error"
 WARN_LEGACY_FORMAT = "legacy_format"
 WARN_MISSING_TIME = "missing_time"
+WARN_OUTSIDE_PERIOD = "outside_period"
 
 _STATION = re.compile(r"^[A-Z][A-Z0-9]{3}$")
 _ISSUE = re.compile(r"^(\d{2})(\d{2})(\d{2})Z$")
@@ -283,9 +284,20 @@ def _open_group(cur: Cursor, draft: _Draft, *, base: bool) -> _Group:
     return _read_header(cur, draft)
 
 
+def _check_inside_period(cur: Cursor, draft: _Draft, group: _Group) -> None:
+    """Warn about a change group that starts outside the valid period: the timeline cannot place it."""
+    if group.change is ChangeType.BASE or group.start is None:
+        return
+    before = draft.valid_from is not None and group.start < draft.valid_from
+    after = draft.valid_to is not None and group.start >= draft.valid_to
+    if before or after:
+        draft.warn(WARN_OUTSIDE_PERIOD, cur.token_at(group.first))
+
+
 def _read_group(cur: Cursor, draft: _Draft, *, base: bool) -> _Group:
     """One group: its keyword and window (none for the base forecast), then its elements up to the next group."""
     group = _open_group(cur, draft, base=base)
+    _check_inside_period(cur, draft, group)
     body_start = cur.pos
     extras = PeriodExtras(draft.temperatures, draft.notes)
 

@@ -20,7 +20,7 @@ from wxbrief.decode.model import (
     SemanticKind,
     TrendKind,
 )
-from wxbrief.decode.units import UnitsMode
+from wxbrief.decode.units import Temperature, UnitsMode
 from wxbrief.i18n import Translator
 from wxbrief.render import measure, phrases
 from wxbrief.render.jsonout import to_dict
@@ -507,3 +507,11 @@ def test_trend_and_remark_tokens_carry_finer_kinds() -> None:
     assert kinds["SLP177"] is SemanticKind.PRESSURE
     assert kinds["FOO"] is SemanticKind.REMARK
     assert isinstance(metar.remarks[-1], FreeText)
+
+
+def test_a_temperature_that_rounds_to_zero_is_not_shown_as_negative_zero() -> None:
+    # -17.8 C is -0.04 F
+    assert measure.format_temperature(Temperature(-17.8), US, precise=True) == "0.0 °F (-17.8 °C)"
+    text = render_plain(parse_metar("METAR KDEN 141153Z 06007KT 10SM CLR M18/M18 A3001 RMK AO2 T11281178", REF), T, US)
+    assert "-0.0" not in text
+    assert "dew point 0.0 °F (-17.8 °C)" in text

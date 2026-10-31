@@ -149,6 +149,7 @@ _WARNING_KEYS = {
     "parser_error": K.WARN_PARSER_ERROR,
     "legacy_format": K.WARN_LEGACY_FORMAT,
     "missing_time": K.WARN_MISSING_TIME,
+    "outside_period": K.WARN_OUTSIDE_PERIOD,
 }
 
 

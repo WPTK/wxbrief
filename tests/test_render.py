@@ -14,6 +14,7 @@ from wxbrief.decode.metar import parse_metar
 from wxbrief.decode.model import FlightCategory, Metar, SemanticKind
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import Translator
+from wxbrief.i18n.keys import K
 from wxbrief.render.highlight import STYLE_KEYS, HighlightSpan, highlight_spans, style_key, style_name
 from wxbrief.render.jsonout import to_dict
 from wxbrief.render.plain import decode_rows, render_plain, warning_lines
@@ -266,3 +267,10 @@ def test_to_dict_round_trips_through_json() -> None:
 def test_to_dict_rejects_non_dataclasses() -> None:
     with pytest.raises(TypeError):
         to_dict("not a dataclass")
+
+
+def test_a_colour_state_in_the_remarks_is_one_row_not_two() -> None:
+    m = decode("METAR EGWU 130820Z 12005KT 3500 BR BKN006 10/09 Q1031 NOSIG RMK BLU BLU")
+    labels = [row.label for row in decode_rows(m, T, UnitsMode.US)]
+    assert labels.count(T.t(K.LABEL_COLOR_STATE)) == 1
+    assert T.t(K.LABEL_REMARK) not in labels

@@ -148,6 +148,8 @@ def test_every_non_blank_character_lands_in_exactly_one_report() -> None:
         ("LFPG BECMG 3110/3112 9999", Kind.TAF),
         ("KDEN 131453Z 06007KT 10SM CLR 09/08 A3001", Kind.METAR),
         ("EGLL 311050Z 24010KT CAVOK 12/08 Q1013 TEMPO 3000", Kind.METAR),  # a trend, with a temperature group
+        ("EGLL 141150Z 24015KT 9999 FEW030 Q1018 BECMG 3000 RA", Kind.METAR),  # a pressure group means METAR
+        ("KDEN 141150Z 24015KT 9999 FEW030 A2992 TEMPO 3000 RA", Kind.METAR),
         ("", Kind.METAR),
         ("hello", Kind.METAR),
     ],

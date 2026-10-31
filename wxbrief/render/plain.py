@@ -13,6 +13,7 @@ from wxbrief.decode.flightcat import ceiling_for_classification
 from wxbrief.decode.model import (
     ChangeType,
     ColorState,
+    ColorStateRemark,
     FlightCategory,
     ForecastElements,
     Metar,
@@ -81,7 +82,9 @@ def _remark_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRo
         return []
     style = style_name(SemanticKind.REMARK)
     label = t.t(K.LABEL_REMARK)
-    rows = [DecodeRow(label, phrases.describe_remark(t, remark, units), style) for remark in metar.remarks]
+    # A colour state found in the remarks is already the report's Color state row; it is not shown a second time.
+    shown = [r for r in metar.remarks if not (isinstance(r, ColorStateRemark) and r.group == metar.color_state)]
+    rows = [DecodeRow(label, phrases.describe_remark(t, remark, units), style) for remark in shown]
     undecoded = phrases.undecoded_free_text(t, metar)
     if undecoded:
         rows.append(DecodeRow(t.t(K.LABEL_REMARKS), " ".join(undecoded), style))
