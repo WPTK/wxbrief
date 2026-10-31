@@ -40,6 +40,7 @@ class StationGrid(VerticalScroll, can_focus=True):
         super().__init__(**kwargs)  # type: ignore[arg-type]
         self.ids: list[str] = []
         self.selected: str | None = None
+        self._going: set[StationCard] = set()
 
     def compose(self) -> ComposeResult:
         yield Container(id="cards")
@@ -59,21 +60,40 @@ class StationGrid(VerticalScroll, can_focus=True):
         ids = [entry.icao for entry in reports]
         if ids != self.ids:
             self.ids = ids
-            cards.remove_children()
-            cards.mount(*(StationCard(icao) for icao in ids))
+            # Keep the cards that stay, remove the ones that went, mount the new ones, then put them in order. Cards
+            # carry no ids, so a station removed and added again at once can never collide with its dying card.
+            have = {card.icao: card for card in cards.query(StationCard) if card not in self._going}
+            for icao, card in have.items():
+                if icao not in ids:
+                    self._going.add(card)
+                    card.remove()
+            have = {icao: card for icao, card in have.items() if icao in ids}
+            fresh = [StationCard(icao) for icao in ids if icao not in have]
+            if fresh:
+                cards.mount(*fresh)
+            have.update((card.icao, card) for card in fresh)
+            previous: StationCard | None = None
+            for icao in ids:
+                card = have[icao]
+                if previous is None:
+                    if cards.children and cards.children[0] is not card:
+                        cards.move_child(card, before=0)
+                else:
+                    cards.move_child(card, after=previous)
+                previous = card
+            self._going = {card for card in self._going if card.is_attached}
         self.selected = selected if selected in ids else (ids[0] if ids else None)
         cards.styles.grid_size_columns = self.columns
         for entry in reports:
-            card = self._card(entry.icao)
-            if card is not None:
-                card.show(entry, ctx, now, selected=entry.icao == self.selected)
-        card = self._card(self.selected) if self.selected else None
-        if card is not None:
-            self.call_after_refresh(card.scroll_visible, animate=False)
+            found = self._card(entry.icao)
+            if found is not None:
+                found.show(entry, ctx, now, selected=entry.icao == self.selected)
+        chosen = self._card(self.selected) if self.selected else None
+        if chosen is not None:
+            self.call_after_refresh(chosen.scroll_visible, animate=False)
 
     def _card(self, icao: str) -> StationCard | None:
-        found = self.query(f"#card-{icao}")
-        return found.first(StationCard) if found else None
+        return next((card for card in self.query(StationCard) if card.icao == icao and card not in self._going), None)
 
     def action_move(self, dx: int, dy: int) -> None:
         if not self.ids:

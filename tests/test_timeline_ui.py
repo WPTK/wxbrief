@@ -258,7 +258,119 @@ async def test_card_mini_strip_text() -> None:
     app = demo_app("--layout", "grid")
     async with app.run_test(size=(140, 40)) as pilot:
         await settle(pilot)
-        card = app.screen.query_one("#card-KDEN", StationCard)
+        card = next(c for c in app.screen.query(StationCard) if c.icao == "KDEN")
         shown = text_of(card)
         assert "KDEN" in shown and "LIFR" in shown and "32005KT 1/4SM" in shown
         assert "L " in shown  # the strip starts on LIFR
+
+
+# --- review fixes --------------------------------------------------------------------------------------------------
+
+
+def test_demo_without_no_config_ignores_the_config_file() -> None:
+    options = tui_options(build_tui_parser().parse_args(["--demo"]))
+    assert options.demo and not options.use_config and options.ids == demo_ids()
+
+
+async def test_grid_adds_and_removes_stations() -> None:
+    app = demo_app("--layout", "grid")
+    async with app.run_test(size=(140, 40)) as pilot:
+        await settle(pilot)
+        briefing = app.screen
+        assert isinstance(briefing, BriefingScreen)
+        grid = briefing.query_one(StationGrid)
+
+        def order() -> list[str]:
+            return [card.icao for card in grid.query(StationCard)]
+
+        assert order() == demo_ids()
+        app.remove_station("EGLL")
+        await settle(pilot)
+        assert order() == [i for i in demo_ids() if i != "EGLL"]
+        app.add_station("KJFK")
+        await settle(pilot)
+        assert order()[-1] == "KJFK" and len(order()) == 10
+        app.remove_station("KJFK")  # and straight back again, in the same pass
+        app.add_station("KJFK")
+        app.add_station("EGLL")
+        await settle(pilot)
+        assert sorted(order()) == sorted(app.state.ids) and order() == app.state.ids
+        assert sum(1 for card in grid.query(StationCard) if card.has_class("-selected")) == 1
+
+
+async def test_digit_keys_do_nothing_in_the_grid() -> None:
+    app = demo_app("--layout", "grid")
+    async with app.run_test(size=(140, 40)) as pilot:
+        await settle(pilot)
+        briefing = app.screen
+        assert isinstance(briefing, BriefingScreen)
+        await pilot.press("3", "1", "2")
+        await settle(pilot)
+        assert briefing.query_one(StationGrid).has_focus
+        assert not briefing.query_one(TafTimeline).has_focus
+
+
+async def test_timeline_focus_is_released_when_the_taf_goes_away() -> None:
+    app = demo_app()
+    async with app.run_test(size=(120, 50)) as pilot:
+        await settle(pilot)
+        briefing = app.screen
+        assert isinstance(briefing, BriefingScreen)
+        await pilot.press("3")
+        await settle(pilot)
+        timeline = briefing.query_one(TafTimeline)
+        assert timeline.has_focus
+        app.state.stations["KDEN"].taf = None
+        briefing.refresh_view()
+        await settle(pilot)
+        assert not timeline.display and not timeline.has_focus
+
+
+async def test_a_stale_cursor_message_is_dropped() -> None:
+    app = demo_app()
+    async with app.run_test(size=(120, 50)) as pilot:
+        await settle(pilot)
+        briefing = app.screen
+        assert isinstance(briefing, BriefingScreen)
+        briefing.select("EGLL")
+        await settle(pilot)
+        timeline = briefing.query_one(TafTimeline)
+        detail = briefing.query_one(DetailPane)
+        period = briefing.query_one(PeriodDetail)
+        shown = text_of(period)
+        old = TafTimeline.Moved(timeline, timeline.cells[0], timeline.taf, timeline.timeline, "KDEN")
+        detail.on_taf_timeline_moved(old)  # another station's message
+        stale = TafTimeline.Moved(timeline, timeline.cells[5], timeline.taf, timeline.timeline, "EGLL")
+        detail.on_taf_timeline_moved(stale)  # the cursor is not on cell 5
+        await settle(pilot)
+        assert text_of(period) == shown
+
+
+async def test_toggling_layout_twice_at_60_columns_keeps_focus_visible() -> None:
+    app = demo_app()
+    async with app.run_test(size=(60, 20)) as pilot:
+        await settle(pilot)
+        briefing = app.screen
+        assert isinstance(briefing, BriefingScreen)
+        await pilot.press("v", "v")
+        await settle(pilot)
+        assert not briefing.query_one(StationList).display
+        assert not briefing.query_one(StationList).has_focus
+        assert briefing.query_one(DetailPane).has_focus
+
+
+async def test_detail_screen_redraws_on_theme_change() -> None:
+    app = demo_app("--layout", "grid")
+    async with app.run_test(size=(140, 40)) as pilot:
+        await settle(pilot)
+        await pilot.press("enter")
+        await settle(pilot)
+        screen = app.screen
+        assert isinstance(screen, StationDetailScreen)
+        calls: list[int] = []
+        monkey = screen.redraw
+        screen.redraw = lambda: (calls.append(1), monkey())[1]  # type: ignore[method-assign]
+        app.theme = "nord" if app.theme != "nord" else "textual-dark"
+        await settle(pilot)
+        await pilot.pause(0.5)
+        assert calls

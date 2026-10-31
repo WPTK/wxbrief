@@ -18,7 +18,6 @@ from wxbrief.state import StationReports
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.fcat import CategoryColors, category_colors
 from wxbrief.ui.strip import MINI_STRIP_HOURS, StripCell, mini_cells, strip_for
-from wxbrief.ui.widgets.period_detail import badge
 from wxbrief.ui.widgets.station_list import short_conditions
 from wxbrief.ui.widgets.taf_timeline import HATCH, LETTERS, OVERLAY_MARK
 
@@ -56,7 +55,7 @@ class StationCard(Static):
             self.icao = icao
 
     def __init__(self, icao: str) -> None:
-        super().__init__(id=f"card-{icao}")
+        super().__init__()
         self.icao = icao
 
     def on_click(self, event: Click) -> None:
@@ -64,29 +63,30 @@ class StationCard(Static):
 
     def show(self, entry: StationReports, ctx: ViewContext, now: datetime, *, selected: bool) -> None:
         self.set_class(selected, "-selected")
-        colors = category_colors(self.app.current_theme)
+        palette = ctx.palette
+        colors = category_colors(palette)
         glyphs = ctx.glyphs
         metar = entry.metar
         if metar is None:
-            mark, mark_style = glyphs.missing, "dim"
+            mark, mark_style = glyphs.missing, palette.muted
         elif entry.freshness(now) is Freshness.FRESH:
-            mark, mark_style = glyphs.fresh, "green"
+            mark, mark_style = glyphs.fresh, palette.fresh
         else:
-            mark, mark_style = glyphs.stale, "yellow"
+            mark, mark_style = glyphs.stale, palette.stale
         station = ctx.station(entry.icao)
         name = station.name if station else (entry.awc_metar.name if entry.awc_metar else None)
         head = Text.assemble((mark, mark_style), " ", (entry.icao, "bold"), " ")
-        head.append_text(badge(metar.flight_category if metar else None, colors))
+        head.append_text(palette.badge(metar.flight_category if metar else None))
         if name:
-            head.append(f" {name}", style="dim")
+            head.append(f" {name}", style=palette.muted)
         head.no_wrap = True
         head.overflow = "ellipsis"
         conditions = short_conditions(metar) or ("no report" if metar is None else "")
-        lines = [head, Text(conditions, style="dim", no_wrap=True, overflow="ellipsis")]
+        lines = [head, Text(conditions, style=palette.muted, no_wrap=True, overflow="ellipsis")]
         taf = entry.taf if isinstance(entry.taf, Taf) else None
         cells = mini_cells(strip_for(taf)[1], now) if taf is not None else ()
         if cells:
             lines.extend(strip_lines(cells, colors))
         else:
-            lines.append(Text(ctx.translator.t(K.TIMELINE_NO_TAF), style="dim"))
+            lines.append(Text(ctx.translator.t(K.TIMELINE_NO_TAF), style=palette.muted))
         self.update(Text("\n").join(lines))

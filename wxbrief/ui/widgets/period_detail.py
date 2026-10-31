@@ -5,28 +5,19 @@ from __future__ import annotations
 import textwrap
 from datetime import datetime
 
-from rich.style import Style
 from rich.text import Text
 from textual.widgets import Static
 
-from wxbrief.decode.model import FlightCategory, Taf, Timeline
+from wxbrief.decode.model import Taf, Timeline
 from wxbrief.decode.timeline import category_of, merge
 from wxbrief.i18n.keys import K
 from wxbrief.render import phrases
 from wxbrief.render.plain import DecodeRow, element_rows
 from wxbrief.ui.context import ViewContext
-from wxbrief.ui.fcat import CategoryColors, category_colors
 from wxbrief.ui.strip import StripCell
 
 
-def badge(category: FlightCategory | None, colors: CategoryColors) -> Text:
-    """`` VFR `` on the category colour."""
-    if category is None:
-        return Text(" -- ", style="dim")
-    return Text(f" {category.value:^4} ", style=colors.style(category) + Style(bold=True))
-
-
-def rows_text(rows: list[DecodeRow], ctx: ViewContext, colors: CategoryColors, width: int, indent: int = 2) -> Text:
+def rows_text(rows: list[DecodeRow], ctx: ViewContext, width: int, indent: int = 2) -> Text:
     """Rows as ``Label:  value`` lines with wrapped values hanging under the value column."""
     palette = ctx.palette
     label_width = max((len(row.label) for row in rows), default=0) + 2
@@ -44,7 +35,7 @@ def rows_text(rows: list[DecodeRow], ctx: ViewContext, colors: CategoryColors, w
             line.append(f"{row.label + ':':<{label_width}}", style=palette.style("wx.label"))
             hang = indent + label_width
         if row.category is not None:
-            line.append_text(badge(row.category, colors))
+            line.append_text(palette.badge(row.category))
             rest = row.value.removeprefix(row.category.value).strip()
             if rest:
                 line.append(" " + rest)
@@ -80,7 +71,6 @@ class PeriodDetail(Static):
         if cell is None:
             self.update("")
             return
-        colors = category_colors(self.app.current_theme)
         width = self.size.width or 60
         title = Text()
         title.append(
@@ -88,11 +78,11 @@ class PeriodDetail(Static):
             style="bold",
         )
         title.append("  ")
-        title.append_text(badge(cell.category, colors))
+        title.append_text(ctx.palette.badge(cell.category))
         parts: list[Text] = [title]
         if cell.worst_category is not None and cell.worst_category != cell.category:
-            worst = Text(t.t(K.TIMELINE_WORST) + " ", style="dim")
-            worst.append_text(badge(cell.worst_category, colors))
+            worst = Text(t.t(K.TIMELINE_WORST) + " ", style=ctx.palette.muted)
+            worst.append_text(ctx.palette.badge(cell.worst_category))
             parts.append(worst)
 
         # Prevailing forecast: one block per group that prevails somewhere in the cell.
@@ -109,7 +99,7 @@ class PeriodDetail(Static):
             )
             seen.add(item.period)
             parts.append(Text(text, style="bold"))
-            parts.append(rows_text(element_rows(item.prevailing, item.category, t, ctx.units), ctx, colors, width))
+            parts.append(rows_text(element_rows(item.prevailing, item.category, t, ctx.units), ctx, width))
 
         # A change under way (BECMG), then temporary groups, each once.
         becoming: set[int] = set()
@@ -121,7 +111,7 @@ class PeriodDetail(Static):
                 group = taf.periods[item.becoming_index]
                 category = category_of(merge(item.prevailing, group.elements))
                 parts.append(Text(phrases.describe_change_header(t, group), style="bold"))
-                parts.append(rows_text(element_rows(group.elements, category, t, ctx.units), ctx, colors, width))
+                parts.append(rows_text(element_rows(group.elements, category, t, ctx.units), ctx, width))
             for overlay in item.overlays:
                 if overlay.index in overlays:
                     continue
@@ -129,5 +119,5 @@ class PeriodDetail(Static):
                 group = taf.periods[overlay.index]
                 parts.append(Text(phrases.describe_change_header(t, group), style="bold"))
                 rows = element_rows(overlay.elements, overlay.category, t, ctx.units)
-                parts.append(rows_text(rows, ctx, colors, width))
+                parts.append(rows_text(rows, ctx, width))
         self.update(Text("\n").join(parts))

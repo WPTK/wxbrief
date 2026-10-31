@@ -715,13 +715,14 @@ registers `AVIATION_THEMES` itself because the app does not until S5b lands.
 - `ui/strip.py` (no Textual): `StripCell` (one hour or several merged, worst case wins: `category`, `worst_category`, `becoming`,
   `overlay`, `overlay_category`, `hours`, `slices`), `group_cells(hours, step)`, `merge_hours`, `cell_at`, `mini_cells(hours, now,
   count=12)`, `hour_step(count, width, narrow=)`, `strip_for(taf)` (timeline and hourly summaries).
-- `ui/fcat.py`: `CategoryColors` and `category_colors(theme)` built from `Palette.from_theme(theme)` (`fcat-*` variables),
-  falling back to the defaults in `semantic.py`. The widgets read `self.app.current_theme`, so they follow whichever theme S5b sets.
+- `ui/fcat.py`: `CategoryColors` and `category_colors(ctx.palette)`: cell fills taken from the same `Palette` that styles the
+  badges, so there is one source. Badges, muted text and the fresh/stale marks all come from `ctx.palette` (`badge`, `muted`,
+  `fresh`, `stale`); the widgets hold no colour names of their own.
 - `ui/widgets/taf_timeline.py`: `TafTimeline` (focusable; `Left`/`Right`/`Home`/`End`; mouse hover or click moves the cursor;
-  posts `TafTimeline.Moved(cell)`). Rows: tick labels, cells, thin temporary-group row, cursor, legend. Hatched `▒` = becoming
+  posts `TafTimeline.Moved`, which carries the forecast, its timeline, the station and the cell, and is dropped when stale). Rows: tick labels, cells, thin temporary-group row, cursor, legend. Hatched `▒` = becoming
   (background is the prevailing colour, hatch foreground the worst case); `▀` = temporary groups in the worst-case colour. A letter
   (`V M I L`) marks each change of category, so the strip still reads without colour (`NO_COLOR`).
-- `ui/widgets/period_detail.py`: `PeriodDetail`, `badge`, `rows_text`. Shows the cell's window in the time mode, its category and
+- `ui/widgets/period_detail.py`: `PeriodDetail`, `rows_text`. Shows the cell's window in the time mode, its category and
   worst case, then the prevailing group (and later groups inside a three-hour cell), a `BECMG` under way and each temporary group,
   decoded with `render.plain.element_rows` (new public function; `_period_rows` calls it).
 - `ui/widgets/station_card.py` (`StationCard`, `strip_lines`) and `station_grid.py` (`StationGrid`: arrows move, `Enter` or a second
@@ -742,12 +743,18 @@ registers `AVIATION_THEMES` itself because the app does not until S5b lands.
 - `--demo` runs on a fixed clock (`DEMO_NOW`, 2026-10-31 12:00Z) so that every METAR is fresh and every TAF in force. KDEN's TAF and EGLL's reports are
   real; KDEN's METAR is hand-written with a long remarks section; NZSP's TAF is real and its METAR is
   the real one retimed to 11:50Z; the others are hand-written, each decode read against the raw text. NZSP's TAF keeps the six unknown
-  words the S2b notes list. `--demo` uses the default config plus command-line view flags, sets `use_config` false (no write)
- . There was no `.gitkeep` in `data/demo/` to remove.
+  words the S2b notes list. `--demo` uses the default config plus command-line view flags, sets `use_config` false (no write). There was no `.gitkeep` in `data/demo/` to remove.
 - `v` is not persisted to the config; `--layout grid` picks the starting layout.
 - No "now" marker on the strip; the cursor starts on the hour containing the clock.
-- `BriefingScreen.on_unmount` clears `_ready`: the app's one-second tick could reach a screen that was going away (seen in the new
-  60x20 test).
+- The one-second tick (status bar, and a full redraw every 30 s) moved from `WxBriefApp` to `BriefingScreen.on_mount`, so the screen's
+  own timer stops with it. `StationCard` has no widget id (cards are found by `icao`), so a station removed and added again cannot
+  collide with its dying card. `StationDetailScreen.redraw()` is called from `WxBriefApp._theme_changed`.
+- The demo data was corrected after review: ETHB's TAF now says `GRN` where 4000 m and 800 ft is Green, VIDP's TAF uses knots like
+  its METAR and `FG` for 800 m, KDEN's METAR lost its precipitation remarks (no precipitation is reported).
+
+**Known limitations** (issue #22): the zone label comes from the first cell only, so it is wrong after the 2026-11-01 DST change
+inside one TAF; station-mode ticks for half-hour zones (+5:30) show `%H` only; the card mini strip has no time label; a station
+whose TAF has expired shows `no TAF`; every 30 s redraw calls `scroll_visible` on the selected card, which snaps the grid back.
 
 **Tests.** `tests/test_strip.py` (cell computation, real KDEN and EGLL per-hour strings read against the raw TAFs, three-hour cells,
 mini strip, step choice), `tests/test_timeline_ui.py` (demo boots offline and writes nothing, every demo report decodes without
@@ -759,3 +766,6 @@ detail screen, card text).
 window:`), `timeline.legend_becoming`, `timeline.legend_temporary`, `timeline.none`, `timeline.no_taf`. Hard-coded English chrome
 that S7 should move: `Forecast (TAF)`, `All forecast groups (N)`, `no report` on cards, the `List layout`/`Grid layout` toast, the demo
 toast, the Help lines for `v` and `Left/Right`. The tick labels are hours only; the time-zone name comes from `zoneinfo` (or `UTC`).
+Also hard-coded and to move in S7: the `v` footer label `List/grid` and `Back`, the `TafTimeline` and `StationGrid` binding descriptions,
+the category letters `V M I L` in `LETTERS`, the `UTC` fallback, the `--demo` help text, the `--` placeholder badge, and the
+`layout_mode.capitalize()` toast.

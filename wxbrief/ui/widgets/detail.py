@@ -19,7 +19,6 @@ from wxbrief.render import phrases
 from wxbrief.render.plain import DecodeRow, decode_rows, taf_blocks, taf_header_rows, warning_lines
 from wxbrief.state import StationReports
 from wxbrief.ui.context import ViewContext
-from wxbrief.ui.fcat import category_colors
 from wxbrief.ui.widgets.period_detail import PeriodDetail, rows_text
 from wxbrief.ui.widgets.taf_timeline import TafTimeline
 
@@ -219,35 +218,42 @@ class DetailPane(VerticalScroll):
         if taf is None:
             timeline.display = period.display = note.display = False
             timeline.set_taf(None, ctx, entry.icao, now)
+            self._release_focus(timeline)
             return
-        colors = category_colors(self.app.current_theme)
         skipped = {t.t(K.LABEL_STATION), t.t(K.LABEL_REPORT), t.t(K.LABEL_FLAGS)}
         rows = [row for row in taf_header_rows(taf, ctx.translator, ctx.units) if row.label not in skipped]
         rows.append(DecodeRow(t.t(K.LABEL_SUMMARY), phrases.describe_taf_summary(t, taf, ctx.units)))
-        self.query_one("#taf-summary", Static).update(rows_text(rows, ctx, colors, self.size.width or 70, indent=0))
+        self.query_one("#taf-summary", Static).update(rows_text(rows, ctx, self.size.width or 70, indent=0))
         blocks = taf_blocks(taf, t, ctx.units)
         groups: list[Text] = []
         for block in blocks:
             groups.append(Text(block.title, style="bold"))
-            groups.append(rows_text(block.rows, ctx, colors, self.size.width or 70))
+            groups.append(rows_text(block.rows, ctx, self.size.width or 70))
         self.query_one("#taf-groups-box", Collapsible).title = f"All forecast groups ({len(blocks)})"
         self.query_one("#taf-groups", Static).update(Text("\n").join(groups))
         drawn = timeline.set_taf(taf, ctx, entry.icao, now)
         timeline.display = period.display = drawn
         note.display = not drawn
-        note.update(Text(t.t(K.TIMELINE_NONE), style="dim"))
+        note.update(Text(t.t(K.TIMELINE_NONE), style=ctx.palette.muted))
         if not drawn:
             period.update("")
+            self._release_focus(timeline)
+
+    def _release_focus(self, timeline: TafTimeline) -> None:
+        """A hidden timeline must not keep the keyboard: hand it to the pane."""
+        if timeline.has_focus:
+            self.focus()
 
     def on_taf_timeline_moved(self, message: TafTimeline.Moved) -> None:
         """Show the forecast for the cell the cursor is on."""
         message.stop()
-        timeline = message.timeline
         entry = self._entry
-        if timeline.taf is not None and entry is not None and timeline.cells:
-            ctx = self._ctx
-            if ctx is not None:
-                self.query_one(PeriodDetail).show_cell(timeline.taf, timeline.timeline, message.cell, ctx, entry.icao)
+        ctx = self._ctx
+        if message.taf is None or entry is None or ctx is None:
+            return
+        if message.icao != entry.icao or message.cell is not message.timeline.selected:
+            return  # stale: the cursor or the station has moved on since this was posted
+        self.query_one(PeriodDetail).show_cell(message.taf, message.data, message.cell, ctx, message.icao)
 
     def jump(self, section: str) -> None:
         """Scroll to ``raw``, ``decoded`` or ``taf``; the forecast also takes the keyboard focus (cursor keys)."""

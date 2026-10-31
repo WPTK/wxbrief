@@ -47,10 +47,16 @@ class TafTimeline(Widget, can_focus=True):
     class Moved(Message):
         """The cursor is on another cell (or the TAF changed): ``cell`` is the one now selected."""
 
-        def __init__(self, timeline: TafTimeline, cell: StripCell | None) -> None:
+        def __init__(
+            self, timeline: TafTimeline, cell: StripCell | None, taf: Taf | None, data: Timeline, icao: str
+        ) -> None:
             super().__init__()
             self.timeline = timeline
             self.cell = cell
+            # a snapshot: the timeline may already hold another station's forecast when this message is handled
+            self.taf = taf
+            self.data = data
+            self.icao = icao
 
     def __init__(self, **kwargs: object) -> None:
         super().__init__(**kwargs)  # type: ignore[arg-type]
@@ -107,7 +113,7 @@ class TafTimeline(Widget, can_focus=True):
         return hour // self.step
 
     def _announce(self) -> None:
-        self.post_message(self.Moved(self, self.selected))
+        self.post_message(self.Moved(self, self.selected, self.taf, self.timeline, self._icao))
 
     # --- cursor ----------------------------------------------------------------------------------------------------
 
@@ -160,7 +166,8 @@ class TafTimeline(Widget, can_focus=True):
         ctx = self._ctx
         if ctx is None or not self.cells:
             return Text("")
-        colors = category_colors(self.app.current_theme)
+        colors = category_colors(ctx.palette)
+        muted = ctx.palette.muted
         width = cell_width(self.step)
         ticks, body, overlay, cursor = Text(no_wrap=True), Text(no_wrap=True), Text(no_wrap=True), Text(no_wrap=True)
         previous: FlightCategory | None = None
@@ -174,7 +181,7 @@ class TafTimeline(Widget, can_focus=True):
             hour = f"{local:%H}"
             if (self.step > 1 or local.hour % 3 == 0) and position >= label_end:
                 ticks.append(" " * (position - len(ticks.plain)))
-                ticks.append(hour, style="dim")
+                ticks.append(hour, style=muted)
                 label_end = position + len(hour) + 1
             if cell.becoming:
                 worst = cell.worst_category
@@ -191,10 +198,10 @@ class TafTimeline(Widget, can_focus=True):
                 overlay.append(" " * width)
         cursor.append(" " * (self.cursor * width))
         cursor.append(CURSOR_MARK.ljust(width), style="bold")
-        ticks.append(f"  {zone}", style="dim")
+        ticks.append(f"  {zone}", style=muted)
         legend = Text(no_wrap=True)
-        legend.append(HATCH, style="dim")
-        legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_BECOMING)}   ", style="dim")
-        legend.append(OVERLAY_MARK, style="dim")
-        legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_TEMPORARY)}", style="dim")
+        legend.append(HATCH, style=muted)
+        legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_BECOMING)}   ", style=muted)
+        legend.append(OVERLAY_MARK, style=muted)
+        legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_TEMPORARY)}", style=muted)
         return Text("\n", no_wrap=True, overflow="crop").join([ticks, body, overlay, cursor, legend])

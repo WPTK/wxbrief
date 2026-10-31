@@ -34,9 +34,12 @@ class StationDetailScreen(Screen[None]):
         yield Footer()
 
     def on_mount(self) -> None:
-        pane = self.query_one(DetailPane)
-        pane.show(self._entry, self._ctx, self._now, self._position)
-        pane.focus()
+        self.redraw()
+        self.query_one(DetailPane).focus()
+
+    def redraw(self) -> None:
+        """Draw the snapshot again, e.g. after a theme change (the colours are baked into the Rich text)."""
+        self.query_one(DetailPane).show(self._entry, self._ctx, self._now, self._position)
 
     def action_jump(self, section: str) -> None:
         self.query_one(DetailPane).jump(section)

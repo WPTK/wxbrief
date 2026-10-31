@@ -72,13 +72,19 @@ class BriefingScreen(Screen[None]):
 
     def on_mount(self) -> None:
         self._ready = True
+        self._ticks = 0
+        self.set_interval(1.0, self._tick)  # owned by the screen, so it stops with the screen
         self.layout_mode = "grid" if self.wx.options.view.layout == "grid" else "list"
         self._apply_layout()
         self.refresh_view()
         self._focus_main()
 
-    def on_unmount(self) -> None:
-        self._ready = False  # the app's one-second tick can still arrive while the screen goes away
+    def _tick(self) -> None:
+        self._ticks += 1
+        if self._ticks % 30 == 0:
+            self.refresh_view()  # fresh reports turn stale as time passes
+        else:
+            self.refresh_status()
 
     # --- drawing ---------------------------------------------------------------------------------------------------
 
@@ -144,6 +150,7 @@ class BriefingScreen(Screen[None]):
             self.query_one(StationGrid).focus()
         else:
             self.query_one(StationList).focus()
+        self._fix_focus()
 
     def action_toggle_layout(self) -> None:
         self.layout_mode = "list" if self.layout_mode == "grid" else "grid"
@@ -187,7 +194,8 @@ class BriefingScreen(Screen[None]):
         self.query_one(DetailPane).focus()
 
     def action_jump(self, section: str) -> None:
-        self.query_one(DetailPane).jump(section)
+        if self.layout_mode == "list":  # the detail pane is hidden in the grid; Enter opens a station's detail instead
+            self.query_one(DetailPane).jump(section)
 
     # --- actions ---------------------------------------------------------------------------------------------------
 

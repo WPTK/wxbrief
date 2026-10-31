@@ -1,8 +1,6 @@
-"""Flight-category colours for the forecast widgets, taken from the active Textual theme.
+"""Flight-category cell fills for the forecast widgets, taken from the active palette.
 
-The widgets draw with Rich styles built here from ``Palette.from_theme`` (the fixed ``fcat-*`` colours, light or dark to
-suit the theme). If a theme cannot be resolved the plain defaults from ``semantic.py`` are used, so a strip is never
-left without colours.
+The fills come from the same ``Palette`` that styles the badges (``ctx.palette``), so a cell, a badge and the CLI agree.
 """
 
 from __future__ import annotations
@@ -10,12 +8,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from rich.style import Style
-from textual.color import Color, ColorParseError
-from textual.theme import Theme
 
 from wxbrief.decode.model import FlightCategory
-from wxbrief.render.palette import Palette, readable_on
-from wxbrief.ui.themes.semantic import FLIGHT_CATEGORY_COLORS
+from wxbrief.render.palette import readable_on
+from wxbrief.ui.style import ViewPalette
 
 
 @dataclass(frozen=True)
@@ -38,33 +34,24 @@ class CategoryColors:
         return Style(color=foreground or self.text_on(category), bgcolor=self.fill_of(category))
 
 
-def _build(theme: Theme) -> CategoryColors:
+_CACHE: dict[int, tuple[ViewPalette, CategoryColors]] = {}
+
+
+def category_colors(view: ViewPalette) -> CategoryColors:
+    """The cell colours for ``view``, built once per palette object."""
+    found = _CACHE.get(id(view))
+    if found is not None and found[0] is view:
+        return found[1]
+    palette = view.palette
     fill: dict[FlightCategory, str] = {}
     text: dict[FlightCategory, str] = {}
-    try:
-        palette = Palette.from_theme(theme)
-        for category in FlightCategory:
-            color = palette.color(f"fcat-{category.value.lower()}")
-            fill[category] = color.hex6
-            text[category] = readable_on(color).hex6
-        unknown = palette.color("surface").blend(palette.color("foreground"), 0.35)
-    except (ColorParseError, KeyError, ValueError):
-        index = 0 if theme.dark else 1
-        for category in FlightCategory:
-            color = Color.parse(FLIGHT_CATEGORY_COLORS[category.value.lower()][index])
-            fill[category] = color.hex6
-            text[category] = readable_on(color).hex6
-        unknown = Color.parse("#555555" if theme.dark else "#bbbbbb")
-    return CategoryColors(fill, text, unknown.hex6, readable_on(unknown).hex6)
-
-
-_CACHE: dict[tuple[str, int], CategoryColors] = {}
-
-
-def category_colors(theme: Theme) -> CategoryColors:
-    """The colours for ``theme``, built once per theme object."""
-    key = (theme.name, id(theme))
-    found = _CACHE.get(key)
-    if found is None:
-        found = _CACHE[key] = _build(theme)
-    return found
+    for category in FlightCategory:
+        color = palette.color(f"fcat-{category.value.lower()}")
+        fill[category] = color.hex6
+        text[category] = readable_on(color).hex6
+    unknown = palette.color("surface").blend(palette.color("foreground"), 0.35)
+    colors = CategoryColors(fill, text, unknown.hex6, readable_on(unknown).hex6)
+    if len(_CACHE) > 16:
+        _CACHE.clear()
+    _CACHE[id(view)] = (view, colors)
+    return colors

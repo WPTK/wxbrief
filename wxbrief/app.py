@@ -27,6 +27,7 @@ from wxbrief.state import AppState
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.glyphs import glyphs_for
 from wxbrief.ui.screens.briefing import BriefingScreen
+from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.screens.theme_picker import ThemePickerScreen
 from wxbrief.ui.themes import AVIATION_THEMES, THEME_CYCLE
 
@@ -98,7 +99,6 @@ class WxBriefApp(App[None]):
         self.scheduler: PollScheduler | None = None
         self.briefing = BriefingScreen()
         self._backed_up = False
-        self._ticks = 0
         self._monotonic: Callable[[], float] = time.monotonic
         self._blurred_at: float | None = None
         self._warned_unusable = False
@@ -124,7 +124,6 @@ class WxBriefApp(App[None]):
             self.notify(notice, severity="warning", title="Stations", timeout=10)
         if self.options.poll:
             self.poll_worker()
-        self.set_interval(1.0, self._tick)
 
     # --- themes ----------------------------------------------------------------------------------------------------
 
@@ -134,6 +133,9 @@ class WxBriefApp(App[None]):
 
     def _theme_changed(self, theme: Theme) -> None:
         self.briefing.refresh_view()  # the list, detail and status bar are Rich text drawn from the palette
+        for screen in self.screen_stack:
+            if isinstance(screen, StationDetailScreen):
+                screen.redraw()
         self._settle()
 
     def _settle(self) -> None:
@@ -167,13 +169,6 @@ class WxBriefApp(App[None]):
             self._settle()  # a kept theme is saved; a cancelled one is back to the settled theme and saves nothing
 
         self.push_screen(ThemePickerScreen(names, self.theme), closed)
-
-    def _tick(self) -> None:
-        self._ticks += 1
-        if self._ticks % 30 == 0:
-            self.briefing.refresh_view()  # fresh reports turn stale as time passes
-        else:
-            self.briefing.refresh_status()
 
     # --- polling ---------------------------------------------------------------------------------------------------
 
