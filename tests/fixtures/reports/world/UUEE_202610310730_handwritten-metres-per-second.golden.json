@@ -195,6 +195,7 @@
     "value": 3000,
     "unit": "FT"
   },
+  "ceiling_status": "HEIGHT",
   "flight_category": "MVFR",
   "flags": [],
   "condition": "SNOW",

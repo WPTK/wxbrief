@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 WARN_INVALID_DAY = "invalid_day"
 WARN_INVALID_TIME = "invalid_time"
+
+# How far after the reference a report time may lie and still be taken as a report of the past.
+FUTURE_TOLERANCE = timedelta(hours=3)
 
 
 def _month_start(year: int, month: int, offset: int) -> tuple[int, int]:
@@ -14,36 +17,77 @@ def _month_start(year: int, month: int, offset: int) -> tuple[int, int]:
     return index // 12, index % 12 + 1
 
 
-def resolve_day_time(day: int, hour: int, minute: int, reference: datetime) -> tuple[datetime | None, str | None]:
-    """Resolve a day/hour/minute group against a reference moment.
+def end_of_day(day: date) -> datetime:
+    """The last second of ``day`` in UTC: the reference for a date given without a time.
 
-    Reports carry only the day of the month, so the real date is the candidate (previous, current or next month)
-    nearest to ``reference``; ties go to the earlier one because reports describe the past. An hour of 24 rolls
-    over to 00 of the next day. Returns ``(datetime, None)`` in UTC on success, or ``(None, warning_code)`` when the
-    day or time cannot exist (the caller turns the code into a ``ParseWarning``).
+    Reports describe the past, so a date alone means "any time that day"; its last second keeps every report of the
+    day (``311853Z`` with ``--date 2026-10-31``) inside the tolerance of ``resolve_report_time``.
     """
-    if not 1 <= day <= 31:
-        return None, WARN_INVALID_DAY
-    if not (0 <= hour <= 24 and 0 <= minute <= 59):
-        return None, WARN_INVALID_TIME
-    if hour == 24 and minute != 0:
-        return None, WARN_INVALID_TIME
-    if reference.tzinfo is None:
-        reference = reference.replace(tzinfo=UTC)
-    reference = reference.astimezone(UTC)
+    return datetime(day.year, day.month, day.day, 23, 59, 59, tzinfo=UTC)
 
-    candidates: list[datetime] = []
-    for offset in (-1, 0, 1):
+
+def _check_time(day: int, hour: int, minute: int) -> str | None:
+    if not 1 <= day <= 31:
+        return WARN_INVALID_DAY
+    if not (0 <= hour <= 24 and 0 <= minute <= 59) or (hour == 24 and minute != 0):
+        return WARN_INVALID_TIME
+    return None
+
+
+def _as_utc(moment: datetime) -> datetime:
+    return moment.replace(tzinfo=UTC) if moment.tzinfo is None else moment.astimezone(UTC)
+
+
+def _candidates(day: int, hour: int, minute: int, reference: datetime, offsets: range) -> list[datetime]:
+    """The moments with this day of month, hour and minute in the months ``offsets`` away from the reference's."""
+    found: list[datetime] = []
+    for offset in offsets:
         year, month = _month_start(reference.year, reference.month, offset)
         try:
             base = datetime(year, month, day, tzinfo=UTC)
         except ValueError:
             continue  # that month has no such day
-        candidates.append(base + timedelta(hours=hour, minutes=minute))
+        found.append(base + timedelta(hours=hour, minutes=minute))
+    return found
+
+
+def resolve_report_time(day: int, hour: int, minute: int, reference: datetime) -> tuple[datetime | None, str | None]:
+    """Resolve the ``DDHHMMZ`` issue time of a report against the moment it is being read.
+
+    A report describes the past, so its time is the latest moment with that day, hour and minute that is not more than
+    ``FUTURE_TOLERANCE`` after ``reference`` (the slack covers clock skew and a pasted report from a station whose
+    clock runs ahead). Picking the nearest month instead put anything older than about 15 days in next month. An
+    hour of 24 rolls over to 00 of the next day. Returns ``(datetime, None)`` in UTC, or ``(None, warning_code)`` when
+    the day or time cannot exist (the caller turns the code into a ``ParseWarning``).
+    """
+    warning = _check_time(day, hour, minute)
+    if warning is not None:
+        return None, warning
+    reference = _as_utc(reference)
+    limit = reference + FUTURE_TOLERANCE
+    # Three months back is enough: no run of months lacks a given day for longer than that.
+    past = [moment for moment in _candidates(day, hour, minute, reference, range(-3, 2)) if moment <= limit]
+    if not past:
+        return None, WARN_INVALID_DAY
+    return max(past), None
+
+
+def resolve_day_time(day: int, hour: int, minute: int, reference: datetime) -> tuple[datetime | None, str | None]:
+    """Resolve a day/hour/minute group of a forecast against a nearby reference moment (its issue time or period).
+
+    Forecast groups lie on either side of the reference, so the real date is the candidate (previous, current or next
+    month) nearest to it; ties go to the earlier one. For the issue time of a report use ``resolve_report_time``.
+    An hour of 24 rolls over to 00 of the next day. Returns ``(datetime, None)`` in UTC on success, or
+    ``(None, warning_code)`` when the day or time cannot exist.
+    """
+    warning = _check_time(day, hour, minute)
+    if warning is not None:
+        return None, warning
+    reference = _as_utc(reference)
+    candidates = _candidates(day, hour, minute, reference, range(-1, 2))
     if not candidates:
         return None, WARN_INVALID_DAY
-    best = min(candidates, key=lambda moment: (abs(moment - reference), moment))
-    return best, None
+    return min(candidates, key=lambda moment: (abs(moment - reference), moment)), None
 
 
 def resolve_clock_time(hour: int, minute: int, reference: datetime | None) -> datetime | None:

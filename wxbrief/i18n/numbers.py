@@ -44,14 +44,19 @@ class NumberFormat:
 
     def fixed(self, value: float, places: int) -> str:
         """``value`` with exactly ``places`` decimals and no thousands separator (``29.92``, ``1013,2``)."""
-        return f"{value:.{places}f}".replace(".", self.decimal)
+        return _no_negative_zero(f"{value:.{places}f}").replace(".", self.decimal)
 
     def trimmed(self, value: float, places: int = 1) -> str:
         """``value`` with up to ``places`` decimals, trailing zeros dropped (``1.2``, ``10``)."""
-        text = f"{value:.{places}f}"
+        text = _no_negative_zero(f"{value:.{places}f}")
         if "." in text:
             text = text.rstrip("0").rstrip(".")
         return (text or "0").replace(".", self.decimal)
+
+
+def _no_negative_zero(text: str) -> str:
+    """``-0.0`` is a small negative number rounded away; it reads as zero."""
+    return text[1:] if text.startswith("-") and not text.strip("-0.") else text
 
 
 ENGLISH = NumberFormat()

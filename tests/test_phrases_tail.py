@@ -20,7 +20,7 @@ from wxbrief.decode.model import (
     SemanticKind,
     TrendKind,
 )
-from wxbrief.decode.units import UnitsMode
+from wxbrief.decode.units import Temperature, UnitsMode
 from wxbrief.i18n import Translator
 from wxbrief.render import measure, phrases
 from wxbrief.render.jsonout import to_dict
@@ -160,6 +160,11 @@ def test_plain_decode_shows_the_computed_state_only_when_it_is_not_confirmed() -
         ),
         ("R06R/CLRD62", "Runway 06R: contamination has ceased or been cleared, braking coefficient 0.62"),
         ("R09/CLRD//", "Runway 09: contamination has ceased or been cleared"),
+        (
+            "R99/CLRD60",
+            "Runway state repeated from the previous report: contamination has ceased or been cleared, "
+            "braking coefficient 0.60",
+        ),
         ("R/SNOCLO", "Aerodrome closed by snow"),
         ("SNOCLO", "Aerodrome closed by snow"),
         ("99//////", "Runway state repeated from the previous report"),
@@ -372,7 +377,10 @@ def test_every_variant_has_a_sentence() -> None:
         ("CVCTV CLD EMBD", "Convective cloud embedded"),
         ("VIRGA", "Virga"),
         ("OBST OBSC", "Obstructions obscured"),
-        ("ZZZ CB", "ZZZ cumulonimbus"),
+        ("ZZZ CB", "ZZZ CB"),  # not every word is known: left as written
+        ("TS ALQDS MOV NE", "Thunderstorm in all quadrants moving northeast"),
+        ("SH DSNT W", "Showers distant west"),
+        ("ACC NW", "Altocumulus castellanus northwest"),
     ],
 )
 def test_free_text_words(text: str, expected: str) -> None:
@@ -380,11 +388,37 @@ def test_free_text_words(text: str, expected: str) -> None:
 
 
 def test_undecoded_free_text_is_listed_in_a_raw_row() -> None:
-    metar = us("AO2 SLP135 VIRGA FOO BAR 933008")
-    assert phrases.undecoded_free_text(T, metar) == ["FOO BAR 933008"]
+    metar = us("AO2 SLP135 VIRGA FOO BAR 1CU030")
+    assert phrases.undecoded_free_text(T, metar) == ["VIRGA FOO BAR 1CU030"]
     lines = render_plain(metar, T, MIXED).splitlines()
-    assert any(line.startswith("Remark:") and line.endswith("Virga FOO BAR 933008") for line in lines)
-    assert any(line.startswith("Remarks (not decoded):") and line.endswith("FOO BAR 933008") for line in lines)
+    assert any(line.startswith("Remarks (not decoded):") and line.endswith("VIRGA FOO BAR 1CU030") for line in lines)
+    assert not any(line.startswith("Remark:") and "FOO" in line for line in lines)
+
+
+@pytest.mark.parametrize("remark", ["VIS LWR E", "TS ENDED 05", "TS MOV NE FOO"])
+def test_a_partly_known_remark_is_left_whole_and_as_written(remark: str) -> None:
+    # "VIS LWR E" must not become "Visibility" and "East" rows; "TS ENDED 05" not just "Thunderstorm".
+    lines = render_plain(us(f"AO2 {remark}"), T, MIXED).splitlines()
+    assert [line for line in lines if line.startswith("Remark:")][1:] == []
+    assert any(line.startswith("Remarks (not decoded):") and line.endswith(remark) for line in lines)
+
+
+@pytest.mark.parametrize(
+    ("group", "expected"),
+    [
+        ("98123", "Sunshine during the previous calendar day: 123 minutes"),
+        ("98000", "Sunshine during the previous calendar day: 0 minutes"),
+        ("933012", "Water equivalent of snow on the ground: 1.2 in (30.5 mm)"),
+        ("I1005", "Ice accretion in the past hour: 0.05 in (1.3 mm)"),
+        ("I3012", "Ice accretion in the past 3 hours: 0.12 in (3 mm)"),
+        ("I6024", "Ice accretion in the past 6 hours: 0.24 in (6.1 mm)"),
+    ],
+)
+def test_jo_7900_5_remark_groups(group: str, expected: str) -> None:
+    metar = us(f"AO2 {group}")
+    assert metar.warnings == ()
+    assert phrases.undecoded_free_text(T, metar) == []
+    assert expected in render_plain(metar, T, MIXED)
 
 
 def test_fully_decoded_free_text_has_no_raw_row() -> None:
@@ -507,3 +541,11 @@ def test_trend_and_remark_tokens_carry_finer_kinds() -> None:
     assert kinds["SLP177"] is SemanticKind.PRESSURE
     assert kinds["FOO"] is SemanticKind.REMARK
     assert isinstance(metar.remarks[-1], FreeText)
+
+
+def test_a_temperature_that_rounds_to_zero_is_not_shown_as_negative_zero() -> None:
+    # -17.8 C is -0.04 F
+    assert measure.format_temperature(Temperature(-17.8), US, precise=True) == "0.0 °F (-17.8 °C)"
+    text = render_plain(parse_metar("METAR KDEN 141153Z 06007KT 10SM CLR M18/M18 A3001 RMK AO2 T11281178", REF), T, US)
+    assert "-0.0" not in text
+    assert "dew point 0.0 °F (-17.8 °C)" in text

@@ -22,6 +22,7 @@ from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
 from wxbrief.decode.taf import parse_taf
 from wxbrief.decode.timeline import expand_timeline
+from wxbrief.decode.tokens import strip_controls
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import Translator
 from wxbrief.render.discord import discord_block
@@ -52,6 +53,8 @@ CORPUS = sorted({read_raw(path) for path in report_files()} | {row["rawOb"] for 
 def check(raw: str) -> None:
     """The decoder's contract for any input."""
     metar = parse_metar(raw, REF)
+    assert metar.raw == strip_controls(raw)  # tokens index the text with the control characters dropped
+    raw = metar.raw
 
     covered: list[int] = []
     previous_end = 0
@@ -236,6 +239,8 @@ TAF_CORPUS = sorted({read_raw(path) for path in taf_files()} | {row["rawTAF"].st
 def check_taf(raw: str) -> None:
     """The decoder's contract for any input read as a TAF: the same as ``check``, plus the timeline and the output."""
     taf = parse_taf(raw, REF)
+    assert taf.raw == strip_controls(raw)
+    raw = taf.raw
 
     covered: list[int] = []
     previous_end = 0
@@ -317,7 +322,7 @@ def test_parse_any_of_a_mixed_blob(taf_raw: str, metar_raw: str) -> None:
     blob = taf_raw + "\n" + metar_raw
     reports = parse_any(blob, REF)
     assert all(isinstance(report, (Metar, Taf)) for report in reports)
-    assert "".join("".join(report.raw.split()) for report in reports) == "".join(blob.split())
+    assert "".join("".join(report.raw.split()) for report in reports) == "".join(strip_controls(blob).split())
 
 
 @given(mutated_tafs())

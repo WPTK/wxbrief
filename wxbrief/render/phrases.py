@@ -14,6 +14,7 @@ from wxbrief.decode.model import (
     RVR,
     AltimeterSetting,
     AutomatedStationType,
+    CeilingStatus,
     ChangeType,
     CloudLayer,
     CloudOpacity,
@@ -25,6 +26,7 @@ from wxbrief.decode.model import (
     DailyPrecipitation,
     DailyTemperatureExtremes,
     DensityAltitude,
+    Descriptor,
     DirectionalVisibility,
     Flag,
     FlightCategory,
@@ -32,6 +34,7 @@ from wxbrief.decode.model import (
     FreeText,
     HailSize,
     HourlyPrecipitation,
+    IceAccretion,
     IcingGroup,
     Intensity,
     Lightning,
@@ -52,6 +55,7 @@ from wxbrief.decode.model import (
     RemarkTime,
     ReportType,
     RunwayBraking,
+    RunwayDepthKind,
     RunwayState,
     RunwayWind,
     SeaLevelPressure,
@@ -62,8 +66,10 @@ from wxbrief.decode.model import (
     SkyCondition,
     SnowDepth,
     SnowIncrease,
+    SnowWaterEquivalent,
     StationPressure,
     StationPressureKind,
+    SunshineDuration,
     SurfaceVisibility,
     Taf,
     TafPeriod,
@@ -147,6 +153,7 @@ _WARNING_KEYS = {
     "parser_error": K.WARN_PARSER_ERROR,
     "legacy_format": K.WARN_LEGACY_FORMAT,
     "missing_time": K.WARN_MISSING_TIME,
+    "outside_period": K.WARN_OUTSIDE_PERIOD,
 }
 
 
@@ -268,6 +275,13 @@ def describe_rvr(t: Translator, rvr: RVR, units: UnitsMode) -> str:
     return t.t(K.RVR_RUNWAY, runway=rvr.runway, value=value)
 
 
+_FREEZING_KEYS = {
+    Phenomenon.DZ: K.WX_FREEZING_DZ,
+    Phenomenon.RA: K.WX_FREEZING_RA,
+    Phenomenon.FG: K.WX_FREEZING_FG,
+}
+
+
 def describe_weather_group(t: Translator, group: WeatherGroup) -> str:
     """One present-weather group in lower case (``light rain``, ``thunderstorm with rain``)."""
     if group.nsw:
@@ -279,14 +293,23 @@ def describe_weather_group(t: Translator, group: WeatherGroup) -> str:
         body = t.t(K.WX_TORNADO)
     else:
         phenomena = join_list(t, [t.t(PHENOMENON_KEYS[p]) for p in group.phenomena])
+        intensity_key = INTENSITY_KEYS[group.intensity]
+        # FMH-1 and WMO: the sign on a thunderstorm group qualifies its precipitation (+TSRA is a thunderstorm with
+        # heavy rain), not the thunderstorm. Every other descriptor reads naturally with the sign in front.
+        on_phenomena = group.descriptor is Descriptor.TS and bool(phenomena)
+        if intensity_key is not None and on_phenomena:
+            phenomena = t.t(K.WX_WITH_INTENSITY, intensity=t.t(intensity_key), body=phenomena)
         if group.descriptor is None:
             body = phenomena
         elif phenomena:
-            body = t.t(DESCRIPTOR_WITH_KEYS[group.descriptor], phenomena=phenomena)
+            freezing = _FREEZING_KEYS.get(group.phenomena[0]) if group.descriptor is Descriptor.FZ else None
+            if freezing is not None and len(group.phenomena) == 1:
+                body = t.t(freezing)
+            else:
+                body = t.t(DESCRIPTOR_WITH_KEYS[group.descriptor], phenomena=phenomena)
         else:
             body = t.t(DESCRIPTOR_ALONE_KEYS[group.descriptor])
-        intensity_key = INTENSITY_KEYS[group.intensity]
-        if intensity_key is not None:
+        if intensity_key is not None and not on_phenomena:
             body = t.t(K.WX_WITH_INTENSITY, intensity=t.t(intensity_key), body=body)
     if group.vicinity:
         body = t.t(K.WX_VICINITY, body=body)
@@ -318,10 +341,12 @@ def describe_sky(t: Translator, layers: Sequence[CloudLayer], units: UnitsMode) 
     return "; ".join(describe_cloud_layer(t, layer, units) for layer in layers)
 
 
-def describe_ceiling(t: Translator, ceiling: Distance | None, units: UnitsMode) -> str:
-    if ceiling is None:
-        return t.t(K.SKY_NO_CEILING)
-    return t.t(K.SKY_CEILING, height=format_short_distance(ceiling, units, t.numbers))
+def describe_ceiling(t: Translator, metar: Metar, units: UnitsMode) -> str:
+    if metar.ceiling is not None:
+        return t.t(K.SKY_CEILING, height=format_short_distance(metar.ceiling, units, t.numbers))
+    if metar.ceiling_status is CeilingStatus.UNKNOWN:
+        return t.t(K.SKY_CEILING_UNKNOWN)
+    return t.t(K.SKY_NO_CEILING)
 
 
 def describe_temperature(t: Translator, temperature: Temperature | None, units: UnitsMode) -> str:
@@ -357,6 +382,8 @@ def summary_line(t: Translator, metar: Metar, units: UnitsMode) -> str:
         details.append(t.t(K.SUMMARY_CAVOK))
     if metar.ceiling is not None:
         details.append(t.t(K.SUMMARY_CEILING, height=format_short_distance(metar.ceiling, units, t.numbers)))
+    elif metar.ceiling_status is CeilingStatus.UNKNOWN:
+        details.append(t.t(K.SUMMARY_CEILING_UNKNOWN))
     if metar.visibility is not None and not metar.cavok and metar.visibility.distance is not None:
         details.append(t.t(K.SUMMARY_VISIBILITY, value=t.lower_first(describe_visibility(t, metar.visibility, units))))
     if metar.wind is not None and metar.wind.speed is not None:
@@ -585,9 +612,16 @@ def describe_runway_state(t: Translator, state: RunwayState, units: UnitsMode) -
     """One runway state group in words (``Runway 24L: wet or water patches; ...; braking coefficient 0.55``)."""
     if state.snoclo:
         return t.t(K.RWY_SNOCLO)
-    if state.repeated:
+    depth_given = state.depth is not None and state.depth.kind is not RunwayDepthKind.NOT_SIGNIFICANT
+    details_given = state.cleared or depth_given or any(
+        item is not None for item in (state.deposit, state.extent, state.braking)
+    )
+    if state.repeated and not details_given:
         return t.t(K.RWY_REPEATED)
-    where = t.t(K.RWY_ALL) if state.all_runways else t.t(K.RWY_RUNWAY, runway=state.runway)
+    if state.repeated:
+        where = t.t(K.RWY_REPEATED)  # R99 with a body: the repeated state still carries its own figures
+    else:
+        where = t.t(K.RWY_ALL) if state.all_runways else t.t(K.RWY_RUNWAY, runway=state.runway)
     braking = _runway_braking(t, state.braking) if state.braking is not None else None
     if state.cleared:
         if braking is None:
@@ -671,20 +705,30 @@ def _free_word(t: Translator, word: str) -> str | None:
     return None
 
 
+def decoded_free_text(t: Translator, text: str) -> str | None:
+    """A plain-language remark spelled out, or ``None`` unless the catalog knows every word of it.
+
+    A partly known remark is not split: ``VIS LWR E`` is not "Visibility" plus "East", and ``TS ENDED 05`` is not
+    just "Thunderstorm". It stays whole, as written, for ``undecoded_free_text``.
+    """
+    spelled = [_free_word(t, word) for word in text.split()]
+    if not spelled or any(word is None for word in spelled):
+        return None
+    return upper_first(" ".join(word for word in spelled if word is not None))
+
+
 def describe_free_text(t: Translator, text: str) -> str:
-    """A plain-language remark with the words the catalog knows spelled out; the rest is kept as written."""
-    return upper_first(" ".join(_free_word(t, word) or word for word in text.split()))
+    """A plain-language remark spelled out when every word is known, else as written."""
+    return decoded_free_text(t, text) or text
 
 
 def undecoded_free_text(t: Translator, metar: Metar) -> list[str]:
-    """The words of free-text remarks that the catalog cannot spell out, as written, one string per remark."""
-    found: list[str] = []
-    for remark in metar.remarks:
-        if isinstance(remark, FreeText):
-            unknown = [word for word in remark.text.split() if _free_word(t, word) is None]
-            if unknown:
-                found.append(" ".join(unknown))
-    return found
+    """The free-text remarks the catalog cannot fully spell out, each whole and as written."""
+    return [
+        remark.text
+        for remark in metar.remarks
+        if isinstance(remark, FreeText) and decoded_free_text(t, remark.text) is None
+    ]
 
 
 def _inches(t: Translator, value: float | None, units: UnitsMode, *, trace: bool = False) -> str:
@@ -860,6 +904,13 @@ def describe_remark(t: Translator, remark: Remark, units: UnitsMode) -> str:
         case SnowIncrease(last_hour_inches=hour, total_inches=total):
             hour_text, total_text = format_inches(hour, units, t.numbers), format_inches(total, units, t.numbers)
             return t.t(K.REMARK_SNOW_INCREASE, hour=hour_text, total=total_text)
+        case SnowWaterEquivalent(inches=inches):
+            return t.t(K.REMARK_SNOW_WATER, value=format_inches(inches, units, t.numbers))
+        case IceAccretion(hours=hours, inches=inches):
+            value = format_inches(inches, units, t.numbers)
+            return t.t(K.REMARK_ICE_ACCRETION_HOUR if hours == 1 else K.REMARK_ICE_ACCRETION, hours=hours, value=value)
+        case SunshineDuration(minutes=minutes):
+            return t.t(K.REMARK_SUNSHINE, minutes=minutes)
         case CloudTypes():
             return _cloud_types(t, remark)
         case HailSize(inches=inches, less_than=less_than):

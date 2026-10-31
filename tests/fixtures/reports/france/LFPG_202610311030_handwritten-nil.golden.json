@@ -55,6 +55,7 @@
   "flavor": "UNKNOWN",
   "military": false,
   "ceiling": null,
+  "ceiling_status": null,
   "flight_category": null,
   "flags": [],
   "condition": null,

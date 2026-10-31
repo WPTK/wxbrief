@@ -47,13 +47,14 @@ from wxbrief.decode.model import (
 )
 from wxbrief.decode.tables import MODIFIER_CODES
 from wxbrief.decode.timeline import categorize_periods
-from wxbrief.decode.times import next_clock_time, resolve_day_time, resolve_day_time_after
-from wxbrief.decode.tokens import Cursor, Token, tokenize
+from wxbrief.decode.times import next_clock_time, resolve_day_time, resolve_day_time_after, resolve_report_time
+from wxbrief.decode.tokens import Cursor, Token, strip_controls, tokenize
 
 WARN_UNKNOWN_TOKEN = "unknown_token"
 WARN_PARSER_ERROR = "parser_error"
 WARN_LEGACY_FORMAT = "legacy_format"
 WARN_MISSING_TIME = "missing_time"
+WARN_OUTSIDE_PERIOD = "outside_period"
 
 _STATION = re.compile(r"^[A-Z][A-Z0-9]{3}$")
 _ISSUE = re.compile(r"^(\d{2})(\d{2})(\d{2})Z$")
@@ -129,7 +130,9 @@ def _resolve_issue(draft: _Draft, token: Token) -> None:
     match = _ISSUE.match(token.text)
     if match is None:
         return
-    moment, warning = resolve_day_time(int(match.group(1)), int(match.group(2)), int(match.group(3)), draft.reference)
+    moment, warning = resolve_report_time(
+        int(match.group(1)), int(match.group(2)), int(match.group(3)), draft.reference
+    )
     if moment is None and warning is not None:
         draft.warn(warning, token)
     draft.issue_time = moment
@@ -137,8 +140,10 @@ def _resolve_issue(draft: _Draft, token: Token) -> None:
 
 def _resolve_valid(draft: _Draft, token: Token, start: tuple[int, int], end: tuple[int, int]) -> None:
     """Set the valid period from ``(day, hour)`` pairs: the end is the first such moment after the start."""
-    reference = draft.issue_time or draft.reference
-    moment, warning = resolve_day_time(start[0], start[1], 0, reference)
+    if draft.issue_time is not None:
+        moment, warning = resolve_day_time(start[0], start[1], 0, draft.issue_time)
+    else:  # no issue time: the period is read against the moment the TAF is read, which it cannot lie far after
+        moment, warning = resolve_report_time(start[0], start[1], 0, draft.reference)
     if moment is None and warning is not None:
         draft.warn(warning, token)
         return
@@ -154,7 +159,10 @@ def _resolve_valid(draft: _Draft, token: Token, start: tuple[int, int], end: tup
 
 def _resolve_legacy_valid(draft: _Draft, token: Token, day: int, from_hour: int, to_hour: int) -> None:
     """The old valid period ``DDHHHH``: the day, then the hour it starts and the hour it ends (the next such hour)."""
-    moment, warning = resolve_day_time(day, from_hour, 0, draft.issue_time or draft.reference)
+    if draft.issue_time is not None:
+        moment, warning = resolve_day_time(day, from_hour, 0, draft.issue_time)
+    else:
+        moment, warning = resolve_report_time(day, from_hour, 0, draft.reference)
     if moment is None and warning is not None:
         draft.warn(warning, token)
         return
@@ -281,9 +289,20 @@ def _open_group(cur: Cursor, draft: _Draft, *, base: bool) -> _Group:
     return _read_header(cur, draft)
 
 
+def _check_inside_period(cur: Cursor, draft: _Draft, group: _Group) -> None:
+    """Warn about a change group that starts outside the valid period: the timeline cannot place it."""
+    if group.change is ChangeType.BASE or group.start is None:
+        return
+    before = draft.valid_from is not None and group.start < draft.valid_from
+    after = draft.valid_to is not None and group.start >= draft.valid_to
+    if before or after:
+        draft.warn(WARN_OUTSIDE_PERIOD, cur.token_at(group.first))
+
+
 def _read_group(cur: Cursor, draft: _Draft, *, base: bool) -> _Group:
     """One group: its keyword and window (none for the base forecast), then its elements up to the next group."""
     group = _open_group(cur, draft, base=base)
+    _check_inside_period(cur, draft, group)
     body_start = cur.pos
     extras = PeriodExtras(draft.temperatures, draft.notes)
 
@@ -432,6 +451,7 @@ def parse_taf(raw: str, reference: datetime | None = None) -> Taf:
     ``reference`` resolves the day-of-month in the issue time (``DDHHMMZ``) to a real date: the receipt time of the
     forecast, a date chosen by the user, or now when omitted. Never raises.
     """
+    raw = strip_controls(raw)
     try:
         return _parse(raw, reference)
     except Exception:

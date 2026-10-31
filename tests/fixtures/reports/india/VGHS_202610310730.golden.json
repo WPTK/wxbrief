@@ -204,6 +204,7 @@
     "value": 1000,
     "unit": "FT"
   },
+  "ceiling_status": "HEIGHT",
   "flight_category": "IFR",
   "flags": [
     "CB",

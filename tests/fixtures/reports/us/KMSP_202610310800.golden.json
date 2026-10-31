@@ -203,6 +203,7 @@
     "value": 2600,
     "unit": "FT"
   },
+  "ceiling_status": "HEIGHT",
   "flight_category": "MVFR",
   "flags": [
     "MAINTENANCE"

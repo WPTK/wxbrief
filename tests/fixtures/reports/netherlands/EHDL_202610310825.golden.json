@@ -159,6 +159,7 @@
     "value": 0,
     "unit": "FT"
   },
+  "ceiling_status": "HEIGHT",
   "flight_category": "LIFR",
   "flags": [
     "LOW_CEILING",

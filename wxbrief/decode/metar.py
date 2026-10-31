@@ -51,8 +51,8 @@ from wxbrief.decode.model import (
     WindVariation,
 )
 from wxbrief.decode.remarks import Context, parse_remarks
-from wxbrief.decode.times import resolve_day_time
-from wxbrief.decode.tokens import Cursor, Token, tokenize
+from wxbrief.decode.times import resolve_report_time
+from wxbrief.decode.tokens import Cursor, Token, strip_controls, tokenize
 from wxbrief.decode.units import Pressure, Temperature
 
 WARN_UNKNOWN_TOKEN = "unknown_token"
@@ -137,7 +137,7 @@ def _run_time(cur: Cursor, draft: _Draft) -> bool:
     result = parse_time(cur)
     if result is None or token is None:
         return False
-    moment, warning = resolve_day_time(*result, draft.reference)
+    moment, warning = resolve_report_time(*result, draft.reference)
     if moment is None and warning is not None:
         draft.warn(warning, token)
     draft.observed = moment
@@ -398,6 +398,7 @@ def parse_metar(raw: str, reference: datetime | None = None) -> Metar:
     ``reference`` is the moment used to resolve the day-of-month timestamp (``DDHHMMZ``) to a real date: the report's
     receipt time, a date chosen by the user, or now when omitted. Never raises.
     """
+    raw = strip_controls(raw)
     try:
         return _parse(raw, reference)
     except Exception:

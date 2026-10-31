@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 import pytest
 
 from wxbrief.decode.metar import parse_metar
-from wxbrief.decode.model import Flag, FlightCategory, Metar
+from wxbrief.decode.model import CeilingStatus, Flag, FlightCategory, Metar
 from wxbrief.decode.units import (
     Distance,
     DistanceUnit,
@@ -21,6 +21,7 @@ from wxbrief.decode.units import (
 )
 from wxbrief.i18n import Translator, lower_first
 from wxbrief.render import measure, phrases
+from wxbrief.render.jsonout import to_dict
 
 T = Translator.load("en")
 US, METRIC, MIXED = UnitsMode.US, UnitsMode.METRIC, UnitsMode.MIXED
@@ -65,6 +66,11 @@ def test_format_speed(speed: Speed, units: UnitsMode, expected: str) -> None:
         (Distance(10, DistanceUnit.KM), MIXED, "10 km (6.2 SM)"),
         (Distance(50, DistanceUnit.M), MIXED, "50 m (1/16 SM)"),
         (Distance(0, DistanceUnit.SM), US, "0 SM"),
+        # a converted figure is never rounded across a flight-category limit (1 and 3 SM)
+        (Distance(1600, DistanceUnit.M), MIXED, "1.6 km (15/16 SM)"),
+        (Distance(4800, DistanceUnit.M), MIXED, "4.8 km (2.9 SM)"),
+        (Distance(8000, DistanceUnit.M), MIXED, "8 km (5 SM)"),
+        (Distance(1700, DistanceUnit.M), MIXED, "1.7 km (1.1 SM)"),
     ],
 )
 def test_format_visibility(distance: Distance, units: UnitsMode, expected: str) -> None:
@@ -212,8 +218,11 @@ def test_describe_rvr() -> None:
     [
         ("BR", "Mist"),
         ("-RA", "Light rain"),
-        ("+TSRA", "Heavy thunderstorm with rain"),
-        ("+TSRAGR", "Heavy thunderstorm with rain and hail"),
+        ("+TSRA", "Thunderstorm with heavy rain"),
+        ("-TSRA", "Thunderstorm with light rain"),
+        ("+TSRAGR", "Thunderstorm with heavy rain and hail"),
+        ("+TSGR", "Thunderstorm with heavy hail"),
+        ("+SHRA", "Heavy rain showers"),
         ("-SHSN", "Light snow showers"),
         ("VCFG", "Fog in the vicinity"),
         ("VCTS", "Thunderstorm in the vicinity"),
@@ -273,8 +282,27 @@ def test_describe_cloud_layer(layer: str, units: UnitsMode, expected: str) -> No
 def test_describe_sky_and_ceiling() -> None:
     m = decode("06007KT 10SM FEW010 BKN030 09/08 A3001")
     assert phrases.describe_sky(T, m.sky, US) == "Few clouds at 1,000 ft; Broken clouds at 3,000 ft"
-    assert phrases.describe_ceiling(T, m.ceiling, US) == "3,000 ft"
-    assert phrases.describe_ceiling(T, None, US) == "None"
+    assert phrases.describe_ceiling(T, m, US) == "3,000 ft"
+    assert phrases.describe_ceiling(T, decode("06007KT 10SM FEW010 09/08 A3001"), US) == "None"
+
+
+@pytest.mark.parametrize("sky", ["VV///", "BKN///", "FEW010 OVC///"])
+def test_a_ceiling_of_unknown_height_is_not_called_none(sky: str) -> None:
+    m = decode(f"05010KT 10SM {sky} 10/10 A3001")
+    assert m.ceiling is None
+    assert m.ceiling_status is CeilingStatus.UNKNOWN
+    assert phrases.describe_ceiling(T, m, US) == "not determined"
+    assert phrases.summary_line(T, m, US).endswith(
+        "ceiling not determined, visibility 10 SM, wind from 050° (NE) at 10 kt."
+    )
+    assert to_dict(m)["ceiling_status"] == "UNKNOWN"
+
+
+def test_ceiling_status_for_known_and_absent_ceilings() -> None:
+    assert decode("06007KT 10SM BKN030 09/08 A3001").ceiling_status is CeilingStatus.HEIGHT
+    assert decode("06007KT 10SM SCT030 09/08 A3001").ceiling_status is CeilingStatus.NONE
+    assert decode("06007KT CAVOK 09/08 Q1013").ceiling_status is CeilingStatus.NONE
+    assert decode("06007KT 10SM 09/08 A3001").ceiling_status is None
 
 
 # --- temperature, pressure, misc ------------------------------------------------------------------------------

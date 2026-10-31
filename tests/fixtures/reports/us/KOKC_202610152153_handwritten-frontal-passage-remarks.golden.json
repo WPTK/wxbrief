@@ -346,6 +346,7 @@
     "value": 1500,
     "unit": "FT"
   },
+  "ceiling_status": "HEIGHT",
   "flight_category": "MVFR",
   "flags": [
     "CB",

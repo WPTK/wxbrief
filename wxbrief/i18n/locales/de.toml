@@ -12,8 +12,8 @@ keep_case = true
 # first words that are not nouns, so they lose their capital in the middle of a sentence ("Wind aus 240°")
 lowercase_starts = [
     "Ab", "Alle", "Alte", "Auf", "Aufgehobene", "Aufgelockerte", "Aus", "Automatische", "Bedeckt", "Berichtigte",
-    "Böiger", "Das", "Dauerhafte", "Der", "Die", "Diese", "Einige", "Es", "Gefrierender", "Geringe", "Geänderte",
-    "In", "Kein", "Keine", "Konnte", "Nicht", "Niedrige", "Verspätete", "Veränderliche", "Vorübergehend",
+    "Böiger", "Das", "Dauerhafte", "Der", "Die", "Diese", "Einige", "Es", "Flacher", "Gefrierender", "Geringe", "Geänderte", "Hohes",
+    "In", "Kein", "Keine", "Konnte", "Nicht", "Niedrige", "Niedriges", "Teilweise", "Verspätete", "Veränderliche", "Vorübergehend",
     "Vorübergehende", "Wenige", "Windstill", "Wolkenfrei", "Wolkenlos", "Zeitweise", "Überwiegend",
 ]
 
@@ -156,9 +156,15 @@ PR = "teilweise {phenomena}"
 BC = "Schwaden von {phenomena}"
 DR = "niedriges Treiben von {phenomena}"
 BL = "hohes Treiben von {phenomena}"
-SH = "Schauer von {phenomena}"
+SH = "Schauer mit {phenomena}"
 TS = "Gewitter mit {phenomena}"
 FZ = "gefrierender {phenomena}"
+
+# Freezing precipitation and fog have their own wording where the generic form would not agree.
+[wx.freezing]
+DZ = "gefrierender Sprühregen"
+RA = "gefrierender Regen"
+FG = "gefrierender Nebel"
 
 [wx.phenomenon]
 DZ = "Sprühregen"
@@ -192,6 +198,7 @@ vertical_visibility = "Himmel verdeckt, Vertikalsicht {height}"
 vertical_visibility_unknown = "Himmel verdeckt, Vertikalsicht unbestimmt"
 ceiling = "{height}"
 no_ceiling = "Keine"
+ceiling_unknown = "unbestimmt"
 
 [sky.cover]
 FEW = "Wenige Wolken"
@@ -248,6 +255,7 @@ no_station = "Diese Meldung zeigt {category}: {details}."
 no_station_no_category = "Diese Meldung zeigt: {details}."
 nothing = "Es konnten keine Bedingungen dekodiert werden."
 ceiling = "Wolkenuntergrenze {height}"
+ceiling_unknown = "Wolkenuntergrenze unbestimmt"
 visibility = "Sicht {value}"
 wind = "Wind {value}"
 cavok = "Wolken und Sicht unbedenklich"
@@ -263,6 +271,7 @@ invalid_time = "Die Uhrzeit in {text} ist ungültig"
 parser_error = "Konnte nicht gelesen werden: {text}"
 legacy_format = "Alte Zeitgruppe, wie geschrieben gelesen: {text}"
 missing_time = "Keine Zeit angegeben für {text}"
+outside_period = "Die Änderungsgruppe beginnt außerhalb des Gültigkeitszeitraums und fehlt im Zeitverlauf: {text}"
 
 [trend]
 nosig = "In den nächsten 2 Stunden werden keine bedeutsamen Änderungen erwartet"
@@ -428,6 +437,10 @@ sensor_located = "{sensor} ({where})"
 snow_depth = "Schneehöhe am Boden: {value}"
 snow_depth_missing = "Schneehöhe am Boden: nicht gemeldet"
 snow_increase = "Die Schneehöhe stieg in der letzten Stunde um {hour}, jetzt {total} am Boden"
+snow_water = "Wasseräquivalent der Schneedecke: {value}"
+ice_accretion_hour = "Eisansatz in der letzten Stunde: {value}"
+ice_accretion = "Eisansatz in den letzten {hours} Stunden: {value}"
+sunshine = "Sonnenscheindauer am Vortag: {minutes} Minuten"
 cloud_types = "Wolkenarten: {parts}"
 cloud_types_low = "tief: {name}"
 cloud_types_middle = "mittelhoch: {name}"
@@ -750,6 +763,22 @@ lang = "Sprache des Klartexts: {languages} (Standard: die der Konfiguration, en;
 config = "diese Konfigurationsdatei lesen und speichern"
 no_config = "die Konfigurationsdatei ignorieren und nie schreiben"
 demo = "mit den mitgelieferten Beispielmeldungen für zehn Stationen starten: vollständig offline, nichts wird geladen, gespeichert oder zwischengespeichert"
+decode = "METAR-, SPECI- und TAF-Text aus Argumenten oder von stdin entschlüsseln"
+decode_description = "METAR-, SPECI- und TAF-Meldungen in Klartext entschlüsseln. Jede Meldung als ein Argument in Anführungszeichen übergeben (Wörter ohne Anführungszeichen werden zu einer Meldung verbunden) oder Text über stdin einspeisen: ein Block mit mehreren Meldungen, über mehrere Zeilen umbrochene TAFs, durch Leerzeilen oder '=' getrennte Meldungen, in Groß- oder Kleinschreibung. Eine Gruppe wie -RA wird als Option gelesen, wenn die Meldung nicht in Anführungszeichen steht oder nicht auf -- folgt."
+raw = "Rohtext der Meldung"
+plain = "Klartext ohne Farbe (automatisch, wenn stdout kein Terminal ist)"
+json = "die entschlüsselten Meldungen als JSON-Liste ausgeben (sprachneutral: Codes, Zahlen, UTC-Zeiten)"
+discord = "jede Meldung als Discord-Codeblock ausgeben (innerhalb eines äußeren Zauns aus vier Backticks); imperiale Einheiten, sofern --units nichts anderes sagt"
+units_mode = "zuerst us- oder metrische Einheiten, oder mixed: wie gemeldet, das andere System in Klammern (Standard: mixed, mit --discord us)"
+date = "Datum, mit dem der Tag des Monats im Zeitstempel der Meldung aufgelöst wird (Standard: jetzt, UTC)"
+decode_theme = "Farbschema für die farbige Terminalausgabe, zum Beispiel paper-chart (Standard: die eingebaute Palette)"
+lang_command = "Sprache des Klartexts: {languages} (Standard: en)"
+get = "die neuesten METAR und TAF für Stationen abrufen und ausgeben"
+get_description = "Die neuesten METAR/SPECI und TAF einmal von aviationweather.gov abrufen und die Entschlüsselung ausgeben."
+get_stations = "Stationskennungen (ICAO oder ein eindeutiger IATA/FAA-Code)"
+get_json = "maschinenlesbare Ausgabe"
+get_discord = "Discord-Codeblöcke (imperiale Einheiten, sofern --units nichts anderes sagt)"
+get_plain = "Klartext"
 
 [ui.binding]
 add_station = "Hinzufügen"
@@ -770,6 +799,7 @@ help = "Hilfe"
 quit = "Beenden"
 cycle_theme = "Design"
 theme_picker = "Designs"
+palette = "Palette"
 cycle_glyphs = "Symbole"
 cycle_units = "Einheiten"
 cycle_time = "Zeit"
@@ -865,6 +895,7 @@ metar = "METAR für {icao}"
 both = "METAR und TAF für {icao}"
 raw = "Originalmeldung für {icao}"
 discord = "Discord-Block"
+parts = "{what} in {count} Teilen: jeden als eigene Nachricht einfügen"
 
 [ui.add]
 title = "Station hinzufügen: ICAO- oder IATA-Code oder Teil des Namens"

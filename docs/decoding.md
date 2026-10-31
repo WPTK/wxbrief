@@ -207,10 +207,14 @@ layer with an unknown amount or height).
 
 ## Reference time
 
-Reports carry only `DDHHMMZ`. `resolve_day_time(day, hour, minute, reference)` returns the candidate in the previous,
-current or next month nearest to `reference` (ties go to the earlier one; hour 24 rolls over; an impossible day or time
-gives `None` plus a warning). `parse_metar(raw, reference)` takes the reference; fixtures use the timestamp in the file
-name and `wxbrief decode --date YYYY-MM-DD` uses noon UTC of that date (default: now). Times are shown as UTC; station
+Reports carry only `DDHHMMZ`. A report describes the past, so `resolve_report_time(day, hour, minute, reference)`
+returns the latest moment with that day, hour and minute that is not more than 3 hours after `reference` (the slack
+covers clock skew; hour 24 rolls over; an impossible day or time gives `None` plus a warning). It dates METAR times, TAF
+issue times and the valid period of a TAF with no issue time. Forecast groups lie on both sides of their anchor, so
+`resolve_day_time` (nearest candidate, ties to the earlier one) still resolves a valid period against the issue time and
+change groups against the period start. `parse_metar(raw, reference)` takes the reference; fixtures use the timestamp in
+the file name and `wxbrief decode --date YYYY-MM-DD` (and the paste date field) uses the end of that day, 23:59:59 UTC,
+so every report of the day is dated that day (default: now). Times are shown as UTC; station
 local time needs the station database (S3). Trend times (`FM1130`) have no day: `resolve_clock_time` picks the
 yesterday, today or tomorrow that puts them nearest the observation.
 
@@ -229,6 +233,11 @@ The ceiling is the lowest broken, overcast or vertical-visibility layer with a k
 `9999` and `CAVOK` count as 10 SM. If one component is missing the category comes from the other; with neither, it is
 `None`. A sky made only of `//////` placeholders says nothing (it is not a clear sky), while `FEW`, `SCT` and the
 clear-sky codes leave no ceiling.
+
+`Metar.ceiling` is the height of that layer or `None`; `Metar.ceiling_status` (JSON key `ceiling_status`) says which
+`None` it is: `HEIGHT` (a layer of known height), `NONE` (a sky known to have no ceiling, CAVOK included), `UNKNOWN` (a
+broken, overcast or vertical-visibility layer of unknown height such as `VV///`, or a `//////` sky; shown as "not
+determined") or `null` (no sky group at all).
 
 `tests/test_flightcat.py` checks our category against the AWC `fltCat` of every saved report (1,248 reports in five
 batches). Genuine disagreements are covered by named rules in `PARITY_RULES`, each with its reason, and a test fails if

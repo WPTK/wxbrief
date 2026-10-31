@@ -219,6 +219,7 @@
     "value": 18000,
     "unit": "FT"
   },
+  "ceiling_status": "HEIGHT",
   "flight_category": "VFR",
   "flags": [],
   "condition": "OVERCAST",

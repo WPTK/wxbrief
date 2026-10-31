@@ -298,3 +298,26 @@ def test_piped_plain_output_is_utf8_whatever_the_console_code_page() -> None:
     assert result.returncode == 0
     assert b"\xc2\xb0" in result.stdout
     assert b"\xb0" not in result.stdout.replace(b"\xc2\xb0", b"")
+
+
+@pytest.mark.parametrize("hour", ["18", "23"])
+def test_date_keeps_a_late_report_of_that_day(hour: str, capsys: pytest.CaptureFixture[str]) -> None:
+    # A date alone is the end of that day: 311853Z on --date 2026-10-31 is 31 October, not 31 August.
+    raw = f"METAR KDEN 31{hour}53Z 06007KT 10SM CLR 09/08 A3001"
+    assert main(["decode", "--json", "--date", "2026-10-31", raw]) == 0
+    assert json.loads(capsys.readouterr().out)[0]["observed"] == f"2026-10-31T{hour}:53:00+00:00"
+
+
+@pytest.mark.parametrize("hour", ["18", "23"])
+def test_date_keeps_a_late_taf_of_that_day_current(hour: str, capsys: pytest.CaptureFixture[str]) -> None:
+    raw = f"TAF KDEN 31{hour}40Z 31{hour}/0124 06007KT P6SM SKC"
+    assert main(["decode", "--json", "--date", "2026-10-31", raw]) == 0
+    data = json.loads(capsys.readouterr().out)[0]
+    assert data["issue_time"] == f"2026-10-31T{hour}:40:00+00:00"
+    assert data["valid_from"] == f"2026-10-31T{hour}:00:00+00:00"
+
+
+def test_discord_output_lists_the_warnings_of_unreadable_groups() -> None:
+    result = run_module("decode", "--discord", "XYZZY PLUGH")
+    assert result.returncode == 0  # like --plain: garbage is reported, not an error
+    assert "Unrecognized group: XYZZY" in result.stdout and "2 warnings" in result.stdout
