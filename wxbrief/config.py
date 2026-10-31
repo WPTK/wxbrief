@@ -60,6 +60,7 @@ class Config:
 class LoadedConfig:
     config: Config
     warnings: list[str] = field(default_factory=list)
+    usable: bool = True  # False when the whole file was unreadable or invalid TOML and defaults stand in for it
 
 
 def default_config_path() -> Path:
@@ -171,11 +172,11 @@ def load_config(path: Path | None = None) -> LoadedConfig:
     except FileNotFoundError:
         return LoadedConfig(Config())
     except (OSError, UnicodeDecodeError) as exc:
-        return LoadedConfig(Config(), [f"cannot read {target}: {exc}"])
+        return LoadedConfig(Config(), [f"cannot read {target}: {exc}"], usable=False)
     try:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as exc:
-        return LoadedConfig(Config(), [f"{target} is not valid TOML ({exc}); using defaults"])
+        return LoadedConfig(Config(), [f"{target} is not valid TOML ({exc}); using defaults"], usable=False)
     return parse_config(data)
 
 

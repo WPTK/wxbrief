@@ -43,7 +43,7 @@ def add_get_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser]
     )
 
 
-def _resolve(codes: list[str]) -> list[str]:
+def resolve_ids(codes: list[str]) -> list[str]:
     db = bundled()
     ids: list[str] = []
     for code in codes:
@@ -72,7 +72,7 @@ async def _fetch(ids: list[str]) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf]
     return latest_by_station(metars), {taf.icao: taf for taf in tafs}, errors
 
 
-def _local_hour(tz: str | None, moment: datetime | None) -> int | None:
+def local_hour(tz: str | None, moment: datetime | None) -> int | None:
     """The hour of day at the station when the report was made, for the day/night glyph."""
     if tz is None or moment is None:
         return None
@@ -89,7 +89,7 @@ def run_get(args: argparse.Namespace) -> int:
     if callable(reconfigure):
         reconfigure(encoding="utf-8", errors="replace")
 
-    ids = _resolve(args.stations)
+    ids = resolve_ids(args.stations)
     metars, tafs, errors = asyncio.run(_fetch(ids))
     for message in errors:
         sys.stderr.write(f"wxbrief get: {message}\n")
@@ -119,7 +119,7 @@ def run_get(args: argparse.Namespace) -> int:
         name = station.name if station else None
         parts: list[str] = []
         if icao in decoded_metars:
-            hour = _local_hour(station.tz if station else None, metars[icao].observed)
+            hour = local_hour(station.tz if station else None, metars[icao].observed)
             if args.discord:
                 parts.append(
                     render_discord(decoded_metars[icao], translator, units, station_name=name, local_hour=hour)

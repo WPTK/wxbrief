@@ -149,6 +149,19 @@ async def test_poll_now_makes_everything_due() -> None:
     assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
 
 
+async def test_poll_now_does_not_break_a_rate_limit_hold() -> None:
+    clock, client = FakeClock(), FakeClient()
+    client.errors = [RateLimited(1500)]
+    scheduler, _ = make(clock, client)
+    await scheduler.run_cycle()
+    scheduler.poll_now()  # the user presses refresh during the hold
+    assert await scheduler.run_cycle() == []
+    assert scheduler.next_due_in() == 1500
+    clock.now += 1500
+    scheduler.poll_now()
+    assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
+
+
 async def test_exhausted_budget_defers_instead_of_requesting() -> None:
     clock, client = FakeClock(), FakeClient()
     scheduler, _ = make(clock, client, budget=RateBudget(1, 60, clock))

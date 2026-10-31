@@ -11,8 +11,14 @@ from typing import Any
 
 import platformdirs
 
+CACHE_DIR_ENV = "WXBRIEF_CACHE_DIR"
+
 
 def default_cache_dir() -> Path:
+    """``$WXBRIEF_CACHE_DIR`` when set, else the platform cache folder."""
+    override = os.environ.get(CACHE_DIR_ENV, "").strip()
+    if override:
+        return Path(override)
     return Path(platformdirs.user_cache_dir("wxbrief"))
 
 

@@ -1,0 +1,138 @@
+"""Paste any METAR or TAF text and read the decode as you type. Entirely offline."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from datetime import UTC, datetime
+
+from rich.console import Group, RenderableType
+from rich.table import Table
+from rich.text import Text
+from textual.app import ComposeResult
+from textual.binding import Binding
+from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.screen import Screen
+from textual.timer import Timer
+from textual.widgets import Footer, Input, Label, Static, TextArea
+
+from wxbrief.clipboard import copy_text
+from wxbrief.decode.model import Metar, Taf
+from wxbrief.decode.split import parse_any
+from wxbrief.decode.units import UnitsMode
+from wxbrief.render.discord import render_discord
+from wxbrief.render.plain import decode_rows, render_plain, warning_lines
+from wxbrief.ui.context import ViewContext
+
+DEBOUNCE_SECONDS = 0.2
+MAX_PASTE_CHARS = 60_000  # a TAF or METAR is a few hundred characters; this is generous and keeps a stray paste cheap
+
+
+def parse_reference(text: str, now: datetime) -> tuple[datetime, bool]:
+    """The date the day-of-month in a report resolves against: ``YYYY-MM-DD`` as noon UTC, else ``now``.
+
+    The flag says whether the text was usable (an empty field counts as usable: it means "now").
+    """
+    value = text.strip()
+    if not value:
+        return now, True
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").replace(hour=12, tzinfo=UTC), True
+    except ValueError:
+        return now, False
+
+
+class PasteDecodeScreen(Screen[None]):
+    BINDINGS = [
+        Binding("escape", "close", "Back", priority=True),
+        Binding("f2", "copy_discord", "Copy Discord", priority=True),
+        Binding("c", "copy_discord", "Copy Discord (c)", show=False),
+    ]
+
+    def __init__(self, ctx: ViewContext, now: Callable[[], datetime]) -> None:
+        super().__init__()
+        self._ctx = ctx
+        self._now = now
+        self._timer: Timer | None = None
+        self.decoded: list[Metar | Taf] = []
+        self.discord_text = ""
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="paste-layout"):
+            with Horizontal(id="paste-reference"):
+                yield Label("Reference date (YYYY-MM-DD):")
+                yield Input(value=self._now().strftime("%Y-%m-%d"), id="reference", compact=True)
+            yield TextArea(id="paste-input", tab_behavior="focus", show_line_numbers=False)
+            with VerticalScroll(id="paste-output"):
+                yield Static("Paste a METAR or TAF above. Several reports at once are fine.", id="paste-result")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self.query_one(TextArea).focus()
+
+    # --- decoding --------------------------------------------------------------------------------------------------
+
+    def on_text_area_changed(self, event: TextArea.Changed) -> None:
+        self._schedule()
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        self._schedule()
+
+    def _schedule(self) -> None:
+        if self._timer is not None:
+            self._timer.stop()
+        self._timer = self.set_timer(DEBOUNCE_SECONDS, self.decode_now)
+
+    def decode_now(self) -> None:
+        """Decode what is in the box now (the timer calls this 200 ms after the last change)."""
+        text = self.query_one(TextArea).text[:MAX_PASTE_CHARS]
+        reference, valid = parse_reference(self.query_one("#reference", Input).value, self._now())
+        self.decoded = parse_any(text, reference) if text.strip() else []
+        ctx = self._ctx
+        units = UnitsMode.US if ctx.units is UnitsMode.MIXED else ctx.units
+        self.discord_text = "\n\n".join(render_discord(r, ctx.translator, units) for r in self.decoded)
+        parts: list[RenderableType] = []
+        if not valid:
+            parts.append(Text("Reference date not understood; using now.", style=ctx.palette.style("wx.warning")))
+        if not self.decoded:
+            parts.append(Text("Paste a METAR or TAF above. Several reports at once are fine."))
+        for index, report in enumerate(self.decoded):
+            if index:
+                parts.append(Text(""))
+            parts.append(self._view(report))
+        self.query_one("#paste-result", Static).update(Group(*parts))
+
+    def _view(self, report: Metar | Taf) -> RenderableType:
+        ctx = self._ctx
+        palette = ctx.palette
+        t = ctx.translator
+        parts: list[RenderableType] = [palette.raw_text(report), Text("")]
+        if isinstance(report, Taf):
+            parts.append(Text(render_plain(report, t, ctx.units)))
+        else:
+            table = Table.grid(padding=(0, 2))
+            table.add_column(no_wrap=True)
+            table.add_column()
+            for row in decode_rows(report, t, ctx.units):
+                value = Text(row.value, style=palette.style(row.style))
+                if row.category is not None:
+                    value = Text.assemble(
+                        palette.badge(row.category), " ", row.value.removeprefix(row.category.value).strip()
+                    )
+                table.add_row(Text(row.label, style=palette.style("wx.label")), value)
+            parts.append(table)
+            warnings = warning_lines(report, t)
+            if warnings:
+                parts.append(Text(""))
+                parts.append(Text("\n".join(warnings), style=palette.style("wx.warning")))
+        return Group(*parts)
+
+    # --- actions ---------------------------------------------------------------------------------------------------
+
+    def action_copy_discord(self) -> None:
+        if not self.discord_text:
+            self.notify("Nothing decoded yet", severity="warning")
+            return
+        copy_text(self.app, self.discord_text, "Discord block")
+
+    def action_close(self) -> None:
+        self.app.pop_screen()
