@@ -43,15 +43,25 @@ async def test_the_footer_follows_focus() -> None:
         assert shown(app) == ["a", "d", "v", "p", "r", "question_mark", "q", "t"]
 
 
+async def screen_text(app: object, pilot: object, *wanted: str) -> str:
+    """The drawn screen as text, once every wanted label shows (bounded wait: the footer draws after the first pass)."""
+    text = ""
+    for _ in range(100):
+        await pilot.pause(0.05)  # type: ignore[attr-defined]
+        text = "\n".join(strip.text for strip in app.screen._compositor.render_strips())  # type: ignore[attr-defined]
+        if all(label in text for label in wanted):
+            break
+    return text
+
+
 async def test_hidden_keys_stay_hidden_and_the_footer_stays_short() -> None:
     app = demo_app()
     async with app.run_test(size=(80, 24)) as pilot:
         await pilot.pause()
-        await pilot.pause(0.1)
         keys = shown(app)
         assert {"g", "u", "z", "C", "y"}.isdisjoint(keys)
         assert "q" in keys and "t" in keys
-        footer = "\n".join(strip.text for strip in app.screen._compositor.render_strips())
+        footer = await screen_text(app, pilot, "Add", "Quit", "Theme")
         assert "Add" in footer and "Quit" in footer and "Theme" in footer
 
 
