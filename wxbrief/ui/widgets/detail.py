@@ -109,7 +109,6 @@ class DecodedTable(DataTable[Text]):
         super().__init__(show_header=False, cursor_type="none", zebra_stripes=False, **kwargs)
         self._rows: list[DecodeRow] = []
         self._ctx: ViewContext | None = None
-        self.add_columns("Field", "Value")
 
     def set_rows(self, rows: list[DecodeRow], ctx: ViewContext) -> None:
         self._rows = rows
@@ -118,19 +117,25 @@ class DecodedTable(DataTable[Text]):
 
     def _fill(self) -> None:
         ctx = self._ctx
-        self.clear()
+        self.clear(columns=True)  # column widths are set from the pane width below, never left over from an earlier one
         if ctx is None or not self._rows:
             return
         palette = ctx.palette
         label_width = max(len(row.label) for row in self._rows) + 1
-        width = max(16, self.size.width - label_width - 6)
+        width = max(8, self.size.width - label_width - 6)  # each column has a cell padding of 1 on both sides
+        self.add_column("Field", width=label_width)
+        self.add_column("Value", width=width)
         for row in self._rows:
             if row.category is not None:
                 code = row.category.value
                 badge = palette.badge(row.category)
                 indent = len(badge.plain) + 1
-                lines = textwrap.wrap(row.value.removeprefix(code).strip(), max(8, width - indent)) or [""]
-                value = Text.assemble(badge, " ", ("\n" + " " * indent).join(lines))
+                text = row.value.removeprefix(code).strip()
+                if width - indent < 12:  # too narrow for a hanging indent: the badge gets its own line
+                    value = Text.assemble(badge, "\n", "\n".join(textwrap.wrap(text, width) or [""]))
+                else:
+                    lines = textwrap.wrap(text, width - indent) or [""]
+                    value = Text.assemble(badge, " ", ("\n" + " " * indent).join(lines))
             else:
                 wrapped = "\n".join(textwrap.wrap(row.value, width) or [""])
                 value = Text(wrapped, style=palette.style(row.style))
