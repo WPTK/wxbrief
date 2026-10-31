@@ -1,0 +1,191 @@
+{
+  "raw": "METAR OPLA 310830Z 29003KT 3500 HZ NSC 28/15 Q1018 NOSIG RMK QFE992 A30.06",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "OPLA",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310830Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "29003KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "3500",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "HZ",
+      "start": 32,
+      "end": 34,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "NSC",
+      "start": 35,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "28/15",
+      "start": 39,
+      "end": 44,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1018",
+      "start": 45,
+      "end": 50,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "NOSIG",
+      "start": 51,
+      "end": 56,
+      "kind": "TREND"
+    },
+    {
+      "text": "RMK",
+      "start": 57,
+      "end": 60,
+      "kind": "REMARK"
+    },
+    {
+      "text": "QFE992",
+      "start": 61,
+      "end": 67,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "A30.06",
+      "start": 68,
+      "end": 74,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "OPLA",
+  "observed": "2026-10-31T08:30:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 290,
+    "speed": {
+      "value": 3,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 3500,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "HZ"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "NSC",
+      "base": null,
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 28,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 15,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1018,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 9,
+  "remarks_index": 10,
+  "remarks_raw": "QFE992 A30.06",
+  "trends": [
+    {
+      "kind": "NOSIG",
+      "times": [],
+      "elements": {
+        "wind": null,
+        "visibility": null,
+        "weather": [],
+        "sky": [],
+        "color_state": null
+      }
+    }
+  ],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "StationPressure",
+      "kind": "QFE",
+      "mmhg": null,
+      "hpa": 992
+    },
+    {
+      "variant": "AltimeterSetting",
+      "pressure": {
+        "value": 30.06,
+        "unit": "INHG"
+      }
+    }
+  ],
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "IFR",
+  "flags": [
+    "LOW_VISIBILITY"
+  ],
+  "condition": "OBSCURATION",
+  "relative_humidity": 45.1,
+  "warnings": []
+}

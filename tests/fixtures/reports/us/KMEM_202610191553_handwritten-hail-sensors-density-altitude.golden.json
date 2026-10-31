@@ -1,0 +1,346 @@
+{
+  "raw": "METAR KMEM 191553Z 21014G26KT 5SM +TSRAGR BKN020CB 24/22 A2976 RMK AO2 GR 1 3/4 OCNL LTGICCG OHD PWINO FZRANO TSNO PNO VISNO RWY11 CHINO RWY29L DENSITY ALT 2500FT SLPNO $",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KMEM",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "191553Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "21014G26KT",
+      "start": 19,
+      "end": 29,
+      "kind": "WIND"
+    },
+    {
+      "text": "5SM",
+      "start": 30,
+      "end": 33,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "+TSRAGR",
+      "start": 34,
+      "end": 41,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BKN020CB",
+      "start": 42,
+      "end": 50,
+      "kind": "SKY"
+    },
+    {
+      "text": "24/22",
+      "start": 51,
+      "end": 56,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2976",
+      "start": 57,
+      "end": 62,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 63,
+      "end": 66,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 67,
+      "end": 70,
+      "kind": "REMARK"
+    },
+    {
+      "text": "GR",
+      "start": 71,
+      "end": 73,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "1",
+      "start": 74,
+      "end": 75,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "3/4",
+      "start": 76,
+      "end": 79,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "OCNL",
+      "start": 80,
+      "end": 84,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "LTGICCG",
+      "start": 85,
+      "end": 92,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "OHD",
+      "start": 93,
+      "end": 96,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "PWINO",
+      "start": 97,
+      "end": 102,
+      "kind": "REMARK"
+    },
+    {
+      "text": "FZRANO",
+      "start": 103,
+      "end": 109,
+      "kind": "REMARK"
+    },
+    {
+      "text": "TSNO",
+      "start": 110,
+      "end": 114,
+      "kind": "REMARK"
+    },
+    {
+      "text": "PNO",
+      "start": 115,
+      "end": 118,
+      "kind": "REMARK"
+    },
+    {
+      "text": "VISNO",
+      "start": 119,
+      "end": 124,
+      "kind": "REMARK"
+    },
+    {
+      "text": "RWY11",
+      "start": 125,
+      "end": 130,
+      "kind": "REMARK"
+    },
+    {
+      "text": "CHINO",
+      "start": 131,
+      "end": 136,
+      "kind": "REMARK"
+    },
+    {
+      "text": "RWY29L",
+      "start": 137,
+      "end": 143,
+      "kind": "REMARK"
+    },
+    {
+      "text": "DENSITY",
+      "start": 144,
+      "end": 151,
+      "kind": "REMARK"
+    },
+    {
+      "text": "ALT",
+      "start": 152,
+      "end": 155,
+      "kind": "REMARK"
+    },
+    {
+      "text": "2500FT",
+      "start": 156,
+      "end": 162,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLPNO",
+      "start": 163,
+      "end": 168,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "$",
+      "start": 169,
+      "end": 170,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KMEM",
+  "observed": "2026-10-19T15:53:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 210,
+    "speed": {
+      "value": 14,
+      "unit": "KT"
+    },
+    "gust": {
+      "value": 26,
+      "unit": "KT"
+    },
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 5.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "HEAVY",
+      "descriptor": "TS",
+      "phenomena": [
+        "RA",
+        "GR"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 2000,
+        "unit": "FT"
+      },
+      "cloud_type": "CB"
+    }
+  ],
+  "temperature": {
+    "value": 24,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 22,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.76,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 9,
+  "remarks_raw": "AO2 GR 1 3/4 OCNL LTGICCG OHD PWINO FZRANO TSNO PNO VISNO RWY11 CHINO RWY29L DENSITY ALT 2500FT SLPNO $",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "HailSize",
+      "inches": 1.75,
+      "less_than": false
+    },
+    {
+      "variant": "Lightning",
+      "frequency": "OCCASIONAL",
+      "types": [
+        "IN_CLOUD",
+        "CLOUD_TO_GROUND"
+      ],
+      "location": [
+        "OHD"
+      ]
+    },
+    {
+      "variant": "SensorStatus",
+      "sensor": "PRESENT_WEATHER",
+      "location": null
+    },
+    {
+      "variant": "SensorStatus",
+      "sensor": "FREEZING_RAIN",
+      "location": null
+    },
+    {
+      "variant": "SensorStatus",
+      "sensor": "THUNDERSTORM",
+      "location": null
+    },
+    {
+      "variant": "SensorStatus",
+      "sensor": "PRECIPITATION",
+      "location": null
+    },
+    {
+      "variant": "SensorStatus",
+      "sensor": "VISIBILITY",
+      "location": "RWY11"
+    },
+    {
+      "variant": "SensorStatus",
+      "sensor": "CEILING",
+      "location": "RWY29L"
+    },
+    {
+      "variant": "DensityAltitude",
+      "altitude": {
+        "value": 2500,
+        "unit": "FT"
+      }
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": null
+    },
+    {
+      "variant": "MaintenanceIndicator"
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 2000,
+    "unit": "FT"
+  },
+  "flight_category": "MVFR",
+  "flags": [
+    "CB",
+    "GUSTS",
+    "THUNDERSTORM",
+    "MAINTENANCE",
+    "MISSING_DATA"
+  ],
+  "condition": "THUNDERSTORM",
+  "relative_humidity": 88.6,
+  "warnings": []
+}

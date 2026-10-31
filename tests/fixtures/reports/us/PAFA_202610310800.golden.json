@@ -71,13 +71,13 @@
       "text": "SLP866",
       "start": 68,
       "end": 74,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "T10221028",
       "start": 75,
       "end": 84,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     }
   ],
   "report_type": "METAR",
@@ -144,6 +144,37 @@
   "tail_index": null,
   "remarks_index": 9,
   "remarks_raw": "AO2 SLP866 T10221028",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 986.6,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": -2.2,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": -2.8,
+        "unit": "C"
+      }
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": null,

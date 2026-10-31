@@ -1,0 +1,216 @@
+{
+  "raw": "METAR YSCB 310800Z AUTO 32009KT 9999 VCTS -SHRA FEW026 SCT061 17/15 Q1011 RETS RESHRA",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "YSCB",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310800Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "AUTO",
+      "start": 19,
+      "end": 23,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "32009KT",
+      "start": 24,
+      "end": 31,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 32,
+      "end": 36,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "VCTS",
+      "start": 37,
+      "end": 41,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "-SHRA",
+      "start": 42,
+      "end": 47,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "FEW026",
+      "start": 48,
+      "end": 54,
+      "kind": "SKY"
+    },
+    {
+      "text": "SCT061",
+      "start": 55,
+      "end": 61,
+      "kind": "SKY"
+    },
+    {
+      "text": "17/15",
+      "start": 62,
+      "end": 67,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1011",
+      "start": 68,
+      "end": 73,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RETS",
+      "start": 74,
+      "end": 78,
+      "kind": "RECENT_WEATHER"
+    },
+    {
+      "text": "RESHRA",
+      "start": 79,
+      "end": 85,
+      "kind": "RECENT_WEATHER"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "YSCB",
+  "observed": "2026-10-31T08:00:00+00:00",
+  "modifiers": [
+    "AUTO"
+  ],
+  "wind": {
+    "direction": 320,
+    "speed": {
+      "value": 9,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10000,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": true,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": "TS",
+      "phenomena": [],
+      "vicinity": true,
+      "nsw": false,
+      "not_observed": false
+    },
+    {
+      "intensity": "LIGHT",
+      "descriptor": "SH",
+      "phenomena": [
+        "RA"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "FEW",
+      "base": {
+        "value": 2600,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 6100,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 17,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 15,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1011,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 12,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [
+    {
+      "weather": {
+        "intensity": "MODERATE",
+        "descriptor": "TS",
+        "phenomena": [],
+        "vicinity": false,
+        "nsw": false,
+        "not_observed": false
+      }
+    },
+    {
+      "weather": {
+        "intensity": "MODERATE",
+        "descriptor": "SH",
+        "phenomena": [
+          "RA"
+        ],
+        "vicinity": false,
+        "nsw": false,
+        "not_observed": false
+      }
+    }
+  ],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [],
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [
+    "THUNDERSTORM",
+    "AUTOMATED"
+  ],
+  "condition": "THUNDERSTORM",
+  "relative_humidity": 88.0,
+  "warnings": []
+}

@@ -1,0 +1,300 @@
+{
+  "raw": "METAR WSSS 310600Z 09015G25KT 6000 -TSRA FEW013 FEW016CB SCT018TCU 30/24 Q1013 TEMPO TL0630 3000 TSRA BECMG FM0645 TL0700 NSW",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "WSSS",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310600Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "09015G25KT",
+      "start": 19,
+      "end": 29,
+      "kind": "WIND"
+    },
+    {
+      "text": "6000",
+      "start": 30,
+      "end": 34,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-TSRA",
+      "start": 35,
+      "end": 40,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "FEW013",
+      "start": 41,
+      "end": 47,
+      "kind": "SKY"
+    },
+    {
+      "text": "FEW016CB",
+      "start": 48,
+      "end": 56,
+      "kind": "SKY"
+    },
+    {
+      "text": "SCT018TCU",
+      "start": 57,
+      "end": 66,
+      "kind": "SKY"
+    },
+    {
+      "text": "30/24",
+      "start": 67,
+      "end": 72,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1013",
+      "start": 73,
+      "end": 78,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "TEMPO",
+      "start": 79,
+      "end": 84,
+      "kind": "TREND"
+    },
+    {
+      "text": "TL0630",
+      "start": 85,
+      "end": 91,
+      "kind": "TREND"
+    },
+    {
+      "text": "3000",
+      "start": 92,
+      "end": 96,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "TSRA",
+      "start": 97,
+      "end": 101,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BECMG",
+      "start": 102,
+      "end": 107,
+      "kind": "TREND"
+    },
+    {
+      "text": "FM0645",
+      "start": 108,
+      "end": 114,
+      "kind": "TREND"
+    },
+    {
+      "text": "TL0700",
+      "start": 115,
+      "end": 121,
+      "kind": "TREND"
+    },
+    {
+      "text": "NSW",
+      "start": 122,
+      "end": 125,
+      "kind": "WEATHER"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "WSSS",
+  "observed": "2026-10-31T06:00:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 90,
+    "speed": {
+      "value": 15,
+      "unit": "KT"
+    },
+    "gust": {
+      "value": 25,
+      "unit": "KT"
+    },
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 6000,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "LIGHT",
+      "descriptor": "TS",
+      "phenomena": [
+        "RA"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "FEW",
+      "base": {
+        "value": 1300,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "FEW",
+      "base": {
+        "value": 1600,
+        "unit": "FT"
+      },
+      "cloud_type": "CB"
+    },
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 1800,
+        "unit": "FT"
+      },
+      "cloud_type": "TCU"
+    }
+  ],
+  "temperature": {
+    "value": 30,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 24,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1013,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 11,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "trends": [
+    {
+      "kind": "TEMPO",
+      "times": [
+        {
+          "kind": "UNTIL",
+          "hour": 6,
+          "minute": 30,
+          "moment": "2026-10-31T06:30:00+00:00"
+        }
+      ],
+      "elements": {
+        "wind": null,
+        "visibility": {
+          "distance": {
+            "value": 3000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": "TS",
+            "phenomena": [
+              "RA"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [],
+        "color_state": null
+      }
+    },
+    {
+      "kind": "BECMG",
+      "times": [
+        {
+          "kind": "FROM",
+          "hour": 6,
+          "minute": 45,
+          "moment": "2026-10-31T06:45:00+00:00"
+        },
+        {
+          "kind": "UNTIL",
+          "hour": 7,
+          "minute": 0,
+          "moment": "2026-10-31T07:00:00+00:00"
+        }
+      ],
+      "elements": {
+        "wind": null,
+        "visibility": null,
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": null,
+            "phenomena": [],
+            "vicinity": false,
+            "nsw": true,
+            "not_observed": false
+          }
+        ],
+        "sky": [],
+        "color_state": null
+      }
+    }
+  ],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [],
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "MVFR",
+  "flags": [
+    "CB",
+    "TCU",
+    "GUSTS",
+    "THUNDERSTORM"
+  ],
+  "condition": "THUNDERSTORM",
+  "relative_humidity": 70.3,
+  "warnings": []
+}

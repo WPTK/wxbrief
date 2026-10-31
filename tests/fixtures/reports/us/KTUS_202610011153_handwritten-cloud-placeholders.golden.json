@@ -154,13 +154,27 @@
   "tail_index": null,
   "remarks_index": 11,
   "remarks_raw": "AO2",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": null,
   "flight_category": "VFR",
   "flags": [
     "TCU",
-    "AUTOMATED"
+    "AUTOMATED",
+    "MISSING_DATA"
   ],
   "condition": "RAIN",
   "relative_humidity": 73.3,

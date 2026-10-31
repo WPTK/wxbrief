@@ -140,6 +140,34 @@
   "tail_index": 10,
   "remarks_index": null,
   "remarks_raw": null,
+  "trends": [
+    {
+      "kind": "NOSIG",
+      "times": [],
+      "elements": {
+        "wind": null,
+        "visibility": null,
+        "weather": [],
+        "sky": [],
+        "color_state": null
+      }
+    }
+  ],
+  "color_state": {
+    "current": {
+      "code": "BLU",
+      "black": false,
+      "plus": false,
+      "not_reported": false
+    },
+    "forecast": []
+  },
+  "computed_color_state": "BLU",
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [],
   "flavor": "ICAO",
   "military": true,
   "ceiling": {

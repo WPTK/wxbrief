@@ -83,13 +83,13 @@
       "text": "TSB35RAB35",
       "start": 79,
       "end": 89,
-      "kind": "REMARK"
+      "kind": "WEATHER"
     },
     {
       "text": "SLP085",
       "start": 90,
       "end": 96,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     }
   ],
   "report_type": "METAR",
@@ -180,6 +180,61 @@
   "tail_index": null,
   "remarks_index": 11,
   "remarks_raw": "AO2 TSB35RAB35 SLP085",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "WeatherTiming",
+      "segments": [
+        {
+          "intensity": "MODERATE",
+          "descriptor": "TS",
+          "phenomena": [],
+          "events": [
+            {
+              "began": true,
+              "time": {
+                "minute": 35,
+                "hour": null
+              }
+            }
+          ]
+        },
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "RA"
+          ],
+          "events": [
+            {
+              "began": true,
+              "time": {
+                "minute": 35,
+                "hour": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1008.5,
+        "unit": "HPA"
+      }
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

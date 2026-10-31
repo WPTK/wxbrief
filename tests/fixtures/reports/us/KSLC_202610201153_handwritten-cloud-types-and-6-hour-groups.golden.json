@@ -1,0 +1,259 @@
+{
+  "raw": "METAR KSLC 201153Z 18006KT 10SM FEW040 SCT120 14/02 A3001 RMK AO2 SLP160 8/208 60003 70018 T01440022 10178 20122 55004",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KSLC",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "201153Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "18006KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "FEW040",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "SCT120",
+      "start": 39,
+      "end": 45,
+      "kind": "SKY"
+    },
+    {
+      "text": "14/02",
+      "start": 46,
+      "end": 51,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3001",
+      "start": 52,
+      "end": 57,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 58,
+      "end": 61,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 62,
+      "end": 65,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP160",
+      "start": 66,
+      "end": 72,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "8/208",
+      "start": 73,
+      "end": 78,
+      "kind": "SKY"
+    },
+    {
+      "text": "60003",
+      "start": 79,
+      "end": 84,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "70018",
+      "start": 85,
+      "end": 90,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "T01440022",
+      "start": 91,
+      "end": 100,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "10178",
+      "start": 101,
+      "end": 106,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "20122",
+      "start": 107,
+      "end": 112,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "55004",
+      "start": 113,
+      "end": 118,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KSLC",
+  "observed": "2026-10-20T11:53:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 180,
+    "speed": {
+      "value": 6,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "FEW",
+      "base": {
+        "value": 4000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 12000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 14,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 2,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.01,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 9,
+  "remarks_raw": "AO2 SLP160 8/208 60003 70018 T01440022 10178 20122 55004",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1016.0,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "CloudTypes",
+      "low": 2,
+      "middle": 0,
+      "high": 8
+    },
+    {
+      "variant": "PeriodPrecipitation",
+      "inches": 0.03,
+      "hours": 6,
+      "trace": false
+    },
+    {
+      "variant": "DailyPrecipitation",
+      "inches": 0.18,
+      "trace": false
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 14.4,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 2.2,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaxTemperature6Hour",
+      "temperature": {
+        "value": 17.8,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MinTemperature6Hour",
+      "temperature": {
+        "value": 12.2,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "PressureTendency",
+      "character": 5,
+      "direction": "LOWER",
+      "change_hpa": 0.4
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "PARTLY_CLOUDY",
+  "relative_humidity": 44.2,
+  "warnings": []
+}

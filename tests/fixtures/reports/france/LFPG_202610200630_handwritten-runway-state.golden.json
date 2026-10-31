@@ -170,6 +170,45 @@
   "tail_index": 11,
   "remarks_index": null,
   "remarks_raw": null,
+  "trends": [
+    {
+      "kind": "NOSIG",
+      "times": [],
+      "elements": {
+        "wind": null,
+        "visibility": null,
+        "weather": [],
+        "sky": [],
+        "color_state": null
+      }
+    }
+  ],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [
+    {
+      "runway": null,
+      "all_runways": true,
+      "repeated": false,
+      "snoclo": false,
+      "cleared": false,
+      "deposit": "DRY_SNOW",
+      "extent": "FROM_51_TO_100",
+      "depth": {
+        "kind": "NOT_SIGNIFICANT",
+        "mm": null
+      },
+      "braking": {
+        "coefficient": null,
+        "action": "POOR",
+        "unreliable": false
+      }
+    }
+  ],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [],
   "flavor": "ICAO",
   "military": false,
   "ceiling": {
@@ -179,7 +218,8 @@
   "flight_category": "LIFR",
   "flags": [
     "LOW_CEILING",
-    "LOW_VISIBILITY"
+    "LOW_VISIBILITY",
+    "RUNWAY_CONTAMINATED"
   ],
   "condition": "OBSCURATION",
   "relative_humidity": 100.0,

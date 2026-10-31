@@ -1,0 +1,310 @@
+{
+  "raw": "METAR KABQ 310552Z 10007KT 10SM SCT050 OVC090 12/11 A3012 RMK AO2 RAE45 SLP146 MTNS OBSC NE-SE P0001 60002 T01220106 10183 20122 50009 $",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KABQ",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310552Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "10007KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "SCT050",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "OVC090",
+      "start": 39,
+      "end": 45,
+      "kind": "SKY"
+    },
+    {
+      "text": "12/11",
+      "start": 46,
+      "end": 51,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3012",
+      "start": 52,
+      "end": 57,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 58,
+      "end": 61,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 62,
+      "end": 65,
+      "kind": "REMARK"
+    },
+    {
+      "text": "RAE45",
+      "start": 66,
+      "end": 71,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SLP146",
+      "start": 72,
+      "end": 78,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "MTNS",
+      "start": 79,
+      "end": 83,
+      "kind": "REMARK"
+    },
+    {
+      "text": "OBSC",
+      "start": 84,
+      "end": 88,
+      "kind": "REMARK"
+    },
+    {
+      "text": "NE-SE",
+      "start": 89,
+      "end": 94,
+      "kind": "REMARK"
+    },
+    {
+      "text": "P0001",
+      "start": 95,
+      "end": 100,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "60002",
+      "start": 101,
+      "end": 106,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "T01220106",
+      "start": 107,
+      "end": 116,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "10183",
+      "start": 117,
+      "end": 122,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "20122",
+      "start": 123,
+      "end": 128,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "50009",
+      "start": 129,
+      "end": 134,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "$",
+      "start": 135,
+      "end": 136,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KABQ",
+  "observed": "2026-10-31T05:52:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 100,
+    "speed": {
+      "value": 7,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 5000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 9000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 12,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 11,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.12,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 9,
+  "remarks_raw": "AO2 RAE45 SLP146 MTNS OBSC NE-SE P0001 60002 T01220106 10183 20122 50009 $",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "WeatherTiming",
+      "segments": [
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "RA"
+          ],
+          "events": [
+            {
+              "began": false,
+              "time": {
+                "minute": 45,
+                "hour": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1014.6,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "FreeText",
+      "text": "MTNS OBSC NE-SE"
+    },
+    {
+      "variant": "HourlyPrecipitation",
+      "inches": 0.01,
+      "trace": false
+    },
+    {
+      "variant": "PeriodPrecipitation",
+      "inches": 0.02,
+      "hours": 6,
+      "trace": false
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 12.2,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 10.6,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaxTemperature6Hour",
+      "temperature": {
+        "value": 18.3,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MinTemperature6Hour",
+      "temperature": {
+        "value": 12.2,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "PressureTendency",
+      "character": 0,
+      "direction": "HIGHER",
+      "change_hpa": 0.9
+    },
+    {
+      "variant": "MaintenanceIndicator"
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 9000,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [
+    "MAINTENANCE"
+  ],
+  "condition": "OVERCAST",
+  "relative_humidity": 93.6,
+  "warnings": []
+}

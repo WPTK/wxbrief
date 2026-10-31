@@ -1,0 +1,230 @@
+{
+  "raw": "SPECI PWAK 310831Z AUTO 05014KT 7SM FEW032 SCT060 27/23 A2999 RMK AO2 RAE0755RAB22E31 SLP158",
+  "tokens": [
+    {
+      "text": "SPECI",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "PWAK",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310831Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "AUTO",
+      "start": 19,
+      "end": 23,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "05014KT",
+      "start": 24,
+      "end": 31,
+      "kind": "WIND"
+    },
+    {
+      "text": "7SM",
+      "start": 32,
+      "end": 35,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "FEW032",
+      "start": 36,
+      "end": 42,
+      "kind": "SKY"
+    },
+    {
+      "text": "SCT060",
+      "start": 43,
+      "end": 49,
+      "kind": "SKY"
+    },
+    {
+      "text": "27/23",
+      "start": 50,
+      "end": 55,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2999",
+      "start": 56,
+      "end": 61,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 62,
+      "end": 65,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 66,
+      "end": 69,
+      "kind": "REMARK"
+    },
+    {
+      "text": "RAE0755RAB22E31",
+      "start": 70,
+      "end": 85,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SLP158",
+      "start": 86,
+      "end": 92,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "SPECI",
+  "station": "PWAK",
+  "observed": "2026-10-31T08:31:00+00:00",
+  "modifiers": [
+    "AUTO"
+  ],
+  "wind": {
+    "direction": 50,
+    "speed": {
+      "value": 14,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 7.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "FEW",
+      "base": {
+        "value": 3200,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 6000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 27,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 23,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.99,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 10,
+  "remarks_raw": "AO2 RAE0755RAB22E31 SLP158",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "WeatherTiming",
+      "segments": [
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "RA"
+          ],
+          "events": [
+            {
+              "began": false,
+              "time": {
+                "minute": 55,
+                "hour": 7
+              }
+            }
+          ]
+        },
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [
+            "RA"
+          ],
+          "events": [
+            {
+              "began": true,
+              "time": {
+                "minute": 22,
+                "hour": null
+              }
+            },
+            {
+              "began": false,
+              "time": {
+                "minute": 31,
+                "hour": null
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1015.8,
+        "unit": "HPA"
+      }
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [
+    "AUTOMATED",
+    "SPECIAL_REPORT"
+  ],
+  "condition": "PARTLY_CLOUDY",
+  "relative_humidity": 78.8,
+  "warnings": []
+}

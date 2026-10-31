@@ -77,13 +77,13 @@
       "text": "SLP065",
       "start": 65,
       "end": 71,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "P0034",
       "start": 72,
       "end": 77,
-      "kind": "REMARK"
+      "kind": "WEATHER"
     }
   ],
   "report_type": "METAR",
@@ -163,6 +163,31 @@
   "tail_index": null,
   "remarks_index": 10,
   "remarks_raw": "AO2 SLP065 P0034",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1006.5,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "HourlyPrecipitation",
+      "inches": 0.34,
+      "trace": false
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

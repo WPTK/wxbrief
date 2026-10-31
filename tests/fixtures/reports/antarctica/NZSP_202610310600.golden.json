@@ -1,0 +1,227 @@
+{
+  "raw": "METAR NZSP 310550Z 29008KT 4800 IC BR SCT010 OVC020 M35/ A2855 RMK CLN AIR 28009KT ALL WNDS GRID SDF/HDF",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "NZSP",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310550Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "29008KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "4800",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "IC",
+      "start": 32,
+      "end": 34,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BR",
+      "start": 35,
+      "end": 37,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT010",
+      "start": 38,
+      "end": 44,
+      "kind": "SKY"
+    },
+    {
+      "text": "OVC020",
+      "start": 45,
+      "end": 51,
+      "kind": "SKY"
+    },
+    {
+      "text": "M35/",
+      "start": 52,
+      "end": 56,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2855",
+      "start": 57,
+      "end": 62,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 63,
+      "end": 66,
+      "kind": "REMARK"
+    },
+    {
+      "text": "CLN",
+      "start": 67,
+      "end": 70,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AIR",
+      "start": 71,
+      "end": 74,
+      "kind": "REMARK"
+    },
+    {
+      "text": "28009KT",
+      "start": 75,
+      "end": 82,
+      "kind": "REMARK"
+    },
+    {
+      "text": "ALL",
+      "start": 83,
+      "end": 86,
+      "kind": "REMARK"
+    },
+    {
+      "text": "WNDS",
+      "start": 87,
+      "end": 91,
+      "kind": "REMARK"
+    },
+    {
+      "text": "GRID",
+      "start": 92,
+      "end": 96,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SDF/HDF",
+      "start": 97,
+      "end": 104,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "NZSP",
+  "observed": "2026-10-31T05:50:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 290,
+    "speed": {
+      "value": 8,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 4800,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "IC"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    },
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "BR"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 1000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 2000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": -35,
+    "unit": "C"
+  },
+  "dewpoint": null,
+  "altimeters": [
+    {
+      "value": 28.55,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 11,
+  "remarks_raw": "CLN AIR 28009KT ALL WNDS GRID SDF/HDF",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "FreeText",
+      "text": "CLN AIR 28009KT ALL WNDS GRID SDF/HDF"
+    }
+  ],
+  "flavor": "MIXED",
+  "military": false,
+  "ceiling": {
+    "value": 2000,
+    "unit": "FT"
+  },
+  "flight_category": "IFR",
+  "flags": [
+    "LOW_VISIBILITY"
+  ],
+  "condition": "SNOW",
+  "relative_humidity": null,
+  "warnings": []
+}

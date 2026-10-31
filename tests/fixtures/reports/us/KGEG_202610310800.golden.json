@@ -77,19 +77,19 @@
       "text": "SLP159",
       "start": 80,
       "end": 86,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "T00390033",
       "start": 87,
       "end": 96,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     },
     {
       "text": "401000011",
       "start": 97,
       "end": 106,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     }
   ],
   "report_type": "METAR",
@@ -174,6 +174,48 @@
   "tail_index": null,
   "remarks_index": 10,
   "remarks_raw": "AO2 SLP159 T00390033 401000011",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1015.9,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 3.9,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 3.3,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "DailyTemperatureExtremes",
+      "maximum": {
+        "value": 10.0,
+        "unit": "C"
+      },
+      "minimum": {
+        "value": 1.1,
+        "unit": "C"
+      }
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

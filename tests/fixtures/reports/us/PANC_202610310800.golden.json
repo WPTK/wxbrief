@@ -65,31 +65,31 @@
       "text": "PK",
       "start": 63,
       "end": 65,
-      "kind": "REMARK"
+      "kind": "WIND"
     },
     {
       "text": "WND",
       "start": 66,
       "end": 69,
-      "kind": "REMARK"
+      "kind": "WIND"
     },
     {
       "text": "15031/0702",
       "start": 70,
       "end": 80,
-      "kind": "REMARK"
+      "kind": "WIND"
     },
     {
       "text": "SLP880",
       "start": 81,
       "end": 87,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "T00561006",
       "start": 88,
       "end": 97,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     },
     {
       "text": "$",
@@ -157,6 +157,52 @@
   "tail_index": null,
   "remarks_index": 8,
   "remarks_raw": "AO2 PK WND 15031/0702 SLP880 T00561006 $",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "PeakWind",
+      "direction": 150,
+      "speed": {
+        "value": 31,
+        "unit": "KT"
+      },
+      "time": {
+        "minute": 2,
+        "hour": 7
+      }
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 988.0,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 5.6,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": -0.6,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaintenanceIndicator"
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {
@@ -165,7 +211,8 @@
   },
   "flight_category": "VFR",
   "flags": [
-    "GUSTS"
+    "GUSTS",
+    "MAINTENANCE"
   ],
   "condition": "BROKEN",
   "relative_humidity": 60.8,

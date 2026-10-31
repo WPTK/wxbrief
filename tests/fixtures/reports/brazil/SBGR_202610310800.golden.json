@@ -1,0 +1,139 @@
+{
+  "raw": "METAR SBGR 310800Z 05003KT 020V080 9999 BKN007 16/15 Q1016",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "SBGR",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310800Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "05003KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "020V080",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND_VARIATION"
+    },
+    {
+      "text": "9999",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BKN007",
+      "start": 40,
+      "end": 46,
+      "kind": "SKY"
+    },
+    {
+      "text": "16/15",
+      "start": 47,
+      "end": 52,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1016",
+      "start": 53,
+      "end": 58,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "SBGR",
+  "observed": "2026-10-31T08:00:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 50,
+    "speed": {
+      "value": 3,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": {
+    "start": 20,
+    "end": 80
+  },
+  "visibility": {
+    "distance": {
+      "value": 10000,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": true,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 700,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 16,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 15,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1016,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [],
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": {
+    "value": 700,
+    "unit": "FT"
+  },
+  "flight_category": "IFR",
+  "flags": [
+    "LOW_CEILING"
+  ],
+  "condition": "BROKEN",
+  "relative_humidity": 93.8,
+  "warnings": []
+}

@@ -77,13 +77,13 @@
       "text": "SLP278",
       "start": 73,
       "end": 79,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "T01110072",
       "start": 80,
       "end": 89,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     }
   ],
   "report_type": "METAR",
@@ -158,6 +158,37 @@
   "tail_index": null,
   "remarks_index": 10,
   "remarks_raw": "AO2 SLP278 T01110072",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1027.8,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 11.1,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 7.2,
+        "unit": "C"
+      }
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

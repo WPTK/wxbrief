@@ -163,12 +163,21 @@
   "tail_index": null,
   "remarks_index": null,
   "remarks_raw": null,
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [],
   "flavor": "ICAO",
   "military": false,
   "ceiling": null,
   "flight_category": "LIFR",
   "flags": [
-    "LOW_VISIBILITY"
+    "LOW_VISIBILITY",
+    "MISSING_DATA"
   ],
   "condition": "RAIN",
   "relative_humidity": 100.0,

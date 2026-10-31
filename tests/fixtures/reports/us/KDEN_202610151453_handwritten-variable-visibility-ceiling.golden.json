@@ -1,0 +1,318 @@
+{
+  "raw": "METAR KDEN 151453Z 36008KT 1 1/2SM BR BKN013 OVC025 02/01 A3011 RMK AO2 VIS 3/4V1 1/2 CIG 009V016 VIS NE 2 CIG 011 RWY35 SLP202 T00220011",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KDEN",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "151453Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "36008KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "1",
+      "start": 27,
+      "end": 28,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "1/2SM",
+      "start": 29,
+      "end": 34,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BR",
+      "start": 35,
+      "end": 37,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BKN013",
+      "start": 38,
+      "end": 44,
+      "kind": "SKY"
+    },
+    {
+      "text": "OVC025",
+      "start": 45,
+      "end": 51,
+      "kind": "SKY"
+    },
+    {
+      "text": "02/01",
+      "start": 52,
+      "end": 57,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3011",
+      "start": 58,
+      "end": 63,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 64,
+      "end": 67,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 68,
+      "end": 71,
+      "kind": "REMARK"
+    },
+    {
+      "text": "VIS",
+      "start": 72,
+      "end": 75,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "3/4V1",
+      "start": 76,
+      "end": 81,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "1/2",
+      "start": 82,
+      "end": 85,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "CIG",
+      "start": 86,
+      "end": 89,
+      "kind": "SKY"
+    },
+    {
+      "text": "009V016",
+      "start": 90,
+      "end": 97,
+      "kind": "SKY"
+    },
+    {
+      "text": "VIS",
+      "start": 98,
+      "end": 101,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "NE",
+      "start": 102,
+      "end": 104,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "2",
+      "start": 105,
+      "end": 106,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "CIG",
+      "start": 107,
+      "end": 110,
+      "kind": "SKY"
+    },
+    {
+      "text": "011",
+      "start": 111,
+      "end": 114,
+      "kind": "SKY"
+    },
+    {
+      "text": "RWY35",
+      "start": 115,
+      "end": 120,
+      "kind": "SKY"
+    },
+    {
+      "text": "SLP202",
+      "start": 121,
+      "end": 127,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "T00220011",
+      "start": 128,
+      "end": 137,
+      "kind": "TEMPERATURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KDEN",
+  "observed": "2026-10-15T14:53:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 360,
+    "speed": {
+      "value": 8,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 1.5,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "BR"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 1300,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 2500,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 2,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 1,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.11,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 11,
+  "remarks_raw": "AO2 VIS 3/4V1 1/2 CIG 009V016 VIS NE 2 CIG 011 RWY35 SLP202 T00220011",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "VariableVisibility",
+      "low": {
+        "value": 0.75,
+        "unit": "SM"
+      },
+      "high": {
+        "value": 1.5,
+        "unit": "SM"
+      }
+    },
+    {
+      "variant": "VariableCeiling",
+      "low": {
+        "value": 900,
+        "unit": "FT"
+      },
+      "high": {
+        "value": 1600,
+        "unit": "FT"
+      }
+    },
+    {
+      "variant": "SectorVisibility",
+      "distance": {
+        "value": 2.0,
+        "unit": "SM"
+      },
+      "location": "NE"
+    },
+    {
+      "variant": "SecondaryCeiling",
+      "height": {
+        "value": 1100,
+        "unit": "FT"
+      },
+      "location": "RWY35"
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1020.2,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 2.2,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 1.1,
+        "unit": "C"
+      }
+    }
+  ],
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 1300,
+    "unit": "FT"
+  },
+  "flight_category": "IFR",
+  "flags": [
+    "LOW_VISIBILITY"
+  ],
+  "condition": "OBSCURATION",
+  "relative_humidity": 93.1,
+  "warnings": []
+}

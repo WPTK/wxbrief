@@ -71,13 +71,13 @@
       "text": "SLP288",
       "start": 63,
       "end": 69,
-      "kind": "REMARK"
+      "kind": "PRESSURE"
     },
     {
       "text": "T00670033",
       "start": 70,
       "end": 79,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     },
     {
       "text": "$",
@@ -144,6 +144,40 @@
   "tail_index": null,
   "remarks_index": 9,
   "remarks_raw": "AO2 SLP288 T00670033 $",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "SeaLevelPressure",
+      "pressure": {
+        "value": 1028.8,
+        "unit": "HPA"
+      }
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 6.7,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 3.3,
+        "unit": "C"
+      }
+    },
+    {
+      "variant": "MaintenanceIndicator"
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {
@@ -152,7 +186,8 @@
   },
   "flight_category": "VFR",
   "flags": [
-    "CORRECTED"
+    "CORRECTED",
+    "MAINTENANCE"
   ],
   "condition": "BROKEN",
   "relative_humidity": 75.7,

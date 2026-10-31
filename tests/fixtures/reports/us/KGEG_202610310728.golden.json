@@ -77,25 +77,25 @@
       "text": "TWR",
       "start": 78,
       "end": 81,
-      "kind": "REMARK"
+      "kind": "VISIBILITY"
     },
     {
       "text": "VIS",
       "start": 82,
       "end": 85,
-      "kind": "REMARK"
+      "kind": "VISIBILITY"
     },
     {
       "text": "1/2",
       "start": 86,
       "end": 89,
-      "kind": "REMARK"
+      "kind": "VISIBILITY"
     },
     {
       "text": "T00330033",
       "start": 90,
       "end": 99,
-      "kind": "REMARK"
+      "kind": "TEMPERATURE"
     }
   ],
   "report_type": "SPECI",
@@ -180,6 +180,37 @@
   "tail_index": null,
   "remarks_index": 10,
   "remarks_raw": "AO2 TWR VIS 1/2 T00330033",
+  "trends": [],
+  "color_state": null,
+  "computed_color_state": null,
+  "runway_states": [],
+  "recent_weather": [],
+  "wind_shear": [],
+  "sea_state": null,
+  "remarks": [
+    {
+      "variant": "AutomatedStationType",
+      "precipitation_discriminator": true
+    },
+    {
+      "variant": "TowerVisibility",
+      "distance": {
+        "value": 0.5,
+        "unit": "SM"
+      }
+    },
+    {
+      "variant": "PreciseTemperature",
+      "temperature": {
+        "value": 3.3,
+        "unit": "C"
+      },
+      "dewpoint": {
+        "value": 3.3,
+        "unit": "C"
+      }
+    }
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {
