@@ -19,7 +19,7 @@ from wxbrief.decode.units import (
     TemperatureUnit,
     UnitsMode,
 )
-from wxbrief.i18n import Translator
+from wxbrief.i18n import Translator, lower_first
 from wxbrief.render import measure, phrases
 
 T = Translator.load("en")
@@ -298,10 +298,10 @@ def test_describe_time_and_labels() -> None:
 def test_case_helpers() -> None:
     assert phrases.upper_first("light rain") == "Light rain"
     assert phrases.upper_first("") == ""
-    assert phrases.lower_first("Light rain") == "light rain"
-    assert phrases.lower_first("CAVOK: fine") == "CAVOK: fine"
-    assert phrases.lower_first("10 km") == "10 km"
-    assert phrases.lower_first("A") == "a"
+    assert lower_first("Light rain") == "light rain"
+    assert lower_first("CAVOK: fine") == "CAVOK: fine"
+    assert lower_first("10 km") == "10 km"
+    assert lower_first("A") == "a"
 
 
 def test_join_list() -> None:

@@ -154,13 +154,6 @@ def upper_first(text: str) -> str:
     return text[:1].upper() + text[1:]
 
 
-def lower_first(text: str) -> str:
-    """Lowercase the first character unless the word is an acronym (``CAVOK``) or starts a unit/number."""
-    if len(text) > 1 and (text[1].isupper() or not text[0].isalpha()):
-        return text
-    return text[:1].lower() + text[1:]
-
-
 def join_list(t: Translator, items: Sequence[str]) -> str:
     """``a``, ``a and b``, ``a, b, and c``."""
     if not items:
@@ -202,7 +195,7 @@ def describe_wind(t: Translator, wind: Wind, units: UnitsMode, variation: WindVa
     elif wind.calm:
         text = t.t(K.WIND_CALM)
     else:
-        speed = format_speed(wind.speed, units)
+        speed = format_speed(wind.speed, units, t.numbers)
         if wind.speed_above:
             speed = t.t(K.COMMON_MORE_THAN, value=speed)
         if wind.variable:
@@ -213,14 +206,14 @@ def describe_wind(t: Translator, wind: Wind, units: UnitsMode, variation: WindVa
             compass = t.t(COMPASS_KEYS[compass_point(wind.direction)])
             text = t.t(K.WIND_STEADY, direction=f"{wind.direction:03d}", compass=compass, speed=speed)
         if wind.gust is not None:
-            text = t.t(K.WIND_GUST, base=text, gust=format_speed(wind.gust, units))
+            text = t.t(K.WIND_GUST, base=text, gust=format_speed(wind.gust, units, t.numbers))
     if variation is not None:
         text = t.t(K.WIND_VARIATION, base=text, from_deg=f"{variation.start:03d}", to_deg=f"{variation.end:03d}")
     return text
 
 
 def _qualified(t: Translator, distance: Distance, prefix: VisPrefix | None, units: UnitsMode, *, short: bool) -> str:
-    text = format_short_distance(distance, units) if short else format_visibility(distance, units)
+    text = format_short_distance(distance, units, t.numbers) if short else format_visibility(distance, units, t.numbers)
     if prefix is VisPrefix.LESS_THAN:
         return t.t(K.COMMON_LESS_THAN, value=text)
     if prefix is VisPrefix.GREATER_THAN:
@@ -230,11 +223,11 @@ def _qualified(t: Translator, distance: Distance, prefix: VisPrefix | None, unit
 
 def _ten_km_or_more(t: Translator, units: UnitsMode) -> str:
     """The meaning of ``9999`` and of CAVOK's visibility."""
-    return t.t(K.COMMON_OR_MORE, value=format_visibility(Distance(10, DistanceUnit.KM), units))
+    return t.t(K.COMMON_OR_MORE, value=format_visibility(Distance(10, DistanceUnit.KM), units, t.numbers))
 
 
 def _describe_minimum(t: Translator, item: DirectionalVisibility, units: UnitsMode) -> str:
-    value = format_visibility(item.distance, units)
+    value = format_visibility(item.distance, units, t.numbers)
     if item.direction is None:
         return value
     return t.t(K.VIS_DIRECTIONAL, value=value, compass=t.t(COMPASS_KEYS[item.direction]))
@@ -245,7 +238,7 @@ def describe_visibility(t: Translator, visibility: Visibility, units: UnitsMode)
         return t.t(
             K.VIS_CAVOK,
             visibility=_ten_km_or_more(t, units),
-            height=format_short_distance(Distance(CAVOK_CLOUD_BASE_FT, DistanceUnit.FT), units),
+            height=format_short_distance(Distance(CAVOK_CLOUD_BASE_FT, DistanceUnit.FT), units, t.numbers),
         )
     if visibility.not_reported or visibility.distance is None:
         return t.t(K.VIS_NOT_REPORTED)
@@ -308,13 +301,13 @@ def describe_cloud_layer(t: Translator, layer: CloudLayer, units: UnitsMode) -> 
     if layer.cover is SkyCondition.VV:
         if layer.base is None:
             return t.t(K.SKY_VERTICAL_VISIBILITY_UNKNOWN)
-        return t.t(K.SKY_VERTICAL_VISIBILITY, height=format_short_distance(layer.base, units))
+        return t.t(K.SKY_VERTICAL_VISIBILITY, height=format_short_distance(layer.base, units, t.numbers))
     cover = t.t(SKY_COVER_KEYS[layer.cover])
     if layer.base is None:
         if layer.cover in (SkyCondition.FEW, SkyCondition.SCT, SkyCondition.BKN, SkyCondition.OVC):
             return t.t(K.SKY_LAYER_NO_HEIGHT, cover=cover)
         return cover
-    height = format_short_distance(layer.base, units)
+    height = format_short_distance(layer.base, units, t.numbers)
     if layer.cloud_type is not None:
         return t.t(K.SKY_LAYER_TYPED, cover=cover, height=height, type=t.t(CLOUD_TYPE_KEYS[layer.cloud_type]))
     return t.t(K.SKY_LAYER, cover=cover, height=height)
@@ -327,13 +320,13 @@ def describe_sky(t: Translator, layers: Sequence[CloudLayer], units: UnitsMode) 
 def describe_ceiling(t: Translator, ceiling: Distance | None, units: UnitsMode) -> str:
     if ceiling is None:
         return t.t(K.SKY_NO_CEILING)
-    return t.t(K.SKY_CEILING, height=format_short_distance(ceiling, units))
+    return t.t(K.SKY_CEILING, height=format_short_distance(ceiling, units, t.numbers))
 
 
 def describe_temperature(t: Translator, temperature: Temperature | None, units: UnitsMode) -> str:
     if temperature is None:
         return t.t(K.COMMON_NOT_REPORTED)
-    return format_temperature(temperature, units)
+    return format_temperature(temperature, units, t.numbers)
 
 
 def describe_humidity(t: Translator, percent: float) -> str:
@@ -343,7 +336,7 @@ def describe_humidity(t: Translator, percent: float) -> str:
 def describe_pressure(t: Translator, pressure: Pressure | None, units: UnitsMode) -> str:
     if pressure is None:
         return t.t(K.COMMON_NOT_REPORTED)
-    return format_pressure(pressure, units)
+    return format_pressure(pressure, units, t.numbers)
 
 
 def describe_warning(t: Translator, warning: ParseWarning) -> str:
@@ -358,15 +351,15 @@ def summary_line(t: Translator, metar: Metar, units: UnitsMode) -> str:
     details: list[str] = []
     present = [g for g in metar.weather if not g.nsw and not g.not_observed]
     if present:
-        details.append(lower_first(describe_weather(t, present)))
+        details.append(t.lower_first(describe_weather(t, present)))
     if metar.cavok:
         details.append(t.t(K.SUMMARY_CAVOK))
     if metar.ceiling is not None:
-        details.append(t.t(K.SUMMARY_CEILING, height=format_short_distance(metar.ceiling, units)))
+        details.append(t.t(K.SUMMARY_CEILING, height=format_short_distance(metar.ceiling, units, t.numbers)))
     if metar.visibility is not None and not metar.cavok and metar.visibility.distance is not None:
-        details.append(t.t(K.SUMMARY_VISIBILITY, value=lower_first(describe_visibility(t, metar.visibility, units))))
+        details.append(t.t(K.SUMMARY_VISIBILITY, value=t.lower_first(describe_visibility(t, metar.visibility, units))))
     if metar.wind is not None and metar.wind.speed is not None:
-        details.append(t.t(K.SUMMARY_WIND, value=lower_first(describe_wind(t, metar.wind, units))))
+        details.append(t.t(K.SUMMARY_WIND, value=t.lower_first(describe_wind(t, metar.wind, units))))
     if not details:
         return t.t(K.SUMMARY_NOTHING)
     joined = ", ".join(details)
@@ -426,18 +419,18 @@ def describe_wind_shear_layer(t: Translator, shear: WindShearLayer, units: Units
     wind = Wind(shear.direction, shear.speed, shear.gust, variable=shear.direction is None)
     return t.t(
         K.SHEAR_LAYER,
-        height=format_short_distance(shear.height, units),
-        wind=lower_first(describe_wind(t, wind, units)),
+        height=format_short_distance(shear.height, units, t.numbers),
+        wind=t.lower_first(describe_wind(t, wind, units)),
     )
 
 
 def _hazard_layer(t: Translator, intensity: str, base: Distance, thickness: Distance | None, units: UnitsMode) -> str:
     """``light icing, 5,000 ft to 10,000 ft above ground``; a base of 0 reads ``the surface``."""
-    start = t.t(K.HAZARD_SURFACE) if base.value == 0 else format_short_distance(base, units)
+    start = t.t(K.HAZARD_SURFACE) if base.value == 0 else format_short_distance(base, units, t.numbers)
     if thickness is None:
         return t.t(K.HAZARD_LAYER_OPEN, intensity=intensity, base=start)
     top = Distance(base.value + thickness.value, base.unit)
-    return t.t(K.HAZARD_LAYER, intensity=intensity, base=start, top=format_short_distance(top, units))
+    return t.t(K.HAZARD_LAYER, intensity=intensity, base=start, top=format_short_distance(top, units, t.numbers))
 
 
 def describe_icing(t: Translator, group: IcingGroup, units: UnitsMode) -> str:
@@ -452,20 +445,20 @@ def describe_forecast_elements(t: Translator, elements: ForecastElements, units:
     """The elements a trend or TAF group states, as one fragment (``visibility 350 m; broken clouds at 1,000 ft``)."""
     items: list[str] = []
     if elements.wind is not None:
-        items.append(t.t(K.TREND_WIND, value=lower_first(describe_wind(t, elements.wind, units))))
+        items.append(t.t(K.TREND_WIND, value=t.lower_first(describe_wind(t, elements.wind, units))))
     if elements.visibility is not None:
         text = describe_visibility(t, elements.visibility, units)
-        items.append(text if elements.visibility.cavok else t.t(K.TREND_VISIBILITY, value=lower_first(text)))
+        items.append(text if elements.visibility.cavok else t.t(K.TREND_VISIBILITY, value=t.lower_first(text)))
     if elements.weather:
-        items.append(lower_first(describe_weather(t, elements.weather)))
+        items.append(t.lower_first(describe_weather(t, elements.weather)))
     if elements.sky:
-        items.append(t.t(K.TREND_SKY, value=lower_first(describe_sky(t, elements.sky, units))))
+        items.append(t.t(K.TREND_SKY, value=t.lower_first(describe_sky(t, elements.sky, units))))
     if elements.color_state is not None:
         items.append(t.t(K.TREND_COLOR, value=describe_color_code(t, elements.color_state)))
     if elements.wind_shear is not None:
-        items.append(t.t(K.TREND_SHEAR, value=lower_first(describe_wind_shear_layer(t, elements.wind_shear, units))))
+        items.append(t.t(K.TREND_SHEAR, value=t.lower_first(describe_wind_shear_layer(t, elements.wind_shear, units))))
     if elements.altimeter is not None:
-        items.append(t.t(K.TREND_PRESSURE, value=format_pressure(elements.altimeter, units)))
+        items.append(t.t(K.TREND_PRESSURE, value=format_pressure(elements.altimeter, units, t.numbers)))
     if elements.icing:
         layers = "; ".join(describe_icing(t, group, units) for group in elements.icing)
         items.append(t.t(K.TREND_ICING, value=layers))
@@ -538,7 +531,7 @@ def describe_taf_period(t: Translator, period: TafPeriod, units: UnitsMode) -> s
 def describe_taf_temperature(t: Translator, item: TafTemperature, units: UnitsMode) -> str:
     """``21 °C (70 °F) at 2026-10-31 15:00 UTC``."""
     moment = describe_time(t, item.time) if item.time is not None else f"{item.day:02d}{item.hour:02d}Z"
-    return t.t(K.TAF_TEMPERATURE_AT, value=format_temperature(item.temperature, units), time=moment)
+    return t.t(K.TAF_TEMPERATURE_AT, value=format_temperature(item.temperature, units, t.numbers), time=moment)
 
 
 def describe_taf_temperature_label(t: Translator, item: TafTemperature) -> str:
@@ -565,7 +558,7 @@ def describe_taf_summary(t: Translator, taf: Taf, units: UnitsMode) -> str:
         text = t.t(K.TAF_SUMMARY_NO_STATION, span=span, category=category)
     else:
         text = t.t(K.TAF_SUMMARY_NO_STATION_NO_CATEGORY, span=span)
-    watch = [lower_first(describe_flag(t, flag)) for flag in _WATCH_FLAGS if flag in taf.flags]
+    watch = [t.lower_first(describe_flag(t, flag)) for flag in _WATCH_FLAGS if flag in taf.flags]
     if watch:
         text += " " + t.t(K.TAF_SUMMARY_WATCH, items=join_list(t, watch))
     return text
@@ -577,7 +570,7 @@ def _runway_braking(t: Translator, braking: RunwayBraking) -> str | None:
     if braking.action is not None:
         return t.t(BRAKING_ACTION_KEYS[braking.action])
     if braking.coefficient is not None:
-        return t.t(K.RWY_BRAKING_COEFFICIENT, value=f"{braking.coefficient:.2f}")
+        return t.t(K.RWY_BRAKING_COEFFICIENT, value=t.numbers.fixed(braking.coefficient, 2))
     return None
 
 
@@ -599,7 +592,7 @@ def describe_runway_state(t: Translator, state: RunwayState, units: UnitsMode) -
     if state.extent is not None:
         parts.append(t.t(RUNWAY_EXTENT_KEYS[state.extent]))
     if state.depth is not None:
-        value = format_millimeters(state.depth.mm, units) if state.depth.mm is not None else ""
+        value = format_millimeters(state.depth.mm, units, t.numbers) if state.depth.mm is not None else ""
         parts.append(t.t(RUNWAY_DEPTH_KEYS[state.depth.kind], value=value))
     if braking is not None:
         parts.append(braking)
@@ -624,11 +617,11 @@ def describe_sea_state(t: Translator, sea: SeaState, units: UnitsMode) -> str:
     """``Water temperature 15 °C, sea state 3 (slight)``."""
     parts: list[str] = []
     if sea.temperature is not None:
-        parts.append(t.t(K.SEA_TEMPERATURE, value=format_temperature(sea.temperature, units)))
+        parts.append(t.t(K.SEA_TEMPERATURE, value=format_temperature(sea.temperature, units, t.numbers)))
     if sea.state is not None:
         parts.append(t.t(K.SEA_STATE, code=sea.state, name=t.t(SEA_STATE_KEYS[sea.state])))
     if sea.wave_height_m is not None:
-        parts.append(t.t(K.SEA_HEIGHT, value=format_wave_height(sea.wave_height_m, units)))
+        parts.append(t.t(K.SEA_HEIGHT, value=format_wave_height(sea.wave_height_m, units, t.numbers)))
     return upper_first(", ".join(parts) or t.t(K.SEA_NOTHING))
 
 
@@ -692,17 +685,17 @@ def _inches(t: Translator, value: float | None, units: UnitsMode, *, trace: bool
         return t.t(K.REMARK_TRACE)
     if value is None:
         return t.t(K.REMARK_PRECIPITATION_MISSING)
-    return format_inches(value, units)
+    return format_inches(value, units, t.numbers)
 
 
 def _temperature(t: Translator, value: Temperature | None, units: UnitsMode) -> str:
     if value is None:
         return t.t(K.REMARK_TEMPERATURE_MISSING)
-    return format_temperature(value, units, precise=True)
+    return format_temperature(value, units, t.numbers, precise=True)
 
 
-def _vis(value: Distance, units: UnitsMode) -> str:
-    return format_visibility(value, units)
+def _vis(t: Translator, value: Distance, units: UnitsMode) -> str:
+    return format_visibility(value, units, t.numbers)
 
 
 def _timing_segment(t: Translator, segment: TimingSegment) -> str:
@@ -720,7 +713,7 @@ def _lightning(t: Translator, item: Lightning) -> str:
         words.append(t.t(LIGHTNING_FREQUENCY_KEYS[item.frequency]))
     if item.types:
         words.append(join_list(t, [t.t(LIGHTNING_TYPE_KEYS[kind]) for kind in item.types]))
-    words.append(t.t(K.REMARK_LIGHTNING).lower())
+    words.append(t.lower_first(t.t(K.REMARK_LIGHTNING)))
     base = upper_first(" ".join(words))
     if not item.location:
         return base
@@ -765,7 +758,7 @@ def _tendency(t: Translator, item: PressureTendency, units: UnitsMode) -> str:
     name = t.t(TENDENCY_NAME_KEYS[item.character])
     if item.direction is TendencyDirection.SAME:
         return t.t(K.REMARK_TENDENCY_SAME, name=name)
-    change = format_pressure_change(item.change_hpa, units)
+    change = format_pressure_change(item.change_hpa, units, t.numbers)
     key = K.REMARK_TENDENCY_HIGHER if item.direction is TendencyDirection.HIGHER else K.REMARK_TENDENCY_LOWER
     return t.t(key, change=change, name=name)
 
@@ -781,19 +774,19 @@ def describe_remark(t: Translator, remark: Remark, units: UnitsMode) -> str:
                 K.REMARK_PEAK_WIND,
                 direction=f"{direction:03d}",
                 compass=compass,
-                speed=format_speed(speed, units),
+                speed=format_speed(speed, units, t.numbers),
                 time=_remark_time(t, when),
             )
         case WindShift(time=when, frontal_passage=frontal):
             return t.t(K.REMARK_WIND_SHIFT_FRONTAL if frontal else K.REMARK_WIND_SHIFT, time=_remark_time(t, when))
         case TowerVisibility(distance=distance):
-            return t.t(K.REMARK_TOWER_VISIBILITY, value=_vis(distance, units))
+            return t.t(K.REMARK_TOWER_VISIBILITY, value=_vis(t, distance, units))
         case SurfaceVisibility(distance=distance):
-            return t.t(K.REMARK_SURFACE_VISIBILITY, value=_vis(distance, units))
+            return t.t(K.REMARK_SURFACE_VISIBILITY, value=_vis(t, distance, units))
         case VariableVisibility(low=low, high=high):
-            return t.t(K.REMARK_VARIABLE_VISIBILITY, low=_vis(low, units), high=_vis(high, units))
+            return t.t(K.REMARK_VARIABLE_VISIBILITY, low=_vis(t, low, units), high=_vis(t, high, units))
         case SectorVisibility(distance=distance, location=location):
-            return t.t(K.REMARK_SECTOR_VISIBILITY, value=_vis(distance, units), where=_remark_place(t, location))
+            return t.t(K.REMARK_SECTOR_VISIBILITY, value=_vis(t, distance, units), where=_remark_place(t, location))
         case Lightning():
             return _lightning(t, remark)
         case WeatherTiming(segments=segments):
@@ -801,19 +794,21 @@ def describe_remark(t: Translator, remark: Remark, units: UnitsMode) -> str:
         case VariableCeiling(low=low, high=high):
             return t.t(
                 K.REMARK_VARIABLE_CEILING,
-                low=format_short_distance(low, units),
-                high=format_short_distance(high, units),
+                low=format_short_distance(low, units, t.numbers),
+                high=format_short_distance(high, units, t.numbers),
             )
         case SecondaryCeiling(height=height, location=location):
             return t.t(
-                K.REMARK_SECONDARY_CEILING, value=format_short_distance(height, units), where=_remark_place(t, location)
+                K.REMARK_SECONDARY_CEILING,
+                value=format_short_distance(height, units, t.numbers),
+                where=_remark_place(t, location),
             )
         case PressureRapidChange(rising=rising):
             return t.t(K.REMARK_PRESSURE_RISING if rising else K.REMARK_PRESSURE_FALLING)
         case SeaLevelPressure(pressure=pressure):
             if pressure is None:
                 return t.t(K.REMARK_SEA_LEVEL_PRESSURE_MISSING)
-            return t.t(K.REMARK_SEA_LEVEL_PRESSURE, value=format_pressure(pressure, units, precise=True))
+            return t.t(K.REMARK_SEA_LEVEL_PRESSURE, value=format_pressure(pressure, units, t.numbers, precise=True))
         case HourlyPrecipitation(inches=inches, trace=trace):
             return t.t(K.REMARK_HOURLY_PRECIPITATION, value=_inches(t, inches, units, trace=trace))
         case PeriodPrecipitation(inches=inches, hours=hours, trace=trace):
@@ -854,28 +849,30 @@ def describe_remark(t: Translator, remark: Remark, units: UnitsMode) -> str:
         case SnowDepth(inches=inches):
             if inches is None:
                 return t.t(K.REMARK_SNOW_DEPTH_MISSING)
-            return t.t(K.REMARK_SNOW_DEPTH, value=format_inches(inches, units))
+            return t.t(K.REMARK_SNOW_DEPTH, value=format_inches(inches, units, t.numbers))
         case SnowIncrease(last_hour_inches=hour, total_inches=total):
-            return t.t(K.REMARK_SNOW_INCREASE, hour=format_inches(hour, units), total=format_inches(total, units))
+            hour_text, total_text = format_inches(hour, units, t.numbers), format_inches(total, units, t.numbers)
+            return t.t(K.REMARK_SNOW_INCREASE, hour=hour_text, total=total_text)
         case CloudTypes():
             return _cloud_types(t, remark)
         case HailSize(inches=inches, less_than=less_than):
-            return t.t(K.REMARK_HAIL_LESS if less_than else K.REMARK_HAIL, size=format_inches(inches, units))
+            return t.t(K.REMARK_HAIL_LESS if less_than else K.REMARK_HAIL, size=format_inches(inches, units, t.numbers))
         case DensityAltitude(altitude=altitude):
-            return t.t(K.REMARK_DENSITY_ALTITUDE, value=format_short_distance(altitude, units))
+            return t.t(K.REMARK_DENSITY_ALTITUDE, value=format_short_distance(altitude, units, t.numbers))
         case CloudOpacity():
             return _opacity(t, remark)
         case StationPressure():
             return _station_pressure(t, remark)
         case AltimeterSetting(pressure=pressure):
-            return t.t(K.REMARK_ALTIMETER, value=format_pressure(pressure, units))
+            return t.t(K.REMARK_ALTIMETER, value=format_pressure(pressure, units, t.numbers))
         case RunwayWind(runway=runway, wind=wind, variation=variation):
-            return t.t(K.REMARK_RUNWAY_WIND, runway=runway, wind=lower_first(describe_wind(t, wind, units, variation)))
+            wind_text = t.lower_first(describe_wind(t, wind, units, variation))
+            return t.t(K.REMARK_RUNWAY_WIND, runway=runway, wind=wind_text)
         case WindAtHeight(height=height, wind=wind):
             return t.t(
                 K.REMARK_WIND_AT_HEIGHT,
-                height=format_short_distance(height, units),
-                wind=lower_first(describe_wind(t, wind, units)),
+                height=format_short_distance(height, units, t.numbers),
+                wind=t.lower_first(describe_wind(t, wind, units)),
             )
         case ColorStateRemark(group=group):
             return t.t(K.REMARK_COLOR_STATE, group=describe_color_state(t, group))

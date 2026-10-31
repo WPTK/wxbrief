@@ -1,7 +1,7 @@
 """Formatting of measured quantities per ``UnitsMode``.
 
-Unit symbols (kt, SM, hPa ...) are never translated, so this module needs no catalog. Digits and separators are
-English for now; the i18n session routes them through the catalog's ``[meta]`` table.
+Unit symbols (kt, SM, hPa ...) are never translated. Digits and separators follow a ``NumberFormat`` (English unless the
+caller passes ``translator.numbers``): ``3,000 ft`` in English, ``3 000 ft`` in French, ``1013,2 hPa`` in German.
 
 A report is in one system (US: knots, statute miles, feet, inHg, Fahrenheit-style; metric: m/s, metres, hPa, Celsius).
 ``US`` and ``METRIC`` modes show that system first and keep the reported value in parentheses when it differs;
@@ -26,6 +26,7 @@ from wxbrief.decode.units import (
     TemperatureUnit,
     UnitsMode,
 )
+from wxbrief.i18n.numbers import ENGLISH, NumberFormat
 
 
 class _System(Enum):
@@ -44,20 +45,17 @@ def _combine(units: UnitsMode, source: _System, us_text: str, metric_text: str) 
     return f"{metric_text} ({us_text})"
 
 
-def format_int(value: float) -> str:
+def format_int(value: float, nf: NumberFormat = ENGLISH) -> str:
     """Whole number with a thousands separator (``3,000``)."""
-    return f"{round(value):,}"
+    return nf.integer(value)
 
 
-def format_decimal(value: float, places: int = 1) -> str:
+def format_decimal(value: float, places: int = 1, nf: NumberFormat = ENGLISH) -> str:
     """``value`` with up to ``places`` decimals, trailing zeros dropped (``1.2``, ``10``)."""
-    text = f"{value:.{places}f}"
-    if "." in text:
-        text = text.rstrip("0").rstrip(".")
-    return text or "0"
+    return nf.trimmed(value, places)
 
 
-def format_miles(value: float, *, exact: bool) -> str:
+def format_miles(value: float, *, exact: bool, nf: NumberFormat = ENGLISH) -> str:
     """Statute miles. Reported values are shown as written (fractions); converted ones as decimals above 1 SM."""
     if value == 0:
         return "0"
@@ -71,72 +69,76 @@ def format_miles(value: float, *, exact: bool) -> str:
         return f"{whole} {part}" if whole else part
     if value >= 10:
         return str(round(value))
-    return format_decimal(value, 1)
+    return format_decimal(value, 1, nf)
 
 
-def format_visibility(distance: Distance, units: UnitsMode) -> str:
+def format_visibility(distance: Distance, units: UnitsMode, nf: NumberFormat = ENGLISH) -> str:
     """Visibility in the requested system."""
     source = _System.US if distance.unit is DistanceUnit.SM else _System.METRIC
     reported_us = distance.unit is DistanceUnit.SM
-    us_text = f"{format_miles(distance.statute_miles, exact=reported_us)} SM"
+    us_text = f"{format_miles(distance.statute_miles, exact=reported_us, nf=nf)} SM"
     meters = distance.meters
     if distance.unit is DistanceUnit.KM or meters >= 1000:
         km = meters / 1000
-        metric_text = f"{format_decimal(km, 1)} km"
+        metric_text = f"{format_decimal(km, 1, nf)} km"
     else:
         step = 1 if distance.unit is DistanceUnit.M else 10
         metric_text = f"{round(meters / step) * step} m"
     return _combine(units, source, us_text, metric_text)
 
 
-def format_short_distance(distance: Distance, units: UnitsMode) -> str:
+def format_short_distance(distance: Distance, units: UnitsMode, nf: NumberFormat = ENGLISH) -> str:
     """Cloud heights and RVR: feet or metres."""
     source = _System.US if distance.unit is DistanceUnit.FT else _System.METRIC
     if distance.unit is DistanceUnit.FT:
-        us_text = f"{format_int(distance.value)} ft"
+        us_text = f"{format_int(distance.value, nf)} ft"
     else:
-        us_text = f"{format_int(round(distance.feet / 10) * 10)} ft"
+        us_text = f"{format_int(round(distance.feet / 10) * 10, nf)} ft"
     if distance.unit is DistanceUnit.M:
-        metric_text = f"{format_int(distance.value)} m"
+        metric_text = f"{format_int(distance.value, nf)} m"
     else:
-        metric_text = f"{format_int(distance.meters)} m"
+        metric_text = f"{format_int(distance.meters, nf)} m"
     return _combine(units, source, us_text, metric_text)
 
 
-def format_speed(speed: Speed, units: UnitsMode) -> str:
+def format_speed(speed: Speed, units: UnitsMode, nf: NumberFormat = ENGLISH) -> str:
     source = _System.US if speed.unit is SpeedUnit.KT else _System.METRIC
-    us_text = f"{format_int(speed.value if speed.unit is SpeedUnit.KT else speed.knots)} kt"
+    us_text = f"{format_int(speed.value if speed.unit is SpeedUnit.KT else speed.knots, nf)} kt"
     match speed.unit:
         case SpeedUnit.MPS:
-            metric_text = f"{format_int(speed.value)} m/s"
+            metric_text = f"{format_int(speed.value, nf)} m/s"
         case SpeedUnit.KMH:
-            metric_text = f"{format_int(speed.value)} km/h"
+            metric_text = f"{format_int(speed.value, nf)} km/h"
         case SpeedUnit.KT:
-            metric_text = f"{format_int(speed.kmh)} km/h"
+            metric_text = f"{format_int(speed.kmh, nf)} km/h"
     return _combine(units, source, us_text, metric_text)
 
 
-def format_pressure(pressure: Pressure, units: UnitsMode, *, precise: bool = False) -> str:
+def format_pressure(
+    pressure: Pressure, units: UnitsMode, nf: NumberFormat = ENGLISH, *, precise: bool = False
+) -> str:
     """Altimeter or QNH; ``precise`` keeps the tenth of a hectopascal that sea-level pressure carries."""
     source = _System.US if pressure.unit is PressureUnit.INHG else _System.METRIC
-    us_text = f"{pressure.inhg:.2f} inHg"
-    metric_text = f"{pressure.hpa:.1f} hPa" if precise else f"{round(pressure.hpa)} hPa"
+    us_text = f"{nf.fixed(pressure.inhg, 2)} inHg"
+    metric_text = f"{nf.fixed(pressure.hpa, 1)} hPa" if precise else f"{round(pressure.hpa)} hPa"
     return _combine(units, source, us_text, metric_text)
 
 
-def format_pressure_change(hpa: float, units: UnitsMode) -> str:
+def format_pressure_change(hpa: float, units: UnitsMode, nf: NumberFormat = ENGLISH) -> str:
     """A pressure difference reported in hectopascals (the 3-hour tendency)."""
-    us_text = f"{hpa / HPA_PER_INHG:.2f} inHg"
-    metric_text = f"{format_decimal(hpa, 1)} hPa"
+    us_text = f"{nf.fixed(hpa / HPA_PER_INHG, 2)} inHg"
+    metric_text = f"{format_decimal(hpa, 1, nf)} hPa"
     return _combine(units, _System.METRIC, us_text, metric_text)
 
 
-def format_temperature(temperature: Temperature, units: UnitsMode, *, precise: bool = False) -> str:
+def format_temperature(
+    temperature: Temperature, units: UnitsMode, nf: NumberFormat = ENGLISH, *, precise: bool = False
+) -> str:
     """Temperature; ``precise`` keeps the tenth of a degree of the T-group."""
     source = _System.METRIC if temperature.unit is TemperatureUnit.C else _System.US
     if precise:
-        us_text = f"{temperature.fahrenheit:.1f} °F"
-        metric_text = f"{temperature.celsius:.1f} °C"
+        us_text = f"{nf.fixed(temperature.fahrenheit, 1)} °F"
+        metric_text = f"{nf.fixed(temperature.celsius, 1)} °C"
     else:
         us_text = f"{round(temperature.fahrenheit)} °F"
         metric_text = f"{round(temperature.celsius)} °C"
@@ -147,22 +149,24 @@ MM_PER_INCH = 25.4
 MM_PER_CM = 10
 
 
-def format_inches(inches: float, units: UnitsMode) -> str:
+def format_inches(inches: float, units: UnitsMode, nf: NumberFormat = ENGLISH) -> str:
     """A small length reported in inches (precipitation, snow depth, hail size)."""
-    us_text = f"{format_decimal(inches, 2)} in"
-    metric_text = f"{format_decimal(inches * MM_PER_INCH, 1)} mm"
+    us_text = f"{format_decimal(inches, 2, nf)} in"
+    metric_text = f"{format_decimal(inches * MM_PER_INCH, 1, nf)} mm"
     return _combine(units, _System.US, us_text, metric_text)
 
 
-def format_millimeters(mm: float, units: UnitsMode) -> str:
+def format_millimeters(mm: float, units: UnitsMode, nf: NumberFormat = ENGLISH) -> str:
     """A deposit depth reported in millimetres (shown in centimetres from 10 cm up)."""
-    metric_text = f"{format_decimal(mm / MM_PER_CM, 1)} cm" if mm >= 100 else f"{format_decimal(mm, 1)} mm"
-    us_text = f"{format_decimal(mm / MM_PER_INCH, 2)} in"
+    metric_text = (
+        f"{format_decimal(mm / MM_PER_CM, 1, nf)} cm" if mm >= 100 else f"{format_decimal(mm, 1, nf)} mm"
+    )
+    us_text = f"{format_decimal(mm / MM_PER_INCH, 2, nf)} in"
     return _combine(units, _System.METRIC, us_text, metric_text)
 
 
-def format_wave_height(meters: float, units: UnitsMode) -> str:
+def format_wave_height(meters: float, units: UnitsMode, nf: NumberFormat = ENGLISH) -> str:
     """Significant wave height reported in metres."""
-    us_text = f"{format_decimal(meters / METERS_PER_FOOT, 1)} ft"
-    metric_text = f"{format_decimal(meters, 1)} m"
+    us_text = f"{format_decimal(meters / METERS_PER_FOOT, 1, nf)} ft"
+    metric_text = f"{format_decimal(meters, 1, nf)} m"
     return _combine(units, _System.METRIC, us_text, metric_text)

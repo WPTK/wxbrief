@@ -13,9 +13,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from importlib import resources
 
+from wxbrief.i18n.numbers import ENGLISH, NumberFormat
 from wxbrief.i18n.plurals import CATEGORIES, plural_category
 
 DEFAULT_LANGUAGE = "en"
+LANGUAGES = ("en", "es", "fr", "de", "pt")  # the catalogs that ship, in the order a picker lists them
 _LANG_CODE = re.compile(r"^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$")
 
 type Entry = str | dict[str, str]
@@ -28,6 +30,13 @@ class Catalog:
     lang: str
     entries: dict[str, Entry]
     meta: dict[str, object]
+
+
+def lower_first(text: str) -> str:
+    """Lowercase the first character unless the word is an acronym (``CAVOK``) or starts a unit or number."""
+    if len(text) > 1 and (text[1].isupper() or not text[0].isalpha()):
+        return text
+    return text[:1].lower() + text[1:]
 
 
 class _Params(dict[str, object]):
@@ -115,6 +124,21 @@ class Translator:
     @property
     def meta(self) -> dict[str, object]:
         return self._catalogs[0].meta
+
+    @property
+    def numbers(self) -> NumberFormat:
+        """The primary catalog's number format (English separators when it names none)."""
+        meta = self._catalogs[0].meta
+        return NumberFormat.from_meta(meta) if meta else ENGLISH
+
+    @property
+    def language_name(self) -> str:
+        """The language's own name (``Deutsch``) from the catalog's ``[meta]``."""
+        return str(self._catalogs[0].meta.get("language", self.lang))
+
+    def lower_first(self, text: str) -> str:
+        """``lower_first``, unless the language capitalises nouns mid-sentence (``keep_case`` in ``[meta]``)."""
+        return text if self._catalogs[0].meta.get("keep_case") is True else lower_first(text)
 
     @property
     def keys(self) -> frozenset[str]:
