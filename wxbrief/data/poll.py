@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
-from wxbrief.data.awc import AwcClient, AwcError, RateLimited
+from wxbrief.data.awc import AwcClient, AwcError, RateLimited, request_count
 
 Clock = Callable[[], float]
 Sleep = Callable[[float], Awaitable[None]]
@@ -63,7 +63,8 @@ class RateBudget:
         return max(0, self.limit - self.used)
 
     def try_acquire(self, count: int = 1) -> bool:
-        """Spend ``count`` requests if the window has room."""
+        """Spend ``count`` requests if the window has room (a ``count`` above ``limit`` needs an empty window)."""
+        count = min(count, self.limit)
         if self.used + count > self.limit:
             return False
         now = self._clock()
@@ -72,6 +73,7 @@ class RateBudget:
 
     def wait_time(self, count: int = 1) -> float:
         """Seconds until ``count`` requests fit (0 when they fit now)."""
+        count = min(count, self.limit)
         overflow = self.used + count - self.limit
         if overflow <= 0:
             return 0.0
@@ -158,8 +160,9 @@ class PollScheduler:
             if not ids:
                 track.due = self._clock() + self._interval(product)
                 continue
-            if not self.budget.try_acquire():
-                track.due = self._clock() + self.budget.wait_time()
+            requests = request_count(ids)  # a long id list is sent as several requests, each spending budget
+            if not self.budget.try_acquire(requests):
+                track.due = self._clock() + self.budget.wait_time(requests)
                 continue
             attempted.append(product)
             try:

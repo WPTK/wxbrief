@@ -64,6 +64,11 @@ def _chunks(ids: Sequence[str], size: int) -> list[list[str]]:
     return [unique[start : start + size] for start in range(0, len(unique), size)]
 
 
+def request_count(ids: Sequence[str]) -> int:
+    """How many HTTP requests a fetch of ``ids`` takes (one per chunk of ``MAX_IDS_PER_REQUEST``)."""
+    return len(_chunks(ids, MAX_IDS_PER_REQUEST))
+
+
 class AwcClient:
     """Thin typed wrapper over ``/metar``, ``/taf`` and ``/stationinfo``.
 
