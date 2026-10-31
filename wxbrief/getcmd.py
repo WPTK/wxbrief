@@ -23,25 +23,14 @@ from wxbrief.render.plain import render_plain
 from wxbrief.solar import is_daylight
 
 
-def add_get_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
-    get = commands.add_parser(
-        "get",
-        help="fetch the latest METAR and TAF for stations and print them",
-        description="Fetch the latest METAR/SPECI and TAF from aviationweather.gov once and print the decode.",
-    )
-    get.add_argument("stations", nargs="+", metavar="ICAO", help="station ids (ICAO, or a unique IATA/FAA code)")
+def add_get_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser], t: Translator) -> None:
+    get = commands.add_parser("get", help=t.t(K.CLI_HELP_GET), description=t.t(K.CLI_HELP_GET_DESCRIPTION))
+    get.add_argument("stations", nargs="+", metavar="ICAO", help=t.t(K.CLI_HELP_GET_STATIONS))
     output = get.add_mutually_exclusive_group()
-    output.add_argument("--json", action="store_true", help="machine-readable output")
-    output.add_argument(
-        "--discord", action="store_true", help="Discord code blocks (imperial units unless --units says otherwise)"
-    )
-    output.add_argument("--plain", action="store_true", help="plain text")
-    get.add_argument(
-        "--units",
-        choices=[mode.value for mode in UnitsMode],
-        help="us or metric units first, or mixed: as reported with the other system in parentheses "
-        "(default: mixed, or us with --discord)",
-    )
+    output.add_argument("--json", action="store_true", help=t.t(K.CLI_HELP_GET_JSON))
+    output.add_argument("--discord", action="store_true", help=t.t(K.CLI_HELP_GET_DISCORD))
+    output.add_argument("--plain", action="store_true", help=t.t(K.CLI_HELP_GET_PLAIN))
+    get.add_argument("--units", choices=[mode.value for mode in UnitsMode], help=t.t(K.CLI_HELP_UNITS_MODE))
 
 
 def resolve_ids(codes: list[str]) -> list[str]:
@@ -72,11 +61,6 @@ async def _fetch(ids: list[str]) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf]
 
 def run_get(args: argparse.Namespace) -> int:
     """Exit 0 when everything arrived, 3 when a product failed but some data arrived, 1 when no station got anything."""
-    # Always UTF-8, as `decode` does: never fail on a character the stream cannot encode.
-    reconfigure = getattr(sys.stdout, "reconfigure", None)
-    if callable(reconfigure):
-        reconfigure(encoding="utf-8", errors="replace")
-
     ids = resolve_ids(args.stations)
     metars, tafs, errors = asyncio.run(_fetch(ids))
     for message in errors:

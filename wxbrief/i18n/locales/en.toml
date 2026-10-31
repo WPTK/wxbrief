@@ -154,6 +154,12 @@ SH = "{phenomena} showers"
 TS = "thunderstorm with {phenomena}"
 FZ = "freezing {phenomena}"
 
+# Freezing precipitation and fog have their own wording where the generic form would not agree.
+[wx.freezing]
+DZ = "freezing drizzle"
+RA = "freezing rain"
+FG = "freezing fog"
+
 [wx.phenomenon]
 DZ = "drizzle"
 RA = "rain"
@@ -738,6 +744,22 @@ lang = "language of the plain-language text: {languages} (default: from config, 
 config = "read and save this config file"
 no_config = "ignore the config file and never write it"
 demo = "open with the bundled sample reports of ten stations: fully offline, nothing is fetched, cached or saved"
+decode = "decode METAR, SPECI and TAF text given as arguments or on stdin"
+decode_description = "Decode METAR, SPECI and TAF reports into plain language. Pass each report as one quoted argument (unquoted words are joined into a single report), or pipe text on stdin: a blob with several reports, TAFs wrapped over several lines, reports separated by blank lines or '=', in upper or lower case. A group such as -RA is read as an option unless the report is quoted or follows --."
+raw = "raw report text"
+plain = "plain text without colour (automatic when stdout is not a terminal)"
+json = "print the decoded reports as a JSON list (language-neutral: codes, numbers, UTC times)"
+discord = "print each report as a Discord code block (inside an outer four-backtick fence); imperial units unless --units says otherwise"
+units_mode = "us or metric units first, or mixed: as reported with the other system in parentheses (default: mixed, or us with --discord)"
+date = "date used to resolve the day of the month in the report's timestamp (default: now, UTC)"
+decode_theme = "colourway for the coloured terminal output, such as paper-chart (default: the built-in palette)"
+lang_command = "language of the plain-language text: {languages} (default: en)"
+get = "fetch the latest METAR and TAF for stations and print them"
+get_description = "Fetch the latest METAR/SPECI and TAF from aviationweather.gov once and print the decode."
+get_stations = "station ids (ICAO, or a unique IATA/FAA code)"
+get_json = "machine-readable output"
+get_discord = "Discord code blocks (imperial units unless --units says otherwise)"
+get_plain = "plain text"
 
 [ui.binding]
 add_station = "Add"
@@ -758,6 +780,7 @@ help = "Help"
 quit = "Quit"
 cycle_theme = "Theme"
 theme_picker = "Themes"
+palette = "palette"
 cycle_glyphs = "Glyphs"
 cycle_units = "Units"
 cycle_time = "Time"
@@ -850,6 +873,7 @@ metar = "{icao} METAR"
 both = "{icao} METAR and TAF"
 raw = "{icao} raw report"
 discord = "Discord block"
+parts = "{what} in {count} parts: paste each as its own message"
 
 [ui.add]
 title = "Add station: ICAO or IATA code, or part of the name"

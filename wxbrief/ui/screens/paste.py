@@ -19,10 +19,11 @@ from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n.keys import K
-from wxbrief.render.discord import render_discord
+from wxbrief.render.discord import discord_block
 from wxbrief.render.plain import decode_rows, render_plain, warning_lines
 from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
+from wxbrief.ui.copying import parts_note
 
 DEBOUNCE_SECONDS = 0.2
 MAX_PASTE_CHARS = 60_000  # a TAF or METAR is a few hundred characters; this is generous and keeps a stray paste cheap
@@ -91,7 +92,7 @@ class PasteDecodeScreen(Screen[None]):
         self.decoded = parse_any(text, reference) if text.strip() else []
         ctx = self._ctx
         units = UnitsMode.US if ctx.units is UnitsMode.MIXED else ctx.units
-        self.discord_text = "\n\n".join(render_discord(r, ctx.translator, units) for r in self.decoded)
+        self.discord_text = "\n\n".join(discord_block(r, ctx.translator, units) for r in self.decoded)
         parts: list[RenderableType] = []
         if not valid:
             parts.append(Text(ctx.translator.t(K.UI_PASTE_BAD_DATE), style=ctx.palette.style("wx.warning")))
@@ -134,7 +135,9 @@ class PasteDecodeScreen(Screen[None]):
         if not self.discord_text:
             self.notify(self._ctx.translator.t(K.UI_TOAST_NOTHING_DECODED), severity="warning")
             return
-        copy_text(self.app, self.discord_text, self._ctx.translator.t(K.UI_CLIPBOARD_DISCORD), self._ctx.translator)
+        t = self._ctx.translator
+        what = parts_note(t, t.t(K.UI_CLIPBOARD_DISCORD), self.discord_text, len(self.decoded))
+        copy_text(self.app, self.discord_text, what, t)
 
     def action_close(self) -> None:
         self.app.pop_screen()
