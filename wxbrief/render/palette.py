@@ -26,6 +26,9 @@ from wxbrief.ui.themes.semantic import (
 _REFERENCE = re.compile(r"^\$([A-Za-z0-9_-]+)\s*(.*)$")
 _PERCENT = re.compile(r"^(\d+(?:\.\d+)?)%$")
 
+# Highlight text must stay readable on the panel it is drawn on, whatever the theme's accents are.
+MIN_TEXT_CONTRAST = 4.5
+
 
 def all_themes() -> dict[str, Theme]:
     """Every theme the CLI can name: the Textual built-ins and the aviation themes.
@@ -78,8 +81,26 @@ class Palette:
             **theme.variables,
         }
         palette = cls(theme.name, theme.dark, variables, RichTheme())
+        # A highlight token taken from the defaults is moved towards black or white until it reads on the surface and
+        # the panel; a token the theme sets itself is the author's choice and stays as written.
+        legible = {key: palette._legible(key) for key in SEMANTIC_DEFAULTS if key not in theme.variables}
+        variables.update({key: color.hex for key, color in legible.items()})
         object.__setattr__(palette, "rich_theme", palette._build_rich_theme())
         return palette
+
+    def _legible(self, key: str) -> Color:
+        """``key`` as a colour, blended towards the readable text colour until it reaches ``MIN_TEXT_CONTRAST``.
+
+        Judged against the surface (the panes) and the panel (the status bar), whichever is harder to read on.
+        """
+        color = self.color(key)
+        grounds = (self.color("surface"), self.color("panel"))
+        target = readable_on(grounds[0])
+        for step in range(21):
+            candidate = color.blend(target, step / 20)
+            if all(contrast_ratio(candidate, ground) >= MIN_TEXT_CONTRAST for ground in grounds):
+                return candidate
+        return target
 
     def color(self, name: str) -> Color:
         """The opaque colour of variable ``name`` (``wx-wind``, ``fcat-ifr``, ``background`` ...)."""

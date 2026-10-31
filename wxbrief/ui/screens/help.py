@@ -22,6 +22,8 @@ HELP_TEXT = """\
   C                  copy Discord METAR and TAF
   y                  copy the raw report text
 [b]Tools[/b]
+  t                  next theme (saved to the config)
+  T                  pick a theme, with a live preview
   p                  paste and decode any METAR or TAF (offline)
   S                  show the current settings
   ?                  this help
