@@ -48,8 +48,8 @@ def test_decode_argument_prints_a_lifr_decode() -> None:
 def test_decode_icao_report_in_metres_and_hpa() -> None:
     result = run_module("decode", "--date", "2026-10-31", EGLL)
     assert result.returncode == 0
-    assert "Visibility:                   CAVOK" in result.stdout
-    assert "Pressure:                     1013 hPa (29.91 inHg)" in result.stdout
+    assert "Visibility:        CAVOK" in result.stdout
+    assert "Pressure:          1013 hPa (29.91 inHg)" in result.stdout
     assert "VFR (visual flight rules)" in result.stdout
 
 

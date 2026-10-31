@@ -164,7 +164,8 @@ def test_remarks_are_tagged_and_kept_verbatim() -> None:
     assert m.remarks_raw == "AO2   SLP162 T00890078"
     assert [t.text for t in m.remarks_tokens] == ["AO2", "SLP162", "T00890078"]
     assert m.tokens[-1].kind is SemanticKind.TERMINATOR
-    assert all(t.kind is SemanticKind.REMARK for t in m.tokens[8:-1])
+    # Each decoded group is tagged with what it is (the finer kinds); the RMK token and plain codes stay REMARK.
+    assert [t.kind.name for t in m.tokens[8:-1]] == ["REMARK", "REMARK", "PRESSURE", "TEMPERATURE"]
     assert m.warnings == ()
 
 
@@ -180,12 +181,13 @@ def test_no_remarks() -> None:
     assert m.remarks_raw is None
 
 
-def test_tail_groups_are_recognised_without_warnings() -> None:
+def test_tail_groups_are_decoded_without_warnings() -> None:
     raw = "METAR EGLL 311050Z 24010KT 9999 FEW040 12/08 Q1013 RERA WS ALL RWY 8849//91 BLU TEMPO 5000 -RA NOSIG RMK X"
     m = parse_metar(raw, REF)
     assert m.warnings == ()
     assert m.tail_index == 8
     assert m.remarks_index == m.tail_index + len(m.tail_tokens)
+    # The trend body is tagged with the kinds of its elements, the keyword stays TREND.
     assert [t.kind.name for t in m.tail_tokens] == [
         "RECENT_WEATHER",
         "WIND_SHEAR",
@@ -194,11 +196,16 @@ def test_tail_groups_are_recognised_without_warnings() -> None:
         "RUNWAY_STATE",
         "COLOR_STATE",
         "TREND",
-        "TREND",
-        "TREND",
+        "VISIBILITY",
+        "WEATHER",
         "TREND",
     ]
     assert m.military
+    assert len(m.recent_weather) == 1
+    assert [item.all_runways for item in m.wind_shear] == [True]
+    assert [state.all_runways for state in m.runway_states] == [True]
+    assert m.color_state is not None
+    assert [trend.kind.name for trend in m.trends] == ["TEMPO", "NOSIG"]
 
 
 def test_tail_index_is_none_without_a_tail() -> None:

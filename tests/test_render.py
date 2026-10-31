@@ -76,7 +76,8 @@ def test_plain_decode_in_us_units() -> None:
         f"Dew point:           46 {DEG}F (8 {DEG}C)",
         "Relative humidity:   94%",
         "Pressure:            30.01 inHg",
-        "Remarks (raw):       AO2 SFC",
+        "Remark:              Automated station with a precipitation discriminator",
+        "Remark:              Surface",
         "Flags:               Low ceiling, Low visibility",
         "Summary:             KDEN is reporting LIFR (low instrument flight rules): mist, ceiling 300 ft, "
         f"visibility 3/4 SM, wind from 060{DEG} (ENE) at 7 kt.",
@@ -87,17 +88,16 @@ def test_plain_decode_of_an_icao_report_shows_metres_and_hpa_with_conversions() 
     raw = "METAR EGLL 311050Z AUTO 24010KT 200V280 CAVOK 12/08 Q1013 NOSIG"
     text = render_plain(decode(raw, datetime(2026, 10, 31, 11, 0, tzinfo=UTC)), T, UnitsMode.MIXED)
     assert (
-        f"Wind:                         From 240{DEG} (WSW) at 10 kt (19 km/h); direction varies between 200{DEG} and 280{DEG}"
+        f"Wind:              From 240{DEG} (WSW) at 10 kt (19 km/h); direction varies between 200{DEG} and 280{DEG}"
         in text
     )
     assert (
-        "Visibility:                   CAVOK: visibility at least 10 km (6.2 SM), no cloud below 5,000 ft (1,524 m)"
-        in text
+        "Visibility:        CAVOK: visibility at least 10 km (6.2 SM), no cloud below 5,000 ft (1,524 m)" in text
     )
-    assert "Pressure:                     1013 hPa (29.91 inHg)" in text
-    assert f"Temperature:                  12 {DEG}C (54 {DEG}F)" in text
-    assert "Trend and other groups (raw): NOSIG" in text
-    assert "Flags:                        Automated observation" in text
+    assert "Pressure:          1013 hPa (29.91 inHg)" in text
+    assert f"Temperature:       12 {DEG}C (54 {DEG}F)" in text
+    assert "Trend:             No significant change expected in the next 2 hours" in text
+    assert "Flags:             Automated observation" in text
 
 
 def test_plain_decode_in_metric_units() -> None:
