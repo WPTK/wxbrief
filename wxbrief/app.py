@@ -12,6 +12,7 @@ from pathlib import Path
 from textual import events, work
 from textual.app import App
 from textual.binding import Binding
+from textual.theme import Theme
 
 from wxbrief.config import Config, ViewConfig, default_config_path, save_config
 from wxbrief.data.awc import AwcClient, AwcError
@@ -20,10 +21,13 @@ from wxbrief.data.poll import PollScheduler, Product
 from wxbrief.data.stations import bundled
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import Translator
+from wxbrief.render.palette import Palette
 from wxbrief.state import AppState
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.glyphs import glyphs_for
 from wxbrief.ui.screens.briefing import BriefingScreen
+from wxbrief.ui.screens.theme_picker import ThemePickerScreen
+from wxbrief.ui.themes import AVIATION_THEMES, THEME_CYCLE
 
 
 @dataclass(slots=True)
@@ -35,6 +39,7 @@ class AppOptions:
     view: ViewConfig = field(default_factory=ViewConfig)  # in effect: the config plus command-line overrides
     config_path: Path | None = None
     use_config: bool = True  # False for --no-config: nothing is read from or written to the config file
+    theme_from_flag: bool = False  # --theme was given: the theme is for this run and is never saved
     config_warnings: list[str] = field(default_factory=list)
     config_usable: bool = True  # False when the config file could not be read at all: it is never overwritten
     notices: list[str] = field(default_factory=list)  # problems with command-line station ids
@@ -49,13 +54,29 @@ class WxBriefApp(App[None]):
     CSS_PATH = "ui/app.tcss"
     TITLE = "wxbrief"
     HORIZONTAL_BREAKPOINTS = [(0, "-narrow"), (90, "-normal"), (140, "-wide")]
-    BINDINGS = [Binding("q", "quit", "Quit")]
+    BINDINGS = [
+        Binding("q", "quit", "Quit"),
+        Binding("t", "cycle_theme", "Theme"),
+        Binding("T", "theme_picker", "Themes", show=False),
+    ]
 
     def __init__(self, options: AppOptions | None = None) -> None:
         super().__init__()
         self.options = options or AppOptions()
         view = self.options.view
-        self.theme = "textual-dark"
+        for theme in AVIATION_THEMES:
+            self.register_theme(theme)
+        for name in [name for name, theme in self.available_themes.items() if theme.ansi]:
+            self.unregister_theme(name)  # the terminal's own colours have no RGB palette for the highlight colours
+        self._previewing = False  # the theme picker is open: a highlighted theme is a preview, not a choice
+        self._theme_notice = ""
+        if view.theme in self.available_themes:
+            self.theme = view.theme
+        else:
+            self.theme = "textual-dark"
+            self._theme_notice = f"Unknown theme {view.theme!r}; using textual-dark"
+        self._settled_theme = self.theme  # the theme in effect that nobody has changed yet
+        self._chosen_theme: str | None = None  # set once the user picks one: only then is the theme saved
         self.glyph_set = view.glyph_set
         cache = DiskCache(self.options.cache_dir) if self.options.use_cache else None
         self.state = AppState(
@@ -88,6 +109,9 @@ class WxBriefApp(App[None]):
     def on_mount(self) -> None:
         self.state.load_cache()
         self.push_screen(self.briefing)
+        self.theme_changed_signal.subscribe(self, self._theme_changed)
+        if self._theme_notice:
+            self.notify(self._theme_notice, severity="warning", title="Theme", timeout=10)
         for warning in self.options.config_warnings:
             self.notify(warning, severity="warning", title="Config", timeout=10)
         for notice in self.options.notices:
@@ -97,6 +121,48 @@ class WxBriefApp(App[None]):
         if self.options.poll:
             self.poll_worker()
         self.set_interval(1.0, self._tick)
+
+    # --- themes ----------------------------------------------------------------------------------------------------
+
+    def get_css_variables(self) -> dict[str, str]:
+        """Textual's variables plus the resolved ``$wx-*``, ``$fcat-*`` and ``$cs-*`` ones for the current theme."""
+        return {**super().get_css_variables(), **Palette.from_theme(self.current_theme).css_variables()}
+
+    def _theme_changed(self, theme: Theme) -> None:
+        self.briefing.refresh_view()  # the list, detail and status bar are Rich text drawn from the palette
+        self._settle()
+
+    def _settle(self) -> None:
+        """Remember the current theme as the user's choice (and save it) unless it is only a preview.
+
+        The signal is published after a delay, so this reads ``self.theme`` rather than the signal's theme: a late
+        message about a theme the picker already moved past must not be saved.
+        """
+        if self._previewing or self.theme == self._settled_theme:
+            return
+        self._settled_theme = self._chosen_theme = self.theme
+        self._save()
+
+    def action_cycle_theme(self) -> None:
+        if self._previewing:
+            return
+        names = [name for name in THEME_CYCLE if name in self.available_themes]
+        index = names.index(self.theme) + 1 if self.theme in names else 0
+        self.theme = names[index % len(names)]
+
+    def action_theme_picker(self) -> None:
+        if self._previewing:
+            return
+        self._previewing = True
+        names = [name for name in THEME_CYCLE if name in self.available_themes]
+        if self.theme not in names:
+            names.append(self.theme)
+
+        def closed(chosen: str | None) -> None:
+            self._previewing = False
+            self._settle()  # a kept theme is saved; a cancelled one is back to the settled theme and saves nothing
+
+        self.push_screen(ThemePickerScreen(names, self.theme), closed)
 
     def _tick(self) -> None:
         self._ticks += 1
@@ -192,14 +258,18 @@ class WxBriefApp(App[None]):
             self.briefing.refresh_view()
 
     def _save(self) -> None:
-        """Write the watchlist back when it changed.
+        """Write the watchlist and the theme back when either changed.
 
         A config file that could not be read is never overwritten. One that loaded with warnings is copied to
         ``<name>.bak`` first, once.
         """
         options = self.options
         watchlist = list(self.state.watchlist)
-        if not options.use_config or watchlist == options.config.stations.watchlist:
+        theme = None if options.theme_from_flag else self._chosen_theme
+        changed = watchlist != options.config.stations.watchlist or (
+            theme is not None and theme != options.config.view.theme
+        )
+        if not options.use_config or not changed:
             return
         path = options.config_path or default_config_path()
         if not options.config_usable:
@@ -221,6 +291,8 @@ class WxBriefApp(App[None]):
             self._backed_up = True
             self.notify(f"The config had problems; the original is kept as {backup}", timeout=10)
         options.config.stations.watchlist = watchlist
+        if theme is not None:
+            options.config.view.theme = theme
         if not save_config(options.config, path):
             self.notify(f"Could not save {path}", severity="error")
 

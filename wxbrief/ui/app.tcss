@@ -1,4 +1,4 @@
-/* Only Textual's built-in theme variables are used here; the colourway session adds the weather ones. */
+/* Layout and chrome use Textual's theme variables. The weather colours ($wx-*, $fcat-*, $cs-*) are at the end. */
 
 BriefingScreen #main {
     height: 1fr;
@@ -153,3 +153,48 @@ PasteDecodeScreen #paste-output {
 PasteDecodeScreen #paste-result {
     height: auto;
 }
+
+/* --- Colourways (theme) ------------------------------------------------------------------------------------------
+   The picker sits to the right so the UI behind it, which previews the highlighted theme, stays visible.
+   $fcat-* and $cs-* are fixed-meaning colours injected by WxBriefApp.get_css_variables(); "color: auto" picks black or
+   white text, whichever reads better on the fill. */
+
+/* A highlighted station is a tint of the theme's primary colour, so the coloured marks and badges stay readable. */
+StationList > .option-list--option-highlighted {
+    background: $primary 18%;
+    color: $text;
+    text-style: bold;
+}
+
+StationList:focus > .option-list--option-highlighted {
+    background: $primary 30%;
+}
+
+ThemePickerScreen {
+    align: right middle;
+    background: $background 0%;
+}
+
+ThemePickerScreen .dialog {
+    width: 34;
+    margin-right: 2;
+}
+
+#theme-list {
+    height: auto;
+    max-height: 20;
+    border: none;
+    background: $surface;
+}
+
+.fcat-vfr { background: $fcat-vfr; color: auto; }
+.fcat-mvfr { background: $fcat-mvfr; color: auto; }
+.fcat-ifr { background: $fcat-ifr; color: auto; }
+.fcat-lifr { background: $fcat-lifr; color: auto; }
+
+.cs-blu { background: $cs-blu; color: auto; }
+.cs-wht { background: $cs-wht; color: auto; }
+.cs-grn { background: $cs-grn; color: auto; }
+.cs-ylo { background: $cs-ylo; color: auto; }
+.cs-amb { background: $cs-amb; color: auto; }
+.cs-red { background: $cs-red; color: auto; }

@@ -9,7 +9,7 @@ from textual.color import Color
 from textual.theme import Theme
 from textual.widgets import Static
 
-from wxbrief.render.palette import Palette, all_themes, contrast_ratio
+from wxbrief.render.palette import MIN_TEXT_CONTRAST, Palette, all_themes, contrast_ratio
 from wxbrief.ui.themes import AVIATION_THEMES, THEME_CYCLE
 from wxbrief.ui.themes.semantic import (
     BUILTIN_THEME_NAMES,
@@ -193,3 +193,17 @@ def test_cli_reports_a_theme_that_cannot_be_built(
     monkeypatch.setattr(Palette, "from_theme", staticmethod(broken))
     assert main(["decode", "--theme", "nord", "METAR KDEN 131453Z 06007KT 10SM CLR 09/08 A3001"]) == 2
     assert "cannot build theme" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("theme", ALL_THEMES, ids=lambda theme: theme.name)
+def test_highlight_tokens_read_on_the_surface_and_the_panel(theme: Theme) -> None:
+    palette = Palette.from_theme(theme)
+    for key in SEMANTIC_DEFAULTS:
+        for ground in ("surface", "panel"):
+            ratio = contrast_ratio(palette.color(key), palette.color(ground))
+            assert ratio >= MIN_TEXT_CONTRAST - 0.01, f"{theme.name}: {key} is {ratio:.2f}:1 on {ground}"
+
+
+def test_a_token_the_theme_sets_itself_is_left_alone() -> None:
+    theme = Theme(name="dim-wind", primary="#112233", background="#000000", dark=True, variables={"wx-wind": "#101010"})
+    assert Palette.from_theme(theme).hex("wx-wind") == "#101010"

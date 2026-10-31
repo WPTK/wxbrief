@@ -40,18 +40,18 @@ class StationList(OptionList):
         options: list[Option] = []
         for entry in reports:
             if entry.metar is None:
-                mark, mark_style = glyphs.missing, "dim"
+                mark, mark_style = glyphs.missing, palette.muted
             elif entry.freshness(now) is Freshness.FRESH:
-                mark, mark_style = glyphs.fresh, "green"
+                mark, mark_style = glyphs.fresh, palette.fresh
             else:
-                mark, mark_style = glyphs.stale, "yellow"
+                mark, mark_style = glyphs.stale, palette.stale
             category = entry.metar.flight_category if entry.metar else None
             line = Text.assemble((mark, mark_style), " ", (f"{entry.icao:<4}", "bold"), " ", palette.badge(category))
             conditions = short_conditions(entry.metar)
             if conditions:
-                line.append(" " + conditions, style="dim")
+                line.append(" " + conditions)
             elif entry.metar is None:
-                line.append(" no report", style="dim")
+                line.append(" no report", style=palette.muted)
             options.append(Option(line, id=entry.icao))
         self.clear_options()
         self.add_options(options)

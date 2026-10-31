@@ -28,25 +28,26 @@ class StatusBar(Static):
         glyph_set: str,
     ) -> None:
         glyphs = ctx.glyphs
+        palette = ctx.palette
         text = Text()
         if state.errors:
             message = next(iter(state.errors.values()))
-            text.append(f"{glyphs.error} offline", style="bold red")
-            text.append(f" ({message})  ", style="dim")
+            text.append(f"{glyphs.error} offline", style=palette.offline)
+            text.append(f" ({message})  ", style=palette.muted)
         if selected is not None and selected.metar is not None:
             if selected.freshness(now) is Freshness.FRESH:
-                text.append(f"{glyphs.fresh} fresh", style="green")
+                text.append(f"{glyphs.fresh} fresh", style=palette.fresh)
             else:
-                text.append(f"{glyphs.stale} stale", style="bold yellow")
+                text.append(f"{glyphs.stale} stale", style=palette.stale)
             if selected.from_cache and selected.updated is not None:
-                text.append(" (cached)", style="dim")
+                text.append(" (cached)", style=palette.muted)
         elif selected is not None:
-            text.append(f"{glyphs.missing} no data", style="dim")
+            text.append(f"{glyphs.missing} no data", style=palette.muted)
         if scheduler is not None:
             wait = "away" if scheduler.away else f"next poll {countdown(scheduler.next_due_in())}"
-            text.append(f" | {wait} | req {scheduler.budget.used}/{scheduler.budget.limit}", style="dim")
+            text.append(f" | {wait} | req {scheduler.budget.used}/{scheduler.budget.limit}", style=palette.muted)
         else:
-            text.append(" | polling off", style="dim")
+            text.append(" | polling off", style=palette.muted)
         view = f"{ctx.app.theme} | {glyph_set} | {ctx.translator.lang} | {ctx.units.value} | {ctx.time_mode}"
-        text.append(f" | {view}", style="dim")
+        text.append(f" | {view}", style=palette.muted)
         self.update(text)
