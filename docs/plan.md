@@ -309,8 +309,8 @@ passes on all 647 saved reports with an empty exceptions list. Keys: edit `local
 - Flags: `LOW_CEILING` is a ceiling below 1,000 ft and `LOW_VISIBILITY` a visibility below 3 SM (the IFR thresholds);
   `FREEZING_PRECIP` needs `FZ` with `RA`, `DZ` or `UP` (freezing fog is not precipitation); `THUNDERSTORM` includes
   `VCTS`. `WIND_SHEAR` exists in the enum but is derived in S2.
-- Condition: the skill says `VCTS` counts as a thunderstorm yet other vicinity weather must not override the sky;
-  both are implemented. `VV` counts as overcast; `IC` (ice crystals) counts as snow.
+- Condition: the metar-taf-decode notes say `VCTS` counts as a thunderstorm yet other vicinity weather must not
+  override the sky; both are implemented. `VV` counts as overcast; `IC` (ice crystals) counts as snow.
 - Flight category: a ceiling layer of unknown height (`VV///`, `BKN///`) is ignored, and a report with neither
   visibility nor sky has no category. Distances of the same unit convert exactly (no `/ 0.3048 * 0.3048` drift).
 - `TAF` input is not decoded in S1: the report gets one `unsupported_report` warning and all tokens stay `UNKNOWN`.

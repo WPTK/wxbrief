@@ -21,7 +21,7 @@ from wxbrief.decode.model import (
 )
 from wxbrief.decode.units import Distance, Temperature
 
-# Condition groups, from the metar-taf-decode skill's emoji rules (listed there in priority order).
+# Condition groups, from the metar-taf-decode reference notes (header glyph rules, listed there in priority order).
 _SNOW_PHENOMENA = frozenset({Phenomenon.SN, Phenomenon.SG, Phenomenon.PL, Phenomenon.GS, Phenomenon.GR, Phenomenon.IC})
 _RAIN_PHENOMENA = frozenset({Phenomenon.RA, Phenomenon.DZ, Phenomenon.UP})
 _OBSCURATION_PHENOMENA = frozenset(
