@@ -49,6 +49,10 @@ THRESHOLDS: tuple[ColorMinimums, ...] = (
     ColorMinimums(ColorCode.AMB, 200, 800),
 )
 
+# ``BLU+`` (Bundeswehr reports): visibility of 8 km or more and no ceiling below 20,000 ft. The figure comes from a
+# community source, not an official table.
+BLU_PLUS_CEILING_FT = 20000
+
 BELOW_GRN = frozenset({ColorCode.YLO, ColorCode.YLO1, ColorCode.YLO2, ColorCode.AMB, ColorCode.RED})
 
 
@@ -85,8 +89,13 @@ def is_below_green(state: ColorState | None) -> bool:
     return state is not None and state.code in BELOW_GRN
 
 
-def reported_matches_computed(reported: ColorState | None, computed: ColorCode | None) -> bool | None:
+def reported_matches_computed(
+    reported: ColorState | None, computed: ColorCode | None, ceiling_ft: float | None = None
+) -> bool | None:
     """Whether the reported colour agrees with the computed one; ``None`` if either is missing.
+
+    ``BLU+`` is BLU for the visibility threshold and also needs no ceiling below 20,000 ft: ``ceiling_ft`` is the
+    lowest BKN/OVC base (``None`` when unknown or none, which never contradicts it).
 
     Plain ``YLO`` agrees with a computed YLO1 or YLO2: older tables had a single yellow and reports differ on which
     they mean.
@@ -95,4 +104,6 @@ def reported_matches_computed(reported: ColorState | None, computed: ColorCode |
         return None
     if reported.code is ColorCode.YLO:
         return computed in (ColorCode.YLO1, ColorCode.YLO2)
+    if reported.plus and reported.code is ColorCode.BLU:
+        return computed is ColorCode.BLU and (ceiling_ft is None or ceiling_ft >= BLU_PLUS_CEILING_FT)
     return reported.code is computed

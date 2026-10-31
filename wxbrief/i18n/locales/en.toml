@@ -281,6 +281,7 @@ AT = "at {time}"
 
 [color]
 display = "{name} ({code})"
+blu_plus = "Blue plus (BLU+): visibility 8 km or more, no ceiling below 20,000 ft"
 black_alone = "Airfield closed for reasons other than weather (BLACK)"
 black_with = "Airfield closed for reasons other than weather (BLACK); weather state {state}"
 forecast = "{current}; forecast: {items}"

@@ -18,6 +18,7 @@ from wxbrief.decode.model import (
     CloudLayer,
     CloudOpacity,
     CloudTypes,
+    ColorCode,
     ColorState,
     ColorStateGroup,
     ColorStateRemark,
@@ -377,12 +378,15 @@ def summary_line(t: Translator, metar: Metar, units: UnitsMode) -> str:
 
 
 def describe_color_code(t: Translator, state: ColorState) -> str:
-    """One colour state: the name and the code as reported (``Blue (BLU+)``); ``BLACK`` is spelled out."""
+    """One colour state: the name and the code as reported (``Blue (BLU)``); ``BLACK`` is spelled out."""
     if state.not_reported:
         return t.t(K.COMMON_NOT_REPORTED)
     if state.code is None:
         return t.t(K.COLOR_BLACK_ALONE)
     code = state.code.value + ("+" if state.plus else "")
+    if state.plus and state.code is ColorCode.BLU:
+        text = t.t(K.COLOR_BLU_PLUS)
+        return t.t(K.COLOR_BLACK_WITH, state=text) if state.black else text
     text = t.t(K.COLOR_DISPLAY, name=t.t(COLOR_NAME_KEYS[state.code]), code=code)
     if state.black:
         return t.t(K.COLOR_BLACK_WITH, state=text)

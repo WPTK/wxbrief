@@ -280,6 +280,7 @@ AT = "a las {time}"
 
 [color]
 display = "{name} ({code})"
+blu_plus = "Azul plus (BLU+): visibilidad de 8 km o más, sin techo de nubes por debajo de 20 000 ft"
 black_alone = "Aeródromo cerrado por motivos ajenos al tiempo (BLACK)"
 black_with = "Aeródromo cerrado por motivos ajenos al tiempo (BLACK); estado del tiempo {state}"
 forecast = "{current}; pronóstico: {items}"
