@@ -1,0 +1,230 @@
+# English catalog: the reference every other language is checked against.
+# Keys are dotted and semantic; values use str.format placeholders. A table with only plural categories
+# (one/other) is a plural entry. Unit symbols, ICAO codes, runway designators and raw tokens are never translated.
+
+[meta]
+language = "English"
+status = "complete"
+plural_rule = "one_other"
+decimal = "."
+group = ","
+clock = "24h"
+
+[label]
+report = "Report"
+station = "Station"
+observed = "Observed"
+category = "Flight category"
+wind = "Wind"
+visibility = "Visibility"
+rvr = "Runway visual range"
+weather = "Weather"
+sky = "Sky"
+ceiling = "Ceiling"
+temperature = "Temperature"
+dewpoint = "Dew point"
+humidity = "Relative humidity"
+altimeter = "Pressure"
+tail = "Trend and other groups (raw)"
+remarks = "Remarks (raw)"
+flags = "Flags"
+summary = "Summary"
+modifiers = "Notes"
+
+[common]
+not_reported = "Not reported"
+more_than = "more than {value}"
+less_than = "less than {value}"
+or_more = "{value} or more"
+and_pair = "{first} and {second}"
+and_list = "{head}, and {last}"
+
+[time]
+utc = "{value} UTC"
+unresolved = "Not available"
+
+[report]
+METAR = "Routine observation (METAR)"
+SPECI = "Special observation (SPECI)"
+
+[modifier]
+AUTO = "Automated observation"
+COR = "Corrected report"
+CCA = "Corrected report (first correction)"
+CCB = "Corrected report (second correction)"
+CCC = "Corrected report (third correction)"
+RTD = "Delayed report"
+NIL = "No report available (NIL)"
+AMD = "Amended report"
+CNL = "Cancelled report"
+
+[compass]
+N = "N"
+NNE = "NNE"
+NE = "NE"
+ENE = "ENE"
+E = "E"
+ESE = "ESE"
+SE = "SE"
+SSE = "SSE"
+S = "S"
+SSW = "SSW"
+SW = "SW"
+WSW = "WSW"
+W = "W"
+WNW = "WNW"
+NW = "NW"
+NNW = "NNW"
+
+[wind]
+calm = "Calm"
+steady = "From {direction}° ({compass}) at {speed}"
+variable = "Variable direction at {speed}"
+no_direction = "Direction not reported, {speed}"
+not_reported = "Not reported"
+gust = "{base}, gusting to {gust}"
+variation = "{base}; direction varies between {from_deg}° and {to_deg}°"
+
+[vis]
+cavok = "CAVOK: visibility 10 km or more, no cloud below 5,000 ft, no significant weather"
+not_reported = "Not reported"
+ndv = "no directional variation"
+directional = "{value} toward {compass}"
+lowest = "{base}; lowest {minimum}"
+
+[rvr]
+runway = "Runway {runway}: {value}"
+not_reported = "not reported"
+range = "varying between {low} and {high}"
+with_trend = "{base}, {trend}"
+
+[rvr.trend]
+UP = "increasing"
+DOWN = "decreasing"
+NO_CHANGE = "no change"
+
+[wx]
+none = "No significant weather"
+not_observed = "Not observed"
+tornado = "tornado or waterspout"
+vicinity = "{body} in the vicinity"
+with_intensity = "{intensity} {body}"
+
+[wx.intensity]
+LIGHT = "light"
+HEAVY = "heavy"
+
+[wx.descriptor]
+MI = "shallow"
+PR = "partial"
+BC = "patches"
+DR = "low drifting"
+BL = "blowing"
+SH = "showers"
+TS = "thunderstorm"
+FZ = "freezing"
+
+[wx.descriptor_with]
+MI = "shallow {phenomena}"
+PR = "partial {phenomena}"
+BC = "patches of {phenomena}"
+DR = "low drifting {phenomena}"
+BL = "blowing {phenomena}"
+SH = "{phenomena} showers"
+TS = "thunderstorm with {phenomena}"
+FZ = "freezing {phenomena}"
+
+[wx.phenomenon]
+DZ = "drizzle"
+RA = "rain"
+SN = "snow"
+SG = "snow grains"
+IC = "ice crystals"
+PL = "ice pellets"
+GR = "hail"
+GS = "small hail or snow pellets"
+UP = "unknown precipitation"
+BR = "mist"
+FG = "fog"
+FU = "smoke"
+VA = "volcanic ash"
+DU = "widespread dust"
+SA = "sand"
+HZ = "haze"
+PY = "spray"
+PO = "dust or sand whirls"
+SQ = "squalls"
+FC = "funnel cloud"
+SS = "sandstorm"
+DS = "dust storm"
+
+[sky]
+layer = "{cover} at {height}"
+layer_typed = "{cover} at {height}, {type}"
+layer_no_height = "{cover}, height not determined"
+vertical_visibility = "Sky obscured, vertical visibility {height}"
+vertical_visibility_unknown = "Sky obscured, vertical visibility not determined"
+ceiling = "{height}"
+no_ceiling = "None"
+
+[sky.cover]
+FEW = "Few clouds"
+SCT = "Scattered clouds"
+BKN = "Broken clouds"
+OVC = "Overcast"
+SKC = "Sky clear"
+CLR = "Clear below 12,000 ft"
+NSC = "No significant cloud"
+NCD = "No cloud detected"
+UNKNOWN = "Cloud amount not determined"
+
+[sky.type]
+CB = "cumulonimbus"
+TCU = "towering cumulus"
+UNKNOWN = "cloud type not determined"
+
+[temp]
+humidity = "{percent}%"
+
+[fcat]
+display = "{code} ({name})"
+VFR = "visual flight rules"
+MVFR = "marginal visual flight rules"
+IFR = "instrument flight rules"
+LIFR = "low instrument flight rules"
+
+[flag]
+CB = "Cumulonimbus clouds"
+TCU = "Towering cumulus clouds"
+LOW_CEILING = "Low ceiling"
+LOW_VISIBILITY = "Low visibility"
+GUSTS = "Gusty wind"
+WIND_SHEAR = "Wind shear"
+FREEZING_PRECIP = "Freezing precipitation"
+THUNDERSTORM = "Thunderstorm"
+CORRECTED = "Corrected report"
+AUTOMATED = "Automated observation"
+SPECIAL_REPORT = "Special report"
+
+[summary]
+reporting = "{station} is reporting {category}: {details}."
+reporting_no_category = "{station} is reporting: {details}."
+no_station = "This report shows {category}: {details}."
+no_station_no_category = "This report shows: {details}."
+nothing = "No conditions could be decoded."
+ceiling = "ceiling {height}"
+visibility = "visibility {value}"
+wind = "wind {value}"
+cavok = "ceiling and visibility OK"
+
+[warn.heading]
+one = "{n} warning"
+other = "{n} warnings"
+
+[warn]
+unknown_token = "Unrecognized group: {text}"
+invalid_day = "The day of the month in {text} is not valid"
+invalid_time = "The time in {text} is not valid"
+parser_error = "Could not read: {text}"
+unsupported_report = "Only METAR and SPECI reports can be decoded so far: {text}"
+empty = "No report text found"
