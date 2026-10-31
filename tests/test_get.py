@@ -41,11 +41,11 @@ def test_get_resolves_iata_codes(awc: respx.MockRouter, capsys: pytest.CaptureFi
 
 
 def test_get_json(awc: respx.MockRouter, capsys: pytest.CaptureFixture[str]) -> None:
-    assert main(["get", "KDEN", "ZZZZ", "--json"]) == 0
+    assert main(["get", "KDEN", "ZZZZ", "--json"]) == 3  # ZZZZ got nothing: not a clean run
     document = json.loads(capsys.readouterr().out)
     assert document["KDEN"]["metar"]["raw"].startswith(("METAR KDEN", "SPECI KDEN"))
     assert document["KDEN"]["taf"]["raw"].startswith("TAF KDEN")
-    assert document["ZZZZ"] == {"metar": None, "taf": None}
+    assert document["ZZZZ"] == {"metar": None, "taf": None, "stale": False, "errors": []}
 
 
 def test_get_total_failure_exits_1(capsys: pytest.CaptureFixture[str]) -> None:

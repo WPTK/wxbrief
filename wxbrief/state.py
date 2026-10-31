@@ -5,7 +5,7 @@ Plain data and functions with no Textual imports, so the screens only read it an
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -20,6 +20,16 @@ from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.taf import parse_taf
 
 CACHE_KEYS = {Product.METAR: "metars", Product.TAF: "tafs"}
+FETCHED_KEY = "wxbriefFetched"  # added to each cached row: when this row was fetched, which the file's save time is not
+
+
+def _fetched_at(source: Mapping[str, Any], default: datetime) -> datetime:
+    """The fetch time stamped on a cached row; ``default`` (the file's save time) for one without a usable stamp."""
+    try:
+        stamp = datetime.fromisoformat(source[FETCHED_KEY])
+    except (KeyError, TypeError, ValueError):
+        return default
+    return stamp if stamp.tzinfo is not None else default
 
 
 @dataclass(slots=True)
@@ -31,8 +41,20 @@ class StationReports:
     awc_taf: AwcTaf | None = None
     metar: Metar | None = None
     taf: Taf | None = None
-    updated: datetime | None = None  # when the data last arrived (fetch time, or the cache file's save time)
-    from_cache: bool = False
+    metar_updated: datetime | None = None  # when each product last arrived (its fetch time, also when cached)
+    taf_updated: datetime | None = None
+    metar_cached: bool = False  # whether the report held for each product came from the cache, not from this run
+    taf_cached: bool = False
+
+    @property
+    def updated(self) -> datetime | None:
+        """When the data shown last arrived: the METAR's fetch time, else the TAF's."""
+        return self.metar_updated or self.taf_updated
+
+    @property
+    def from_cache(self) -> bool:
+        """Whether the data behind ``updated`` came from the cache."""
+        return self.metar_cached if self.metar_updated else self.taf_cached
 
     def freshness(self, now: datetime) -> Freshness:
         observed = self.awc_metar.observed if self.awc_metar else None
@@ -56,8 +78,6 @@ class AppState:
         self.stations: dict[str, StationReports] = {}
         self.errors: dict[Product, str] = {}
         self.offline: set[Product] = set()  # products whose last failure was the network, not the server or the disk
-        self._metar_rows: dict[str, AwcMetar] = {}
-        self._taf_rows: dict[str, AwcTaf] = {}
 
     # --- the list -----------------------------------------------------------------------------------------------
 
@@ -87,11 +107,14 @@ class AppState:
         code = icao.strip().upper()
         if code in self.watchlist:
             self.watchlist.remove(code)
-            return True
-        if code in self.session:
+        elif code in self.session:
             self.session.remove(code)
-            return True
-        return False
+        else:
+            return False
+        if not self.ids:  # nothing left to fetch, so no fetch will ever clear an old failure
+            self.errors.clear()
+            self.offline.clear()
+        return True
 
     def is_saved(self, icao: str) -> bool:
         return icao in self.watchlist
@@ -106,18 +129,16 @@ class AppState:
         if entry.awc_metar is None or entry.awc_metar.raw != row.raw or entry.metar is None:
             entry.metar = parse_metar(row.raw, row.observed or updated)
         entry.awc_metar = row
-        entry.updated = updated
-        entry.from_cache = from_cache
-        self._metar_rows[row.icao] = row
+        entry.metar_updated = updated
+        entry.metar_cached = from_cache
 
     def _set_taf(self, row: AwcTaf, updated: datetime, *, from_cache: bool) -> None:
         entry = self.entry(row.icao)
         if entry.awc_taf is None or entry.awc_taf.raw != row.raw or entry.taf is None:
             entry.taf = parse_taf(row.raw, row.issued or updated)
         entry.awc_taf = row
-        if entry.updated is None or not from_cache:
-            entry.updated = updated
-        self._taf_rows[row.icao] = row
+        entry.taf_updated = updated
+        entry.taf_cached = from_cache
 
     def apply(self, product: Product, rows: list[Any]) -> None:
         """Take a successful fetch: newest report per station, then write the cache."""
@@ -127,19 +148,46 @@ class AppState:
         if product is Product.METAR:
             for row in latest_by_station(rows).values():
                 self._set_metar(row, now, from_cache=False)
-            payload = [row.source for row in self._metar_rows.values()]
         else:
+            # A TAF fetch that succeeded is the whole truth about the listed stations: one it no longer returns has
+            # lapsed or been withdrawn, so the old forecast goes rather than staying on screen as if current.
+            returned = {row.icao for row in rows}
+            for icao in self.ids:
+                entry = self.stations.get(icao)
+                if entry is not None and entry.awc_taf is not None and icao not in returned:
+                    entry.awc_taf = entry.taf = entry.taf_updated = None
+                    entry.taf_cached = False
             for row in rows:
                 self._set_taf(row, now, from_cache=False)
-            payload = [row.source for row in self._taf_rows.values()]
-        if self.cache is not None and not self.cache.write(CACHE_KEYS[product], payload):
+        self._write_cache(product, now)
+
+    def _write_cache(self, product: Product, now: datetime) -> None:
+        """Write the cache file for ``product``: listed stations only, each row stamped with its own fetch time,
+        and no TAF that has expired."""
+        if self.cache is None:
+            return
+        payload: list[dict[str, Any]] = []
+        for icao in self.ids:
+            entry = self.stations.get(icao)
+            if entry is None:
+                continue
+            row: AwcMetar | AwcTaf | None
+            if product is Product.METAR:
+                row, fetched = entry.awc_metar, entry.metar_updated
+            else:
+                row, fetched = entry.awc_taf, entry.taf_updated
+                if entry.taf is not None and entry.taf.valid_to is not None and entry.taf.valid_to <= now:
+                    continue
+            if row is not None and fetched is not None:
+                payload.append({**row.source, FETCHED_KEY: fetched.isoformat()})
+        if not self.cache.write(CACHE_KEYS[product], payload):
             self.record_error(product, f"{product.value}: could not write the cache in {self.cache.directory}")
 
     def load_demo(self, stations: Iterable[DemoStation]) -> None:
         """Fill the state from the bundled demo reports. Nothing is cached or fetched."""
         for demo in stations:
             self.stations[demo.icao] = StationReports(
-                demo.icao, demo.awc_metar, demo.awc_taf, demo.metar, demo.taf, self.now(), from_cache=False
+                demo.icao, demo.awc_metar, demo.awc_taf, demo.metar, demo.taf, self.now(), self.now()
             )
 
     def record_error(self, product: Product, message: str, *, offline: bool = False) -> None:
@@ -153,21 +201,21 @@ class AppState:
         if self.cache is None:
             return 0
         loaded = 0
+        self.cache.clean()
         for product, key in CACHE_KEYS.items():
             found = self.cache.read(key)
             if found is None:
                 continue
             saved_at, payload = found
-            stamp = saved_at
             if not isinstance(payload, list):
                 continue
             if product is Product.METAR:
                 for row in latest_by_station(parse_metars(payload)).values():
-                    self._set_metar(row, stamp, from_cache=True)
+                    self._set_metar(row, _fetched_at(row.source, saved_at), from_cache=True)
                     loaded += 1
             else:
                 for taf in parse_tafs(payload):
-                    self._set_taf(taf, stamp, from_cache=True)
+                    self._set_taf(taf, _fetched_at(taf.source, saved_at), from_cache=True)
         return loaded
 
     # --- views ---------------------------------------------------------------------------------------------------

@@ -105,7 +105,8 @@ class PollScheduler:
     """Fetches METARs and TAFs for a changing id list, one batched request per product per cycle.
 
     ``on_result(product, rows)`` is called with each successful fetch, ``on_error(product, error)`` with each failure.
-    Failures back off exponentially; a 429 waits at least the ``Retry-After`` the server gave.
+    Failures back off exponentially on their own product; a 429 also holds every product for the ``Retry-After``
+    the server gave.
     """
 
     def __init__(
@@ -133,7 +134,7 @@ class PollScheduler:
         self._tracks = {Product.METAR: _Track(metar_interval), Product.TAF: _Track(taf_interval)}
         self._base = {Product.METAR: metar_interval, Product.TAF: taf_interval}
         self.away = False
-        self.hold_until = 0.0  # clock time before which nothing may be fetched (set by a 429's Retry-After)
+        self.hold_until = 0.0  # clock time before which nothing may be fetched (a 429's Retry-After)
         self._requests = 0  # how many times poll_now() has been called
         self._wake = asyncio.Event()
 
@@ -193,8 +194,9 @@ class PollScheduler:
                 if self._requests == requested:  # a poll_now() during the fetch keeps the due time it set
                     track.due = self._clock() + delay
                 if isinstance(error, RateLimited):
-                    # The limit is per client, not per product: hold every track back and end the cycle.
-                    hold = self._clock() + max(delay, error.retry_after)
+                    # The limit is per client, not per product: hold every track back for the time the server asked
+                    # for and end the cycle. The failing track's own longer backoff (set above) stays on it alone.
+                    hold = self._clock() + error.retry_after
                     self.hold_until = max(self.hold_until, hold)
                     for other in self._tracks.values():
                         other.due = max(other.due, hold)

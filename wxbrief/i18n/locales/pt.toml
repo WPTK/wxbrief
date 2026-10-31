@@ -750,6 +750,8 @@ PROB_INTER = "PROB{probability} INTER {when}"
 description = "Resumo de METAR/TAF no terminal, com esquemas de cores e tradução para linguagem simples. Informe identificadores de estação para acompanhá-las nesta sessão; as estações salvas são carregadas da configuração."
 epilog = "comandos: decode (decodifica texto sem a interface), get (baixa uma vez e imprime). Execute 'wxbrief decode --help' ou 'wxbrief get --help'."
 no_metar = "{icao}: sem METAR nas últimas 2 horas"
+metar_failed = "{icao}: METAR indisponível (a consulta falhou)"
+metar_stale = "{icao}: este METAR tem {minutes} min, além do limite de frescor de {limit} minutos"
 
 [cli.help]
 stations = "identificadores de estação a adicionar nesta sessão"

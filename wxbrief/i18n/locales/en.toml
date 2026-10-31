@@ -746,6 +746,8 @@ PROB_INTER = "PROB{probability} INTER {when}"
 description = "Terminal METAR/TAF briefing with colorways and plain-language translation. Give station ids to watch them for this run; saved stations load from the config."
 epilog = "commands: decode (decode text without the TUI), get (fetch once and print). Run 'wxbrief decode --help' or 'wxbrief get --help'."
 no_metar = "{icao}: no METAR in the last 2 hours"
+metar_failed = "{icao}: METAR unavailable (the fetch failed)"
+metar_stale = "{icao}: this METAR is {minutes} min old, past the {limit}-minute freshness limit"
 
 [cli.help]
 stations = "station ids to add for this run"

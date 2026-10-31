@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shutil
 from collections.abc import Callable
+from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -11,9 +12,21 @@ from pathlib import Path
 from textual import events, work
 from textual.app import App
 from textual.geometry import Size
+from textual.notifications import SeverityLevel
 from textual.theme import Theme
 
-from wxbrief.config import TIME_MODES, WATCHLIST_CAP, Config, ViewConfig, config_text, default_config_path, save_config
+from wxbrief.config import (
+    TIME_MODES,
+    WATCHLIST_CAP,
+    Config,
+    LoadedConfig,
+    ViewConfig,
+    config_text,
+    default_config_path,
+    load_config,
+    merge_session,
+    save_config,
+)
 from wxbrief.data.awc import AwcClient, AwcError, TransportError
 from wxbrief.data.cache import DiskCache, default_cache_dir
 from wxbrief.data.demo import load_demo
@@ -110,11 +123,24 @@ class WxBriefApp(App[None]):
         )
         self.scheduler: PollScheduler | None = None
         self.briefing = BriefingScreen()
-        self._backed_up = False
+        self._saved_watchlist = list(self.options.config.stations.watchlist)  # the file's list as last read or written
         self._warned_unusable = False
 
     def now(self) -> datetime:
         return self.options.now()
+
+    def notify(
+        self,
+        message: str,
+        *,
+        title: str = "",
+        severity: SeverityLevel = "information",
+        timeout: float | None = None,
+        **_markup: bool,
+    ) -> None:
+        """Show a toast with the text exactly as given (a ``markup`` argument is ignored): station ids, paths and
+        errors may hold ``[...]``, which Textual would read as markup."""
+        super().notify(message, title=title, severity=severity, timeout=timeout, markup=False)
 
     # --- start up --------------------------------------------------------------------------------------------------
 
@@ -212,7 +238,11 @@ class WxBriefApp(App[None]):
     @work(exclusive=True, group="poll")
     async def poll_worker(self) -> None:
         poll = self.options.config.poll
-        client = self.options.client or AwcClient()
+        try:
+            client = self.options.client or AwcClient()
+        except AwcError as exc:  # no HTTP client can be built here (a proxy or CA setting): stay up on the cache
+            self._on_error(Product.METAR, exc)
+            return
         self.scheduler = PollScheduler(
             client,
             lambda: self.state.ids,
@@ -277,9 +307,12 @@ class WxBriefApp(App[None]):
         if code in self.state.ids:
             key = K.UI_TOAST_ALREADY_LISTED
             if self.options.use_config and not self.state.is_saved(code):
-                self.state.add(code, persist=True)  # it was only listed for this run: keep it now
-                self._save()
-                key = K.UI_TOAST_ALREADY_LISTED_SAVED
+                if not self.state.add(code, persist=True):  # it was only listed for this run: keep it now
+                    self.notify(t.t(K.UI_TOAST_WATCHLIST_FULL, limit=WATCHLIST_CAP), severity="warning")
+                    self.briefing.select(code)
+                    return
+                if self._save():
+                    key = K.UI_TOAST_ALREADY_LISTED_SAVED
             self.notify(t.t(key, code=code))
             self.briefing.select(code)
             return
@@ -298,20 +331,18 @@ class WxBriefApp(App[None]):
             self.notify(self.ctx.translator.t(K.UI_TOAST_REMOVED, code=icao))
             self.briefing.refresh_view()
 
-    def _hand_written(self, path: Path, backup: Path) -> bool:
-        """The file holds more than a save would write back (comments, other layout) and has no backup yet."""
-        if backup.exists():
-            return False
-        try:
-            return path.read_text(encoding="utf-8-sig") != config_text(self.options.config)
-        except OSError:
-            return False
+    def _warn_unreadable(self, path: Path) -> None:
+        if not self._warned_unusable:
+            self._warned_unusable = True
+            self.notify(self.ctx.translator.t(K.UI_TOAST_CONFIG_UNREADABLE, path=path), severity="warning", timeout=10)
 
-    def _save(self) -> None:
+    def _save(self) -> bool:
         """Write the watchlist, the theme and the settings dialog's choices back when any of them changed.
 
-        A config file that could not be read is never overwritten. One that loaded with warnings is copied to
-        ``<name>.bak`` first, once.
+        The file is read again first and only this session's changes are applied to it, so a station another
+        instance added or a setting edited by hand since launch is kept. A file that cannot be read is never
+        overwritten. One that holds more than a save writes back (warnings, comments, other layout) is copied to
+        ``<name>.bak`` first. Returns whether the file was written.
         """
         options = self.options
         t = self.ctx.translator
@@ -320,37 +351,40 @@ class WxBriefApp(App[None]):
         if self._chosen_theme is not None and not options.theme_from_flag:
             chosen["theme"] = self._chosen_theme
         saved_view = options.config.view
-        changed = watchlist != options.config.stations.watchlist or any(
+        changed = watchlist != self._saved_watchlist or any(
             getattr(saved_view, name) != value for name, value in chosen.items()
         )
         if not options.use_config or not changed:
-            return
+            return False
         path = options.config_path or default_config_path()
         if not options.config_usable:
-            if not self._warned_unusable:
-                self._warned_unusable = True
-                self.notify(t.t(K.UI_TOAST_CONFIG_UNREADABLE, path=path), severity="warning", timeout=10)
-            return
+            self._warn_unreadable(path)
+            return False
+        loaded = load_config(path) if path.exists() else LoadedConfig(deepcopy(options.config))
+        if not loaded.usable:  # it was readable at launch and has been broken since
+            self._warn_unreadable(path)
+            return False
         backup = path.with_name(path.name + ".bak")
-        if not self._backed_up and path.exists() and (options.config_warnings or self._hand_written(path, backup)):
+        if path.exists():
             try:
-                shutil.copy2(path, backup)
+                on_disk = path.read_text(encoding="utf-8-sig")
+                hand_written = bool(loaded.warnings) or on_disk != config_text(loaded.config)
             except OSError:
-                self.notify(t.t(K.UI_TOAST_BACKUP_FAILED), severity="error")
-                return
-            self._backed_up = True
-            self.notify(t.t(K.UI_TOAST_BACKED_UP, path=backup), timeout=10)
-        # save_config writes the Config object, so set the new values first and put the old ones back if the write
-        # fails; otherwise the next save would find nothing changed and never retry.
-        previous = (options.config.stations.watchlist, {name: getattr(saved_view, name) for name in chosen})
-        options.config.stations.watchlist = watchlist
-        for name, value in chosen.items():
-            setattr(saved_view, name, value)
-        if not save_config(options.config, path):
-            options.config.stations.watchlist = previous[0]
-            for name, value in previous[1].items():
-                setattr(saved_view, name, value)
+                hand_written = False
+            if hand_written:
+                try:
+                    shutil.copy2(path, backup)
+                except OSError:
+                    self.notify(t.t(K.UI_TOAST_BACKUP_FAILED), severity="error")
+                    return False
+                self.notify(t.t(K.UI_TOAST_BACKED_UP, path=backup), timeout=10)
+        merged = merge_session(loaded.config, self._saved_watchlist, watchlist, chosen)
+        if not save_config(merged, path):  # nothing is remembered as saved, so the next change tries again
             self.notify(t.t(K.UI_TOAST_SAVE_FAILED, path=path), severity="error")
+            return False
+        options.config = merged
+        self._saved_watchlist = watchlist
+        return True
 
     # --- settings --------------------------------------------------------------------------------------------------
 
