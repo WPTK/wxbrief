@@ -592,8 +592,8 @@ Screenshot of the briefing screen (120x36, `textual-dark`, saved KDEN and EGLL r
 
 **After review (PR #21).**
 
-- `PollScheduler.hold_until` is set by a 429 and `poll_now()` never makes a track due before it. On refocus the app calls `poll_now()`
-  only when it was away for at least the METAR interval (`app._monotonic`, `_blurred_at`).
+- `PollScheduler.hold_until` is set by a 429 and `poll_now()` never makes a track due before it. On refocus the app calls
+  `PollScheduler.return_from_away()` (see the data-layer review fixes under Deviations).
 - Enter on a station focuses the detail pane through `OptionSelected` (the list's own binding wins over a screen binding).
   A redraw uses `prevent(OptionList.OptionHighlighted)`, so it no longer re-selects.
 - Saving: a config that could not be read at all (`LoadedConfig.usable` is false) is never overwritten, the app says so once and keeps
@@ -888,3 +888,15 @@ and attribution") with every release. `scripts/make_screenshots.py` regenerates 
   (`dist\wxbrief.exe --selftest`, `--version` and `decode --lang de` pass). The Linux, macOS and arm64 builds and the publish job
   run for the first time on the first tag; nothing was tagged or released.
 - **Not touched:** `__version__` stays `0.1.0`; `CHANGELOG.md` is unchanged (workflows and docs are not user-visible).
+
+### Data-layer review fixes (PR #58)
+
+- **Refocus** no longer force-polls after a long blur. `PollScheduler.return_from_away()` puts each product's due time back
+  to its last fetch plus its normal interval, so only overdue products poll. `app._monotonic` and `_blurred_at` are gone.
+- **Poll errors:** any exception from a fetch becomes a `ClientError` (traceback logged); a raising result or error callback
+  is logged and cannot end the poller. `AwcClient` has a total request deadline (30 s) besides httpx's per-read timeout.
+- **Retry-After** accepts an HTTP date and is capped at one hour in `awc.py` (the one place).
+- **Config:** unknown keys and sections warn; the first save also makes a `.bak` of a file that differs from what a save
+  writes (comments, other layout) when none exists. Watchlist IATA/FAA codes resolve to ICAO at load.
+- **Status bar** says Offline only for a network failure, and the label and message come from the same error.
+- Two app instances sharing one cache folder is unsupported (not fixed).

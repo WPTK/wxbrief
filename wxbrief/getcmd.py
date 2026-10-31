@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 
 from wxbrief.data.awc import AwcClient, AwcError
 from wxbrief.data.models import AwcMetar, AwcTaf, latest_by_station
-from wxbrief.data.stations import bundled
+from wxbrief.data.stations import bundled, resolve_id
 from wxbrief.decode.metar import parse_metar
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.taf import parse_taf
@@ -45,12 +45,9 @@ def add_get_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser]
 
 
 def resolve_ids(codes: list[str]) -> list[str]:
-    db = bundled()
     ids: list[str] = []
     for code in codes:
-        key = code.strip().upper()
-        station = db.get(key) if len(key) == 3 else None
-        resolved = station.icao if station else key
+        resolved = resolve_id(code)
         if resolved and resolved not in ids:
             ids.append(resolved)
     return ids

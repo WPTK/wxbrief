@@ -55,6 +55,6 @@ class DiskCache:
             document = json.loads(self._path(key).read_text(encoding="utf-8"))
             saved_at = datetime.fromisoformat(document["saved_at"])
             payload = document["payload"]
-        except (OSError, ValueError, KeyError, TypeError):
+        except (OSError, ValueError, KeyError, TypeError, RecursionError):  # the last: JSON nested too deep
             return None
         return (saved_at, payload) if saved_at.tzinfo is not None else None
