@@ -169,7 +169,7 @@ Tick a row when the session has landed on `main` (S0 committed directly; later s
 |---|---|---|
 | S0 | Scaffold: package, CI, project docs | [x] 2026-10-31 |
 | S1 | Decoder core | [x] 2026-10-31 |
-| S2a | Decoder depth: METAR/SPECI tail (trends, color states, runway state, remarks) | [ ] |
+| S2a | Decoder depth: METAR/SPECI tail (trends, color states, runway state, remarks) | [x] 2026-10-31 |
 | S2b | Decoder depth: TAF, timeline, `split.py`, Discord and JSON output | [ ] |
 | S3 | Data layer | [ ] |
 | S4 | TUI MVP | [ ] |
@@ -319,3 +319,109 @@ passes on all 647 saved reports with an empty exceptions list. Keys: edit `local
 - `Metar.relative_humidity` is rounded to one decimal so goldens do not depend on the platform's `exp`.
 - Rich output uses a built-in default theme with dotted style names (`wx.wind`, `fcat.ifr`); mapping the colourways
   onto those names is S5.
+
+### S2a (2026-10-31)
+
+**The split.** The original S2 was too big for one context. S2a (this session) covers everything for METAR/SPECI after
+the body: trends, color states, runway state, recent weather, wind shear, sea state and the remarks, with their phrases
+and plain/Rich/JSON rendering, the regional METAR fixtures and the AWC cross-check. S2b takes TAF, the timeline,
+`split.py`, and the Discord and JSON output (`--json`/`--discord` flags). Both rows are in the table and the checklist
+above; the other sessions are unchanged.
+
+**Color-state thresholds.** The skill file `international.md` lists `YLO1` as 700 ft / 3.7 km, which collides with `GRN`.
+The design's figures are the standard ones and are verified: the UK Met Office aerodrome colour state register
+(https://reference.metoffice.gov.uk/aviation/UKAerodromeColourStates; entries `BLU` 8000 m, `WHT` 5000, `GRN` 3700 /
+700 ft, `YLO1` 2500 m / 500 ft, `YLO2` 1600 m / 300 ft, `AMB` 800 m) and the Wikipedia "Colour state" table agree. They are
+cited in `docs/decoding.md` and in `decode/colorstate.py`. As a check, all 47 saved military reports that carry a
+colour (German, Dutch and UK fields) recompute to the reported colour with this table. Plain `YLO` (no digit, used by
+Dutch and German fields) has the `YLO2` minimums in every saved example and is stored as its own code `ColorCode.YLO`.
+
+**Not verified, flagged.** (1) The `+` suffix on `BLU+` (ETHL, ETNN): no source found; it is stored as `plus` and
+displayed as reported ("Blue (BLU+)") without an interpretation. (2) `///` as the last group of German AUTO reports
+(`... Q1033 ///`) is read as "colour state not reported" from its position; it is stored as
+`ColorState(None, not_reported=True)`. If it means something else, only that parser and one phrase change.
+
+**Model (names as built).** In `decode/model.py`: `Trend(kind, times, elements)` with `TrendKind` (`NOSIG`, `BECMG`,
+`TEMPO`; the field is `kind`, not `type`), `TrendTime(kind, hour, minute, moment)` with `TrendTimeKind` (`FROM`, `UNTIL`,
+`AT`); `ForecastElements(wind, visibility, weather, sky, color_state)` (the plan listed it under S2; it is here because
+`Trend` carries it; empty means unchanged); `ColorCode` (adds plain `YLO`), `ColorState(code, black, plus, not_reported)`,
+`ColorForecast(state, change)`, `ColorStateGroup(current, forecast)`; `RunwayState(runway, all_runways, repeated, snoclo,
+cleared, deposit, extent, depth, braking)` with `RunwayDeposit`, `RunwayExtent`, `RunwayDepth`/`RunwayDepthKind`,
+`RunwayBraking`/`BrakingAction`; `RecentWeather(weather)` wrapping a `WeatherGroup`; `WindShearRunway(runway,
+all_runways)`; `SeaState(temperature, state, wave_height_m)`; `Remark` and 35 frozen variants (the 30 listed in the brief
+plus `ColorStateRemark`, `StationPressure` (QFE/QNH), `RunwayWind`, `AltimeterSetting` and `WindAtHeight`, which the real
+Russian, Norwegian, Turkish and Asian reports in the saved batches needed); `RemarkTime(minute, hour)`. `Metar` gains
+`trends`, `color_state`, `computed_color_state`, `runway_states`, `recent_weather`, `wind_shear`, `sea_state`, `remarks`
+and `remarks_of(VariantClass)`. `jsonout.to_dict` writes `"variant": "<ClassName>"` on every remark because remarks are
+a union. `Flag` gains `COLOR_BELOW_GRN`, `RAPID_PRESSURE_CHANGE`, `RUNWAY_CONTAMINATED`, `MAINTENANCE`, `VOLCANIC_ASH`
+and `MISSING_DATA` (definitions in `docs/decoding.md`); `WIND_SHEAR` is now derived.
+
+**Behaviour choices.**
+
+- Token kinds: no new `SemanticKind`. The finer kinds are the existing ones used more precisely: a trend keyword and its
+  `FM`/`TL`/`AT` times are `TREND`, its body elements `WIND`/`VISIBILITY`/`WEATHER`/`SKY`/`COLOR_STATE`; remark tokens
+  are `PRESSURE`, `TEMPERATURE`, `WIND`, `VISIBILITY`, `WEATHER`, `SKY` by what they are, and `REMARK` for the rest.
+  `highlight.py` and `richtext.py` needed no change (they style by kind); tests cover it.
+- `computed_color_state` is filled only when the report carries a colour state (the plan says military reports show
+  reported against computed). `decode/colorstate.py` also offers `visibility_meters`, `is_below_green` and
+  `reported_matches_computed` (plain `YLO` matches a computed `YLO1` or `YLO2`). The ceiling is the lowest broken,
+  overcast or vertical-visibility layer; the UK register counts scattered cloud too, so a UK field can legitimately
+  report a worse colour than we compute.
+- `military` is also set when the colour state sits in the remarks (RAF stations: `RMK YLO1 YLO1`), and not by `///`
+  or a bare `BLACK`.
+- A colour group is split from a weather trend by looking ahead: `TEMPO`/`BECMG` followed by a colour code belongs to
+  the colour group (`BLU TEMPO YLO`), anything else starts a trend. A colour code inside a trend body is that trend's
+  `color_state`.
+- `tail.py`: `parse_tail_group(cur, flavor, observed)` now returns a `TailResult` (the kind of the first token plus the
+  decoded value) instead of a bare `SemanticKind`; `is_color_state` moved to `groups/colorstate.py`
+  (`COLOR_STATE_BASE_CODES` is gone). A bare `WS` is no longer recognised.
+- Trend body tokens the parser cannot place stay `UNKNOWN` and get the usual `unknown_token` warning; the body carries on
+  with the next token.
+- Plain decode: the "Trend and other groups (raw)" row is gone; trends, color state, runway state, recent weather, wind
+  shear and sea state have their own rows, each remark is a "Remark" row, and "Remarks (not decoded)" lists only the
+  words of free text the catalog cannot spell out. A "Color state (computed)" row appears when the computed state
+  differs from the reported one or none was reported.
+- Units: precipitation, snow and hail are inches (`measure.format_inches`), runway depth millimetres/centimetres
+  (`format_millimeters`), wave height metres, and `format_pressure`/`format_temperature` take `precise=True` for the
+  T-group and sea-level pressure. Float rounding means 1.75 in prints as 44.4 mm.
+- A latent S1 bug is fixed: a sky made only of `//////` placeholders (cover unknown) was treated as "no ceiling" and
+  could make an empty report VFR; it now says nothing, and `flight_category` is `None` when visibility is missing too.
+  Verified against AWC (`fltCat` is null for those reports).
+
+**Fixtures and tests.** The corpus grew from 65 to 139 report/golden pairs (32 hand-written) in 14 regions: new folders
+`canada`, `germany`, `netherlands`, `norway`, `russia`, `india`, `japan`, `australia`, `brazil`, `antarctica`. Two fresh
+polite requests to the AWC API (2026-10-31, honest User-Agent) added `metar_military_20261031.json` (German, UK, Dutch,
+Belgian-area military fields and eastern Europe and Russia, 270 reports) and `metar_world2_20261031.json` (400 reports
+from the Gulf, Asia, Oceania, the Americas and Africa); 1,248 distinct saved reports in all. Every golden was read
+against its raw text: the 74 new ones one by one, the 65 old ones as a diff (new empty fields, finer token kinds, the
+decoded remarks and trends, the added flags). `tests/test_flightcat.py` parity exceptions are now named rules with
+reasons (German AUTO reports with an unobserved sky; Greenland's `9999NDV`) and a staleness check.
+`tests/test_awc_crosscheck.py` is the new cross-check (see `docs/decoding.md`). New unit tests: `test_tail.py` (each
+group parser), `test_remarks.py` (every remark variant, enforced), `test_colorstate.py`, `test_phrases_tail.py`; the
+fuzz test gained tail and remark inputs (it also passed 20,000 examples per property once, locally).
+
+**For S2b: what to reuse.**
+
+- `decode/groups/trend.py`: `parse_trend_body(cur, observed, stop)` reads time qualifiers and
+  `ForecastElements` (wind, visibility, weather, sky, colour) until `stop(token)`; `parse_trend_time` handles
+  `FM`/`TL`/`AT` + `HHMM`. TAF change groups have their own time syntax (`FM101200`, `1012/1018`, `PROB30`), so write
+  those parsers, but read the elements of a period with `parse_trend_body` (give it a `stop` that ends at the next
+  `FM`/`BECMG`/`TEMPO`/`PROB`/`INTER`/`RMK`), and reuse `ForecastElements` as the period payload. TAF-only elements
+  (temperatures `TX`/`TN`, `WS020/30035KT`, icing and turbulence groups) are S2b's to add around it.
+- `decode/times.py`: `resolve_clock_time(hour, minute, reference)` picks the day for a bare time; a TAF should resolve
+  against its issue time, not an observation. `resolve_day_time` handles `DDHHMMZ`.
+- `decode/colorstate.py` and `flightcat.py`: `computed_color_state(ceiling_ft, visibility_m)`, `visibility_meters`,
+  `classify`, `ceiling_for_classification` give per-slice categories and colours for the timeline.
+- `Cursor.token_at(index)` and `Cursor.kind_at(index)` exist for warnings after a group parser.
+- Rendering: `phrases.describe_forecast_elements(t, elements, units)` and `describe_trend_time` render a period's
+  elements; `describe_color_code`/`describe_color_state`, `describe_wind`, `describe_visibility`, `describe_weather`,
+  `describe_sky` are public. For the Discord template: `metar.remarks_of(SeaLevelPressure)`,
+  `PressureTendency` (net direction and `change_hpa`, "rising +0.8 mb/3hr"), the 6-hour and 24-hour extremes and the
+  peak wind give the extra lines; `metar.trends` gives the ICAO trend line (`NOSIG` -> "Trend: NOSIG (no significant
+  change next 2 hrs)" is `describe_trend`); `Metar.condition` is the header emoji; `render/plain.py` `decode_rows`
+  shows how the rows are ordered and labelled.
+- `render/jsonout.to_dict` already converts any frozen dataclass, tuples, enums and datetimes; a new `Taf` model only
+  needs to be a dataclass. Remark variants carry `"variant"`.
+- Catalog: add keys to `locales/en.toml`, run `python scripts/gen_keys.py`; `test_i18n` checks the tables in
+  `decode/tables.py` against the catalog and the enums.
+- AWC TAF JSON was not fetched or saved here.
