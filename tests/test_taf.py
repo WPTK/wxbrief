@@ -299,6 +299,13 @@ def test_a_window_that_is_not_a_date_is_unknown() -> None:
     assert [w.text for w in taf.warnings] == ["3122/3199"]
 
 
+@pytest.mark.parametrize("group", ["997788", "130025", "321212", "131225"])
+def test_a_six_digit_group_that_is_not_a_valid_period_is_unknown_not_legacy(group: str) -> None:
+    taf = decode(f"TAF KJFK 312200Z {group} 06007KT P6SM SKC")
+    assert not taf.legacy
+    assert [(w.code, w.text) for w in taf.warnings] == [("unknown_token", group)]
+
+
 @pytest.mark.parametrize("raw", ["", "   ", "TAF", "hello", "TAF KJFK", "METAR KDEN 131453Z 06007KT 10SM CLR 09/08 A3001"])
 def test_nothing_raises_and_every_character_is_kept(raw: str) -> None:
     taf = decode(raw)

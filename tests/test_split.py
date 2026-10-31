@@ -91,6 +91,17 @@ def test_a_keyword_that_does_not_start_a_report_does_not_split() -> None:
     assert split_reports("AMD TAF") == ["AMD TAF"]
 
 
+def test_a_keyword_inside_remarks_is_text_not_a_new_report() -> None:
+    one_line = f"{T1} RMK SEE TAF FROM KDEN LATER"
+    assert split_reports(one_line) == [one_line]
+    wrapped = f"{T1} RMK AMENDED BY\nTAF FROM THE DUTY FORECASTER"
+    assert split_reports(wrapped) == [wrapped]
+    metar = f"{M1} RMK AO2 SEE TAF KSEA"
+    assert split_reports(metar) == [metar]
+    assert split_reports(f"{T1} RMK TEST {M2}") == [f"{T1} RMK TEST", M2]
+    assert split_reports(f"{T1} RMK TEST\n{T2}") == [f"{T1} RMK TEST", T2]
+
+
 def test_original_line_breaks_are_kept_inside_a_report() -> None:
     wrapped = f"{T1}\n  FM131800 18010KT"
     (report,) = split_reports(wrapped.replace("\n", "\r\n"))
