@@ -21,7 +21,9 @@ from wxbrief.ui.screens.add_station import AddStationScreen
 from wxbrief.ui.screens.help import HelpScreen
 from wxbrief.ui.screens.paste import PasteDecodeScreen
 from wxbrief.ui.screens.settings import SettingsScreen
+from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.widgets.detail import DetailPane
+from wxbrief.ui.widgets.station_grid import StationGrid
 from wxbrief.ui.widgets.station_list import StationList
 from wxbrief.ui.widgets.status_bar import StatusBar
 
@@ -35,6 +37,7 @@ class BriefingScreen(Screen[None]):
         Binding("d", "remove_station", "Remove"),
         Binding("p", "paste", "Paste"),
         Binding("r", "refresh_now", "Refresh"),
+        Binding("v", "toggle_layout", "List/grid"),
         Binding("c", "copy_metar", "Copy METAR", show=False),
         Binding("C", "copy_both", "Copy METAR+TAF", show=False),
         Binding("y", "copy_raw", "Copy raw", show=False),
@@ -52,6 +55,7 @@ class BriefingScreen(Screen[None]):
     def __init__(self) -> None:
         super().__init__()
         self.selected: str | None = None
+        self.layout_mode = "list"  # "list" (station list and detail) or "grid" (cards)
         self._ready = False
 
     @property
@@ -62,13 +66,25 @@ class BriefingScreen(Screen[None]):
         with Horizontal(id="main"):
             yield StationList(id="stations")
             yield DetailPane(id="detail")
+            yield StationGrid(id="grid")
         yield StatusBar(id="status")
         yield Footer()
 
     def on_mount(self) -> None:
         self._ready = True
+        self._ticks = 0
+        self.set_interval(1.0, self._tick)  # owned by the screen, so it stops with the screen
+        self.layout_mode = "grid" if self.wx.options.view.layout == "grid" else "list"
+        self._apply_layout()
         self.refresh_view()
-        self.query_one(StationList).focus()
+        self._focus_main()
+
+    def _tick(self) -> None:
+        self._ticks += 1
+        if self._ticks % 30 == 0:
+            self.refresh_view()  # fresh reports turn stale as time passes
+        else:
+            self.refresh_status()
 
     # --- drawing ---------------------------------------------------------------------------------------------------
 
@@ -84,8 +100,11 @@ class BriefingScreen(Screen[None]):
         ids = [r.icao for r in reports]
         if self.selected not in ids:
             self.selected = ids[0] if ids else None
-        with self.prevent(OptionList.OptionHighlighted):  # a redraw must not look like the user moving
-            self.query_one(StationList).set_stations(reports, wx.ctx, wx.now(), self.selected)
+        if self.layout_mode == "grid":
+            self.query_one(StationGrid).set_stations(reports, wx.ctx, wx.now(), self.selected)
+        else:
+            with self.prevent(OptionList.OptionHighlighted):  # a redraw must not look like the user moving
+                self.query_one(StationList).set_stations(reports, wx.ctx, wx.now(), self.selected)
         self.show_selected()
 
     def show_selected(self) -> None:
@@ -93,7 +112,8 @@ class BriefingScreen(Screen[None]):
         entry = self.current()
         ids = wx.state.ids
         position = f"{ids.index(entry.icao) + 1}/{len(ids)}" if entry else ""
-        self.query_one(DetailPane).show(entry, wx.ctx, wx.now(), position)
+        if self.layout_mode == "list":
+            self.query_one(DetailPane).show(entry, wx.ctx, wx.now(), position)
         self.refresh_status()
 
     def refresh_status(self) -> None:
@@ -116,8 +136,38 @@ class BriefingScreen(Screen[None]):
         self.call_after_refresh(self._fix_focus)
 
     def _fix_focus(self) -> None:
-        if not self.query_one(StationList).display:
+        if self.layout_mode == "list" and not self.query_one(StationList).display:
             self.query_one(DetailPane).focus()
+
+    # --- layout ----------------------------------------------------------------------------------------------------
+
+    def _apply_layout(self) -> None:
+        """Switch between list and grid with a class: the stylesheet shows and hides the three panes."""
+        self.set_class(self.layout_mode == "grid", "-grid")
+
+    def _focus_main(self) -> None:
+        if self.layout_mode == "grid":
+            self.query_one(StationGrid).focus()
+        else:
+            self.query_one(StationList).focus()
+        self._fix_focus()
+
+    def action_toggle_layout(self) -> None:
+        self.layout_mode = "list" if self.layout_mode == "grid" else "grid"
+        self._apply_layout()
+        self.refresh_view()
+        self._focus_main()
+        self.notify(f"{self.layout_mode.capitalize()} layout")
+
+    def on_station_grid_selected(self, message: StationGrid.Selected) -> None:
+        self.select(message.icao)
+
+    def on_station_grid_opened(self, message: StationGrid.Opened) -> None:
+        entry = self.current()
+        ids = self.wx.state.ids
+        if entry is not None:
+            position = f"{ids.index(entry.icao) + 1}/{len(ids)}"
+            self.app.push_screen(StationDetailScreen(entry, self.wx.ctx, self.wx.now(), position))
 
     # --- selection -------------------------------------------------------------------------------------------------
 
@@ -144,7 +194,8 @@ class BriefingScreen(Screen[None]):
         self.query_one(DetailPane).focus()
 
     def action_jump(self, section: str) -> None:
-        self.query_one(DetailPane).jump(section)
+        if self.layout_mode == "list":  # the detail pane is hidden in the grid; Enter opens a station's detail instead
+            self.query_one(DetailPane).jump(section)
 
     # --- actions ---------------------------------------------------------------------------------------------------
 

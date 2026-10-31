@@ -619,6 +619,16 @@ nil = "{station}: no forecast available."
 nil_no_station = "No forecast available."
 nothing = "No forecast could be decoded."
 
+[timeline]
+span = "{start} to {end}"
+prevailing = "Prevailing: {header}"
+then = "From {time}: {header}"
+worst = "Worst case in this window:"
+legend_becoming = "becoming"
+legend_temporary = "temporary"
+none = "No timeline: the forecast has no usable valid period."
+no_taf = "no TAF"
+
 [hazard]
 surface = "the surface"
 layer = "{intensity}, {base} to {top} above ground"

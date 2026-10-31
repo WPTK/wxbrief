@@ -16,9 +16,11 @@ from wxbrief.data.poll import Freshness
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.i18n.keys import K
 from wxbrief.render import phrases
-from wxbrief.render.plain import DecodeRow, decode_rows, render_plain, warning_lines
+from wxbrief.render.plain import DecodeRow, decode_rows, taf_blocks, taf_header_rows, warning_lines
 from wxbrief.state import StationReports
 from wxbrief.ui.context import ViewContext
+from wxbrief.ui.widgets.period_detail import PeriodDetail, rows_text
+from wxbrief.ui.widgets.taf_timeline import TafTimeline
 
 
 def age_text(delta: timedelta) -> str:
@@ -136,6 +138,11 @@ class DetailPane(VerticalScroll):
 
     can_focus = True
 
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._entry: StationReports | None = None
+        self._ctx: ViewContext | None = None
+
     def compose(self) -> ComposeResult:
         yield Static("No stations yet. Press [b]a[/b] to add one.", id="placeholder")
         yield StationHeader(id="header")
@@ -147,7 +154,12 @@ class DetailPane(VerticalScroll):
         with Collapsible(title="Remarks", id="remarks-box", collapsed=True):
             yield Static(id="remarks")
         yield Label("Forecast (TAF)", classes="section", id="taf-title")
-        yield Static(id="taf")
+        yield Static(id="taf-summary")
+        yield Static(id="taf-note")
+        yield TafTimeline(id="timeline")
+        yield PeriodDetail(id="period")
+        with Collapsible(title="All forecast groups", id="taf-groups-box", collapsed=True):
+            yield Static(id="taf-groups")
         yield Static(id="warnings")
 
     def on_mount(self) -> None:
@@ -160,12 +172,13 @@ class DetailPane(VerticalScroll):
                 child.display = shown
 
     def show(self, entry: StationReports | None, ctx: ViewContext, now: datetime, position: str = "") -> None:
+        self._entry, self._ctx = entry, ctx
         if entry is None:
             self._set_visible(False)
             return
         self._set_visible(True)
         t = ctx.translator
-        metar, taf = entry.metar, entry.taf
+        metar = entry.metar
         self.query_one(StationHeader).show(entry, ctx, now, position)
         self.query_one(FlagsRow).show(metar, ctx)
         self.query_one(RawReport).show(entry, ctx)
@@ -185,19 +198,68 @@ class DetailPane(VerticalScroll):
             Text("\n").join(Text(r.value, style=palette.style(r.style)) for r in remarks)
         )
 
-        has_taf = taf is not None
-        self.query_one("#taf-title").display = has_taf
-        self.query_one("#taf", Static).display = has_taf
-        self.query_one("#taf", Static).update(Text(render_plain(taf, t, ctx.units)) if isinstance(taf, Taf) else "")
+        self._show_taf(entry, ctx, now)
 
         warnings = warning_lines(metar, t) if metar else []
         warn_box = self.query_one("#warnings", Static)
         warn_box.display = bool(warnings)
         warn_box.update(Text("\n".join(warnings), style=palette.style("wx.warning")))
 
+    def _show_taf(self, entry: StationReports, ctx: ViewContext, now: datetime) -> None:
+        """The forecast section: summary, timeline with the period under the cursor, and every group in plain words."""
+        taf = entry.taf if isinstance(entry.taf, Taf) else None
+        t = ctx.translator
+        shown = taf is not None
+        for selector in ("#taf-title", "#taf-summary", "#taf-groups-box"):
+            self.query_one(selector).display = shown
+        timeline = self.query_one(TafTimeline)
+        period = self.query_one(PeriodDetail)
+        note = self.query_one("#taf-note", Static)
+        if taf is None:
+            timeline.display = period.display = note.display = False
+            timeline.set_taf(None, ctx, entry.icao, now)
+            self._release_focus(timeline)
+            return
+        skipped = {t.t(K.LABEL_STATION), t.t(K.LABEL_REPORT), t.t(K.LABEL_FLAGS)}
+        rows = [row for row in taf_header_rows(taf, ctx.translator, ctx.units) if row.label not in skipped]
+        rows.append(DecodeRow(t.t(K.LABEL_SUMMARY), phrases.describe_taf_summary(t, taf, ctx.units)))
+        self.query_one("#taf-summary", Static).update(rows_text(rows, ctx, self.size.width or 70, indent=0))
+        blocks = taf_blocks(taf, t, ctx.units)
+        groups: list[Text] = []
+        for block in blocks:
+            groups.append(Text(block.title, style="bold"))
+            groups.append(rows_text(block.rows, ctx, self.size.width or 70))
+        self.query_one("#taf-groups-box", Collapsible).title = f"All forecast groups ({len(blocks)})"
+        self.query_one("#taf-groups", Static).update(Text("\n").join(groups))
+        drawn = timeline.set_taf(taf, ctx, entry.icao, now)
+        timeline.display = period.display = drawn
+        note.display = not drawn
+        note.update(Text(t.t(K.TIMELINE_NONE), style=ctx.palette.muted))
+        if not drawn:
+            period.update("")
+            self._release_focus(timeline)
+
+    def _release_focus(self, timeline: TafTimeline) -> None:
+        """A hidden timeline must not keep the keyboard: hand it to the pane."""
+        if timeline.has_focus:
+            self.focus()
+
+    def on_taf_timeline_moved(self, message: TafTimeline.Moved) -> None:
+        """Show the forecast for the cell the cursor is on."""
+        message.stop()
+        entry = self._entry
+        ctx = self._ctx
+        if message.taf is None or entry is None or ctx is None:
+            return
+        if message.icao != entry.icao or message.cell is not message.timeline.selected:
+            return  # stale: the cursor or the station has moved on since this was posted
+        self.query_one(PeriodDetail).show_cell(message.taf, message.data, message.cell, ctx, message.icao)
+
     def jump(self, section: str) -> None:
-        """Scroll to ``raw``, ``decoded`` or ``taf``."""
+        """Scroll to ``raw``, ``decoded`` or ``taf``; the forecast also takes the keyboard focus (cursor keys)."""
         target = {"raw": "#raw-title", "decoded": "#decoded-title", "taf": "#taf-title"}[section]
         widget = self.query_one(target)
         if widget.display:
             self.scroll_to_widget(widget, top=True, animate=False)
+            if section == "taf" and self.query_one(TafTimeline).display:
+                self.query_one(TafTimeline).focus()

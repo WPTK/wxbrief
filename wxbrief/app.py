@@ -17,6 +17,7 @@ from textual.theme import Theme
 from wxbrief.config import Config, ViewConfig, default_config_path, save_config
 from wxbrief.data.awc import AwcClient, AwcError
 from wxbrief.data.cache import DiskCache, default_cache_dir
+from wxbrief.data.demo import load_demo
 from wxbrief.data.poll import PollScheduler, Product
 from wxbrief.data.stations import bundled
 from wxbrief.decode.units import UnitsMode
@@ -26,6 +27,7 @@ from wxbrief.state import AppState
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.glyphs import glyphs_for
 from wxbrief.ui.screens.briefing import BriefingScreen
+from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.screens.theme_picker import ThemePickerScreen
 from wxbrief.ui.themes import AVIATION_THEMES, THEME_CYCLE
 
@@ -47,6 +49,7 @@ class AppOptions:
     use_cache: bool = True
     client: AwcClient | None = None  # tests inject one with a mock transport
     poll: bool = True
+    demo: bool = False  # --demo: the bundled reports on a fixed clock; no polling, cache or config writes
     now: Callable[[], datetime] = lambda: datetime.now(UTC)
 
 
@@ -96,7 +99,6 @@ class WxBriefApp(App[None]):
         self.scheduler: PollScheduler | None = None
         self.briefing = BriefingScreen()
         self._backed_up = False
-        self._ticks = 0
         self._monotonic: Callable[[], float] = time.monotonic
         self._blurred_at: float | None = None
         self._warned_unusable = False
@@ -107,7 +109,11 @@ class WxBriefApp(App[None]):
     # --- start up --------------------------------------------------------------------------------------------------
 
     def on_mount(self) -> None:
-        self.state.load_cache()
+        if self.options.demo:
+            self.state.load_demo(load_demo())
+            self.notify("Demo: fixed sample reports, no network", timeout=6)
+        else:
+            self.state.load_cache()
         self.push_screen(self.briefing)
         self.theme_changed_signal.subscribe(self, self._theme_changed)
         if self._theme_notice:
@@ -116,11 +122,8 @@ class WxBriefApp(App[None]):
             self.notify(warning, severity="warning", title="Config", timeout=10)
         for notice in self.options.notices:
             self.notify(notice, severity="warning", title="Stations", timeout=10)
-        if self.options.view.layout == "grid":
-            self.notify("The grid layout is not built yet; showing the list", severity="warning")
         if self.options.poll:
             self.poll_worker()
-        self.set_interval(1.0, self._tick)
 
     # --- themes ----------------------------------------------------------------------------------------------------
 
@@ -130,6 +133,9 @@ class WxBriefApp(App[None]):
 
     def _theme_changed(self, theme: Theme) -> None:
         self.briefing.refresh_view()  # the list, detail and status bar are Rich text drawn from the palette
+        for screen in self.screen_stack:
+            if isinstance(screen, StationDetailScreen):
+                screen.redraw()
         self._settle()
 
     def _settle(self) -> None:
@@ -163,13 +169,6 @@ class WxBriefApp(App[None]):
             self._settle()  # a kept theme is saved; a cancelled one is back to the settled theme and saves nothing
 
         self.push_screen(ThemePickerScreen(names, self.theme), closed)
-
-    def _tick(self) -> None:
-        self._ticks += 1
-        if self._ticks % 30 == 0:
-            self.briefing.refresh_view()  # fresh reports turn stale as time passes
-        else:
-            self.briefing.refresh_status()
 
     # --- polling ---------------------------------------------------------------------------------------------------
 

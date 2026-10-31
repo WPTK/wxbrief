@@ -525,6 +525,15 @@ class K:
     TIME_UNRESOLVED = "time.unresolved"
     TIME_UTC = "time.utc"
 
+    TIMELINE_LEGEND_BECOMING = "timeline.legend_becoming"
+    TIMELINE_LEGEND_TEMPORARY = "timeline.legend_temporary"
+    TIMELINE_NO_TAF = "timeline.no_taf"
+    TIMELINE_NONE = "timeline.none"
+    TIMELINE_PREVAILING = "timeline.prevailing"
+    TIMELINE_SPAN = "timeline.span"
+    TIMELINE_THEN = "timeline.then"
+    TIMELINE_WORST = "timeline.worst"
+
     TREND_BECMG = "trend.becmg"
     TREND_BECMG_WHEN = "trend.becmg_when"
     TREND_COLOR = "trend.color"

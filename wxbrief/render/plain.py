@@ -13,6 +13,7 @@ from wxbrief.decode.model import (
     ChangeType,
     ColorState,
     FlightCategory,
+    ForecastElements,
     Metar,
     Modifier,
     SemanticKind,
@@ -144,9 +145,10 @@ class DecodeBlock:
     category: FlightCategory | None = None
 
 
-def _period_rows(period: TafPeriod, t: Translator, units: UnitsMode) -> list[DecodeRow]:
-    """The elements a forecast period states, one row each, then its flight category."""
-    elements = period.elements
+def element_rows(
+    elements: ForecastElements, category: FlightCategory | None, t: Translator, units: UnitsMode
+) -> list[DecodeRow]:
+    """The elements a forecast states, one row each, then its flight category."""
     rows: list[DecodeRow] = []
 
     def add(label_key: str, value: str, kind: SemanticKind) -> None:
@@ -173,10 +175,14 @@ def _period_rows(period: TafPeriod, t: Translator, units: UnitsMode) -> list[Dec
         add(K.LABEL_TURBULENCE, phrases.describe_turbulence(t, turbulence, units), SemanticKind.HAZARD)
     if not rows:
         rows.append(DecodeRow(t.t(K.LABEL_DETAILS), t.t(K.TREND_NO_DETAILS)))
-    if period.flight_category is not None:
-        category = phrases.describe_flight_category(t, period.flight_category)
-        rows.append(DecodeRow(t.t(K.LABEL_CATEGORY), category, category=period.flight_category))
+    if category is not None:
+        rows.append(DecodeRow(t.t(K.LABEL_CATEGORY), phrases.describe_flight_category(t, category), category=category))
     return rows
+
+
+def _period_rows(period: TafPeriod, t: Translator, units: UnitsMode) -> list[DecodeRow]:
+    """The elements a forecast period states, one row each, then its flight category."""
+    return element_rows(period.elements, period.flight_category, t, units)
 
 
 def taf_header_rows(taf: Taf, t: Translator, units: UnitsMode) -> list[DecodeRow]:
