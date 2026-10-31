@@ -201,6 +201,11 @@ def load_config(path: Path | None = None) -> LoadedConfig:
     return parse_config(data)
 
 
+def config_text(config: Config) -> str:
+    """The TOML that ``save_config`` writes for ``config``."""
+    return tomli_w.dumps(asdict(config))
+
+
 def save_config(config: Config, path: Path | None = None) -> bool:
     """Write the config atomically; ``False`` when the disk refuses."""
     target = path or default_config_path()
@@ -209,7 +214,7 @@ def save_config(config: Config, path: Path | None = None) -> bool:
         fd, tmp_name = tempfile.mkstemp(dir=target.parent, prefix=".config.", suffix=".tmp")
         try:
             with os.fdopen(fd, "wb") as handle:
-                tomli_w.dump(asdict(config), handle)
+                handle.write(config_text(config).encode("utf-8"))
             os.replace(tmp_name, target)
         except BaseException:
             Path(tmp_name).unlink(missing_ok=True)

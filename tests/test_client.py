@@ -176,12 +176,12 @@ async def test_a_200_body_that_is_not_a_list_is_a_client_error(body: object) -> 
 
 
 @respx.mock
-async def test_retry_after_accepts_an_http_date_and_is_capped_at_a_day() -> None:
+async def test_retry_after_accepts_an_http_date_and_is_capped_at_an_hour() -> None:
     from datetime import UTC, datetime, timedelta
     from email.utils import format_datetime
 
     when = format_datetime(datetime.now(UTC) + timedelta(seconds=300), usegmt=True)
-    for header, low, high in ((when, 280, 301), ("999999999", 86400, 86400), ("inf", 60, 60), ("nan", 60, 60)):
+    for header, low, high in ((when, 280, 301), ("999999999", 3600, 3600), ("7200", 3600, 3600), ("inf", 60, 60), ("nan", 60, 60)):
         respx.get(METAR_URL).mock(return_value=httpx.Response(429, headers={"Retry-After": header}))
         async with AwcClient() as client:
             with pytest.raises(RateLimited) as caught:

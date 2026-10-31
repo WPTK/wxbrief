@@ -12,7 +12,7 @@ from textual import events, work
 from textual.app import App
 from textual.theme import Theme
 
-from wxbrief.config import TIME_MODES, WATCHLIST_CAP, Config, ViewConfig, default_config_path, save_config
+from wxbrief.config import TIME_MODES, WATCHLIST_CAP, Config, ViewConfig, config_text, default_config_path, save_config
 from wxbrief.data.awc import AwcClient, AwcError, TransportError
 from wxbrief.data.cache import DiskCache, default_cache_dir
 from wxbrief.data.demo import load_demo
@@ -278,6 +278,15 @@ class WxBriefApp(App[None]):
             self.notify(self.ctx.translator.t(K.UI_TOAST_REMOVED, code=icao))
             self.briefing.refresh_view()
 
+    def _hand_written(self, path: Path, backup: Path) -> bool:
+        """The file holds more than a save would write back (comments, other layout) and has no backup yet."""
+        if backup.exists():
+            return False
+        try:
+            return path.read_text(encoding="utf-8-sig") != config_text(self.options.config)
+        except OSError:
+            return False
+
     def _save(self) -> None:
         """Write the watchlist, the theme and the settings dialog's choices back when any of them changed.
 
@@ -302,8 +311,8 @@ class WxBriefApp(App[None]):
                 self._warned_unusable = True
                 self.notify(t.t(K.UI_TOAST_CONFIG_UNREADABLE, path=path), severity="warning", timeout=10)
             return
-        if options.config_warnings and not self._backed_up and path.exists():
-            backup = path.with_name(path.name + ".bak")
+        backup = path.with_name(path.name + ".bak")
+        if not self._backed_up and path.exists() and (options.config_warnings or self._hand_written(path, backup)):
             try:
                 shutil.copy2(path, backup)
             except OSError:

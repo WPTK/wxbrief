@@ -301,9 +301,25 @@ async def test_returning_after_a_long_blur_polls_what_is_overdue() -> None:
     assert await scheduler.run_cycle() == [Product.METAR]
 
 
-async def test_a_retry_after_beyond_the_backoff_cap_is_honoured() -> None:
+async def test_a_raising_callback_does_not_end_the_poller() -> None:
     clock, client = FakeClock(), FakeClient()
-    client.errors = [RateLimited(7200)]
-    scheduler, _ = make(clock, client)
-    await scheduler.run_cycle()
-    assert scheduler.hold_remaining() == 7200
+    calls: list[Product] = []
+
+    def broken(product: Product, rows: list[Any]) -> None:
+        calls.append(product)
+        raise RuntimeError("apply failed")
+
+    scheduler = PollScheduler(client, lambda: ["KDEN"], broken, broken_error, clock=clock)  # type: ignore[arg-type]
+    assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
+    assert calls == [Product.METAR, Product.TAF]
+
+
+def broken_error(product: Product, error: AwcError) -> None:
+    raise RuntimeError("report failed")
+
+
+async def test_a_raising_error_callback_does_not_end_the_poller() -> None:
+    clock, client = FakeClock(), FakeClient()
+    client.errors = [ServerError(500), ServerError(500)]
+    scheduler = PollScheduler(client, lambda: ["KDEN"], lambda p, r: None, broken_error, clock=clock)  # type: ignore[arg-type]
+    assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]

@@ -465,3 +465,44 @@ def test_cache_dir_can_be_redirected(monkeypatch: pytest.MonkeyPatch, tmp_path: 
     monkeypatch.setenv("WXBRIEF_CACHE_DIR", str(tmp_path / "elsewhere"))
     assert default_cache_dir() == tmp_path / "elsewhere"
     assert DiskCache().directory == tmp_path / "elsewhere"
+
+
+async def test_the_offline_label_and_message_come_from_the_same_error(tmp_path: Path) -> None:
+    from wxbrief.data.poll import Product
+
+    app = make_app(tmp_path, ["KDEN"])
+    app.options.poll = False
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause()
+        app.state.record_error(Product.TAF, "taf: server error 503")
+        app.state.record_error(Product.METAR, "metar: TransportError: down", offline=True)
+        app.briefing.refresh_view()
+        await pilot.pause()
+        status = str(app.screen.query_one(StatusBar).render())
+        assert "offline (metar: TransportError: down)" in status and "503" not in status
+
+
+async def test_a_hand_written_config_is_backed_up_before_the_first_save(tmp_path: Path) -> None:
+    path = tmp_path / "config.toml"
+    original = "# my stations\n[stations]\nwatchlist = ['EGLL']\n"
+    path.write_text(original, encoding="utf-8")
+    app = make_app(tmp_path, [], watchlist=["EGLL"])
+    async with app.run_test(size=(100, 30)) as pilot:
+        await pilot.pause()
+        app.add_station("KDEN")
+        await pilot.pause()
+    assert (tmp_path / "config.toml.bak").read_text(encoding="utf-8") == original
+    assert "KDEN" in path.read_text(encoding="utf-8")
+
+
+async def test_a_config_the_app_wrote_is_not_backed_up_again(tmp_path: Path) -> None:
+    from wxbrief.config import config_text
+
+    path = tmp_path / "config.toml"
+    app = make_app(tmp_path, [], watchlist=["EGLL"])
+    path.write_text(config_text(app.options.config), encoding="utf-8")
+    async with app.run_test(size=(100, 30)) as pilot:
+        await pilot.pause()
+        app.add_station("KDEN")
+        await pilot.pause()
+    assert not (tmp_path / "config.toml.bak").exists()

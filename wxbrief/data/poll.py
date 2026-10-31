@@ -7,6 +7,7 @@ injected async ``sleep``, so the tests drive the schedule without waiting.
 from __future__ import annotations
 
 import asyncio
+import logging
 import time
 from collections import deque
 from collections.abc import Awaitable, Callable, Sequence
@@ -16,6 +17,8 @@ from enum import StrEnum
 from typing import Any
 
 from wxbrief.data.awc import AwcClient, AwcError, ClientError, RateLimited, request_count
+
+log = logging.getLogger(__name__)
 
 Clock = Callable[[], float]
 Sleep = Callable[[float], Awaitable[None]]
@@ -182,6 +185,8 @@ class PollScheduler:
                     await self._client.metars(ids) if product is Product.METAR else await self._client.tafs(ids)
                 )
             except Exception as exc:  # nothing a fetch raises may end the poller
+                if not isinstance(exc, AwcError):
+                    log.exception("unexpected error fetching %s", product.value)
                 error = exc if isinstance(exc, AwcError) else ClientError(f"unexpected {type(exc).__name__}")
                 track.failures += 1
                 delay = backoff_delay(self._interval(product), track.failures - 1)
@@ -194,7 +199,7 @@ class PollScheduler:
                     for other in self._tracks.values():
                         other.due = max(other.due, hold)
                 if self._on_error:
-                    self._on_error(product, error)
+                    self._notify(self._on_error, product, error)
                 if isinstance(error, RateLimited):
                     break
                 continue
@@ -202,8 +207,16 @@ class PollScheduler:
             track.fetched = self._clock()
             if self._requests == requested:
                 track.due = track.fetched + self._interval(product)
-            self._on_result(product, rows)
+            self._notify(self._on_result, product, rows)
         return attempted
+
+    @staticmethod
+    def _notify(callback: Callable[..., Any], *args: Any) -> None:
+        """Call a result or error callback; one that raises is logged and must not end the poller."""
+        try:
+            callback(*args)
+        except Exception:
+            log.exception("poll callback failed")
 
     async def run(self) -> None:
         """Poll until cancelled."""

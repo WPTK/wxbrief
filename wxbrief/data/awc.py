@@ -27,7 +27,7 @@ TIMEOUT_SECONDS = 10.0  # httpx's limit on each connect, read and write
 DEADLINE_SECONDS = 30.0  # the limit on one whole request, however slowly the server drips its body
 MAX_IDS_PER_REQUEST = 400
 DEFAULT_RETRY_AFTER = 60.0
-MAX_RETRY_AFTER = 86400.0
+MAX_RETRY_AFTER = 3600.0
 
 
 class AwcError(Exception):
@@ -59,7 +59,7 @@ class TransportError(AwcError):
 
 
 def _retry_after(response: httpx.Response) -> float:
-    """Seconds from a ``Retry-After`` header (a number or an HTTP date), at most a day; a default when unusable."""
+    """Seconds from a ``Retry-After`` header (a number or an HTTP date), at most an hour; a default when unusable."""
     value = response.headers.get("Retry-After", "").strip()
     try:
         seconds = float(value)
