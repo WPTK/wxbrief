@@ -202,3 +202,14 @@ def test_the_saved_reports_include_both_yellows() -> None:
         if decoded.color_state is not None and decoded.color_state.current is not None:
             codes.add(decoded.color_state.current.code)
     assert {YLO1, YLO2, ColorCode.YLO, AMB, RED, GRN, BLU} <= codes
+
+
+def test_blu_plus_needs_no_ceiling_below_20000_ft() -> None:
+    plus = ColorState(BLU, plus=True)
+    assert reported_matches_computed(plus, BLU, None) is True
+    assert reported_matches_computed(plus, BLU, math.inf) is True
+    assert reported_matches_computed(plus, BLU, 20000) is True
+    assert reported_matches_computed(plus, BLU, 15000) is False
+    assert reported_matches_computed(plus, WHT, math.inf) is False  # visibility under 8 km
+    assert reported_matches_computed(ColorState(BLU), BLU, 15000) is True  # plain BLU ignores the 20,000 ft rule
+

@@ -93,7 +93,7 @@ def test_trend_time_uses_the_resolved_moment() -> None:
     ("state", "expected"),
     [
         (ColorState(ColorCode.BLU), "Blue (BLU)"),
-        (ColorState(ColorCode.BLU, plus=True), "Blue (BLU+)"),
+        (ColorState(ColorCode.BLU, plus=True), "Blue plus (BLU+): visibility 8 km or more, no ceiling below 20,000 ft"),
         (ColorState(ColorCode.YLO1), "Yellow 1 (YLO1)"),
         (ColorState(ColorCode.YLO2), "Yellow 2 (YLO2)"),
         (ColorState(ColorCode.YLO), "Yellow (YLO)"),

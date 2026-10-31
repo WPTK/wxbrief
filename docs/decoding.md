@@ -88,8 +88,9 @@ keyword belongs to the colour group only when a colour code follows it, so `BLU 
 `BLU TEMPO 5000 -RA` is a group and a weather trend. A group may begin with a keyword (`TEMPO YLO`, `current` is
 `None`). `BLACK` before a code means the airfield is closed for non-weather reasons; a bare `BLACK` has `code=None`.
 `///` in the colour position (German AUTO reports: `... Q1033 ///`, accepted only after the pressure) is a state that was not reported. The `+` suffix
-(`BLU+`, seen on Bundeswehr reports) is kept as `plus`; its meaning is not defined in the NATO tables we could find,
-so it is displayed as reported and not interpreted. RAF and Dutch stations differ in position: UK military reports
+(`BLU+`, seen on Bundeswehr reports) is kept as `plus` and read as visibility 8 km or more with no ceiling below 20,000 ft. The NATO tables we could find do not
+define it; the 20,000 ft figure comes from a community source, not an official one. A reported `BLU+` agrees with the
+computed state only when the computed state is BLU and no BKN/OVC layer is below 20,000 ft. RAF and Dutch stations differ in position: UK military reports
 put the group after `RMK`, where `remarks.py` parses it with the same function (`ColorStateRemark`) and the decoder
 copies it to `Metar.color_state`.
 
