@@ -812,6 +812,7 @@ requests = "requisições {used}/{limit}"
 polling_off = "consulta desativada"
 
 [ui.list]
+title = "Estações ({n})"
 no_report = "sem mensagem"
 
 [ui.layout]

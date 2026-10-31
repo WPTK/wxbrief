@@ -820,6 +820,7 @@ requests = "Anfragen {used}/{limit}"
 polling_off = "Abfrage aus"
 
 [ui.list]
+title = "Stationen ({n})"
 no_report = "keine Meldung"
 
 [ui.layout]

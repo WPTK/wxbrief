@@ -808,6 +808,7 @@ requests = "req {used}/{limit}"
 polling_off = "polling off"
 
 [ui.list]
+title = "Stations ({n})"
 no_report = "no report"
 
 [ui.layout]
