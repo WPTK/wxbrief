@@ -8,6 +8,7 @@ a header, the divider and one block per period with its flight category for a TA
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 
 import pytest
@@ -273,3 +274,48 @@ def test_a_probable_intermittent_group_keeps_its_probability() -> None:
     assert isinstance(taf, Taf)
     header = describe_change_header(T, taf.changes[0])
     assert header.startswith("30% chance of intermittent conditions")
+
+
+# --- the 2000-character message limit and the decoder's warnings -------------------------------------------------
+
+LONG_TAF = (
+    "TAF KRIV 310404Z 3104/0110 15006KT 9999 BKN035 BKN050 QNH2991INS BECMG 3105/3106 16006KT 9999 BKN025 BKN050 "
+    "QNH2994INS BECMG 3108/3109 16006KT 8000 BR BKN015 BKN040 OVC250 QNH2992INS BECMG 3114/3115 16006KT 9999 NSW "
+    "SCT030 BKN050 BKN200 QNH2988INS BECMG 3121/3122 28009KT 9999 BKN030 OVC080 QNH2987INS WND 230V330 TEMPO "
+    "3122/0101 29010G15KT BECMG 0101/0102 29009KT 9999 VCSH SCT015 BKN020 OVC030 QNH2991INS TEMPO 0102/0106 9000 "
+    "-SHRA BKN015 OVC030 BECMG 0105/0106 VRB04KT 9999 VCSH BKN015 OVC030 QNH2989INS TEMPO 0106/0110 8000 -SHRA BR "
+    "BKN010 OVC025 BECMG 0109/0110 15006KT 8000 -SHRA BR BKN007 BKN020 510708 QNH2989INS TX20/3122Z TN11/3114Z"
+)  # the KRIV forecast from tests/fixtures/awc: 2166 characters as one block in English, 2410 in Portuguese
+
+
+@pytest.mark.parametrize("lang", ["en", "pt"])
+def test_a_long_report_is_split_into_blocks_that_each_fit_in_one_message(lang: str) -> None:
+    item = report(LONG_TAF)
+    t = Translator.load(lang)
+    fence_re = r"```\n.*?\n```"
+    inner = re.findall(fence_re, render_discord(item, t, outer_fence=False), re.S)
+    assert len(inner) >= 2
+    assert all(len(block) <= 2000 for block in inner)
+    outer = re.findall(r"````\n" + fence_re + r"\n````", render_discord(item, t), re.S)
+    assert len(outer) == len(inner)  # every part is a complete block inside its own outer fence
+    assert all(len(block) <= 2000 for block in outer)
+
+
+def test_a_split_happens_between_lines_and_loses_nothing() -> None:
+    item = report(LONG_TAF)
+    whole = [ln for ln in render_discord(item, T, outer_fence=False).split("\n") if ln and ln != FENCE]
+    parts = render_discord(item, T, outer_fence=False).split(FENCE + "\n\n" + FENCE)
+    assert len(parts) >= 2
+    assert whole == [ln for part in parts for ln in part.split("\n") if ln and ln != FENCE]
+    assert sum(1 for ln in whole if ln.startswith("BECMG")) >= 2
+
+
+def test_a_short_report_stays_one_block() -> None:
+    text = render_discord(report("METAR KDEN 131453Z 06007KT 10SM FEW030 09/08 A3001"), T)
+    assert text.count("````") == 2
+
+
+def test_unread_groups_are_listed_in_the_discord_block() -> None:
+    text = block("METAR KDEN 131453Z 06007KT 10SM FEW030 09/08 A3001 FOO")
+    assert "1 warning" in text and "Unrecognized group: FOO" in text
+    assert text.endswith(FENCE)

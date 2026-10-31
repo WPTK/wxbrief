@@ -57,10 +57,15 @@ from wxbrief.i18n import Translator
 from wxbrief.i18n.keys import K
 from wxbrief.render import phrases
 from wxbrief.render.measure import format_speed, format_temperature
+from wxbrief.render.plain import warning_lines
 
 DIVIDER = "━" * 32
 INNER_FENCE = "```"
 OUTER_FENCE = "````"
+MESSAGE_LIMIT = 2000  # characters in one Discord message
+# What is left for the lines of one block once both fences and their line breaks are counted (the outer fence is
+# included so a block still fits when it is shown inside one).
+BODY_LIMIT = MESSAGE_LIMIT - 2 * (len(OUTER_FENCE) + 1) - 2 * (len(INNER_FENCE) + 1)
 CAUTION = "⚠️"
 TAF_EMOJI = "\U0001f4cb"
 NO_CONDITION_EMOJI = "\U0001f321️"
@@ -400,13 +405,52 @@ def discord_block(
     station_name: str | None = None,
     local_hour: int | None = None,
 ) -> str:
-    """The code block to paste into Discord (three backticks, the layout, three backticks)."""
+    """The code block to paste into Discord (three backticks, the layout, three backticks).
+
+    A report whose layout does not fit a 2000-character message comes out as several blocks, split between lines and
+    separated by a blank line, each of which fits (also inside the outer fence ``render_discord`` adds).
+    """
+    return "\n\n".join(_blocks(report, t, units, station_name, local_hour))
+
+
+def _blocks(
+    report: Metar | Taf, t: Translator, units: UnitsMode, station_name: str | None, local_hour: int | None
+) -> list[str]:
     if isinstance(report, Taf):
         lines = _taf_lines(report, t, units, station_name)
     else:
         lines = _metar_lines(report, t, units, station_name, local_hour)
-    body = "\n".join(lines).replace("`", "'")  # report text can hold a backtick, which would close the fence early
-    return f"{INNER_FENCE}\n{body}\n{INNER_FENCE}"
+    warnings = warning_lines(report, t)  # the decoder's note of every group it could not read
+    if warnings:
+        lines = [*lines, "", *warnings]
+    # Report text can hold a backtick, which would close the fence early.
+    lines = [piece for line in lines for piece in _wrap(line.replace("`", "'"), BODY_LIMIT)]
+    chunks: list[list[str]] = [[]]
+    size = 0
+    for line in lines:
+        if chunks[-1] and size + 1 + len(line) > BODY_LIMIT:
+            chunks.append([])
+            size = 0
+        size += len(line) + (1 if chunks[-1] else 0)
+        chunks[-1].append(line)
+    for chunk in chunks:
+        while chunk and not chunk[0]:  # a blank line left at a split is not wanted at the top of a block
+            chunk.pop(0)
+        while chunk and not chunk[-1]:
+            chunk.pop()
+    return [f"{INNER_FENCE}\n" + "\n".join(chunk) + f"\n{INNER_FENCE}" for chunk in chunks if chunk]
+
+
+def _wrap(line: str, limit: int) -> list[str]:
+    """``line`` in pieces of at most ``limit`` characters, cut at a space where there is one."""
+    pieces: list[str] = []
+    while len(line) > limit:
+        cut = line.rfind(" ", 0, limit + 1)
+        cut = cut if cut > 0 else limit
+        pieces.append(line[:cut])
+        line = line[cut:].lstrip(" ")
+    pieces.append(line)
+    return pieces
 
 
 def render_discord(
@@ -419,6 +463,8 @@ def render_discord(
     outer_fence: bool = True,
 ) -> str:
     """``discord_block`` inside an outer four-backtick fence, so the inner fence survives being shown in a chat."""
-    block = discord_block(report, t, units, station_name=station_name, local_hour=local_hour)
-    return f"{OUTER_FENCE}\n{block}\n{OUTER_FENCE}" if outer_fence else block
+    blocks = _blocks(report, t, units, station_name, local_hour)
+    if not outer_fence:
+        return "\n\n".join(blocks)
+    return "\n\n".join(f"{OUTER_FENCE}\n{block}\n{OUTER_FENCE}" for block in blocks)
 

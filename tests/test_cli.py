@@ -298,3 +298,9 @@ def test_piped_plain_output_is_utf8_whatever_the_console_code_page() -> None:
     assert result.returncode == 0
     assert b"\xc2\xb0" in result.stdout
     assert b"\xb0" not in result.stdout.replace(b"\xc2\xb0", b"")
+
+
+def test_discord_output_lists_the_warnings_of_unreadable_groups() -> None:
+    result = run_module("decode", "--discord", "XYZZY PLUGH")
+    assert result.returncode == 0  # like --plain: garbage is reported, not an error
+    assert "Unrecognized group: XYZZY" in result.stdout and "2 warnings" in result.stdout
