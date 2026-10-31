@@ -175,6 +175,7 @@
     "value": 4000,
     "unit": "FT"
   },
+  "ceiling_status": "HEIGHT",
   "flight_category": "VFR",
   "flags": [],
   "condition": "BROKEN",

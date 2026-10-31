@@ -15,6 +15,7 @@ from wxbrief.decode.units import Distance, DistanceUnit
 _SM = re.compile(r"^(?P<prefix>[PM])?(?P<num>\d{1,2})(?:/(?P<den>\d{1,2}))?SM$")
 _FRACTION_SM = re.compile(r"^(?P<num>\d{1,2})/(?P<den>\d{1,2})SM$")
 _WHOLE = re.compile(r"^\d{1,2}$")
+_FRACTION = re.compile(r"^(?P<num>\d{1,2})/(?P<den>\d{1,2})$")
 _METERS = re.compile(r"^(?P<m>\d{4})(?P<ndv>NDV)?$")
 _KM = re.compile(r"^(?P<km>\d{1,2})KM$")
 _DIRECTIONAL = re.compile(r"^(?P<m>\d{4})(?P<dir>NE|NW|SE|SW|N|E|S|W)?$")
@@ -50,6 +51,36 @@ def _minimum_tail(cur: Cursor, ndv: bool, prevailing: int) -> tuple[tuple[Direct
     return tuple(found), ndv
 
 
+def _spaced_miles(cur: Cursor) -> Visibility | None:
+    """Miles written with a space before the unit (``3/4 SM``, ``M1/4 SM``, ``1 1/2 SM``).
+
+    FMH-1 writes ``3/4SM``; some sources and hand-typed reports separate the unit, and the three tokens would
+    otherwise be unrecognised groups.
+    """
+    first, second, third = cur.peek(), cur.peek(1), cur.peek(2)
+    if first is None or second is None:
+        return None
+    if second.text == "SM":
+        match = _SM.match(first.text + "SM")
+        if match is None:
+            return None
+        value = _fraction(match.group("num"), match.group("den"))
+        if value is None:
+            return None
+        cur.take(SemanticKind.VISIBILITY)
+        cur.take(SemanticKind.VISIBILITY)
+        return Visibility(Distance(value, DistanceUnit.SM), _PREFIXES.get(match.group("prefix") or ""))
+    fraction = _FRACTION.match(second.text)
+    if _WHOLE.match(first.text) and fraction is not None and third is not None and third.text == "SM":
+        part = _fraction(fraction.group("num"), fraction.group("den"))
+        if part is None:
+            return None
+        for _ in range(3):
+            cur.take(SemanticKind.VISIBILITY)
+        return Visibility(Distance(int(first.text) + part, DistanceUnit.SM))
+    return None
+
+
 def parse_visibility(cur: Cursor) -> Visibility | None:
     token = cur.peek()
     if token is None:
@@ -63,6 +94,10 @@ def parse_visibility(cur: Cursor) -> Visibility | None:
     if text == "////":
         cur.take(SemanticKind.VISIBILITY)
         return Visibility(not_reported=True)
+
+    spaced = _spaced_miles(cur)
+    if spaced is not None:
+        return spaced
 
     # Whole miles followed by a fraction: "1 1/2SM".
     if _WHOLE.match(text):

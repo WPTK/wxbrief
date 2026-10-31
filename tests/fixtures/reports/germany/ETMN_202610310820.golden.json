@@ -188,6 +188,7 @@
     "value": 2200,
     "unit": "FT"
   },
+  "ceiling_status": "HEIGHT",
   "flight_category": "IFR",
   "flags": [
     "LOW_VISIBILITY"

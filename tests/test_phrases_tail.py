@@ -160,6 +160,11 @@ def test_plain_decode_shows_the_computed_state_only_when_it_is_not_confirmed() -
         ),
         ("R06R/CLRD62", "Runway 06R: contamination has ceased or been cleared, braking coefficient 0.62"),
         ("R09/CLRD//", "Runway 09: contamination has ceased or been cleared"),
+        (
+            "R99/CLRD60",
+            "Runway state repeated from the previous report: contamination has ceased or been cleared, "
+            "braking coefficient 0.60",
+        ),
         ("R/SNOCLO", "Aerodrome closed by snow"),
         ("SNOCLO", "Aerodrome closed by snow"),
         ("99//////", "Runway state repeated from the previous report"),
@@ -372,7 +377,10 @@ def test_every_variant_has_a_sentence() -> None:
         ("CVCTV CLD EMBD", "Convective cloud embedded"),
         ("VIRGA", "Virga"),
         ("OBST OBSC", "Obstructions obscured"),
-        ("ZZZ CB", "ZZZ cumulonimbus"),
+        ("ZZZ CB", "Cumulonimbus"),  # the unknown word is left to the not-decoded row, not mixed in
+        ("TS ALQDS MOV NE", "Thunderstorm in all quadrants moving northeast"),
+        ("SH DSNT W", "Showers distant west"),
+        ("ACC NW", "Altocumulus castellanus northwest"),
     ],
 )
 def test_free_text_words(text: str, expected: str) -> None:
@@ -380,11 +388,40 @@ def test_free_text_words(text: str, expected: str) -> None:
 
 
 def test_undecoded_free_text_is_listed_in_a_raw_row() -> None:
-    metar = us("AO2 SLP135 VIRGA FOO BAR 933008")
-    assert phrases.undecoded_free_text(T, metar) == ["FOO BAR 933008"]
+    metar = us("AO2 SLP135 VIRGA FOO BAR 1CU030")
+    assert phrases.undecoded_free_text(T, metar) == ["FOO BAR 1CU030"]
     lines = render_plain(metar, T, MIXED).splitlines()
-    assert any(line.startswith("Remark:") and line.endswith("Virga FOO BAR 933008") for line in lines)
-    assert any(line.startswith("Remarks (not decoded):") and line.endswith("FOO BAR 933008") for line in lines)
+    assert any(line.startswith("Remark:") and line.endswith("Virga") for line in lines)
+    assert any(line.startswith("Remarks (not decoded):") and line.endswith("FOO BAR 1CU030") for line in lines)
+
+
+def test_a_remark_never_mixes_spelled_out_words_with_raw_codes() -> None:
+    lines = render_plain(us("AO2 TS MOV NE FOO CB DSNT W"), T, MIXED).splitlines()
+    remark_lines = [line for line in lines if line.startswith("Remark:")]
+    assert [line.split(":", 1)[1].strip() for line in remark_lines[1:]] == [
+        "Thunderstorm moving northeast",
+        "Cumulonimbus distant west",
+    ]
+    assert not any("FOO" in line for line in remark_lines)
+    assert any(line.startswith("Remarks (not decoded):") and line.endswith("FOO") for line in lines)
+
+
+@pytest.mark.parametrize(
+    ("group", "expected"),
+    [
+        ("98123", "Sunshine during the previous calendar day: 123 minutes"),
+        ("98000", "Sunshine during the previous calendar day: 0 minutes"),
+        ("933012", "Water equivalent of snow on the ground: 1.2 in (30.5 mm)"),
+        ("I1005", "Ice accretion in the past hour: 0.05 in (1.3 mm)"),
+        ("I3012", "Ice accretion in the past 3 hours: 0.12 in (3 mm)"),
+        ("I6024", "Ice accretion in the past 6 hours: 0.24 in (6.1 mm)"),
+    ],
+)
+def test_jo_7900_5_remark_groups(group: str, expected: str) -> None:
+    metar = us(f"AO2 {group}")
+    assert metar.warnings == ()
+    assert phrases.undecoded_free_text(T, metar) == []
+    assert expected in render_plain(metar, T, MIXED)
 
 
 def test_fully_decoded_free_text_has_no_raw_row() -> None:

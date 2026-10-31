@@ -161,6 +161,10 @@ def test_wind_variation() -> None:
         ("P6SM", 6, DistanceUnit.SM, VisPrefix.GREATER_THAN, 1),
         ("1 1/2SM", 1.5, DistanceUnit.SM, None, 2),
         ("2 1/4SM", 2.25, DistanceUnit.SM, None, 2),
+        ("1 1/2 SM", 1.5, DistanceUnit.SM, None, 3),  # the unit written as a separate word
+        ("3/4 SM", 0.75, DistanceUnit.SM, None, 2),
+        ("10 SM", 10, DistanceUnit.SM, None, 2),
+        ("M1/4 SM", 0.25, DistanceUnit.SM, VisPrefix.LESS_THAN, 2),
         ("3000", 3000, DistanceUnit.M, None, 1),
         ("0800", 800, DistanceUnit.M, None, 1),
         ("0000", 50, DistanceUnit.M, VisPrefix.LESS_THAN, 1),

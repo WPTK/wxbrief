@@ -184,6 +184,7 @@
   "flavor": "ICAO",
   "military": false,
   "ceiling": null,
+  "ceiling_status": "NONE",
   "flight_category": "VFR",
   "flags": [],
   "condition": "PARTLY_CLOUDY",

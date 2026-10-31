@@ -131,6 +131,7 @@
   "flavor": "ICAO",
   "military": true,
   "ceiling": null,
+  "ceiling_status": "NONE",
   "flight_category": "VFR",
   "flags": [
     "SPECIAL_REPORT"

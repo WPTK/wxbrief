@@ -34,6 +34,7 @@ from wxbrief.decode.model import (
     FreeText,
     HailSize,
     HourlyPrecipitation,
+    IceAccretion,
     IcingGroup,
     Intensity,
     Lightning,
@@ -54,6 +55,7 @@ from wxbrief.decode.model import (
     RemarkTime,
     ReportType,
     RunwayBraking,
+    RunwayDepthKind,
     RunwayState,
     RunwayWind,
     SeaLevelPressure,
@@ -64,8 +66,10 @@ from wxbrief.decode.model import (
     SkyCondition,
     SnowDepth,
     SnowIncrease,
+    SnowWaterEquivalent,
     StationPressure,
     StationPressureKind,
+    SunshineDuration,
     SurfaceVisibility,
     Taf,
     TafPeriod,
@@ -597,9 +601,16 @@ def describe_runway_state(t: Translator, state: RunwayState, units: UnitsMode) -
     """One runway state group in words (``Runway 24L: wet or water patches; ...; braking coefficient 0.55``)."""
     if state.snoclo:
         return t.t(K.RWY_SNOCLO)
-    if state.repeated:
+    depth_given = state.depth is not None and state.depth.kind is not RunwayDepthKind.NOT_SIGNIFICANT
+    details_given = state.cleared or depth_given or any(
+        item is not None for item in (state.deposit, state.extent, state.braking)
+    )
+    if state.repeated and not details_given:
         return t.t(K.RWY_REPEATED)
-    where = t.t(K.RWY_ALL) if state.all_runways else t.t(K.RWY_RUNWAY, runway=state.runway)
+    if state.repeated:
+        where = t.t(K.RWY_REPEATED)  # R99 with a body: the repeated state still carries its own figures
+    else:
+        where = t.t(K.RWY_ALL) if state.all_runways else t.t(K.RWY_RUNWAY, runway=state.runway)
     braking = _runway_braking(t, state.braking) if state.braking is not None else None
     if state.cleared:
         if braking is None:
@@ -683,19 +694,39 @@ def _free_word(t: Translator, word: str) -> str | None:
     return None
 
 
+def _free_text_runs(t: Translator, text: str) -> list[tuple[bool, str]]:
+    """A plain-language remark in runs: ``(True, spelled out)`` for words the catalog knows, else as written."""
+    runs: list[tuple[bool, list[str]]] = []
+    for word in text.split():
+        spelled = _free_word(t, word)
+        known = spelled is not None
+        if runs and runs[-1][0] == known:
+            runs[-1][1].append(spelled or word)
+        else:
+            runs.append((known, [spelled or word]))
+    return [(known, " ".join(words)) for known, words in runs]
+
+
+def decoded_free_text(t: Translator, text: str) -> list[str]:
+    """The runs of a plain-language remark that the catalog can spell out, each as a sentence fragment.
+
+    A word the catalog does not know ends a run and is left to ``undecoded_free_text``, so no row mixes spelled-out
+    words with raw codes.
+    """
+    return [upper_first(words) for known, words in _free_text_runs(t, text) if known]
+
+
 def describe_free_text(t: Translator, text: str) -> str:
-    """A plain-language remark with the words the catalog knows spelled out; the rest is kept as written."""
-    return upper_first(" ".join(_free_word(t, word) or word for word in text.split()))
+    """A plain-language remark with its known runs spelled out (as written when none can be)."""
+    return "; ".join(decoded_free_text(t, text)) or text
 
 
 def undecoded_free_text(t: Translator, metar: Metar) -> list[str]:
-    """The words of free-text remarks that the catalog cannot spell out, as written, one string per remark."""
+    """The runs of words in free-text remarks that the catalog cannot spell out, as written, one string per run."""
     found: list[str] = []
     for remark in metar.remarks:
         if isinstance(remark, FreeText):
-            unknown = [word for word in remark.text.split() if _free_word(t, word) is None]
-            if unknown:
-                found.append(" ".join(unknown))
+            found.extend(words for known, words in _free_text_runs(t, remark.text) if not known)
     return found
 
 
@@ -872,6 +903,13 @@ def describe_remark(t: Translator, remark: Remark, units: UnitsMode) -> str:
         case SnowIncrease(last_hour_inches=hour, total_inches=total):
             hour_text, total_text = format_inches(hour, units, t.numbers), format_inches(total, units, t.numbers)
             return t.t(K.REMARK_SNOW_INCREASE, hour=hour_text, total=total_text)
+        case SnowWaterEquivalent(inches=inches):
+            return t.t(K.REMARK_SNOW_WATER, value=format_inches(inches, units, t.numbers))
+        case IceAccretion(hours=hours, inches=inches):
+            value = format_inches(inches, units, t.numbers)
+            return t.t(K.REMARK_ICE_ACCRETION_HOUR if hours == 1 else K.REMARK_ICE_ACCRETION, hours=hours, value=value)
+        case SunshineDuration(minutes=minutes):
+            return t.t(K.REMARK_SUNSHINE, minutes=minutes)
         case CloudTypes():
             return _cloud_types(t, remark)
         case HailSize(inches=inches, less_than=less_than):

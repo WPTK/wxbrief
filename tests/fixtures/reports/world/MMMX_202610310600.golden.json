@@ -190,6 +190,7 @@
   "flavor": "MIXED",
   "military": false,
   "ceiling": null,
+  "ceiling_status": "NONE",
   "flight_category": "VFR",
   "flags": [],
   "condition": "CLEAR",

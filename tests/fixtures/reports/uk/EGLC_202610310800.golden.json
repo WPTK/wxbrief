@@ -166,6 +166,7 @@
   "flavor": "ICAO",
   "military": false,
   "ceiling": null,
+  "ceiling_status": "UNKNOWN",
   "flight_category": "LIFR",
   "flags": [
     "LOW_VISIBILITY",

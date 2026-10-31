@@ -16,6 +16,7 @@ from wxbrief.decode.model import (
     ColorStateRemark,
     FlightCategory,
     ForecastElements,
+    FreeText,
     Metar,
     Modifier,
     SemanticKind,
@@ -84,7 +85,12 @@ def _remark_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRo
     label = t.t(K.LABEL_REMARK)
     # A colour state found in the remarks is already the report's Color state row; it is not shown a second time.
     shown = [r for r in metar.remarks if not (isinstance(r, ColorStateRemark) and r.group == metar.color_state)]
-    rows = [DecodeRow(label, phrases.describe_remark(t, remark, units), style) for remark in shown]
+    rows: list[DecodeRow] = []
+    for remark in shown:
+        if isinstance(remark, FreeText):  # only the runs of known words; the rest goes to the not-decoded row
+            rows.extend(DecodeRow(label, words, style) for words in phrases.decoded_free_text(t, remark.text))
+        else:
+            rows.append(DecodeRow(label, phrases.describe_remark(t, remark, units), style))
     undecoded = phrases.undecoded_free_text(t, metar)
     if undecoded:
         rows.append(DecodeRow(t.t(K.LABEL_REMARKS), " ".join(undecoded), style))

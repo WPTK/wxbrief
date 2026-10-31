@@ -835,6 +835,28 @@ class SnowDepth(Remark):
 
 
 @dataclass(frozen=True)
+class SnowWaterEquivalent(Remark):
+    """``933012``: water equivalent of the snow on the ground, in inches (the code is in tenths of an inch)."""
+
+    inches: float
+
+
+@dataclass(frozen=True)
+class IceAccretion(Remark):
+    """``I1005``: ice accretion over the past 1, 3 or 6 hours, in inches (the code is in hundredths of an inch)."""
+
+    hours: int
+    inches: float
+
+
+@dataclass(frozen=True)
+class SunshineDuration(Remark):
+    """``98123``: minutes of sunshine during the previous calendar day."""
+
+    minutes: int
+
+
+@dataclass(frozen=True)
 class SnowIncrease(Remark):
     """``SNINCR 2/10``: snow increase in the past hour and total depth, in inches."""
 
