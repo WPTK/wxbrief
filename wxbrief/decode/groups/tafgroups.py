@@ -35,8 +35,8 @@ from wxbrief.decode.tokens import Cursor
 from wxbrief.decode.units import Distance, DistanceUnit, Pressure, PressureUnit, Speed, SpeedUnit, Temperature
 
 _WINDOW = re.compile(r"^(\d{2})(\d{2})/(\d{2})(\d{2})$")
-_LEGACY_VALID = re.compile(r"^(\d{2})(\d{2})(\d{2})$")
-_LEGACY_WINDOW = re.compile(r"^(\d{2})(\d{2})$")
+_LEGACY_VALID = re.compile(r"^(0[1-9]|[12]\d|3[01])([01]\d|2[0-3])(0\d|1\d|2[0-4])$")
+_LEGACY_WINDOW = re.compile(r"^(0\d|1\d|2[0-4])(0\d|1\d|2[0-4])$")
 _FM = re.compile(r"^FM(\d{2})(\d{2})(\d{2})$")
 _LEGACY_FM = re.compile(r"^FM(\d{2})(\d{2})$")
 _PROB = re.compile(r"^PROB(\d{2})$")

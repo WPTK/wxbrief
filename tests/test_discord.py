@@ -222,6 +222,14 @@ def test_a_cancelled_forecast_says_so_and_has_no_period() -> None:
     )
 
 
+def test_backticks_in_remarks_cannot_close_the_fence() -> None:
+    out = block("TAF KJFK 312200Z 3122/0106 06007KT P6SM SKC RMK A```B `C`")
+    body = out.split("\n", 1)[1].rsplit("\n", 1)[0]
+    assert "`" not in body
+    assert "A" + "'" * 3 + "B 'C'" in body
+    assert out.startswith(FENCE) and out.endswith(FENCE)
+
+
 def test_a_nil_forecast() -> None:
     assert block("TAF LFPB 311000Z NIL") == wrapped(
         f"{TAF_EMOJI} LFPB",

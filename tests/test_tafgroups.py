@@ -55,6 +55,9 @@ def test_window_rejects_other_text(text: str) -> None:
 def test_legacy_forms() -> None:
     assert legacy_valid_of("131212") == (13, 12, 12)
     assert legacy_valid_of("13121") is None
+    assert legacy_valid_of("997788") is None
+    assert legacy_valid_of("132512") is None
+    assert legacy_window_of("2500") is None
     assert legacy_window_of("1315") == (13, 15)
     assert legacy_window_of("131") is None
     assert legacy_fm_of("FM1800") == (18, 0)

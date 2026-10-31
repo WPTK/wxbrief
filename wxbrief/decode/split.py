@@ -53,16 +53,33 @@ def _first_word(line: str) -> str:
     return match.group().upper() if match is not None else ""
 
 
-def _split_keywords(line: str) -> list[str]:
+def _full_head(words: list[str]) -> bool:
+    """Whether ``words`` open with a keyword, modifiers, a station and an issue time (``TAF AMD KDEN 131130Z``).
+
+    Inside remarks a keyword is ordinary text unless the full head follows it (or, on a line of its own, only
+    keywords and modifiers: the two-line bulletin form). A head with no issue time after RMK does not split.
+    """
+    rest = iter(words[1:])
+    word = next(rest, "")
+    while word in _MODIFIERS:
+        word = next(rest, "")
+    return _STATION.match(word) is not None and _ISSUE_TIME.match(next(rest, "")) is not None
+
+
+def _split_keywords(line: str, in_remarks: bool = False) -> list[str]:
     """Cut a line in front of a keyword that starts a second report on it (``... A3001 TAF KDEN 1312/...``)."""
     words = list(_WORD.finditer(line))
+    upper = [word.group().upper() for word in words]
     cuts: list[int] = []
     for position, word in enumerate(words[1:], start=1):
-        if word.group().upper() not in _KEYWORDS:
+        in_remarks = in_remarks or upper[position - 1] == "RMK"
+        if upper[position] not in _KEYWORDS:
             continue
-        previous = words[position - 1].group().upper()
-        following = words[position + 1].group().upper() if position + 1 < len(words) else ""
+        previous = upper[position - 1]
+        following = upper[position + 1] if position + 1 < len(words) else ""
         starts_report = _STATION.match(following) is not None or following in _MODIFIERS
+        if in_remarks:
+            starts_report = _full_head(upper[position:])
         if previous not in _KEYWORDS and starts_report:
             cuts.append(word.start())
     if not cuts:
@@ -87,12 +104,17 @@ def _header_only(lines: list[str]) -> bool:
     return all(word in _KEYWORDS or word in _MODIFIERS for word in words)
 
 
+def _in_remarks(lines: list[str]) -> bool:
+    return any(word.upper() == "RMK" for line in lines for word in _WORD.findall(line))
+
+
 def _split_chunk(chunk: str) -> list[str]:
     """Split text that holds no ``=`` (apart from a final one) into reports."""
     reports: list[list[str]] = []
     current: list[str] | None = None
     for line in chunk.split("\n"):
-        for piece in _split_keywords(line):
+        in_remarks = current is not None and _in_remarks(current)
+        for piece in _split_keywords(line, in_remarks):
             if not piece.strip():
                 current = None
                 continue
@@ -102,6 +124,8 @@ def _split_chunk(chunk: str) -> list[str]:
                 continues = False
             elif _header_only(current):
                 continues = word not in _KEYWORDS
+            elif word in _KEYWORDS and _in_remarks(current):
+                continues = not (_header_only([piece]) or _full_head(_WORD.findall(piece.upper())))
             elif _first_word(current[0]) == "TAF":
                 continues = not _starts_report(piece)  # a TAF wraps anywhere, not only before a change group
             else:

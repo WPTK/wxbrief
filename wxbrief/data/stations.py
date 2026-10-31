@@ -58,9 +58,20 @@ class StationDB:
     def __init__(self, stations: list[Station]) -> None:
         self._stations = stations
         self._by_icao = {s.icao: s for s in stations}
+        self._by_iata = self._index(stations, "iata")
+        self._by_faa = self._index(stations, "faa")
         self._haystack = [
             (_fold(" ".join(p for p in (s.name, s.state, s.country) if p)), s) for s in stations
         ]
+
+    @staticmethod
+    def _index(stations: list[Station], field: str) -> dict[str, list[Station]]:
+        found: dict[str, list[Station]] = {}
+        for station in stations:
+            code = getattr(station, field)
+            if code:
+                found.setdefault(code, []).append(station)
+        return found
 
     @classmethod
     def load(cls, path: Path | None = None) -> StationDB:
@@ -74,12 +85,19 @@ class StationDB:
         return len(self._stations)
 
     def get(self, code: str) -> Station | None:
-        """Exact ICAO lookup, falling back to a unique IATA or FAA match (``DEN`` finds KDEN)."""
+        """ICAO, else a unique IATA code, else a unique FAA code (``DEN`` finds KDEN, ``MAN`` finds EGCC).
+
+        IATA wins over FAA because an FAA id such as ``MAN`` (KMAN) collides with foreign IATA codes. A code that two
+        stations share within one scheme (``GWD``, ``SRG`` and six others) is ambiguous and gives ``None``.
+        """
         key = code.strip().upper()
         if key in self._by_icao:
             return self._by_icao[key]
-        matches = [s for s in self._stations if key in (s.iata, s.faa)]
-        return matches[0] if len(matches) == 1 else None
+        for index in (self._by_iata, self._by_faa):
+            owners = index.get(key)
+            if owners:
+                return owners[0] if len(owners) == 1 else None
+        return None
 
     def search(self, query: str, limit: int = 10) -> list[Station]:
         """Best matches first: exact code, code prefix, name word prefix, then name substring."""

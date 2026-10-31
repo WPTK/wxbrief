@@ -16,6 +16,8 @@ import argparse
 import gzip
 import json
 import sys
+from datetime import date
+from importlib.metadata import version
 from pathlib import Path
 
 import httpx
@@ -77,6 +79,7 @@ def main() -> int:
     payload = json.dumps(rows, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     args.output.write_bytes(gzip.compress(payload, compresslevel=9, mtime=0))
     print(f"{len(rows)} stations -> {args.output} ({args.output.stat().st_size} bytes)")
+    print(f"record in docs/development.md: AWC cache of {date.today()}, timezonefinder {version('timezonefinder')}")
     return 0
 
 

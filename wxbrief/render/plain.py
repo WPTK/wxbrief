@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from wxbrief.decode.colorstate import reported_matches_computed
+from wxbrief.decode.flightcat import ceiling_for_classification
 from wxbrief.decode.model import (
     ChangeType,
     ColorState,
@@ -57,12 +58,17 @@ def _tail_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRow]
     if metar.color_state is not None:
         add(K.LABEL_COLOR_STATE, phrases.describe_color_state(t, metar.color_state), SemanticKind.COLOR_STATE)
         computed = metar.computed_color_state
-        if computed is not None and reported_matches_computed(_reported_color(metar), computed) is not True:
+        reported = _reported_color(metar)
+        if computed is not None and reported_matches_computed(reported, computed, _ceiling_ft(metar)) is not True:
             shown = phrases.describe_color_code(t, ColorState(computed))
             add(K.LABEL_COLOR_STATE_COMPUTED, shown, SemanticKind.COLOR_STATE)
     for trend in metar.trends:
         add(K.LABEL_TREND, phrases.describe_trend(t, trend, units), SemanticKind.TREND)
     return rows
+
+
+def _ceiling_ft(metar: Metar) -> float | None:
+    return ceiling_for_classification(metar.sky, metar.cavok)
 
 
 def _reported_color(metar: Metar) -> ColorState | None:

@@ -23,6 +23,7 @@ class K:
     COLOR_BECOMING = "color.becoming"
     COLOR_BLACK_ALONE = "color.black_alone"
     COLOR_BLACK_WITH = "color.black_with"
+    COLOR_BLU_PLUS = "color.blu_plus"
     COLOR_DISPLAY = "color.display"
     COLOR_EXPECTED = "color.expected"
     COLOR_FORECAST = "color.forecast"

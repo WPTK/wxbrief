@@ -336,8 +336,9 @@ cited in `docs/decoding.md` and in `decode/colorstate.py`. As a check, all 47 sa
 colour (German, Dutch and UK fields) recompute to the reported colour with this table. Plain `YLO` (no digit, used by
 Dutch and German fields) has the `YLO2` minimums in every saved example and is stored as its own code `ColorCode.YLO`.
 
-**Not verified, flagged.** (1) The `+` suffix on `BLU+` (ETHL, ETNN): no source found; it is stored as `plus` and
-displayed as reported ("Blue (BLU+)") without an interpretation. (2) `///` as the last group of German AUTO reports
+**Not verified, flagged.** (1) The `+` suffix on `BLU+` (ETHL, ETNN): no official source found; it is stored as `plus` and
+read as visibility 8 km or more with no ceiling below 20,000 ft, a figure from a community source. It is displayed as
+"Blue plus (BLU+): visibility 8 km or more, no ceiling below 20,000 ft". (2) `///` as the last group of German AUTO reports
 (`... Q1033 ///`) is read as "colour state not reported" from its position; it is stored as
 `ColorState(None, not_reported=True)`. If it means something else, only that parser and one phrase change.
 
