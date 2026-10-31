@@ -9,6 +9,7 @@ import pytest
 from wxbrief.decode.model import (
     ChangeType,
     Flag,
+    Flavor,
     FlightCategory,
     Modifier,
     ReportType,
@@ -166,7 +167,7 @@ def test_every_change_keyword() -> None:
         (ChangeType.INTER, None),
         (ChangeType.PROB, 30),
         (ChangeType.PROB_TEMPO, 40),
-        (ChangeType.INTER, 30),
+        (ChangeType.PROB_INTER, 30),
         (ChangeType.FM, None),
     ]
 
@@ -269,6 +270,7 @@ def test_legacy_forms_decode_with_one_warning_each() -> None:
     assert (becmg.start, becmg.becoming_end) == (utc(30, 15), utc(30, 17))
     assert fm.start == utc(30, 20)
     assert (tempo.start, tempo.end) == (utc(31, 2), utc(31, 4))
+    assert taf.flavor is Flavor.US  # the four-digit windows are not metre visibilities
 
 
 def test_modern_forms_are_not_legacy() -> None:

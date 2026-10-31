@@ -9,12 +9,13 @@ Semantics (from the reference notes ``taf.md`` and the COBOL decoder's ``657-INH
 * ``BECMG`` lists only the elements that change. They take effect at the *end* of its window; slices inside the
   window are flagged ``becoming`` while the old elements still prevail. A later ``FM`` that starts before the window
   ends supersedes the ``BECMG``: it never takes effect, and its window closes where the ``FM`` begins.
-* ``TEMPO``, ``PROB``, ``PROB TEMPO`` and ``INTER`` never change the prevailing forecast. Each is an overlay for its
-  window (cut where a later ``FM`` begins: ``FM`` replaces everything, temporary groups included). Their elements
-  are laid over what prevails (``merge``), so an overlay that lists only a visibility keeps the prevailing ceiling,
-  exactly as the reference decoder inherits ``PREV-CEIL`` and ``PREV-VIS``. The overlay's flight category is that of
-  the merged elements.
-* A slice's ``category`` is the prevailing category, and ``worst_category`` the worst of it and every overlay's.
+* ``TEMPO``, ``PROB``, ``PROB TEMPO``, ``INTER`` and ``PROB INTER`` never change the prevailing forecast. Each is an
+  overlay for its window (cut where a later ``FM`` begins: ``FM`` replaces everything, temporary groups included).
+  Their elements are laid over what prevails (``merge``), so an overlay that lists only a visibility keeps the
+  prevailing ceiling, exactly as the reference decoder inherits ``PREV-CEIL`` and ``PREV-VIS``. The overlay's flight
+  category is that of the merged elements.
+* A slice's ``category`` is the prevailing category, and ``worst_category`` the worst of it, every overlay's and, inside
+  a ``BECMG`` window, that of the changed forecast (the change may land at any moment of the window).
 
 ``TafPeriod.flight_category`` uses the same rules at the moment the group starts (``categorize_periods``).
 """
@@ -44,7 +45,9 @@ from wxbrief.decode.model import (
 )
 from wxbrief.decode.units import Distance, DistanceUnit
 
-OVERLAY_TYPES = frozenset({ChangeType.TEMPO, ChangeType.PROB, ChangeType.PROB_TEMPO, ChangeType.INTER})
+OVERLAY_TYPES = frozenset(
+    {ChangeType.TEMPO, ChangeType.PROB, ChangeType.PROB_TEMPO, ChangeType.INTER, ChangeType.PROB_INTER}
+)
 
 _TEN_KM_OR_MORE = Visibility(Distance(10000, DistanceUnit.M), unlimited=True)
 
@@ -249,6 +252,10 @@ def expand_timeline(taf: Taf) -> Timeline:
             for w in active
         )
         category = category_of(prevailing)
+        # A BECMG may take effect at any moment of its window, so the worst case counts it from the window start.
+        becoming_category = (
+            category_of(merge(prevailing, periods[transition.index].elements)) if transition is not None else None
+        )
         slices.append(
             TimelineSlice(
                 lo,
@@ -257,7 +264,7 @@ def expand_timeline(taf: Taf) -> Timeline:
                 transition is not None,
                 overlays,
                 category,
-                worst_of([category, *(overlay.category for overlay in overlays)]),
+                worst_of([category, becoming_category, *(overlay.category for overlay in overlays)]),
                 source,
                 transition.index if transition is not None else None,
             )

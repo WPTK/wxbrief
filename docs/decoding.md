@@ -270,7 +270,8 @@ valid period was old-style.
 | `FMDDHHMM` | `FM` | from the time to the next `FM`/`BECMG` or the end | replaces the whole forecast from then |
 | `BECMG DDHH/DDHH` | `BECMG` | `start` to the window end (`becoming_end`), the group lasting to the next `FM`/`BECMG` | the listed elements change during the window and stay changed |
 | `TEMPO DDHH/DDHH` | `TEMPO` | the window | temporary fluctuation, laid over the prevailing forecast |
-| `INTER DDHH/DDHH` | `INTER` | the window | like `TEMPO` (older ICAO usage; `PROB30 INTER` keeps its probability) |
+| `INTER DDHH/DDHH` | `INTER` | the window | like `TEMPO` (older ICAO usage) |
+| `PROB30|40 INTER DDHH/DDHH` | `PROB_INTER` | the window | a probable intermittent fluctuation |
 | `PROB30|40 DDHH/DDHH` | `PROB` | the window | a possibility, over the prevailing forecast |
 | `PROB30|40 TEMPO DDHH/DDHH` | `PROB_TEMPO` | the window | a probable temporary fluctuation |
 
@@ -292,15 +293,15 @@ changes, and `Timeline.hourly()` gives one cell per UTC hour for a strip of cell
 * The base and every `FM` replace the prevailing forecast, overlays included.
 * A `BECMG` takes effect at the *end* of its window. Inside it slices are flagged `becoming` and the old forecast still
   prevails. A later `FM` that starts before the window ends supersedes it: it is flagged but never lands.
-* `TEMPO`, `PROB`, `PROB_TEMPO` and `INTER` never change the prevailing forecast. They are overlays for their window,
+* `TEMPO`, `PROB`, `PROB_TEMPO`, `INTER` and `PROB_INTER` never change the prevailing forecast. They are overlays for their window,
   cut where a later `FM` starts. `merge(prevailing, overlay)` lays the elements an overlay states over what prevails, so
   `TEMPO 4000 BR` over `OVC004` is LIFR: it keeps the ceiling. A list (cloud layers, weather) replaces the whole list;
   `NSW` replaces the weather; `CAVOK` on either side is spelled out as 10 km, no weather, no cloud.
-* A slice's `category` is the prevailing category and `worst_category` the worst of it and every overlay's. A hourly
+* A slice's `category` is the prevailing category and `worst_category` the worst of it, every overlay's and, inside a `BECMG`
+  window, that of the changed forecast (the change may land at any moment of the window). A hourly
   cell takes the worst slice that touches the hour.
 * `TafPeriod.flight_category` is the category of the group's elements merged over what prevails when it starts (base and
-  `FM`: on their own). It can therefore be worse than `Taf.worst_category` for a final `BECMG`, whose conditions begin
-  only at the end of the forecast.
+  `FM`: on their own). It can therefore be worse than a slice's `category` while a `BECMG` is still in progress.
 
 **Output.** `render/discord.py` renders a METAR or a TAF as a fenced block (`discord_block`, `render_discord` for the
 outer four-backtick fence); `wxbrief decode --discord` prints one per report, in US units unless `--units` says

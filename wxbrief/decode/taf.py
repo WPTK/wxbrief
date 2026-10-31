@@ -57,7 +57,8 @@ WARN_MISSING_TIME = "missing_time"
 
 _STATION = re.compile(r"^[A-Z][A-Z0-9]{3}$")
 _ISSUE = re.compile(r"^(\d{2})(\d{2})(\d{2})Z$")
-_KEYWORDS_NEUTRAL_FOR_FLAVOR = frozenset({"BECMG", "TEMPO", "INTER"})
+# Times, change keywords and notes look like metre visibilities or trend words to the flavor detector but say nothing.
+_KINDS_NEUTRAL_FOR_FLAVOR = frozenset({SemanticKind.TIME, SemanticKind.TREND, SemanticKind.REMARK})
 
 
 @dataclass
@@ -266,7 +267,7 @@ def _read_header(cur: Cursor, draft: _Draft) -> _Group:
         if following is not None and following.text in ("TEMPO", "INTER"):
             cur.take(SemanticKind.TREND)
             keyword = following
-            change = ChangeType.PROB_TEMPO if following.text == "TEMPO" else ChangeType.INTER
+            change = ChangeType.PROB_TEMPO if following.text == "TEMPO" else ChangeType.PROB_INTER
     start, end = _read_window(cur, draft, keyword)
     if change is ChangeType.BECMG:
         return _Group(change, None, start, end, end, first)
@@ -399,7 +400,7 @@ def _parse(raw: str, reference: datetime | None) -> Taf:
 
     base = periods[0] if periods and periods[0].change is ChangeType.BASE else None
     changes = tuple(periods[1:] if base is not None else periods)
-    flavor = detect_flavor([tok for tok in tokens if tok.text not in _KEYWORDS_NEUTRAL_FOR_FLAVOR]).flavor
+    flavor = detect_flavor([tok for tok in tagged if tok.kind not in _KINDS_NEUTRAL_FOR_FLAVOR]).flavor
     taf = Taf(
         raw=raw,
         station=draft.station,

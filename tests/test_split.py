@@ -66,6 +66,20 @@ def test_a_line_that_continues_nothing_starts_a_report() -> None:
     ]
 
 
+def test_the_nws_bulletin_form_is_one_report_with_its_modifier() -> None:
+    text = "TAF AMD\nKDEN 131130Z 1312/1418 06007KT P6SM SKC"
+    assert split_reports(text) == [text]
+    taf = parse_any(text, REF)[0]
+    assert isinstance(taf, Taf) and taf.station == "KDEN" and taf.amended
+
+
+def test_a_taf_wrapped_before_a_plain_group_is_one_report() -> None:
+    text = "TAF KDEN 131130Z 1312/1418 06007KT VRB03KT\nP6SM SKC\nFM131800 18010KT P6SM SKC"
+    assert split_reports(text) == [text]
+    assert split_reports(f"{text}\n{M1}") == [text, M1]
+    assert split_reports(f"{text}\nKSEA 131453Z 18014KT 2SM OVC007 12/11 A2972")[1].startswith("KSEA")
+
+
 def test_two_reports_on_one_line_are_cut_at_the_second_keyword() -> None:
     assert split_reports(f"{M1} {T1}") == [M1, T1]
     assert split_reports(f"{T1} {M2}") == [T1, M2]

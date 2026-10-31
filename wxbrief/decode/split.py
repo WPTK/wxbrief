@@ -6,8 +6,11 @@
   what looks like a station or a modifier: two reports pasted on one line),
 * the text after an ``=`` (the report terminator, which stays on the report it ends),
 * a blank line, and
-* any other line, unless it continues the report before it: an indented line, or one that begins with ``FM``,
-  ``BECMG``, ``TEMPO``, ``INTER``, ``PROBnn``, ``TX``/``TN``, ``RMK`` or ``NOSIG`` (the way a TAF wraps).
+* any other line, unless it continues the report before it. After a line of only keywords and modifiers
+  (``TAF AMD``, the NWS bulletin form) the next line is the body. A ``TAF`` continues on any line that does not begin
+  with a keyword or a station and issue time (``KSEA 131453Z``), since a TAF wraps anywhere. Another report
+  continues on an indented line, or one that begins with ``FM``, ``BECMG``, ``TEMPO``, ``INTER``, ``PROBnn``,
+  ``TX``/``TN``, ``RMK`` or ``NOSIG``.
 
 So a METAR per line, a TAF over several lines, reports separated by blank lines or ``=`` all work, with CRLF or LF
 line ends and in any case. Reports keep their original line breaks and indentation, so token offsets index what was
@@ -34,6 +37,7 @@ _KEYWORDS = frozenset({"METAR", "SPECI", "TAF"})
 _MODIFIERS = frozenset({"AMD", "COR", "CNL", "NIL", "RTD", "AUTO", "CCA", "CCB", "CCC"})
 _STATION = re.compile(r"^[A-Z][A-Z0-9]{3}$")
 _CONTINUATION = re.compile(r"^(?:FM\d|BECMG|TEMPO|INTER|PROB\d|T[XN]M?\d|RMK|NOSIG)", re.IGNORECASE)
+_ISSUE_TIME = re.compile(r"^\d{6}Z$")
 _VALID_PERIOD = re.compile(r"^\d{4}/\d{4}$")
 _TAF_GROUP = re.compile(r"^(?:FM\d{6}|PROB[1-9]0)$")
 _TEMPERATURE_DEW_POINT = re.compile(r"^(?:M?\d{2}|//)/(?:M?\d{2}|//)$")
@@ -67,6 +71,22 @@ def _split_keywords(line: str) -> list[str]:
     return [line[a:b] for a, b in itertools.pairwise(bounds)]
 
 
+def _starts_report(piece: str) -> bool:
+    """A keyword, or a station followed by an issue time (``KSEA 131453Z``): what a new report begins with."""
+    words = _WORD.findall(piece.upper())
+    if not words:
+        return False
+    if words[0] in _KEYWORDS:
+        return True
+    return len(words) > 1 and _STATION.match(words[0]) is not None and _ISSUE_TIME.match(words[1]) is not None
+
+
+def _header_only(lines: list[str]) -> bool:
+    """Whether a report so far is only keywords and modifiers (``TAF AMD``): its body is on the next line."""
+    words = [word.upper() for line in lines for word in _WORD.findall(line)]
+    return all(word in _KEYWORDS or word in _MODIFIERS for word in words)
+
+
 def _split_chunk(chunk: str) -> list[str]:
     """Split text that holds no ``=`` (apart from a final one) into reports."""
     reports: list[list[str]] = []
@@ -78,7 +98,14 @@ def _split_chunk(chunk: str) -> list[str]:
                 continue
             word = _first_word(piece)
             indented = piece[:1].isspace()
-            continues = current is not None and word not in _KEYWORDS and (indented or _CONTINUATION.match(word))
+            if current is None:
+                continues = False
+            elif _header_only(current):
+                continues = word not in _KEYWORDS
+            elif _first_word(current[0]) == "TAF":
+                continues = not _starts_report(piece)  # a TAF wraps anywhere, not only before a change group
+            else:
+                continues = word not in _KEYWORDS and (indented or _CONTINUATION.match(word) is not None)
             if continues and current is not None:
                 current.append(piece)
             else:

@@ -122,6 +122,18 @@ def test_becmg_takes_effect_at_the_end_of_its_window() -> None:
     assert after.period == 1
 
 
+def test_the_worst_case_counts_a_becmg_from_the_start_of_its_window() -> None:
+    raw = "TAF KXXX 311130Z 3112/0112 18010KT P6SM SKC BECMG 0110/0112 1/4SM FG VV001"
+    parsed = parse_taf(raw, REF)
+    timeline = expand_timeline(parsed)
+    during = timeline.slices[-1]
+    assert during.becoming and during.category is VFR  # the category is still the prevailing one
+    assert during.worst_category is LIFR
+    assert timeline.worst_category is LIFR
+    assert parsed.worst_category is LIFR
+    assert hourly_cells(timeline)[-1].worst_category is LIFR
+
+
 def test_becmg_merges_over_the_old_forecast() -> None:
     timeline = expand_timeline(taf("18010KT 4SM BR OVC008 BECMG 3108/3110 27015KT"))
     after = timeline.slices[-1]
@@ -137,7 +149,9 @@ def test_a_later_fm_supersedes_a_becmg_still_in_progress() -> None:
         (10, 13, True, VFR),  # flagged, but the change never lands
         (13, 18, False, VFR),
     ]
-    assert timeline.worst_category is VFR
+    # it may have taken effect at any moment before the FM, so the worst case still counts it
+    assert [s.worst_category for s in timeline.slices] == [VFR, LIFR, VFR]
+    assert timeline.worst_category is LIFR
 
 
 def test_a_becmg_that_ends_before_the_next_fm_does_land() -> None:
@@ -186,7 +200,7 @@ def test_overlapping_overlays_are_listed_in_report_order_and_the_worst_wins() ->
 
 
 def test_prob_tempo_and_inter_are_overlays_too() -> None:
-    for keyword, change in (("PROB30 TEMPO", ChangeType.PROB_TEMPO), ("INTER", ChangeType.INTER)):
+    for keyword, change in (("PROB30 TEMPO", ChangeType.PROB_TEMPO), ("INTER", ChangeType.INTER), ("PROB30 INTER", ChangeType.PROB_INTER)):
         timeline = expand_timeline(taf(f"18010KT 9999 SKC {keyword} 3108/3110 BKN004"))
         assert timeline.slices[1].overlays[0].change is change
         assert change in OVERLAY_TYPES

@@ -147,7 +147,7 @@
       "becoming_end": null
     },
     {
-      "change": "INTER",
+      "change": "PROB_INTER",
       "probability": 30,
       "start": "2026-11-01T08:00:00+00:00",
       "end": "2026-11-01T12:00:00+00:00",

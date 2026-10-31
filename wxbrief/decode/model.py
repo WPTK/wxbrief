@@ -1010,7 +1010,7 @@ class ChangeType(Enum):
     ``BASE`` is the opening forecast and ``FM`` a rapid, lasting change that replaces everything; ``BECMG`` a gradual
     change of the elements it lists; ``TEMPO`` temporary fluctuations; ``PROB`` a probability on its own
     (``PROB30``) and ``PROB_TEMPO`` a probable temporary fluctuation (``PROB30 TEMPO``); ``INTER`` the Australian
-    intermittent fluctuation.
+    intermittent fluctuation and ``PROB_INTER`` a probable one (``PROB30 INTER``).
     """
 
     BASE = "BASE"
@@ -1020,6 +1020,7 @@ class ChangeType(Enum):
     PROB = "PROB"
     PROB_TEMPO = "PROB_TEMPO"
     INTER = "INTER"
+    PROB_INTER = "PROB_INTER"
 
 
 class TemperatureExtreme(Enum):

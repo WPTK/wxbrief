@@ -73,6 +73,7 @@ AWC_CHANGE = {
     ChangeType.PROB: "PROB",
     ChangeType.PROB_TEMPO: "TEMPO",
     ChangeType.INTER: "TEMPO",
+    ChangeType.PROB_INTER: "TEMPO",
 }
 
 

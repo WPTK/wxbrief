@@ -101,14 +101,11 @@ def _run_decode(args: argparse.Namespace) -> int:
         sys.stderr.write("wxbrief decode: no report text given (pass it as an argument or on stdin)\n")
         return 2
 
-    # Never fail on a character the console cannot encode (the degree sign in a legacy code page, say). The Discord
-    # and JSON outputs are meant to be pasted or piped, so they are always UTF-8.
+    # Always UTF-8: a pipe on Windows defaults to the ANSI code page, which turns the degree sign into a lone 0xB0 byte.
+    # Never fail on a character the stream cannot encode.
     reconfigure = getattr(sys.stdout, "reconfigure", None)
     if callable(reconfigure):
-        if args.discord or args.json:
-            reconfigure(encoding="utf-8", errors="replace")
-        else:
-            reconfigure(errors="replace")
+        reconfigure(encoding="utf-8", errors="replace")
 
     if args.json:
         sys.stdout.write(json.dumps([to_dict(item) for item in decoded], indent=2) + "\n")

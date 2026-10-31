@@ -283,3 +283,18 @@ def test_json_and_discord_with_no_input_are_still_a_usage_error() -> None:
 def test_help_lists_the_new_output_options() -> None:
     helped = run_module("decode", "--help").stdout
     assert "--json" in helped and "--discord" in helped
+
+
+def test_piped_plain_output_is_utf8_whatever_the_console_code_page() -> None:
+    env = {k: v for k, v in os.environ.items() if k not in ("PYTHONIOENCODING", "PYTHONUTF8")}
+    env["PYTHONLEGACYWINDOWSSTDIO"] = "1"
+    result = subprocess.run(
+        [sys.executable, "-m", "wxbrief", "decode", "--date", "2026-10-13", COBOL],
+        capture_output=True,
+        env=env,
+        timeout=60,
+        check=False,
+    )
+    assert result.returncode == 0
+    assert b"\xc2\xb0" in result.stdout
+    assert b"\xb0" not in result.stdout.replace(b"\xc2\xb0", b"")

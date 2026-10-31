@@ -435,7 +435,7 @@ was added around it and the history cut into logical commits.
 **Model (names as built).** In `decode/model.py`: `Taf(raw, station, issue_time, valid_from, valid_to, modifiers, base,
 changes, remarks, flavor, tokens, warnings, worst_category, report_type, temperatures, flags, legacy)` with the
 properties `periods`, `amended`, `cancelled` and `nil`; `TafPeriod(change, probability, start, end, elements,
-flight_category, tokens, becoming_end)`; `ChangeType` (`BASE`, `FM`, `BECMG`, `TEMPO`, `INTER`, `PROB`, `PROB_TEMPO`);
+flight_category, tokens, becoming_end)`; `ChangeType` (`BASE`, `FM`, `BECMG`, `TEMPO`, `INTER`, `PROB`, `PROB_TEMPO`, `PROB_INTER`);
 `TafTemperature(kind, temperature, day, hour, time)` with `TemperatureExtreme`; `WindShearLayer`, `IcingGroup`,
 `TurbulenceGroup` with their intensity enums. `ForecastElements` (from S2a) gains `wind_shear`, `altimeter`, `icing`
 and `turbulence`, so every METAR trend now carries four more (empty) fields. `Timeline`, `TimelineSlice`,
@@ -466,8 +466,6 @@ files, WSSS has two trends). Nothing else moved in any METAR golden.
   separator before `AUTO` is an em dash; temperatures show both units.
 - Unread TAF notes: the real KRIV (`WND 230V330`) and NZSP (`WND21008KT AFT 3122 ALL WINDS GRID`) forecasts keep those
   words as unknown tokens with a warning. Their goldens record it and `test_taf_goldens.py` names the two stations.
-- `Taf.worst_category` can be better than the category of a final `BECMG`: a change that lands at the end of the valid
-  period is never in force on the timeline (KRIV: last group IFR, worst MVFR). That follows from the BECMG rule.
 - `parse_any` keeps every non-blank character, so a stray `=` between reports becomes a one-token report with an unknown
   token warning rather than being dropped.
 
@@ -475,6 +473,12 @@ files, WSSS has two trends). Nothing else moved in any METAR golden.
 
 - Station name and local hour plug into `discord_block(..., station_name=, local_hour=)` and `condition_emoji`; both are
   tested but unused by the CLI.
+- `PROB30 INTER` is its own `ChangeType.PROB_INTER` (an overlay like `PROB_TEMPO`), so the probability reaches the plain
+  and Discord headings. AWC reports both `INTER` forms as `TEMPO`.
+- `worst_category` counts a `BECMG` from the start of its window (the change may land at any moment), so it can be worse
+  than the `category` of every slice. `split_reports` keeps `TAF AMD` and the line after it together, and a TAF wraps
+  on any line that does not start with a keyword or a station and issue time. Legacy windows and notes
+  (`1517`, `AFT 3023`) no longer take part in flavor detection (they read as metre visibility). Piped output is UTF-8.
 - The TUI timeline strip should read `Timeline.hourly()` (`category`, `worst_category`, `becoming`, `overlay`); the
   cell colours are the flight category, and `TimelineSlice` has the prevailing and overlay elements for a detail view.
 - `parse_any(text, reference)` is the entry point for the paste screen; the reference for a TAF is its receipt time.

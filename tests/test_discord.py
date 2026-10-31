@@ -25,6 +25,7 @@ from wxbrief.render.discord import (
     discord_block,
     render_discord,
 )
+from wxbrief.render.phrases import describe_change_header
 
 REF = datetime(2026, 10, 31, 12, 0, tzinfo=UTC)
 T = Translator.load("en")
@@ -255,3 +256,12 @@ def test_render_discord_wraps_the_block_in_an_outer_fence() -> None:
 def test_unreadable_input_still_renders_a_block(raw: str) -> None:
     text = block(raw)
     assert text.startswith(FENCE) and text.endswith(FENCE)
+
+
+def test_a_probable_intermittent_group_keeps_its_probability() -> None:
+    raw = "TAF YPAD 310800Z 3108/0114 18010KT 9999 SCT040 PROB30 INTER 3120/3122 4000 SHRA SCT008"
+    assert "PROB30 INTER 31/2000Z → 2200Z  [IFR]" in block(raw, UnitsMode.METRIC).splitlines()
+    taf = report(raw)
+    assert isinstance(taf, Taf)
+    header = describe_change_header(T, taf.changes[0])
+    assert header.startswith("30% chance of intermittent conditions")

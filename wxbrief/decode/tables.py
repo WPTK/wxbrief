@@ -290,6 +290,7 @@ CHANGE_KEYS: dict[ChangeType, str] = {
     ChangeType.PROB: K.TAF_CHANGE_PROB,
     ChangeType.PROB_TEMPO: K.TAF_CHANGE_PROB_TEMPO,
     ChangeType.INTER: K.TAF_CHANGE_INTER,
+    ChangeType.PROB_INTER: K.TAF_CHANGE_PROB_INTER,
 }
 
 CHANGE_SHORT_KEYS: dict[ChangeType, str] = {
@@ -300,6 +301,7 @@ CHANGE_SHORT_KEYS: dict[ChangeType, str] = {
     ChangeType.PROB: K.TAF_CHANGE_SHORT_PROB,
     ChangeType.PROB_TEMPO: K.TAF_CHANGE_SHORT_PROB_TEMPO,
     ChangeType.INTER: K.TAF_CHANGE_SHORT_INTER,
+    ChangeType.PROB_INTER: K.TAF_CHANGE_SHORT_PROB_INTER,
 }
 
 DISCORD_HEADING_KEYS: dict[ChangeType, str] = {
@@ -310,6 +312,7 @@ DISCORD_HEADING_KEYS: dict[ChangeType, str] = {
     ChangeType.PROB: K.DISCORD_HEADING_PROB,
     ChangeType.PROB_TEMPO: K.DISCORD_HEADING_PROB_TEMPO,
     ChangeType.INTER: K.DISCORD_HEADING_INTER,
+    ChangeType.PROB_INTER: K.DISCORD_HEADING_PROB_INTER,
 }
 
 ICING_KEYS: dict[IcingIntensity, str] = {
