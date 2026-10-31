@@ -1,0 +1,180 @@
+{
+  "raw": "METAR KSEA 081453Z 18014KT 2SM +RA BR OVC007 12/11 A2972 RMK AO2 SLP065 P0034",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KSEA",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "081453Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "18014KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "2SM",
+      "start": 27,
+      "end": 30,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "+RA",
+      "start": 31,
+      "end": 34,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BR",
+      "start": 35,
+      "end": 37,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "OVC007",
+      "start": 38,
+      "end": 44,
+      "kind": "SKY"
+    },
+    {
+      "text": "12/11",
+      "start": 45,
+      "end": 50,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2972",
+      "start": 51,
+      "end": 56,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 57,
+      "end": 60,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 61,
+      "end": 64,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP065",
+      "start": 65,
+      "end": 71,
+      "kind": "REMARK"
+    },
+    {
+      "text": "P0034",
+      "start": 72,
+      "end": 77,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KSEA",
+  "observed": "2026-10-08T14:53:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 180,
+    "speed": {
+      "value": 14,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 2.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "HEAVY",
+      "descriptor": null,
+      "phenomena": [
+        "RA"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    },
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "BR"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 700,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 12,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 11,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.72,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 10,
+  "remarks_raw": "AO2 SLP065 P0034",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 700,
+    "unit": "FT"
+  },
+  "flight_category": "IFR",
+  "flags": [
+    "LOW_CEILING",
+    "LOW_VISIBILITY"
+  ],
+  "condition": "RAIN",
+  "relative_humidity": 93.6,
+  "warnings": []
+}

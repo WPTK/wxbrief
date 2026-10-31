@@ -24,7 +24,8 @@ switchable colorways with a plain-language translation (English complete; es/fr/
 - **Common Changelog** (https://common-changelog.org/) for `CHANGELOG.md`: `# Changelog` heading; releases
   latest-first as `## 0.1.0 - YYYY-MM-DD`; groups only `### Changed`, `### Added`, `### Removed`, `### Fixed`, in
   that order; one-line imperative entries with a `(#PR)` reference; `**Breaking:**` entries first; no Unreleased
-  section, no other groups, no pasted git log. Add entries only for user-visible changes; docs, dotfiles, dev-only
+  section, no other groups, no pasted git log. Sessions S1 to S7 leave `CHANGELOG.md` alone; S8 writes the single
+  `0.1.0` entry from the merged PRs. From then on add entries only for user-visible changes; docs, dotfiles, dev-only
   dependency bumps and style edits get none. Commit the entry before tagging.
 - Never tag or release without the owner's word.
 
@@ -39,8 +40,15 @@ python -m venv .venv
 .venv\Scripts\python -m vulture wxbrief scripts --min-confidence 80
 .venv\Scripts\python -m mypy wxbrief
 .venv\Scripts\python -m pytest
+.venv\Scripts\python -m pytest --update-goldens   # rewrite tests/fixtures/reports/**/*.golden.json; review the diff
 .venv\Scripts\python -m wxbrief --version
+.venv\Scripts\python -m wxbrief decode "METAR KDEN 131453Z 06007KT 3/4SM BR OVC003 09/08 A3001"
+.venv\Scripts\python scripts\gen_keys.py          # regenerate wxbrief/i18n/keys.py after editing locales/en.toml
 ```
+
+`--update-goldens` regenerates the golden decodes of the saved reports from the current decoder. A golden is only a
+test once you have read it against the raw report, so look at `git diff` before committing. See `docs/decoding.md`
+for how to add a report.
 
 CI (`.github/workflows/ci.yml`) runs the same steps on Windows, Linux and macOS with Python 3.12, plus an
 informational Python 3.13 job on Linux. Docs-only changes (`**.md`, `docs/**`, `LICENSE`) skip CI by design.
@@ -59,10 +67,12 @@ informational Python 3.13 job on Linux. Docs-only changes (`**.md`, `docs/**`, `
 - `wxbrief/decode/` tokenizer, model, group decoders, remarks, TAF timeline, flight category (mypy strict).
 - `wxbrief/i18n/` translator, keys, plurals, numbers; `locales/*.toml` catalogs (mypy strict).
 - `wxbrief/data/` AWC client, poll scheduler, disk cache, station DB; `demo/*.txt` offline reports.
-- `wxbrief/render/` highlight spans, phrases, plain/Rich/Discord/JSON output, CLI palette.
+- `wxbrief/render/` highlight spans, phrases, unit formatting (`measure.py`), plain/Rich/Discord/JSON output, CLI
+  palette.
 - `wxbrief/ui/` Textual app pieces: `app.tcss`, glyphs, `themes/`, `screens/`, `widgets/`.
-- `scripts/` build and maintenance scripts; `tests/` pytest suite with saved reports under `tests/fixtures/`.
-- `docs/` the plan and later guides; `.github/workflows/` CI (release workflows arrive in S9).
+- `scripts/` build and maintenance scripts; `tests/` pytest suite with saved reports (`fixtures/reports/`) and AWC
+  batches (`fixtures/awc/`).
+- `docs/` the plan, `decoding.md` and later guides; `.github/workflows/` CI (release workflows arrive in S9).
 
 ## Line endings
 

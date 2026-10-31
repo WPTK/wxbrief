@@ -1,0 +1,151 @@
+{
+  "raw": "SPECI KAUS 310751Z 34004KT 5SM BR OVC010 19/18 A3006 RMK AO2",
+  "tokens": [
+    {
+      "text": "SPECI",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KAUS",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310751Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "34004KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "5SM",
+      "start": 27,
+      "end": 30,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BR",
+      "start": 31,
+      "end": 33,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "OVC010",
+      "start": 34,
+      "end": 40,
+      "kind": "SKY"
+    },
+    {
+      "text": "19/18",
+      "start": 41,
+      "end": 46,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3006",
+      "start": 47,
+      "end": 52,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 53,
+      "end": 56,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 57,
+      "end": 60,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "SPECI",
+  "station": "KAUS",
+  "observed": "2026-10-31T07:51:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 340,
+    "speed": {
+      "value": 4,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 5.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "BR"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 1000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 19,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 18,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.06,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 9,
+  "remarks_raw": "AO2",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 1000,
+    "unit": "FT"
+  },
+  "flight_category": "MVFR",
+  "flags": [
+    "SPECIAL_REPORT"
+  ],
+  "condition": "OBSCURATION",
+  "relative_humidity": 93.9,
+  "warnings": []
+}

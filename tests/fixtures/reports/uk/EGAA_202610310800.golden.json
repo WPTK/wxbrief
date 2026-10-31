@@ -1,0 +1,124 @@
+{
+  "raw": "METAR EGAA 310750Z AUTO 14005KT 9999 NCD 11/10 Q1029",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "EGAA",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310750Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "AUTO",
+      "start": 19,
+      "end": 23,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "14005KT",
+      "start": 24,
+      "end": 31,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 32,
+      "end": 36,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "NCD",
+      "start": 37,
+      "end": 40,
+      "kind": "SKY"
+    },
+    {
+      "text": "11/10",
+      "start": 41,
+      "end": 46,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1029",
+      "start": 47,
+      "end": 52,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "EGAA",
+  "observed": "2026-10-31T07:50:00+00:00",
+  "modifiers": [
+    "AUTO"
+  ],
+  "wind": {
+    "direction": 140,
+    "speed": {
+      "value": 5,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10000,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": true,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "NCD",
+      "base": null,
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 11,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 10,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1029,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [
+    "AUTOMATED"
+  ],
+  "condition": "CLEAR",
+  "relative_humidity": 93.6,
+  "warnings": []
+}

@@ -1,0 +1,199 @@
+{
+  "raw": "SPECI KBOS 042251Z 07012G22KT 1 1/2SM -RA BR BKN008 OVC015 12/11 A2985 RMK AO2 P0012",
+  "tokens": [
+    {
+      "text": "SPECI",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KBOS",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "042251Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "07012G22KT",
+      "start": 19,
+      "end": 29,
+      "kind": "WIND"
+    },
+    {
+      "text": "1",
+      "start": 30,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "1/2SM",
+      "start": 32,
+      "end": 37,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-RA",
+      "start": 38,
+      "end": 41,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BR",
+      "start": 42,
+      "end": 44,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BKN008",
+      "start": 45,
+      "end": 51,
+      "kind": "SKY"
+    },
+    {
+      "text": "OVC015",
+      "start": 52,
+      "end": 58,
+      "kind": "SKY"
+    },
+    {
+      "text": "12/11",
+      "start": 59,
+      "end": 64,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2985",
+      "start": 65,
+      "end": 70,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 71,
+      "end": 74,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 75,
+      "end": 78,
+      "kind": "REMARK"
+    },
+    {
+      "text": "P0012",
+      "start": 79,
+      "end": 84,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "SPECI",
+  "station": "KBOS",
+  "observed": "2026-10-04T22:51:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 70,
+    "speed": {
+      "value": 12,
+      "unit": "KT"
+    },
+    "gust": {
+      "value": 22,
+      "unit": "KT"
+    },
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 1.5,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "LIGHT",
+      "descriptor": null,
+      "phenomena": [
+        "RA"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    },
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "BR"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 800,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 1500,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 12,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 11,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.85,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 12,
+  "remarks_raw": "AO2 P0012",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 800,
+    "unit": "FT"
+  },
+  "flight_category": "IFR",
+  "flags": [
+    "LOW_CEILING",
+    "LOW_VISIBILITY",
+    "GUSTS",
+    "SPECIAL_REPORT"
+  ],
+  "condition": "RAIN",
+  "relative_humidity": 93.6,
+  "warnings": []
+}

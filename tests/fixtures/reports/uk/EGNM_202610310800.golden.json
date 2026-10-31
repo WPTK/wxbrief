@@ -1,0 +1,176 @@
+{
+  "raw": "METAR EGNM 310750Z 14004KT 110V180 0050 R14/0200N -DZ FG VV/// 06/06 Q1032",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "EGNM",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310750Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "14004KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "110V180",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND_VARIATION"
+    },
+    {
+      "text": "0050",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "R14/0200N",
+      "start": 40,
+      "end": 49,
+      "kind": "RVR"
+    },
+    {
+      "text": "-DZ",
+      "start": 50,
+      "end": 53,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "FG",
+      "start": 54,
+      "end": 56,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "VV///",
+      "start": 57,
+      "end": 62,
+      "kind": "SKY"
+    },
+    {
+      "text": "06/06",
+      "start": 63,
+      "end": 68,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1032",
+      "start": 69,
+      "end": 74,
+      "kind": "PRESSURE"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "EGNM",
+  "observed": "2026-10-31T07:50:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 140,
+    "speed": {
+      "value": 4,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": {
+    "start": 110,
+    "end": 180
+  },
+  "visibility": {
+    "distance": {
+      "value": 50,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [
+    {
+      "runway": "14",
+      "distance": {
+        "value": 200,
+        "unit": "M"
+      },
+      "prefix": null,
+      "variable_to": null,
+      "variable_to_prefix": null,
+      "trend": "NO_CHANGE"
+    }
+  ],
+  "weather": [
+    {
+      "intensity": "LIGHT",
+      "descriptor": null,
+      "phenomena": [
+        "DZ"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    },
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "FG"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "VV",
+      "base": null,
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 6,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 6,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1032,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "LIFR",
+  "flags": [
+    "LOW_VISIBILITY"
+  ],
+  "condition": "RAIN",
+  "relative_humidity": 100.0,
+  "warnings": []
+}

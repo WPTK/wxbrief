@@ -1,0 +1,206 @@
+{
+  "raw": "METAR KMSP 151156Z 33018G26KT 1/2SM -SN BLSN FZFG VV004 M08/M10 A3012 RMK AO2 SLP215 P0002 T10831100",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KMSP",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "151156Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "33018G26KT",
+      "start": 19,
+      "end": 29,
+      "kind": "WIND"
+    },
+    {
+      "text": "1/2SM",
+      "start": 30,
+      "end": 35,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-SN",
+      "start": 36,
+      "end": 39,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BLSN",
+      "start": 40,
+      "end": 44,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "FZFG",
+      "start": 45,
+      "end": 49,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "VV004",
+      "start": 50,
+      "end": 55,
+      "kind": "SKY"
+    },
+    {
+      "text": "M08/M10",
+      "start": 56,
+      "end": 63,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3012",
+      "start": 64,
+      "end": 69,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 70,
+      "end": 73,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 74,
+      "end": 77,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP215",
+      "start": 78,
+      "end": 84,
+      "kind": "REMARK"
+    },
+    {
+      "text": "P0002",
+      "start": 85,
+      "end": 90,
+      "kind": "REMARK"
+    },
+    {
+      "text": "T10831100",
+      "start": 91,
+      "end": 100,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KMSP",
+  "observed": "2026-10-15T11:56:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 330,
+    "speed": {
+      "value": 18,
+      "unit": "KT"
+    },
+    "gust": {
+      "value": 26,
+      "unit": "KT"
+    },
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 0.5,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "LIGHT",
+      "descriptor": null,
+      "phenomena": [
+        "SN"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    },
+    {
+      "intensity": "MODERATE",
+      "descriptor": "BL",
+      "phenomena": [
+        "SN"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    },
+    {
+      "intensity": "MODERATE",
+      "descriptor": "FZ",
+      "phenomena": [
+        "FG"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "VV",
+      "base": {
+        "value": 400,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": -8,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": -10,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.12,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 11,
+  "remarks_raw": "AO2 SLP215 P0002 T10831100",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 400,
+    "unit": "FT"
+  },
+  "flight_category": "LIFR",
+  "flags": [
+    "LOW_CEILING",
+    "LOW_VISIBILITY",
+    "GUSTS"
+  ],
+  "condition": "SNOW",
+  "relative_humidity": 85.5,
+  "warnings": []
+}

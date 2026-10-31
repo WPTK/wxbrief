@@ -1,0 +1,115 @@
+{
+  "raw": "METAR LFPG 310730Z AUTO 06009KT CAVOK 06/05 Q1029 NOSIG",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "LFPG",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310730Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "AUTO",
+      "start": 19,
+      "end": 23,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "06009KT",
+      "start": 24,
+      "end": 31,
+      "kind": "WIND"
+    },
+    {
+      "text": "CAVOK",
+      "start": 32,
+      "end": 37,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "06/05",
+      "start": 38,
+      "end": 43,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1029",
+      "start": 44,
+      "end": 49,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "NOSIG",
+      "start": 50,
+      "end": 55,
+      "kind": "TREND"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "LFPG",
+  "observed": "2026-10-31T07:30:00+00:00",
+  "modifiers": [
+    "AUTO"
+  ],
+  "wind": {
+    "direction": 60,
+    "speed": {
+      "value": 9,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": null,
+    "prefix": null,
+    "cavok": true,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [],
+  "temperature": {
+    "value": 6,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 5,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1029,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 8,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [
+    "AUTOMATED"
+  ],
+  "condition": "CLEAR",
+  "relative_humidity": 93.3,
+  "warnings": []
+}

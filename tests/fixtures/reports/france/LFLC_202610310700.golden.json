@@ -1,0 +1,154 @@
+{
+  "raw": "METAR LFLC 310700Z AUTO VRB01KT 9999 OVC010 07/05 Q1025 TEMPO 3000 BR OVC004",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "LFLC",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310700Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "AUTO",
+      "start": 19,
+      "end": 23,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "VRB01KT",
+      "start": 24,
+      "end": 31,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 32,
+      "end": 36,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "OVC010",
+      "start": 37,
+      "end": 43,
+      "kind": "SKY"
+    },
+    {
+      "text": "07/05",
+      "start": 44,
+      "end": 49,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1025",
+      "start": 50,
+      "end": 55,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "TEMPO",
+      "start": 56,
+      "end": 61,
+      "kind": "TREND"
+    },
+    {
+      "text": "3000",
+      "start": 62,
+      "end": 66,
+      "kind": "TREND"
+    },
+    {
+      "text": "BR",
+      "start": 67,
+      "end": 69,
+      "kind": "TREND"
+    },
+    {
+      "text": "OVC004",
+      "start": 70,
+      "end": 76,
+      "kind": "TREND"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "LFLC",
+  "observed": "2026-10-31T07:00:00+00:00",
+  "modifiers": [
+    "AUTO"
+  ],
+  "wind": {
+    "direction": null,
+    "speed": {
+      "value": 1,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": true,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10000,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": true,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 1000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 7,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 5,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1025,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 9,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": {
+    "value": 1000,
+    "unit": "FT"
+  },
+  "flight_category": "MVFR",
+  "flags": [
+    "AUTOMATED"
+  ],
+  "condition": "OVERCAST",
+  "relative_humidity": 87.1,
+  "warnings": []
+}

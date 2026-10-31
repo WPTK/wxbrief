@@ -1,0 +1,172 @@
+{
+  "raw": "METAR KORD 310751Z 00000KT 10SM SCT075 SCT180 BKN220 11/07 A3035 RMK AO2 SLP278 T01110072",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KORD",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310751Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "00000KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "SCT075",
+      "start": 32,
+      "end": 38,
+      "kind": "SKY"
+    },
+    {
+      "text": "SCT180",
+      "start": 39,
+      "end": 45,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN220",
+      "start": 46,
+      "end": 52,
+      "kind": "SKY"
+    },
+    {
+      "text": "11/07",
+      "start": 53,
+      "end": 58,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3035",
+      "start": 59,
+      "end": 64,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 65,
+      "end": 68,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 69,
+      "end": 72,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP278",
+      "start": 73,
+      "end": 79,
+      "kind": "REMARK"
+    },
+    {
+      "text": "T01110072",
+      "start": 80,
+      "end": 89,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KORD",
+  "observed": "2026-10-31T07:51:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 0,
+    "speed": {
+      "value": 0,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 7500,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 18000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 22000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 11,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 7,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.35,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 10,
+  "remarks_raw": "AO2 SLP278 T01110072",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 22000,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [],
+  "condition": "BROKEN",
+  "relative_humidity": 76.4,
+  "warnings": []
+}

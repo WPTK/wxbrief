@@ -1,0 +1,174 @@
+{
+  "raw": "METAR LFRB 310730Z AUTO 05005KT 9999 1600 R07/1300D NSC 06/05 Q1027 TEMPO 3000 BR",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "LFRB",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310730Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "AUTO",
+      "start": 19,
+      "end": 23,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "05005KT",
+      "start": 24,
+      "end": 31,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 32,
+      "end": 36,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "1600",
+      "start": 37,
+      "end": 41,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "R07/1300D",
+      "start": 42,
+      "end": 51,
+      "kind": "RVR"
+    },
+    {
+      "text": "NSC",
+      "start": 52,
+      "end": 55,
+      "kind": "SKY"
+    },
+    {
+      "text": "06/05",
+      "start": 56,
+      "end": 61,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1027",
+      "start": 62,
+      "end": 67,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "TEMPO",
+      "start": 68,
+      "end": 73,
+      "kind": "TREND"
+    },
+    {
+      "text": "3000",
+      "start": 74,
+      "end": 78,
+      "kind": "TREND"
+    },
+    {
+      "text": "BR",
+      "start": 79,
+      "end": 81,
+      "kind": "TREND"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "LFRB",
+  "observed": "2026-10-31T07:30:00+00:00",
+  "modifiers": [
+    "AUTO"
+  ],
+  "wind": {
+    "direction": 50,
+    "speed": {
+      "value": 5,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10000,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": true,
+    "ndv": false,
+    "directional": [
+      {
+        "distance": {
+          "value": 1600,
+          "unit": "M"
+        },
+        "direction": null
+      }
+    ],
+    "not_reported": false
+  },
+  "rvr": [
+    {
+      "runway": "07",
+      "distance": {
+        "value": 1300,
+        "unit": "M"
+      },
+      "prefix": null,
+      "variable_to": null,
+      "variable_to_prefix": null,
+      "trend": "DOWN"
+    }
+  ],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "NSC",
+      "base": null,
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 6,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 5,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1027,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 11,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [
+    "AUTOMATED"
+  ],
+  "condition": "CLEAR",
+  "relative_humidity": 93.3,
+  "warnings": []
+}

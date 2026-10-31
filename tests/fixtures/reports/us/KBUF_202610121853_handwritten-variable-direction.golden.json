@@ -1,0 +1,190 @@
+{
+  "raw": "METAR KBUF 121853Z 21012G20KT 180V240 10SM SCT040 BKN250 24/12 A2990 RMK AO2 PK WND 22028/1822 SLP120 T02390117",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KBUF",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "121853Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "21012G20KT",
+      "start": 19,
+      "end": 29,
+      "kind": "WIND"
+    },
+    {
+      "text": "180V240",
+      "start": 30,
+      "end": 37,
+      "kind": "WIND_VARIATION"
+    },
+    {
+      "text": "10SM",
+      "start": 38,
+      "end": 42,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "SCT040",
+      "start": 43,
+      "end": 49,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN250",
+      "start": 50,
+      "end": 56,
+      "kind": "SKY"
+    },
+    {
+      "text": "24/12",
+      "start": 57,
+      "end": 62,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2990",
+      "start": 63,
+      "end": 68,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 69,
+      "end": 72,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 73,
+      "end": 76,
+      "kind": "REMARK"
+    },
+    {
+      "text": "PK",
+      "start": 77,
+      "end": 79,
+      "kind": "REMARK"
+    },
+    {
+      "text": "WND",
+      "start": 80,
+      "end": 83,
+      "kind": "REMARK"
+    },
+    {
+      "text": "22028/1822",
+      "start": 84,
+      "end": 94,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP120",
+      "start": 95,
+      "end": 101,
+      "kind": "REMARK"
+    },
+    {
+      "text": "T02390117",
+      "start": 102,
+      "end": 111,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KBUF",
+  "observed": "2026-10-12T18:53:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 210,
+    "speed": {
+      "value": 12,
+      "unit": "KT"
+    },
+    "gust": {
+      "value": 20,
+      "unit": "KT"
+    },
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": {
+    "start": 180,
+    "end": 240
+  },
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 4000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 25000,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 24,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 12,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.9,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 10,
+  "remarks_raw": "AO2 PK WND 22028/1822 SLP120 T02390117",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 25000,
+    "unit": "FT"
+  },
+  "flight_category": "VFR",
+  "flags": [
+    "GUSTS"
+  ],
+  "condition": "BROKEN",
+  "relative_humidity": 47.0,
+  "warnings": []
+}

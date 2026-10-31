@@ -1,0 +1,175 @@
+{
+  "raw": "METAR EGKK 150920Z 24015G27KT 9999 -RA SCT015 BKN025CB 14/11 Q0998 TEMPO 5000 +SHRA",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "EGKK",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "150920Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "24015G27KT",
+      "start": 19,
+      "end": 29,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 30,
+      "end": 34,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-RA",
+      "start": 35,
+      "end": 38,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT015",
+      "start": 39,
+      "end": 45,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN025CB",
+      "start": 46,
+      "end": 54,
+      "kind": "SKY"
+    },
+    {
+      "text": "14/11",
+      "start": 55,
+      "end": 60,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q0998",
+      "start": 61,
+      "end": 66,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "TEMPO",
+      "start": 67,
+      "end": 72,
+      "kind": "TREND"
+    },
+    {
+      "text": "5000",
+      "start": 73,
+      "end": 77,
+      "kind": "TREND"
+    },
+    {
+      "text": "+SHRA",
+      "start": 78,
+      "end": 83,
+      "kind": "TREND"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "EGKK",
+  "observed": "2026-10-15T09:20:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 240,
+    "speed": {
+      "value": 15,
+      "unit": "KT"
+    },
+    "gust": {
+      "value": 27,
+      "unit": "KT"
+    },
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10000,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": true,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "LIGHT",
+      "descriptor": null,
+      "phenomena": [
+        "RA"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 1500,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 2500,
+        "unit": "FT"
+      },
+      "cloud_type": "CB"
+    }
+  ],
+  "temperature": {
+    "value": 14,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 11,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 998,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 10,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": {
+    "value": 2500,
+    "unit": "FT"
+  },
+  "flight_category": "MVFR",
+  "flags": [
+    "CB",
+    "GUSTS"
+  ],
+  "condition": "RAIN",
+  "relative_humidity": 82.1,
+  "warnings": []
+}

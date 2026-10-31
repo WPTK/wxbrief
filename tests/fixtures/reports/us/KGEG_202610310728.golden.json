@@ -1,0 +1,198 @@
+{
+  "raw": "SPECI KGEG 310728Z 20003KT 1/4SM R21/2000V2800FT FG VV002 03/03 A2997 RMK AO2 TWR VIS 1/2 T00330033",
+  "tokens": [
+    {
+      "text": "SPECI",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KGEG",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310728Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "20003KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "1/4SM",
+      "start": 27,
+      "end": 32,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "R21/2000V2800FT",
+      "start": 33,
+      "end": 48,
+      "kind": "RVR"
+    },
+    {
+      "text": "FG",
+      "start": 49,
+      "end": 51,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "VV002",
+      "start": 52,
+      "end": 57,
+      "kind": "SKY"
+    },
+    {
+      "text": "03/03",
+      "start": 58,
+      "end": 63,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2997",
+      "start": 64,
+      "end": 69,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 70,
+      "end": 73,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 74,
+      "end": 77,
+      "kind": "REMARK"
+    },
+    {
+      "text": "TWR",
+      "start": 78,
+      "end": 81,
+      "kind": "REMARK"
+    },
+    {
+      "text": "VIS",
+      "start": 82,
+      "end": 85,
+      "kind": "REMARK"
+    },
+    {
+      "text": "1/2",
+      "start": 86,
+      "end": 89,
+      "kind": "REMARK"
+    },
+    {
+      "text": "T00330033",
+      "start": 90,
+      "end": 99,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "SPECI",
+  "station": "KGEG",
+  "observed": "2026-10-31T07:28:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 200,
+    "speed": {
+      "value": 3,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 0.25,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [
+    {
+      "runway": "21",
+      "distance": {
+        "value": 2000,
+        "unit": "FT"
+      },
+      "prefix": null,
+      "variable_to": {
+        "value": 2800,
+        "unit": "FT"
+      },
+      "variable_to_prefix": null,
+      "trend": null
+    }
+  ],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "FG"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "VV",
+      "base": {
+        "value": 200,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 3,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 3,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.97,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 10,
+  "remarks_raw": "AO2 TWR VIS 1/2 T00330033",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 200,
+    "unit": "FT"
+  },
+  "flight_category": "LIFR",
+  "flags": [
+    "LOW_CEILING",
+    "LOW_VISIBILITY",
+    "SPECIAL_REPORT"
+  ],
+  "condition": "OBSCURATION",
+  "relative_humidity": 100.0,
+  "warnings": []
+}

@@ -167,7 +167,7 @@ Tick a row when the session has landed on `main` (S0 committed directly; later s
 | Session | Scope | Done |
 |---|---|---|
 | S0 | Scaffold: package, CI, project docs | [x] 2026-10-31 |
-| S1 | Decoder core | [ ] |
+| S1 | Decoder core | [x] 2026-10-31 |
 | S2 | Decoder depth | [ ] |
 | S3 | Data layer | [ ] |
 | S4 | TUI MVP | [ ] |
@@ -243,3 +243,77 @@ script (not in the repo). None blocks the design.
 - Dev extras resolved on 2026-10-31 to textual 8.2.8, httpx 0.28, mypy 2.4.1, ruff 0.17.3, vulture 2.16,
   pytest 8.4.2, pytest-asyncio 1.4.1, pytest-xdist 3.8.0, pytest-textual-snapshot 1.1.0 (syrupy 4.8.0),
   hypothesis 6.170.14, respx 0.23.1, timezonefinder 9.2.0 and pyinstaller 6.22.3.
+
+### S1 (2026-10-31)
+
+**For S2: how the tail is tagged.** `decode/groups/tail.py` only recognises the groups between the pressure and `RMK`;
+it tags tokens and decodes nothing, so highlighting works and no "unknown token" warning is raised. `NOSIG` is one
+`TREND` token. `BECMG`/`TEMPO` plus every token after it up to the next trend keyword or `RMK` are all `TREND` (a
+colour-state code inside the body is `COLOR_STATE`). `RERA`-style groups are `RECENT_WEATHER`, `WS ALL RWY`/`WS R24L`
+are `WIND_SHEAR`, `W15/S3` is `SEA_STATE`, `BLU`/`YLO2`/`BLACK` are `COLOR_STATE`, and `88290192`, `R24L/290255`,
+`R06R/CLRD62`, `R/SNOCLO` are `RUNWAY_STATE` (only when the detected flavor is not US). `RMK` and everything after it
+is `REMARK`. On `Metar`: `tail_index` (index into `tokens` of the first tail token, `None` if no tail),
+`remarks_index` (the `RMK` token), `remarks_raw` (verbatim text after `RMK`, `""` for a bare `RMK`, `None` without
+one), and the properties `tail_tokens` and `remarks_tokens` (terminator excluded). S2 decodes from those token
+slices and refines the kinds where it needs to; the extra model objects (`Trend`, `ColorStateGroup`, `RunwayState`,
+remark variants ...) are S2's to add, and adding fields to `Metar` changes every golden (rerun `--update-goldens`
+and review the diff).
+
+**Final model names S2 builds on.** `decode/model.py`: `Metar(raw, tokens, report_type, station, observed, modifiers,
+wind, wind_variation, visibility, rvr, weather, sky, temperature, dewpoint, altimeters, tail_index, remarks_index,
+remarks_raw, flavor, military, ceiling, flight_category, flags, condition, relative_humidity, warnings)` with
+`altimeter`, `cavok`, `tail_tokens`, `remarks_tokens` as properties; `Wind(direction, speed, gust, variable,
+speed_above)`; `WindVariation(start, end)`; `Visibility(distance, prefix, cavok, unlimited, ndv, directional,
+not_reported)`; `DirectionalVisibility(distance, direction)`; `RVR(runway, distance, prefix, variable_to,
+variable_to_prefix, trend)`; `WeatherGroup(intensity, descriptor, phenomena, vicinity, nsw, not_observed)`;
+`CloudLayer(cover, base, cloud_type)` with `cover` a `SkyCondition` (FEW, SCT, BKN, OVC, VV, SKC, CLR, NSC, NCD,
+UNKNOWN for `///`); `ParseWarning(code, start, end, text)`; quantities in `decode/units.py` (`Speed`, `Distance`,
+`Pressure`, `Temperature` and `UnitsMode`). Enums: `SemanticKind`, `ReportType`, `Modifier`, `Flavor`,
+`FlightCategory`, `Flag` (including `WIND_SHEAR`, derived in S2), `Condition`, `VisPrefix`, `Intensity`, `Descriptor`,
+`Phenomenon`, `CloudType`, `RvrTrend`. Group parsers are `parse_*(cursor)` functions returning a value and tagging the
+tokens they take, or `None` without consuming; to add a section, add a parser and a `_Step` in `decode/metar.py`.
+Keep regexes free of nested or overlapping repeats (see `_RECENT` in `tail.py`); the fuzz test has a timing check.
+
+**How to add a fixture** is in `docs/decoding.md`. S1 saved three AWC batches (647 distinct reports, 2026-10-31)
+under `tests/fixtures/awc/` and 65 report/golden pairs (20 hand-written) under
+`tests/fixtures/reports/{us,uk,france,world}`; the `world/` folder holds one hand-written UUEE case (MPS winds, runway
+state) that S2's regional fixtures can sit beside. Every golden was read against its raw report. The fltCat parity test
+passes on all 647 saved reports with an empty exceptions list. Keys: edit `locales/en.toml`, run
+`python scripts/gen_keys.py` (added in S1 although the plan did not list it).
+
+**Deviations and routine choices.**
+
+- CHANGELOG policy: the Delivery section says each PR adds entries under the upcoming `0.1.0` heading, but Common
+  Changelog has no Unreleased section. Sessions S1 to S7 leave `CHANGELOG.md` untouched and S8 writes the single
+  `0.1.0` entry from the merged PRs; `CLAUDE.md` says so.
+- The tokenizer splits a trailing `=` off as its own `TERMINATOR` token (plan: plain `\S+` split) so `A3001=` still
+  matches the pressure group. `remarks_raw` leaves the terminator out.
+- `UnitsMode` (`us`, `metric`, `mixed`) lives in `decode/units.py` and is a rendering choice only. `us`/`metric` force
+  that system and keep the reported value in parentheses when it differs; `mixed` (CLI default) shows the reported
+  value first and the other system in parentheses. The plan did not define the modes beyond their names.
+- `render/measure.py` (unit formatting; unit symbols are not translated) was added; the plan's render layout did not
+  list it. `phrases.py` stays the only place that composes words.
+- Times print as UTC ("2026-10-13 14:53 UTC"); station-local time needs the station DB from S3. `Condition` parses to
+  `CLEAR`; `derived.refine_clear(condition, local_hour)` turns it into `CLEAR_DAY`/`CLEAR_NIGHT` (06 to 20 local) once
+  the hour is known.
+- `wxbrief decode` reads one report per non-blank stdin line; with several arguments that contain no whitespace they
+  are joined into one report, otherwise each argument is a report. `--date` means noon UTC of that date. No input is
+  exit code 2 with a message; any text, however broken, is exit 0 with a warning list. Output is plain when stdout is
+  not a terminal or `--plain` is given; stdout errors are set to `replace` so a legacy console never raises.
+- `ci.yml` gained the `decode --plain` smoke step that the plan attributes to S0 (the command did not exist then).
+- A four-character word is accepted as the station only when a day/time group follows, when it follows `METAR`/
+  `SPECI`, or when it is the only token (garbage like `THIS IS NOT A REPORT` otherwise yields a station `THIS`).
+- Minimum visibility: besides `1200NW` and `NDV`, a bare four-digit group lower than the prevailing metres visibility
+  (`0350 0300`, as French automatic stations send) is stored in `Visibility.directional` with `direction=None`.
+  `0000` is stored as 50 m with prefix `LESS_THAN`; `9999` as 10 km with `unlimited`.
+- Flags: `LOW_CEILING` is a ceiling below 1,000 ft and `LOW_VISIBILITY` a visibility below 3 SM (the IFR thresholds);
+  `FREEZING_PRECIP` needs `FZ` with `RA`, `DZ` or `UP` (freezing fog is not precipitation); `THUNDERSTORM` includes
+  `VCTS`. `WIND_SHEAR` exists in the enum but is derived in S2.
+- Condition: the metar-taf-decode notes say `VCTS` counts as a thunderstorm yet other vicinity weather must not
+  override the sky; both are implemented. `VV` counts as overcast; `IC` (ice crystals) counts as snow.
+- Flight category: a ceiling layer of unknown height (`VV///`, `BKN///`) is ignored, and a report with neither
+  visibility nor sky has no category. Distances of the same unit convert exactly (no `/ 0.3048 * 0.3048` drift).
+- `TAF` input is not decoded in S1: the report gets one `unsupported_report` warning and all tokens stay `UNKNOWN`.
+- `Metar.relative_humidity` is rounded to one decimal so goldens do not depend on the platform's `exp`.
+- Rich output uses a built-in default theme with dotted style names (`wx.wind`, `fcat.ifr`); mapping the colourways
+  onto those names is S5.

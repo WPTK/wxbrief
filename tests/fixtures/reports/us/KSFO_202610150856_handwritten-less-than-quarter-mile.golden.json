@@ -1,0 +1,182 @@
+{
+  "raw": "METAR KSFO 150856Z 00000KT M1/4SM R28R/1600FT FG VV001 11/11 A3002 RMK AO2 SLP165 T01110111",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KSFO",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "150856Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "00000KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "M1/4SM",
+      "start": 27,
+      "end": 33,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "R28R/1600FT",
+      "start": 34,
+      "end": 45,
+      "kind": "RVR"
+    },
+    {
+      "text": "FG",
+      "start": 46,
+      "end": 48,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "VV001",
+      "start": 49,
+      "end": 54,
+      "kind": "SKY"
+    },
+    {
+      "text": "11/11",
+      "start": 55,
+      "end": 60,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3002",
+      "start": 61,
+      "end": 66,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 67,
+      "end": 70,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 71,
+      "end": 74,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP165",
+      "start": 75,
+      "end": 81,
+      "kind": "REMARK"
+    },
+    {
+      "text": "T01110111",
+      "start": 82,
+      "end": 91,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KSFO",
+  "observed": "2026-10-15T08:56:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 0,
+    "speed": {
+      "value": 0,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 0.25,
+      "unit": "SM"
+    },
+    "prefix": "LESS_THAN",
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [
+    {
+      "runway": "28R",
+      "distance": {
+        "value": 1600,
+        "unit": "FT"
+      },
+      "prefix": null,
+      "variable_to": null,
+      "variable_to_prefix": null,
+      "trend": null
+    }
+  ],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "FG"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "VV",
+      "base": {
+        "value": 100,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 11,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 11,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.02,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 10,
+  "remarks_raw": "AO2 SLP165 T01110111",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 100,
+    "unit": "FT"
+  },
+  "flight_category": "LIFR",
+  "flags": [
+    "LOW_CEILING",
+    "LOW_VISIBILITY"
+  ],
+  "condition": "OBSCURATION",
+  "relative_humidity": 100.0,
+  "warnings": []
+}

@@ -1,0 +1,231 @@
+{
+  "raw": "METAR PGUM 310554Z VRB05KT 8SM -RA SCT018 BKN028 OVC035 28/24 A2992 RMK AO2 RAB54 SLP125 P0000 60000 T02830244 10306 20283 55001 $",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "PGUM",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310554Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "VRB05KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "8SM",
+      "start": 27,
+      "end": 30,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-RA",
+      "start": 31,
+      "end": 34,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT018",
+      "start": 35,
+      "end": 41,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN028",
+      "start": 42,
+      "end": 48,
+      "kind": "SKY"
+    },
+    {
+      "text": "OVC035",
+      "start": 49,
+      "end": 55,
+      "kind": "SKY"
+    },
+    {
+      "text": "28/24",
+      "start": 56,
+      "end": 61,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2992",
+      "start": 62,
+      "end": 67,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 68,
+      "end": 71,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 72,
+      "end": 75,
+      "kind": "REMARK"
+    },
+    {
+      "text": "RAB54",
+      "start": 76,
+      "end": 81,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP125",
+      "start": 82,
+      "end": 88,
+      "kind": "REMARK"
+    },
+    {
+      "text": "P0000",
+      "start": 89,
+      "end": 94,
+      "kind": "REMARK"
+    },
+    {
+      "text": "60000",
+      "start": 95,
+      "end": 100,
+      "kind": "REMARK"
+    },
+    {
+      "text": "T02830244",
+      "start": 101,
+      "end": 110,
+      "kind": "REMARK"
+    },
+    {
+      "text": "10306",
+      "start": 111,
+      "end": 116,
+      "kind": "REMARK"
+    },
+    {
+      "text": "20283",
+      "start": 117,
+      "end": 122,
+      "kind": "REMARK"
+    },
+    {
+      "text": "55001",
+      "start": 123,
+      "end": 128,
+      "kind": "REMARK"
+    },
+    {
+      "text": "$",
+      "start": 129,
+      "end": 130,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "PGUM",
+  "observed": "2026-10-31T05:54:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": null,
+    "speed": {
+      "value": 5,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": true,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 8.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "LIGHT",
+      "descriptor": null,
+      "phenomena": [
+        "RA"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 1800,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 2800,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    },
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 3500,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 28,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 24,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.92,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 11,
+  "remarks_raw": "AO2 RAB54 SLP125 P0000 60000 T02830244 10306 20283 55001 $",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 2800,
+    "unit": "FT"
+  },
+  "flight_category": "MVFR",
+  "flags": [],
+  "condition": "RAIN",
+  "relative_humidity": 78.9,
+  "warnings": []
+}

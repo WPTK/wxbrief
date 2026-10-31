@@ -1,0 +1,156 @@
+{
+  "raw": "METAR LFLL 310730Z 34004KT 300V010 4500 OVC003 07/06 Q1025 TEMPO 0500 FG VV///",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "LFLL",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310730Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "34004KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "300V010",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND_VARIATION"
+    },
+    {
+      "text": "4500",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "OVC003",
+      "start": 40,
+      "end": 46,
+      "kind": "SKY"
+    },
+    {
+      "text": "07/06",
+      "start": 47,
+      "end": 52,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1025",
+      "start": 53,
+      "end": 58,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "TEMPO",
+      "start": 59,
+      "end": 64,
+      "kind": "TREND"
+    },
+    {
+      "text": "0500",
+      "start": 65,
+      "end": 69,
+      "kind": "TREND"
+    },
+    {
+      "text": "FG",
+      "start": 70,
+      "end": 72,
+      "kind": "TREND"
+    },
+    {
+      "text": "VV///",
+      "start": 73,
+      "end": 78,
+      "kind": "TREND"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "LFLL",
+  "observed": "2026-10-31T07:30:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 340,
+    "speed": {
+      "value": 4,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": {
+    "start": 300,
+    "end": 10
+  },
+  "visibility": {
+    "distance": {
+      "value": 4500,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 300,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 7,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 6,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1025,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 9,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": {
+    "value": 300,
+    "unit": "FT"
+  },
+  "flight_category": "LIFR",
+  "flags": [
+    "LOW_CEILING",
+    "LOW_VISIBILITY"
+  ],
+  "condition": "OVERCAST",
+  "relative_humidity": 93.4,
+  "warnings": []
+}
