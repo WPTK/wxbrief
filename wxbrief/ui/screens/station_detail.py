@@ -5,21 +5,22 @@ from __future__ import annotations
 from datetime import datetime
 
 from textual.app import ComposeResult
-from textual.binding import Binding
 from textual.screen import Screen
 from textual.widgets import Footer
 
+from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
+from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.widgets.detail import DetailPane
 
 
 class StationDetailScreen(Screen[None]):
     BINDINGS = [
-        Binding("escape", "close", "Back"),
-        Binding("1", "jump('raw')", "Raw", show=False),
-        Binding("2", "jump('decoded')", "Decoded", show=False),
-        Binding("3", "jump('taf')", "TAF", show=False),
+        bind("escape", "close", K.UI_BINDING_BACK),
+        bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW, show=False),
+        bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED, show=False),
+        bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF, show=False),
     ]
 
     def __init__(self, entry: StationReports, ctx: ViewContext, now: datetime, position: str = "") -> None:
@@ -34,6 +35,7 @@ class StationDetailScreen(Screen[None]):
         yield Footer()
 
     def on_mount(self) -> None:
+        localize(self)
         self.redraw()
         self.query_one(DetailPane).focus()
 

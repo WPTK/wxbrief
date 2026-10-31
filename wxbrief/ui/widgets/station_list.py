@@ -10,6 +10,7 @@ from textual.widgets.option_list import Option
 
 from wxbrief.data.poll import Freshness
 from wxbrief.decode.model import Metar, SemanticKind
+from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
 from wxbrief.ui.context import ViewContext
 
@@ -51,7 +52,7 @@ class StationList(OptionList):
             if conditions:
                 line.append(" " + conditions)
             elif entry.metar is None:
-                line.append(" no report", style=palette.muted)
+                line.append(" " + ctx.translator.t(K.UI_LIST_NO_REPORT), style=palette.muted)
             options.append(Option(line, id=entry.icao))
         self.clear_options()
         self.add_options(options)

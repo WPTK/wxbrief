@@ -175,7 +175,7 @@ Tick a row when the session has landed on `main` (S0 committed directly; later s
 | S4 | TUI MVP | [x] 2026-10-31 |
 | S5 | Colorways | [x] 2026-10-31 |
 | S6 | TAF timeline | [x] 2026-10-31 |
-| S7 | i18n | [ ] |
+| S7 | i18n | [x] 2026-10-31 |
 | S8 | Polish | [ ] |
 | S9 | Release | [ ] |
 
@@ -769,3 +769,39 @@ toast, the Help lines for `v` and `Left/Right`. The tick labels are hours only; 
 Also hard-coded and to move in S7: the `v` footer label `List/grid` and `Back`, the `TafTimeline` and `StationGrid` binding descriptions,
 the category letters `V M I L` in `LETTERS`, the `UTC` fallback, the `--demo` help text, the `--` placeholder badge, and the
 `layout_mode.capitalize()` toast.
+
+### S7 (2026-10-31)
+
+What landed: the es, fr, de and pt catalogs (same keys as `en.toml`, about 730 each), `--lang` for the TUI, `decode` and `get`,
+an editable Settings screen, locale-aware numbers (`i18n/numbers.py`) and plurals, every S6 hand-off string moved into the
+catalogs, `docs/i18n.md`, and the tests `tests/test_i18n_locales.py` (completeness, numbers, plurals, `--lang`, English leakage on
+an RMK-heavy METAR in each language) and `tests/test_app_i18n.py` (live switching, saving, toasts, `--demo` in Spanish).
+
+Deviations from the design:
+
+- **Catalog status.** The four catalogs are `status = "seeded"` (first-pass translations nobody native has read). The design's
+  "machine-seeded" note in Settings is not drawn; the status is in `[meta]` and `docs/i18n.md` says so.
+- **Settings is partly editable.** Language, units, time and glyph set are rows that Enter cycles, applied at once and saved.
+  Theme (`t`/`T`), layout (`v`), poll intervals and the file paths stay read-only lines. The design's "refresh" row is not a row:
+  the intervals are `config.toml` values.
+- **`decode` and `get` do not read the config.** They default to `en` and take `--lang`; only the TUI uses `[view] lang`. A
+  setting made in the interface therefore never changes script output.
+- **`--lang` after the subcommand.** `decode` and `get` also accept it (default `SUPPRESS`, so a top-level `--lang` is not
+  overwritten with `None`).
+- **`--help` is translated** for the TUI flags, in the language named by `--lang` on the command line (English otherwise, the config is not read for `--help`), which reverses the design's "CLI
+  `--help` English-only at v1". The `decode` and `get` subparser help, argparse's own headings and config/AWC error text stay
+  English.
+- **New `[meta]` keys.** `keep_case` (German capitalises nouns, so `lower_first` lowers only the first words listed in `lowercase_starts`; `[meta]` falls back along the `pt-BR` -> `pt` -> `en` chain; intensity is worded "von leichter Intensität" / "d'intensité faible" / "de intensidade fraca" to avoid gender agreement) and `min_grouping` (Spanish
+  groups thousands from five digits). `Translator.lower_first` replaces `phrases.lower_first`.
+- **New plural rule `one_below_two`** for French and Portuguese, and `RULE_CATEGORIES` so the completeness test knows which
+  forms a rule can return.
+- **Bindings are relabelled at runtime.** `ui/bindings.py: bind()` gives each binding the catalog key as its `id` and the English
+  text as default; `relabel_tree` rewrites descriptions when the language changes. English is not duplicated in `BINDINGS`.
+- **`_save` also persists `lang`, `units`, `time` and `glyph_set`** chosen in Settings (and `theme`, as before), and only
+  those: a value that came from a flag is never written.
+- **`ui.option.*` keys** (not `ui.settings.units.*`) hold the names of units, time, glyph and layout values; a table named like
+  its parent key collides in TOML.
+
+**For S8.** Anything that adds user-visible text adds a key to `en.toml` first, then to all four catalogs (the completeness test
+fails otherwise) and regenerates `keys.py`. A new widget with key bindings uses `bind()` and calls `localize(self)` in `on_mount`.
+Native-speaker review of the four catalogs is open and would flip their `status` to `complete`.

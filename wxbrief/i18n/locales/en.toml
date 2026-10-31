@@ -9,6 +9,7 @@ plural_rule = "one_other"
 decimal = "."
 group = ","
 clock = "24h"
+min_grouping = 4
 
 [label]
 report = "Report"
@@ -57,6 +58,8 @@ and_list = "{head}, and {last}"
 [time]
 utc = "{value} UTC"
 unresolved = "Not available"
+zone_utc = "UTC"
+none = "--"
 
 [report]
 METAR = "Routine observation (METAR)"
@@ -716,3 +719,214 @@ PROB = "PROB{probability} {when}"
 PROB_TEMPO = "PROB{probability} TEMPO {when}"
 INTER = "INTER {when}"
 PROB_INTER = "PROB{probability} INTER {when}"
+
+[cli]
+description = "Terminal METAR/TAF briefing with colorways and plain-language translation. Give station ids to watch them for this run; saved stations load from the config."
+epilog = "commands: decode (decode text without the TUI), get (fetch once and print). Run 'wxbrief decode --help' or 'wxbrief get --help'."
+no_metar = "{icao}: no METAR in the last 2 hours"
+
+[cli.help]
+stations = "station ids to add for this run"
+theme = "colourway for this run, such as paper-chart (not saved; default: from config, textual-dark)"
+glyphs = "glyph set (default: from config, nerd)"
+layout = "list or grid layout (v toggles it)"
+units = "units mode"
+time = "time shown: station, local or zulu"
+lang = "language of the plain-language text: {languages} (default: from config, en; decode and get: en)"
+config = "read and save this config file"
+no_config = "ignore the config file and never write it"
+demo = "open with the bundled sample reports of ten stations: fully offline, nothing is fetched, cached or saved"
+
+[ui.binding]
+add_station = "Add"
+remove_station = "Remove"
+paste = "Paste"
+refresh_now = "Refresh"
+toggle_layout = "List/grid"
+copy_metar = "Copy METAR"
+copy_both = "Copy METAR+TAF"
+copy_raw = "Copy raw"
+settings = "Settings"
+next_station = "Next"
+previous_station = "Previous"
+jump_raw = "Raw"
+jump_decoded = "Decoded"
+jump_taf = "TAF"
+help = "Help"
+quit = "Quit"
+cycle_theme = "Theme"
+theme_picker = "Themes"
+close = "Close"
+back = "Back"
+cancel = "Cancel"
+focus_results = "Results"
+copy_discord = "Copy Discord"
+copy_discord_key = "Copy Discord (c)"
+earlier = "Earlier"
+later = "Later"
+first = "First"
+last = "Last"
+left = "Left"
+right = "Right"
+up = "Up"
+down = "Down"
+open = "Open"
+
+[ui.section]
+raw = "Raw"
+decoded = "Decoded"
+remarks = "Remarks ({n})"
+forecast = "Forecast (TAF)"
+groups = "All forecast groups ({n})"
+
+[ui.detail]
+no_stations = "No stations yet. Press [b]a[/b] to add one."
+no_report = "No report yet"
+no_metar = "No METAR in the last 2 hours"
+observed_ago = "Observed {time}, {age} ago"
+cached_ago = "(cached {age} ago)"
+
+[ui.age]
+minutes = "{minutes} min"
+hours = "{hours} h {minutes:02d} min"
+days = "{days} d {hours} h"
+
+[ui.state]
+fresh = "fresh"
+stale = "stale"
+
+[ui.status]
+offline = "offline"
+cached = "(cached)"
+no_data = "no data"
+away = "away"
+next_poll = "next poll {time}"
+requests = "req {used}/{limit}"
+polling_off = "polling off"
+
+[ui.list]
+no_report = "no report"
+
+[ui.layout]
+list = "List layout"
+grid = "Grid layout"
+
+[ui.toast]
+demo = "Demo: fixed sample reports, no network"
+unknown_theme = "Unknown theme {theme}; using textual-dark"
+theme_title = "Theme"
+stations_title = "Stations"
+config_title = "Config"
+fetch_failed = "Could not fetch {product}: {error}"
+polling_off = "Polling is off"
+refreshing = "Refreshing"
+unknown_station = "Unknown station {code}"
+already_listed = "{code} is already in the list"
+already_listed_saved = "{code} is already in the list (now saved)"
+watchlist_full = "The watchlist is full ({limit} stations)"
+removed = "Removed {code}"
+config_unreadable = "{path} could not be read, so it was left alone. Changes last for this run only."
+backup_failed = "Could not back up the config; not saving it"
+backed_up = "The config had problems; the original is kept as {path}"
+save_failed = "Could not save {path}"
+no_metar_to_copy = "No METAR to copy"
+nothing_to_copy = "Nothing to copy"
+nothing_decoded = "Nothing decoded yet"
+type_a_station = "Type a station code or part of a name"
+
+[ui.clipboard]
+title = "Clipboard"
+copied = "Copied {what}"
+copied_terminal = "Copied {what} (terminal clipboard)"
+failed = "Could not copy {what}: {error}"
+metar = "{icao} METAR"
+both = "{icao} METAR and TAF"
+raw = "{icao} raw report"
+discord = "Discord block"
+
+[ui.add]
+title = "Add station: ICAO or IATA code, or part of the name"
+placeholder = "KDEN, DEN, heathrow ..."
+hint = "Enter adds the first match   Down picks another   Esc cancels"
+listed = "(listed)"
+
+[ui.paste]
+reference = "Reference date (YYYY-MM-DD):"
+prompt = "Paste a METAR or TAF above. Several reports at once are fine."
+bad_date = "Reference date not understood; using now."
+
+[ui.themes]
+title = "Theme"
+hint = "Up/Down previews, Enter keeps, Esc cancels"
+
+[ui.help]
+title = "wxbrief keys"
+hint = "Esc closes"
+body = """\
+[b]Stations[/b]
+  Up/Down  j/k       select a station
+  \\[ and ]            previous / next station
+  Enter              move into the detail pane
+  a                  add a station (code or name)
+  d                  remove the selected station
+  r                  refresh now
+  v                  toggle the list / grid layout
+[b]Detail[/b]
+  1  2  3            jump to raw, decoded, forecast
+  Left/Right         move the forecast timeline cursor (the mouse works too)
+  c                  copy the Discord METAR block
+  C                  copy Discord METAR and TAF
+  y                  copy the raw report text
+[b]Tools[/b]
+  t                  next theme (saved to the config)
+  T                  pick a theme, with a live preview
+  p                  paste and decode any METAR or TAF (offline)
+  S                  settings: language, units, time, glyphs
+  ?                  this help
+  q                  quit
+[b]Paste screen[/b]
+  c (outside the box) or F2   copy the Discord block
+  Esc                         back
+"""
+
+[ui.settings]
+title = "Settings"
+hint = "Up/Down moves, Enter changes the value, Esc closes. Poll times and paths are set in config.toml."
+theme = "Theme"
+glyphs = "Glyphs"
+layout = "Layout"
+units = "Units"
+time = "Time"
+language = "Language"
+poll = "Poll (s)"
+poll_value = "METAR {metar}, TAF {taf}, away {away}"
+config_file = "Config file"
+cache_folder = "Cache folder"
+off = "off"
+off_no_config = "off (--no-config)"
+
+[ui.option.units]
+us = "US (kt, SM, inHg)"
+metric = "Metric (m/s or km/h, km, hPa)"
+mixed = "As reported, other system in brackets"
+
+[ui.option.time]
+station = "Station local time"
+local = "This computer's time"
+zulu = "UTC (Zulu)"
+
+[ui.option.glyphs]
+ascii = "ASCII"
+unicode = "Unicode"
+emoji = "Emoji"
+nerd = "Nerd Font"
+
+[ui.option.layout]
+list = "List"
+grid = "Grid"
+
+[timeline.letter]
+VFR = "V"
+MVFR = "M"
+IFR = "I"
+LIFR = "L"

@@ -12,13 +12,14 @@ from datetime import datetime
 
 from rich.style import Style
 from rich.text import Text
-from textual.binding import Binding
 from textual.events import Click, MouseMove, Resize
 from textual.message import Message
 from textual.widget import Widget
 
 from wxbrief.decode.model import FlightCategory, Taf, Timeline, TimelineHour
+from wxbrief.i18n import Translator
 from wxbrief.i18n.keys import K
+from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.fcat import category_colors
 from wxbrief.ui.strip import StripCell, group_cells, hour_step, strip_for
@@ -26,7 +27,17 @@ from wxbrief.ui.strip import StripCell, group_cells, hour_step, strip_for
 HATCH = "▒"
 OVERLAY_MARK = "▀"
 CURSOR_MARK = "▲"
-LETTERS = {FlightCategory.VFR: "V", FlightCategory.MVFR: "M", FlightCategory.IFR: "I", FlightCategory.LIFR: "L"}
+LETTER_KEYS = {
+    FlightCategory.VFR: K.TIMELINE_LETTER_VFR,
+    FlightCategory.MVFR: K.TIMELINE_LETTER_MVFR,
+    FlightCategory.IFR: K.TIMELINE_LETTER_IFR,
+    FlightCategory.LIFR: K.TIMELINE_LETTER_LIFR,
+}
+
+
+def category_letter(t: Translator, category: FlightCategory | None) -> str:
+    """The one-letter mark of a flight category in a strip cell, ``?`` when there is none."""
+    return t.t(LETTER_KEYS[category]) if category is not None else "?"
 
 
 def cell_width(step: int) -> int:
@@ -38,10 +49,10 @@ class TafTimeline(Widget, can_focus=True):
     """Hourly flight-category cells for one TAF."""
 
     BINDINGS = [
-        Binding("left", "move(-1)", "Earlier", show=False),
-        Binding("right", "move(1)", "Later", show=False),
-        Binding("home", "to_start", "First", show=False),
-        Binding("end", "to_end", "Last", show=False),
+        bind("left", "move(-1)", K.UI_BINDING_EARLIER, show=False),
+        bind("right", "move(1)", K.UI_BINDING_LATER, show=False),
+        bind("home", "to_start", K.UI_BINDING_FIRST, show=False),
+        bind("end", "to_end", K.UI_BINDING_LAST, show=False),
     ]
 
     class Moved(Message):
@@ -57,6 +68,9 @@ class TafTimeline(Widget, can_focus=True):
             self.taf = taf
             self.data = data
             self.icao = icao
+
+    def on_mount(self) -> None:
+        localize(self)
 
     def __init__(self, **kwargs: object) -> None:
         super().__init__(**kwargs)  # type: ignore[arg-type]
@@ -176,7 +190,7 @@ class TafTimeline(Widget, can_focus=True):
         for index, cell in enumerate(self.cells):
             local = ctx.localize(cell.start, self._icao)
             if not zone:
-                zone = "UTC" if ctx.is_zulu(self._icao) else (local.tzname() or "")
+                zone = ctx.translator.t(K.TIME_ZONE_UTC) if ctx.is_zulu(self._icao) else (local.tzname() or "")
             position = index * width
             hour = f"{local:%H}"
             if (self.step > 1 or local.hour % 3 == 0) and position >= label_end:
@@ -188,9 +202,9 @@ class TafTimeline(Widget, can_focus=True):
                 foreground = colors.fill_of(worst) if worst is not None and worst != cell.category else None
                 body.append(HATCH * width, style=colors.style(cell.category, foreground))
             else:
-                letter = LETTERS.get(cell.category) if cell.category is not None else "?"
+                letter = category_letter(ctx.translator, cell.category)
                 mark = letter if cell.category != previous or index == 0 else " "
-                body.append((mark or " ").ljust(width), style=colors.style(cell.category))
+                body.append(mark.ljust(width), style=colors.style(cell.category))
             previous = cell.category
             if cell.overlay:
                 overlay.append(OVERLAY_MARK * width, style=Style(color=colors.fill_of(cell.overlay_category)))

@@ -1,0 +1,938 @@
+# Deutscher Katalog. Schlüssel und {name}-Platzhalter stammen aus en.toml; Einheitensymbole, ICAO-Codes,
+# Pistenbezeichnungen und Originalgruppen werden nicht übersetzt.
+
+[meta]
+language = "Deutsch"
+status = "seeded"
+plural_rule = "one_other"
+decimal = ","
+group = "."
+clock = "24h"
+keep_case = true
+# first words that are not nouns, so they lose their capital in the middle of a sentence ("Wind aus 240°")
+lowercase_starts = [
+    "Ab", "Alle", "Alte", "Auf", "Aufgehobene", "Aufgelockerte", "Aus", "Automatische", "Bedeckt", "Berichtigte",
+    "Böiger", "Das", "Dauerhafte", "Der", "Die", "Diese", "Einige", "Es", "Gefrierender", "Geringe", "Geänderte",
+    "In", "Kein", "Keine", "Konnte", "Nicht", "Niedrige", "Verspätete", "Veränderliche", "Vorübergehend",
+    "Vorübergehende", "Wenige", "Windstill", "Wolkenfrei", "Wolkenlos", "Zeitweise", "Überwiegend",
+]
+
+[label]
+report = "Meldung"
+station = "Station"
+observed = "Beobachtet"
+category = "Flugwetterkategorie"
+wind = "Wind"
+visibility = "Sicht"
+rvr = "Pistensichtweite"
+weather = "Aktuelles Wetter"
+sky = "Himmel"
+ceiling = "Wolkenuntergrenze"
+temperature = "Temperatur"
+dewpoint = "Taupunkt"
+humidity = "Relative Luftfeuchte"
+altimeter = "Luftdruck"
+remarks = "Bemerkungen (nicht dekodiert)"
+flags = "Hinweise"
+summary = "Zusammenfassung"
+modifiers = "Anmerkungen"
+trend = "Trend"
+color_state = "Farbstatus"
+color_state_computed = "Farbstatus (berechnet)"
+runway_state = "Pistenzustand"
+recent_weather = "Kürzliches Wetter"
+wind_shear = "Windscherung"
+sea_state = "Seegang"
+remark = "Bemerkung"
+issued = "Ausgegeben"
+valid = "Gültig"
+max_temperature = "Höchsttemperatur"
+min_temperature = "Tiefsttemperatur"
+icing = "Vereisung"
+turbulence = "Turbulenz"
+worst_category = "Ungünstigste Flugwetterkategorie"
+details = "Einzelheiten"
+
+[common]
+not_reported = "Nicht gemeldet"
+more_than = "mehr als {value}"
+less_than = "weniger als {value}"
+or_more = "mindestens {value}"
+and_pair = "{first} und {second}"
+and_list = "{head} und {last}"
+
+[time]
+utc = "{value} UTC"
+unresolved = "Nicht verfügbar"
+zone_utc = "UTC"
+none = "--"
+
+[report]
+METAR = "Routinebeobachtung (METAR)"
+SPECI = "Sonderbeobachtung (SPECI)"
+TAF = "Flugplatzvorhersage (TAF)"
+
+[modifier]
+AUTO = "Automatische Beobachtung"
+COR = "Berichtigte Meldung"
+CCA = "Berichtigte Meldung (erste Berichtigung)"
+CCB = "Berichtigte Meldung (zweite Berichtigung)"
+CCC = "Berichtigte Meldung (dritte Berichtigung)"
+RTD = "Verspätete Meldung"
+NIL = "Meldung nicht verfügbar (NIL)"
+AMD = "Geänderte Meldung"
+CNL = "Aufgehobene Meldung"
+
+[compass]
+N = "N"
+NNE = "NNO"
+NE = "NO"
+ENE = "ONO"
+E = "O"
+ESE = "OSO"
+SE = "SO"
+SSE = "SSO"
+S = "S"
+SSW = "SSW"
+SW = "SW"
+WSW = "WSW"
+W = "W"
+WNW = "WNW"
+NW = "NW"
+NNW = "NNW"
+
+[wind]
+calm = "Windstill"
+steady = "Aus {direction}° ({compass}) mit {speed}"
+variable = "Veränderliche Richtung mit {speed}"
+no_direction = "Richtung nicht gemeldet, {speed}"
+not_reported = "Nicht gemeldet"
+gust = "{base}, Böen bis {gust}"
+variation = "{base}; die Richtung schwankt zwischen {from_deg}° und {to_deg}°"
+
+[vis]
+cavok = "CAVOK: Sicht {visibility}, keine Wolken unter {height}, kein bedeutsames Wetter"
+not_reported = "Nicht gemeldet"
+ndv = "ohne Richtungsabhängigkeit"
+with_ndv = "{base}, {ndv}"
+directional = "{value} in Richtung {compass}"
+lowest = "{base}; geringste {minimum}"
+
+[rvr]
+runway = "Piste {runway}: {value}"
+not_reported = "nicht gemeldet"
+range = "schwankend zwischen {low} und {high}"
+with_trend = "{base}, {trend}"
+
+[rvr.trend]
+UP = "zunehmend"
+DOWN = "abnehmend"
+NO_CHANGE = "gleichbleibend"
+
+[wx]
+none = "Kein bedeutsames Wetter"
+not_observed = "Nicht beobachtet"
+tornado = "Tornado oder Wasserhose"
+vicinity = "{body} in der Umgebung"
+with_intensity = "{body} {intensity}"
+
+[wx.intensity]
+LIGHT = "von leichter Intensität"
+HEAVY = "von starker Intensität"
+
+[wx.descriptor]
+MI = "flach"
+PR = "teilweise"
+BC = "Schwaden"
+DR = "niedriges Treiben"
+BL = "hohes Treiben"
+SH = "Schauer"
+TS = "Gewitter"
+FZ = "gefrierend"
+
+[wx.descriptor_with]
+MI = "flacher {phenomena}"
+PR = "teilweise {phenomena}"
+BC = "Schwaden von {phenomena}"
+DR = "niedriges Treiben von {phenomena}"
+BL = "hohes Treiben von {phenomena}"
+SH = "Schauer von {phenomena}"
+TS = "Gewitter mit {phenomena}"
+FZ = "gefrierender {phenomena}"
+
+[wx.phenomenon]
+DZ = "Sprühregen"
+RA = "Regen"
+SN = "Schnee"
+SG = "Schneegriesel"
+IC = "Eiskristalle"
+PL = "Eiskörner"
+GR = "Hagel"
+GS = "Graupel oder kleiner Hagel"
+UP = "unbekannter Niederschlag"
+BR = "feuchter Dunst"
+FG = "Nebel"
+FU = "Rauch"
+VA = "Vulkanasche"
+DU = "verbreiteter Staub"
+SA = "Sand"
+HZ = "trockener Dunst"
+PY = "Gischt"
+PO = "Staub- oder Sandwirbel"
+SQ = "Sturmböen"
+FC = "Trichterwolke"
+SS = "Sandsturm"
+DS = "Staubsturm"
+
+[sky]
+layer = "{cover} in {height}"
+layer_typed = "{cover} in {height}, {type}"
+layer_no_height = "{cover}, Höhe unbestimmt"
+vertical_visibility = "Himmel verdeckt, Vertikalsicht {height}"
+vertical_visibility_unknown = "Himmel verdeckt, Vertikalsicht unbestimmt"
+ceiling = "{height}"
+no_ceiling = "Keine"
+
+[sky.cover]
+FEW = "Wenige Wolken"
+SCT = "Aufgelockerte Bewölkung"
+BKN = "Überwiegend bewölkt"
+OVC = "Bedeckt"
+SKC = "Wolkenlos"
+CLR = "Wolkenfrei unter 12.000 ft"
+NSC = "Keine bedeutsamen Wolken"
+NCD = "Keine Wolken erkannt"
+UNKNOWN = "Bewölkungsgrad unbestimmt"
+
+[sky.type]
+CB = "Cumulonimbus"
+TCU = "Turmcumulus"
+UNKNOWN = "Wolkenart unbestimmt"
+
+[temp]
+humidity = "{percent} %"
+
+[fcat]
+display = "{code} ({name})"
+VFR = "Sichtflugbedingungen"
+MVFR = "marginale Sichtflugbedingungen"
+IFR = "Instrumentenflugbedingungen"
+LIFR = "niedrige Instrumentenflugbedingungen"
+
+[flag]
+CB = "Cumulonimbus"
+TCU = "Turmcumulus"
+LOW_CEILING = "Niedrige Wolkenuntergrenze"
+LOW_VISIBILITY = "Geringe Sicht"
+GUSTS = "Böiger Wind"
+WIND_SHEAR = "Windscherung"
+FREEZING_PRECIP = "Gefrierender Niederschlag"
+THUNDERSTORM = "Gewitter"
+CORRECTED = "Berichtigte Meldung"
+AUTOMATED = "Automatische Beobachtung"
+SPECIAL_REPORT = "Sondermeldung"
+COLOR_BELOW_GRN = "Farbstatus unter Grün"
+RAPID_PRESSURE_CHANGE = "Luftdruck ändert sich schnell"
+RUNWAY_CONTAMINATED = "Piste verunreinigt"
+MAINTENANCE = "Station benötigt Wartung"
+VOLCANIC_ASH = "Vulkanasche"
+MISSING_DATA = "Einige Daten fehlen"
+AMENDED = "Geänderte Vorhersage"
+ICING = "Vereisung"
+TURBULENCE = "Turbulenz"
+
+[summary]
+reporting = "{station} meldet {category}: {details}."
+reporting_no_category = "{station} meldet: {details}."
+no_station = "Diese Meldung zeigt {category}: {details}."
+no_station_no_category = "Diese Meldung zeigt: {details}."
+nothing = "Es konnten keine Bedingungen dekodiert werden."
+ceiling = "Wolkenuntergrenze {height}"
+visibility = "Sicht {value}"
+wind = "Wind {value}"
+cavok = "Wolken und Sicht unbedenklich"
+
+[warn.heading]
+one = "{n} Warnung"
+other = "{n} Warnungen"
+
+[warn]
+unknown_token = "Nicht erkannte Gruppe: {text}"
+invalid_day = "Der Tag des Monats in {text} ist ungültig"
+invalid_time = "Die Uhrzeit in {text} ist ungültig"
+parser_error = "Konnte nicht gelesen werden: {text}"
+legacy_format = "Alte Zeitgruppe, wie geschrieben gelesen: {text}"
+missing_time = "Keine Zeit angegeben für {text}"
+
+[trend]
+nosig = "In den nächsten 2 Stunden werden keine bedeutsamen Änderungen erwartet"
+no_details = "ohne Einzelheiten"
+becmg = "Dauerhafte Änderung: {details}"
+becmg_when = "Dauerhafte Änderung {when}: {details}"
+tempo = "Vorübergehende Schwankung: {details}"
+tempo_when = "Vorübergehende Schwankung {when}: {details}"
+wind = "Wind {value}"
+visibility = "Sicht {value}"
+sky = "Himmel {value}"
+color = "Farbstatus {value}"
+shear = "Windscherung: {value}"
+pressure = "Luftdruck {value}"
+icing = "Vereisung: {value}"
+turbulence = "Turbulenz: {value}"
+
+[trend.time]
+FM = "ab {time}"
+TL = "bis {time}"
+AT = "um {time}"
+
+[color]
+display = "{name} ({code})"
+black_alone = "Flugplatz aus nichtmeteorologischen Gründen geschlossen (BLACK)"
+black_with = "Flugplatz aus nichtmeteorologischen Gründen geschlossen (BLACK); Wetterstatus {state}"
+forecast = "{current}; Vorhersage: {items}"
+forecast_only = "Vorhersage: {items}"
+expected = "{state} erwartet"
+becoming = "wird {state}"
+temporary = "vorübergehend {state}"
+
+[color.name]
+BLU = "Blau"
+WHT = "Weiß"
+GRN = "Grün"
+YLO1 = "Gelb 1"
+YLO2 = "Gelb 2"
+YLO = "Gelb"
+AMB = "Bernstein"
+RED = "Rot"
+
+[rwy]
+runway = "Piste {runway}"
+all = "Alle Pisten"
+repeated = "Pistenzustand aus der vorigen Meldung wiederholt"
+snoclo = "Flugplatz wegen Schnee geschlossen"
+state = "{where}: {details}"
+cleared = "{where}: Verunreinigung hat aufgehört oder wurde beseitigt"
+cleared_braking = "{where}: Verunreinigung hat aufgehört oder wurde beseitigt, {braking}"
+nothing = "keine Einzelheiten gemeldet"
+
+[rwy.deposit]
+CLEAR_DRY = "sauber und trocken"
+DAMP = "feucht"
+WET = "nass oder mit Pfützen"
+FROST = "Frost oder Reif"
+DRY_SNOW = "trockener Schnee"
+WET_SNOW = "nasser Schnee"
+SLUSH = "Schneematsch"
+ICE = "Eis"
+COMPACTED_SNOW = "verdichteter oder festgefahrener Schnee"
+FROZEN_RUTS = "gefrorene Spurrillen oder Kämme"
+
+[rwy.extent]
+NONE = "keine Verunreinigung"
+UP_TO_10 = "10 % oder weniger der Piste bedeckt"
+FROM_11_TO_25 = "11 bis 25 % der Piste bedeckt"
+FROM_26_TO_50 = "26 bis 50 % der Piste bedeckt"
+FROM_51_TO_100 = "51 bis 100 % der Piste bedeckt"
+OTHER = "reservierter Ausdehnungscode"
+
+[rwy.depth]
+MILLIMETERS = "{value} dick"
+LESS_THAN_1 = "weniger als 1 mm dick"
+AT_LEAST = "{value} dick oder mehr"
+NOT_OPERATIONAL = "Piste wegen der Ablagerung nicht nutzbar (Dicke nicht gemeldet)"
+NOT_SIGNIFICANT = "Dicke unbedeutend oder nicht messbar"
+RESERVED = "reservierter Dickencode"
+
+[rwy.braking]
+coefficient = "Bremskoeffizient {value}"
+unreliable = "Bremswirkung nicht zuverlässig"
+
+[rwy.action]
+POOR = "schlechte Bremswirkung"
+MEDIUM_POOR = "mittlere bis schlechte Bremswirkung"
+MEDIUM = "mittlere Bremswirkung"
+MEDIUM_GOOD = "mittlere bis gute Bremswirkung"
+GOOD = "gute Bremswirkung"
+
+[recent]
+phrase = "{weather} seit der letzten Meldung, jetzt beendet"
+
+[shear]
+all = "allen Pisten"
+runway = "Piste {runway}"
+value = "Windscherung auf {where}"
+layer = "In {height} über Grund ist der Wind {wind}"
+
+[sea]
+temperature = "Wassertemperatur {value}"
+state = "Seegang {code} ({name})"
+height = "signifikante Wellenhöhe {value}"
+nothing = "keine Einzelheiten gemeldet"
+
+[sea.name]
+0 = "ruhig, spiegelglatt"
+1 = "ruhig, gekräuselt"
+2 = "leicht bewegt"
+3 = "schwach bewegt"
+4 = "mäßig bewegt"
+5 = "grob"
+6 = "sehr grob"
+7 = "hoch"
+8 = "sehr hoch"
+9 = "außergewöhnlich hoch"
+
+[remark]
+time_minute = "um Minute {minute}"
+time_clock = "um {clock} UTC"
+station_type_ao1 = "Automatische Station ohne Niederschlagsunterscheidung (unterscheidet nicht zwischen Regen und Schnee)"
+station_type_ao2 = "Automatische Station mit Niederschlagsunterscheidung"
+peak_wind = "Spitzenwind aus {direction}° ({compass}) mit {speed}, {time}"
+wind_shift = "Winddrehung begann {time}"
+wind_shift_frontal = "Winddrehung begann {time}, mit Frontdurchgang"
+tower_visibility = "Sicht vom Kontrollturm: {value}"
+surface_visibility = "Bodensicht: {value}"
+variable_visibility = "Sicht schwankt zwischen {low} und {high}"
+sector_visibility = "Sicht {value} {where}"
+at_runway = "an Piste {runway}"
+toward = "in Richtung {compass}"
+lightning = "Blitze"
+lightning_located = "{base}, {location}"
+began = "begann {time}"
+ended = "endete {time}"
+timing = "{weather} {events}"
+variable_ceiling = "Wolkenuntergrenze schwankt zwischen {low} und {high}"
+secondary_ceiling = "Wolkenuntergrenze {value} {where}"
+pressure_rising = "Luftdruck steigt schnell"
+pressure_falling = "Luftdruck fällt schnell"
+sea_level_pressure = "Luftdruck auf Meereshöhe {value}"
+sea_level_pressure_missing = "Luftdruck auf Meereshöhe nicht verfügbar"
+trace = "Spuren"
+hourly_precipitation = "Niederschlag seit der letzten Meldung: {value}"
+period_precipitation_3 = "Niederschlag in den letzten 3 Stunden: {value}"
+period_precipitation_6 = "Niederschlag in den letzten 6 Stunden: {value}"
+period_precipitation_other = "Niederschlag im Zeitraum von 3 oder 6 Stunden: {value}"
+daily_precipitation = "Niederschlag in den letzten 24 Stunden: {value}"
+precipitation_missing = "nicht gemeldet"
+precise_temperature = "Temperatur {temperature}, Taupunkt {dewpoint}"
+precise_temperature_only = "Temperatur {temperature}"
+max_temperature_6h = "Höchsttemperatur der letzten 6 Stunden {value}"
+min_temperature_6h = "Tiefsttemperatur der letzten 6 Stunden {value}"
+daily_temperatures = "Höchsttemperatur der letzten 24 Stunden {maximum}, Tiefsttemperatur {minimum}"
+temperature_missing = "nicht gemeldet"
+tendency_higher = "Luftdruck {change} höher als vor 3 Stunden ({name})"
+tendency_lower = "Luftdruck {change} niedriger als vor 3 Stunden ({name})"
+tendency_same = "Luftdruck wie vor 3 Stunden ({name})"
+maintenance = "Das automatische System benötigt Wartung"
+sensor_located = "{sensor} ({where})"
+snow_depth = "Schneehöhe am Boden: {value}"
+snow_depth_missing = "Schneehöhe am Boden: nicht gemeldet"
+snow_increase = "Die Schneehöhe stieg in der letzten Stunde um {hour}, jetzt {total} am Boden"
+cloud_types = "Wolkenarten: {parts}"
+cloud_types_low = "tief: {name}"
+cloud_types_middle = "mittelhoch: {name}"
+cloud_types_high = "hoch: {name}"
+cloud_type_unknown = "nicht gemeldet"
+hail = "Hagel bis {size}"
+hail_less = "Hagel kleiner als {size}"
+density_altitude = "Dichtehöhe {value}"
+opacity = "Wolkenschichten: {layers}"
+opacity_layer = "{cloud} bedeckt {eighths}/8 des Himmels"
+opacity_trace = "{cloud}, Spuren"
+station_pressure_qfe = "Stationsdruck (QFE): {value}"
+station_pressure_qnh = "Auf Meereshöhe reduzierter Druck (QNH): {value}"
+station_pressure_both = "{mmhg} mmHg ({hpa} hPa)"
+station_pressure_mmhg = "{mmhg} mmHg"
+station_pressure_hpa = "{hpa} hPa"
+runway_wind = "Wind an Piste {runway}: {wind}"
+color_state = "Farbstatus: {group}"
+wind_at_height = "Wind in {height}: {wind}"
+altimeter = "Höhenmessereinstellung {value}"
+free_began = "begann um Minute {minute}"
+free_ended = "endete um Minute {minute}"
+free_began_clock = "begann um {clock} UTC"
+free_ended_clock = "endete um {clock} UTC"
+
+[remark.sensor]
+RVR = "Sensor für Pistensichtweite ausgefallen"
+PRESENT_WEATHER = "Sensor für aktuelles Wetter ausgefallen"
+PRECIPITATION = "Niederschlagsmesser ausgefallen"
+FREEZING_RAIN = "Sensor für gefrierenden Regen ausgefallen"
+THUNDERSTORM = "Blitzsensor ausgefallen"
+VISIBILITY = "Sichtsensor ausgefallen"
+CEILING = "Wolkenhöhensensor ausgefallen"
+
+[remark.frequency]
+OCCASIONAL = "gelegentlich"
+FREQUENT = "häufig"
+CONTINUOUS = "andauernd"
+
+[remark.lightning_type]
+IN_CLOUD = "in der Wolke"
+CLOUD_TO_CLOUD = "zwischen Wolken"
+CLOUD_TO_GROUND = "Wolke-Erde"
+CLOUD_TO_AIR = "Wolke-Luft"
+
+[remark.tendency_name]
+0 = "steigend, dann fallend"
+1 = "steigend, dann gleichbleibend, oder langsamer steigend"
+2 = "stetig oder unregelmäßig steigend"
+3 = "fallend oder gleichbleibend, dann steigend, oder schneller steigend"
+4 = "gleichbleibend"
+5 = "fallend, dann steigend"
+6 = "fallend, dann gleichbleibend, oder langsamer fallend"
+7 = "stetig oder unregelmäßig fallend"
+8 = "gleichbleibend oder steigend, dann fallend, oder schneller fallend"
+
+[remark.cloud_low]
+0 = "keine tiefen Wolken"
+1 = "Cumulus humilis oder fractus"
+2 = "Cumulus mediocris oder congestus"
+3 = "Cumulonimbus calvus"
+4 = "aus Cumulus entstandener Stratocumulus"
+5 = "nicht aus Cumulus entstandener Stratocumulus"
+6 = "Stratus nebulosus oder fractus"
+7 = "Stratus oder Cumulus fractus bei Schlechtwetter"
+8 = "Cumulus und Stratocumulus in verschiedenen Höhen"
+9 = "Cumulonimbus capillatus"
+
+[remark.cloud_middle]
+0 = "keine mittelhohen Wolken"
+1 = "dünner Altostratus"
+2 = "dicker Altostratus oder Nimbostratus"
+3 = "dünner Altocumulus in einer Schicht"
+4 = "linsenförmiger Altocumulus in Feldern"
+5 = "Altocumulus in Bändern, sich verdichtend"
+6 = "aus sich ausbreitendem Cumulus entstandener Altocumulus"
+7 = "Altocumulus mit Altostratus oder Nimbostratus"
+8 = "Altocumulus castellanus oder floccus"
+9 = "Altocumulus eines chaotischen Himmels"
+
+[remark.cloud_high]
+0 = "keine hohen Wolken"
+1 = "Cirrus fibratus"
+2 = "dichter Cirrus"
+3 = "dichter Cirrus aus Cumulonimbus"
+4 = "Cirrus uncinus, sich verdichtend"
+5 = "heranziehender Cirrus und Cirrostratus, unter 45° Höhe"
+6 = "heranziehender Cirrus und Cirrostratus, über 45° Höhe"
+7 = "Cirrostratus, der den ganzen Himmel bedeckt"
+8 = "Cirrostratus, der nicht den ganzen Himmel bedeckt"
+9 = "Cirrocumulus allein oder vorherrschend"
+
+[remark.cloud]
+CU = "Cumulus"
+TCU = "Turmcumulus"
+CB = "Cumulonimbus"
+SC = "Stratocumulus"
+ST = "Stratus"
+SF = "Stratus fractus"
+CF = "Cumulus fractus"
+AC = "Altocumulus"
+ACC = "Altocumulus castellanus"
+AS = "Altostratus"
+NS = "Nimbostratus"
+CI = "Cirrus"
+CC = "Cirrocumulus"
+CS = "Cirrostratus"
+
+[remark.word]
+N = "Norden"
+NE = "Nordosten"
+E = "Osten"
+SE = "Südosten"
+S = "Süden"
+SW = "Südwesten"
+W = "Westen"
+NW = "Nordwesten"
+AND = "und"
+TO = "nach"
+DSNT = "entfernt"
+VC = "in der Umgebung"
+OHD = "darüber"
+OVHD = "darüber"
+OVR = "über"
+ALQDS = "in allen Quadranten"
+MOV = "ziehend"
+MOVG = "ziehend"
+CB = "Cumulonimbus"
+TCU = "Turmcumulus"
+CVCTV = "konvektiv"
+CLD = "Wolke"
+CLOUD = "Wolke"
+EMBD = "eingebettet"
+OBSC = "verdeckt"
+OBST = "Hindernisse"
+MTNS = "Berge"
+MT = "Berg"
+HZY = "dunstig"
+VIRGA = "Fallstreifen"
+FROPA = "Frontdurchgang"
+TORNADO = "Tornado"
+FUNNEL = "Trichter"
+WATERSPOUT = "Wasserhose"
+ACFT = "Luftfahrzeug"
+MSHP = "Unfall"
+FIRST = "erste Meldung nach einer Unterbrechung der Beobachtungen"
+LAST = "letzte Meldung vor einer Unterbrechung der Beobachtungen"
+VCSH = "Schauer in der Umgebung"
+SHRA = "Regenschauer"
+CLN = "sauber"
+AIR = "Luft"
+ALL = "alle"
+WNDS = "Winde"
+GRID = "Raster"
+LTG = "Blitze"
+RWY = "Piste"
+TWR = "Turm"
+SFC = "Boden"
+VIS = "Sicht"
+
+[taf.span]
+both = "{start} bis {end}"
+start_only = "{start}"
+none = "Zeit nicht angegeben"
+
+[taf.change]
+BASE = "Basisvorhersage, {span}"
+FM = "Ab {span}"
+BECMG = "Übergang zu, {span}"
+TEMPO = "Vorübergehend, {span}"
+PROB = "{probability} % Wahrscheinlichkeit, {span}"
+PROB_TEMPO = "{probability} % Wahrscheinlichkeit vorübergehender Bedingungen, {span}"
+INTER = "Zeitweise, {span}"
+PROB_INTER = "{probability} % Wahrscheinlichkeit zeitweiser Bedingungen, {span}"
+
+[taf.change_short]
+BASE = "Basisvorhersage"
+FM = "Ab"
+BECMG = "Übergang zu"
+TEMPO = "Vorübergehend"
+PROB = "{probability} % Wahrscheinlichkeit"
+PROB_TEMPO = "{probability} % Wahrscheinlichkeit, vorübergehend"
+INTER = "Zeitweise"
+PROB_INTER = "{probability} % Wahrscheinlichkeit, zeitweise"
+
+[taf]
+period = "{header}: {details}"
+temperature_at = "{value} um {time}"
+
+[taf.summary]
+line = "Vorhersage für {station}, {span}: ungünstigste Flugwetterkategorie {category}."
+line_no_category = "Vorhersage für {station}, {span}."
+no_station = "Vorhersage, {span}: ungünstigste Flugwetterkategorie {category}."
+no_station_no_category = "Vorhersage, {span}."
+watch = "Beachten: {items}."
+cancelled = "Vorhersage für {station} aufgehoben."
+cancelled_no_station = "Vorhersage aufgehoben."
+nil = "{station}: keine Vorhersage verfügbar."
+nil_no_station = "Keine Vorhersage verfügbar."
+nothing = "Es konnte keine Vorhersage dekodiert werden."
+
+[timeline]
+span = "{start} bis {end}"
+prevailing = "Vorherrschend: {header}"
+then = "Ab {time}: {header}"
+worst = "Ungünstigster Fall in diesem Fenster:"
+legend_becoming = "Übergang"
+legend_temporary = "vorübergehend"
+none = "Keine Zeitleiste: Die Vorhersage hat keinen nutzbaren Gültigkeitszeitraum."
+no_taf = "kein TAF"
+
+[timeline.letter]
+VFR = "V"
+MVFR = "M"
+IFR = "I"
+LIFR = "L"
+
+[hazard]
+surface = "dem Boden"
+layer = "{intensity}, von {base} bis {top} über Grund"
+layer_open = "{intensity}, ab {base} über Grund (Obergrenze nicht angegeben)"
+
+[hazard.icing]
+NONE = "keine Vereisung (oder Spuren)"
+LIGHT = "leichte Vereisung"
+LIGHT_IN_CLOUD = "leichte Vereisung in der Wolke"
+LIGHT_IN_PRECIPITATION = "leichte Vereisung im Niederschlag"
+MODERATE = "mäßige Vereisung"
+MODERATE_IN_CLOUD = "mäßige Vereisung in der Wolke"
+MODERATE_IN_PRECIPITATION = "mäßige Vereisung im Niederschlag"
+SEVERE = "starke Vereisung"
+SEVERE_IN_CLOUD = "starke Vereisung in der Wolke"
+SEVERE_IN_PRECIPITATION = "starke Vereisung im Niederschlag"
+
+[hazard.turbulence]
+NONE = "keine Turbulenz"
+LIGHT = "leichte Turbulenz"
+MODERATE_CLEAR_OCCASIONAL = "mäßige Turbulenz bei klarer Luft, gelegentlich"
+MODERATE_CLEAR_FREQUENT = "mäßige Turbulenz bei klarer Luft, häufig"
+MODERATE_CLOUD_OCCASIONAL = "mäßige Turbulenz in der Wolke, gelegentlich"
+MODERATE_CLOUD_FREQUENT = "mäßige Turbulenz in der Wolke, häufig"
+SEVERE_CLEAR_OCCASIONAL = "starke Turbulenz bei klarer Luft, gelegentlich"
+SEVERE_CLEAR_FREQUENT = "starke Turbulenz bei klarer Luft, häufig"
+SEVERE_CLOUD_OCCASIONAL = "starke Turbulenz in der Wolke, gelegentlich"
+SEVERE_CLOUD_FREQUENT = "starke Turbulenz in der Wolke, häufig"
+EXTREME = "extreme Turbulenz"
+
+[discord]
+obs = "Beob.: {time} ({group})"
+issued = "TAF ausgegeben {time} ({group})"
+valid = "Gültig: {span}"
+auto = "AUTO"
+amended = "AMD"
+corrected = "COR"
+cancelled = "AUFGEHOBEN"
+nil = "NIL"
+wind = "Wind: {value}"
+visibility = "Sicht: {value}"
+visibility_in = "{visibility} bei {weather}"
+visibility_missing = "nicht gemeldet"
+weather = "Wetter: {value}"
+temperature_dewpoint = "Temperatur: {temperature} | Taupunkt: {dewpoint}"
+temperature = "Temperatur: {value}"
+dewpoint = "Taupunkt: {value}"
+altimeter = "Höhenmesser: {value}"
+clouds = "Wolken: {value}"
+pressure = "Luftdruck: {value}"
+pressure_with_tendency = "{value} ({tendency})"
+tendency_rising = "steigend {change} mb/3h"
+tendency_falling = "fallend {change} mb/3h"
+tendency_steady = "gleichbleibend"
+trend = "Trend: {code} ({text})"
+wind_shear = "Windscherung: {value}"
+rvr = "RVR: {value}"
+color_state = "Farbstatus: {value}"
+max_min_6h = "Max. 6 h: {maximum} | min.: {minimum}"
+max_6h = "Max. 6 h: {value}"
+min_6h = "Min. 6 h: {value}"
+peak_wind = "Spitzenwind: {direction}° @ {speed} um {time}"
+icing = "Vereisung: {value}"
+turbulence = "Turbulenz: {value}"
+temperatures = "Temperatur: {parts}"
+temperature_max = "max. {value} um {time}"
+temperature_min = "min. {value} um {time}"
+remarks = "Bemerkungen: {text}"
+wind_steady = "{direction}° @ {speed} ({compass})"
+wind_steady_gust = "{direction}° @ {speed}, Böen {gust} ({compass})"
+wind_variable = "VRB @ {speed}"
+wind_variable_gust = "VRB @ {speed}, Böen {gust}"
+wind_no_direction = "{speed}"
+wind_variation = "{base}, schwankend {from_deg}°-{to_deg}°"
+cavok = "CAVOK"
+none = "keine"
+no_forecast = "Keine Vorhersagegruppen"
+
+[discord.heading]
+BASE = "BASIS — ab {when}"
+FM = "AB {when}"
+BECMG = "BECMG {when}"
+TEMPO = "TEMPO {when}"
+PROB = "PROB{probability} {when}"
+PROB_TEMPO = "PROB{probability} TEMPO {when}"
+INTER = "INTER {when}"
+PROB_INTER = "PROB{probability} INTER {when}"
+
+[cli]
+description = "METAR/TAF-Kurzinfo im Terminal, mit Farbschemata und Übersetzung in einfache Sprache. Geben Sie Stationskennungen an, um sie in dieser Sitzung zu beobachten; gespeicherte Stationen werden aus der Konfiguration geladen."
+epilog = "Befehle: decode (Text ohne Oberfläche dekodieren), get (einmal abrufen und ausgeben). Starten Sie 'wxbrief decode --help' oder 'wxbrief get --help'."
+no_metar = "{icao}: kein METAR in den letzten 2 Stunden"
+
+[cli.help]
+stations = "Stationskennungen, die in dieser Sitzung hinzugefügt werden"
+theme = "Farbschema für diese Sitzung, zum Beispiel paper-chart (wird nicht gespeichert; Standard: das der Konfiguration, textual-dark)"
+glyphs = "Symbolsatz (Standard: der der Konfiguration, nerd)"
+layout = "Listen- oder Rasteransicht (die Taste v schaltet um)"
+units = "Einheitenmodus"
+time = "angezeigte Zeit: station, local oder zulu"
+lang = "Sprache des Klartexts: {languages} (Standard: die der Konfiguration, en; decode und get: en)"
+config = "diese Konfigurationsdatei lesen und speichern"
+no_config = "die Konfigurationsdatei ignorieren und nie schreiben"
+demo = "mit den mitgelieferten Beispielmeldungen für zehn Stationen starten: vollständig offline, nichts wird geladen, gespeichert oder zwischengespeichert"
+
+[ui.binding]
+add_station = "Hinzufügen"
+remove_station = "Entfernen"
+paste = "Einfügen"
+refresh_now = "Aktualisieren"
+toggle_layout = "Liste/Raster"
+copy_metar = "METAR kopieren"
+copy_both = "METAR+TAF kopieren"
+copy_raw = "Original kopieren"
+settings = "Einstellungen"
+next_station = "Nächste"
+previous_station = "Vorige"
+jump_raw = "Original"
+jump_decoded = "Dekodiert"
+jump_taf = "TAF"
+help = "Hilfe"
+quit = "Beenden"
+cycle_theme = "Design"
+theme_picker = "Designs"
+close = "Schließen"
+back = "Zurück"
+cancel = "Abbrechen"
+focus_results = "Ergebnisse"
+copy_discord = "Für Discord kopieren"
+copy_discord_key = "Für Discord kopieren (c)"
+earlier = "Früher"
+later = "Später"
+first = "Erste"
+last = "Letzte"
+left = "Links"
+right = "Rechts"
+up = "Hoch"
+down = "Runter"
+open = "Öffnen"
+
+[ui.section]
+raw = "Original"
+decoded = "Dekodiert"
+remarks = "Bemerkungen ({n})"
+forecast = "Vorhersage (TAF)"
+groups = "Alle Vorhersagegruppen ({n})"
+
+[ui.detail]
+no_stations = "Noch keine Stationen. Drücken Sie [b]a[/b], um eine hinzuzufügen."
+no_report = "Noch keine Meldung"
+no_metar = "Kein METAR in den letzten 2 Stunden"
+observed_ago = "Beobachtet {time}, vor {age}"
+cached_ago = "(zwischengespeichert vor {age})"
+
+[ui.age]
+minutes = "{minutes} Min."
+hours = "{hours} Std. {minutes:02d} Min."
+days = "{days} T. {hours} Std."
+
+[ui.state]
+fresh = "aktuell"
+stale = "veraltet"
+
+[ui.status]
+offline = "offline"
+cached = "(zwischengespeichert)"
+no_data = "keine Daten"
+away = "im Hintergrund"
+next_poll = "nächste Abfrage {time}"
+requests = "Anfragen {used}/{limit}"
+polling_off = "Abfrage aus"
+
+[ui.list]
+no_report = "keine Meldung"
+
+[ui.layout]
+list = "Listenansicht"
+grid = "Rasteransicht"
+
+[ui.toast]
+demo = "Demo: feste Beispielmeldungen, kein Netzwerk"
+unknown_theme = "Unbekanntes Design {theme}; textual-dark wird verwendet"
+theme_title = "Design"
+stations_title = "Stationen"
+config_title = "Konfiguration"
+fetch_failed = "{product} konnte nicht abgerufen werden: {error}"
+polling_off = "Die regelmäßige Abfrage ist ausgeschaltet"
+refreshing = "Wird aktualisiert"
+unknown_station = "Unbekannte Station {code}"
+already_listed = "{code} steht schon in der Liste"
+already_listed_saved = "{code} steht schon in der Liste (jetzt gespeichert)"
+watchlist_full = "Die Beobachtungsliste ist voll ({limit} Stationen)"
+removed = "{code} entfernt"
+config_unreadable = "{path} konnte nicht gelesen werden und blieb unverändert. Änderungen gelten nur für diese Sitzung."
+backup_failed = "Von der Konfiguration konnte keine Sicherung erstellt werden; es wird nichts gespeichert"
+backed_up = "Die Konfiguration hatte Probleme; das Original wurde als {path} gesichert"
+save_failed = "{path} konnte nicht gespeichert werden"
+no_metar_to_copy = "Kein METAR zum Kopieren"
+nothing_to_copy = "Nichts zu kopieren"
+nothing_decoded = "Noch nichts dekodiert"
+type_a_station = "Geben Sie einen Stationscode oder einen Teil des Namens ein"
+
+[ui.clipboard]
+title = "Zwischenablage"
+copied = "Kopiert: {what}"
+copied_terminal = "Kopiert: {what} (Zwischenablage des Terminals)"
+failed = "{what} konnte nicht kopiert werden: {error}"
+metar = "METAR für {icao}"
+both = "METAR und TAF für {icao}"
+raw = "Originalmeldung für {icao}"
+discord = "Discord-Block"
+
+[ui.add]
+title = "Station hinzufügen: ICAO- oder IATA-Code oder Teil des Namens"
+placeholder = "KDEN, DEN, heathrow ..."
+hint = "Enter fügt den ersten Treffer hinzu   Runter wählt einen anderen   Esc bricht ab"
+listed = "(in der Liste)"
+
+[ui.paste]
+reference = "Bezugsdatum (JJJJ-MM-TT):"
+prompt = "Fügen Sie oben ein METAR oder TAF ein. Mehrere Meldungen auf einmal sind möglich."
+bad_date = "Das Bezugsdatum wurde nicht verstanden; das heutige Datum wird verwendet."
+
+[ui.themes]
+title = "Design"
+hint = "Hoch/Runter zeigt eine Vorschau, Enter behält, Esc bricht ab"
+
+[ui.help]
+title = "wxbrief-Tasten"
+hint = "Esc schließt"
+body = """\
+[b]Stationen[/b]
+  Hoch/Runter  j/k   eine Station wählen
+  \\[ und ]           vorige / nächste Station
+  Enter              ins Detailfenster wechseln
+  a                  eine Station hinzufügen (Code oder Name)
+  d                  die gewählte Station entfernen
+  r                  jetzt aktualisieren
+  v                  zwischen Listen- und Rasteransicht wechseln
+[b]Details[/b]
+  1  2  3            zu Original, Dekodiert, Vorhersage springen
+  Links/Rechts       den Zeitleistencursor bewegen (die Maus geht auch)
+  c                  den METAR-Block für Discord kopieren
+  C                  METAR und TAF für Discord kopieren
+  y                  den Originaltext der Meldung kopieren
+[b]Werkzeuge[/b]
+  t                  nächstes Design (wird in der Konfiguration gespeichert)
+  T                  ein Design wählen, mit Vorschau
+  p                  ein beliebiges METAR oder TAF einfügen und dekodieren (offline)
+  S                  Einstellungen: Sprache, Einheiten, Zeit, Symbole
+  ?                  diese Hilfe
+  q                  beenden
+[b]Einfüge-Bildschirm[/b]
+  c (außerhalb des Felds) oder F2   den Block für Discord kopieren
+  Esc                               zurück
+"""
+
+[ui.settings]
+title = "Einstellungen"
+hint = "Hoch/Runter bewegt, Enter ändert den Wert, Esc schließt. Intervalle und Pfade stehen in config.toml."
+theme = "Design"
+glyphs = "Symbole"
+layout = "Ansicht"
+units = "Einheiten"
+time = "Zeit"
+language = "Sprache"
+poll = "Abfrage (s)"
+poll_value = "METAR {metar}, TAF {taf}, im Hintergrund {away}"
+config_file = "Konfigurationsdatei"
+cache_folder = "Cache-Ordner"
+off = "aus"
+off_no_config = "aus (--no-config)"
+
+[ui.option.units]
+us = "USA (kt, SM, inHg)"
+metric = "Metrisch (m/s oder km/h, km, hPa)"
+mixed = "Wie gemeldet, das andere System in Klammern"
+
+[ui.option.time]
+station = "Ortszeit der Station"
+local = "Zeit dieses Rechners"
+zulu = "UTC (Zulu)"
+
+[ui.option.glyphs]
+ascii = "ASCII"
+unicode = "Unicode"
+emoji = "Emoji"
+nerd = "Nerd Font"
+
+[ui.option.layout]
+list = "Liste"
+grid = "Raster"

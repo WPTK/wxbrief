@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from wxbrief.data.stations import Station, StationDB
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import Translator
+from wxbrief.i18n.keys import K
 from wxbrief.render.palette import Palette
 from wxbrief.ui.glyphs import Glyphs
 from wxbrief.ui.style import ViewPalette
@@ -66,7 +67,7 @@ class ViewContext:
     def clock(self, moment: datetime | None, icao: str | None = None) -> str:
         """``14:53Z``, or the same moment in station-local or computer-local time per the time mode."""
         if moment is None:
-            return "--"
+            return self.translator.t(K.TIME_NONE)
         if self.is_zulu(icao):
             return moment.strftime("%H:%MZ")
         shifted = self.localize(moment, icao)

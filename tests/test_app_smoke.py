@@ -15,9 +15,11 @@ from wxbrief.app import AppOptions, WxBriefApp
 from wxbrief.config import Config
 from wxbrief.data.awc import AwcClient
 from wxbrief.data.cache import DiskCache
+from wxbrief.i18n import Translator
+from wxbrief.i18n.keys import K
 from wxbrief.ui.screens.add_station import AddStationScreen
 from wxbrief.ui.screens.briefing import BriefingScreen
-from wxbrief.ui.screens.help import HELP_TEXT, HelpScreen
+from wxbrief.ui.screens.help import HelpScreen
 from wxbrief.ui.screens.paste import PasteDecodeScreen, parse_reference
 from wxbrief.ui.widgets.detail import DecodedTable, DetailPane, RawReport, StationHeader
 from wxbrief.ui.widgets.station_list import StationList
@@ -28,6 +30,7 @@ METARS = json.loads((FIXTURES / "metar_kden_egll.json").read_text(encoding="utf-
 TAFS = json.loads((FIXTURES / "taf_kden_egll.json").read_text(encoding="utf-8"))
 NOW = datetime(2026, 10, 31, 11, 45, tzinfo=UTC)  # ten minutes after the newest saved KDEN report
 LATER = NOW + timedelta(hours=6)
+HELP_TEXT = Translator.load("en").t(K.UI_HELP_BODY)
 
 
 @pytest.fixture(autouse=True)

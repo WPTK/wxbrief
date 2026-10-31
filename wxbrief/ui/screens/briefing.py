@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from textual.app import ComposeResult
-from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.events import Resize
 from textual.screen import Screen
@@ -15,8 +14,10 @@ from wxbrief.clipboard import copy_text
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.units import UnitsMode
 from wxbrief.getcmd import local_hour
+from wxbrief.i18n.keys import K
 from wxbrief.render.discord import render_discord
 from wxbrief.state import StationReports
+from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.screens.add_station import AddStationScreen
 from wxbrief.ui.screens.help import HelpScreen
 from wxbrief.ui.screens.paste import PasteDecodeScreen
@@ -33,23 +34,23 @@ if TYPE_CHECKING:
 
 class BriefingScreen(Screen[None]):
     BINDINGS = [
-        Binding("a", "add_station", "Add"),
-        Binding("d", "remove_station", "Remove"),
-        Binding("p", "paste", "Paste"),
-        Binding("r", "refresh_now", "Refresh"),
-        Binding("v", "toggle_layout", "List/grid"),
-        Binding("c", "copy_metar", "Copy METAR", show=False),
-        Binding("C", "copy_both", "Copy METAR+TAF", show=False),
-        Binding("y", "copy_raw", "Copy raw", show=False),
-        Binding("S", "settings", "Settings", show=False),
-        Binding("j", "next_station", "Next", show=False),
-        Binding("k", "previous_station", "Previous", show=False),
-        Binding("right_square_bracket", "next_station", "Next", show=False),
-        Binding("left_square_bracket", "previous_station", "Previous", show=False),
-        Binding("1", "jump('raw')", "Raw", show=False),
-        Binding("2", "jump('decoded')", "Decoded", show=False),
-        Binding("3", "jump('taf')", "TAF", show=False),
-        Binding("question_mark", "help", "Help"),
+        bind("a", "add_station", K.UI_BINDING_ADD_STATION),
+        bind("d", "remove_station", K.UI_BINDING_REMOVE_STATION),
+        bind("p", "paste", K.UI_BINDING_PASTE),
+        bind("r", "refresh_now", K.UI_BINDING_REFRESH_NOW),
+        bind("v", "toggle_layout", K.UI_BINDING_TOGGLE_LAYOUT),
+        bind("c", "copy_metar", K.UI_BINDING_COPY_METAR, show=False),
+        bind("C", "copy_both", K.UI_BINDING_COPY_BOTH, show=False),
+        bind("y", "copy_raw", K.UI_BINDING_COPY_RAW, show=False),
+        bind("S", "settings", K.UI_BINDING_SETTINGS, show=False),
+        bind("j", "next_station", K.UI_BINDING_NEXT_STATION, show=False),
+        bind("k", "previous_station", K.UI_BINDING_PREVIOUS_STATION, show=False),
+        bind("right_square_bracket", "next_station", K.UI_BINDING_NEXT_STATION, show=False),
+        bind("left_square_bracket", "previous_station", K.UI_BINDING_PREVIOUS_STATION, show=False),
+        bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW, show=False),
+        bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED, show=False),
+        bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF, show=False),
+        bind("question_mark", "help", K.UI_BINDING_HELP),
     ]
 
     def __init__(self) -> None:
@@ -71,6 +72,7 @@ class BriefingScreen(Screen[None]):
         yield Footer()
 
     def on_mount(self) -> None:
+        localize(self)
         self._ready = True
         self._ticks = 0
         self.set_interval(1.0, self._tick)  # owned by the screen, so it stops with the screen
@@ -157,7 +159,7 @@ class BriefingScreen(Screen[None]):
         self._apply_layout()
         self.refresh_view()
         self._focus_main()
-        self.notify(f"{self.layout_mode.capitalize()} layout")
+        self.notify(self.wx.ctx.translator.t(K.UI_LAYOUT_GRID if self.layout_mode == "grid" else K.UI_LAYOUT_LIST))
 
     def on_station_grid_selected(self, message: StationGrid.Selected) -> None:
         self.select(message.icao)
@@ -219,7 +221,7 @@ class BriefingScreen(Screen[None]):
         self.wx.refresh_now()
 
     def action_settings(self) -> None:
-        self.app.push_screen(SettingsScreen(self.wx.settings_lines()))
+        self.app.push_screen(SettingsScreen())
 
     def action_help(self) -> None:
         self.app.push_screen(HelpScreen())
@@ -237,24 +239,27 @@ class BriefingScreen(Screen[None]):
         return render_discord(report, ctx.translator, units, station_name=name, local_hour=hour)
 
     def action_copy_metar(self) -> None:
+        t = self.wx.ctx.translator
         entry = self.current()
         if entry is None or entry.metar is None:
-            self.notify("No METAR to copy", severity="warning")
+            self.notify(t.t(K.UI_TOAST_NO_METAR_TO_COPY), severity="warning")
             return
-        copy_text(self.app, self._discord(entry.metar, entry), f"{entry.icao} METAR")
+        copy_text(self.app, self._discord(entry.metar, entry), t.t(K.UI_CLIPBOARD_METAR, icao=entry.icao), t)
 
     def action_copy_both(self) -> None:
+        t = self.wx.ctx.translator
         entry = self.current()
         if entry is None or (entry.metar is None and entry.taf is None):
-            self.notify("Nothing to copy", severity="warning")
+            self.notify(t.t(K.UI_TOAST_NOTHING_TO_COPY), severity="warning")
             return
         blocks = [self._discord(report, entry) for report in (entry.metar, entry.taf) if report is not None]
-        copy_text(self.app, "\n\n".join(blocks), f"{entry.icao} METAR and TAF")
+        copy_text(self.app, "\n\n".join(blocks), t.t(K.UI_CLIPBOARD_BOTH, icao=entry.icao), t)
 
     def action_copy_raw(self) -> None:
+        t = self.wx.ctx.translator
         entry = self.current()
         raws = [report.raw for report in (entry.metar, entry.taf) if report is not None] if entry else []
         if not entry or not raws:
-            self.notify("Nothing to copy", severity="warning")
+            self.notify(t.t(K.UI_TOAST_NOTHING_TO_COPY), severity="warning")
             return
-        copy_text(self.app, "\n".join(raws), f"{entry.icao} raw report")
+        copy_text(self.app, "\n".join(raws), t.t(K.UI_CLIPBOARD_RAW, icao=entry.icao), t)

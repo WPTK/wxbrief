@@ -1,49 +1,36 @@
-"""Help and read-only settings dialogs."""
+"""The key help dialog; its text is in the catalog (``ui.help.*``)."""
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, cast
+
 from textual.app import ComposeResult
-from textual.binding import Binding
 from textual.containers import VerticalScroll
 from textual.screen import ModalScreen
 from textual.widgets import Label, Static
 
-HELP_TEXT = """\
-[b]Stations[/b]
-  Up/Down  j/k       select a station
-  \\[ and ]            previous / next station
-  Enter              move into the detail pane
-  a                  add a station (code or name)
-  d                  remove the selected station
-  r                  refresh now
-  v                  toggle the list / grid layout
-[b]Detail[/b]
-  1  2  3            jump to raw, decoded, forecast
-  Left/Right         move the forecast timeline cursor (the mouse works too)
-  c                  copy the Discord METAR block
-  C                  copy Discord METAR and TAF
-  y                  copy the raw report text
-[b]Tools[/b]
-  t                  next theme (saved to the config)
-  T                  pick a theme, with a live preview
-  p                  paste and decode any METAR or TAF (offline)
-  S                  show the current settings
-  ?                  this help
-  q                  quit
-[b]Paste screen[/b]
-  c (outside the box) or F2   copy the Discord block
-  Esc                         back
-"""
+from wxbrief.i18n.keys import K
+from wxbrief.ui.bindings import bind, localize
+
+if TYPE_CHECKING:
+    from wxbrief.app import WxBriefApp
 
 
 class HelpScreen(ModalScreen[None]):
-    BINDINGS = [Binding("escape", "close", "Close"), Binding("question_mark", "close", "Close", show=False)]
+    BINDINGS = [
+        bind("escape", "close", K.UI_BINDING_CLOSE),
+        bind("question_mark", "close", K.UI_BINDING_CLOSE, show=False),
+    ]
 
     def compose(self) -> ComposeResult:
+        t = cast("WxBriefApp", self.app).ctx.translator
         with VerticalScroll(id="help-box", classes="dialog"):
-            yield Label("wxbrief keys", classes="dialog-title")
-            yield Static(HELP_TEXT)
-            yield Label("Esc closes", classes="hint")
+            yield Label(t.t(K.UI_HELP_TITLE), classes="dialog-title")
+            yield Static(t.t(K.UI_HELP_BODY))
+            yield Label(t.t(K.UI_HELP_HINT), classes="hint")
+
+    def on_mount(self) -> None:
+        localize(self)
 
     def action_close(self) -> None:
         self.dismiss(None)

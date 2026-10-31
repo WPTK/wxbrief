@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 from rich.text import Text
-from test_app_smoke import METARS, TAFS, _no_network, make_app  # noqa: F401
+from test_app_smoke import HELP_TEXT, METARS, TAFS, _no_network, make_app  # noqa: F401
 from textual.widgets import OptionList, Static
 
 from wxbrief.__main__ import build_tui_parser, tui_options
@@ -17,7 +17,6 @@ from wxbrief.data.models import parse_metars, parse_tafs
 from wxbrief.data.poll import Product
 from wxbrief.render.palette import Palette, all_themes
 from wxbrief.ui.screens.briefing import BriefingScreen
-from wxbrief.ui.screens.help import HELP_TEXT
 from wxbrief.ui.screens.theme_picker import ThemePickerScreen
 from wxbrief.ui.themes import AVIATION_THEMES, THEME_CYCLE
 from wxbrief.ui.themes.semantic import SEMANTIC_DEFAULTS, semantic_variables

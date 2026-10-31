@@ -13,9 +13,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from importlib import resources
 
+from wxbrief.i18n.numbers import ENGLISH, NumberFormat
 from wxbrief.i18n.plurals import CATEGORIES, plural_category
 
 DEFAULT_LANGUAGE = "en"
+LANGUAGES = ("en", "es", "fr", "de", "pt")  # the catalogs that ship, in the order a picker lists them
 _LANG_CODE = re.compile(r"^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$")
 
 type Entry = str | dict[str, str]
@@ -28,6 +30,13 @@ class Catalog:
     lang: str
     entries: dict[str, Entry]
     meta: dict[str, object]
+
+
+def lower_first(text: str) -> str:
+    """Lowercase the first character unless the word is an acronym (``CAVOK``) or starts a unit or number."""
+    if len(text) > 1 and (text[1].isupper() or not text[0].isalpha()):
+        return text
+    return text[:1].lower() + text[1:]
 
 
 class _Params(dict[str, object]):
@@ -89,6 +98,17 @@ def fallback_chain(lang: str) -> list[str]:
     return chain
 
 
+def resolve_language(code: str) -> str | None:
+    """The catalog that serves ``code`` (``pt-BR`` -> ``pt``, ``DE`` -> ``de``), or ``None`` when there is none."""
+    parts = code.strip().replace("_", "-").split("-")
+    parts[0] = parts[0].lower()
+    for end in range(len(parts), 0, -1):
+        name = "-".join(parts[:end])
+        if _read_catalog(name) is not None:
+            return name
+    return None
+
+
 class Translator:
     """Looks up catalog keys and fills in their placeholders."""
 
@@ -114,7 +134,32 @@ class Translator:
 
     @property
     def meta(self) -> dict[str, object]:
-        return self._catalogs[0].meta
+        """``[meta]`` of the primary catalog; a key it lacks comes from the next catalog in the chain (``pt``)."""
+        merged: dict[str, object] = {}
+        for catalog in reversed(self._catalogs):
+            merged.update(catalog.meta)
+        return merged
+
+    @property
+    def numbers(self) -> NumberFormat:
+        """The number format of the language (a regional catalog without its own ``[meta]`` uses its base language)."""
+        meta = self.meta
+        return NumberFormat.from_meta(meta) if meta else ENGLISH
+
+    @property
+    def language_name(self) -> str:
+        """The language's own name (``Deutsch``) from the catalog's ``[meta]``."""
+        return str(self.meta.get("language", self.lang))
+
+    def lower_first(self, text: str) -> str:
+        """``lower_first``; where nouns keep their capital (``keep_case`` in ``[meta]``) only a first word listed in
+        ``lowercase_starts`` (an article, adjective or preposition) is lowered."""
+        meta = self.meta
+        if meta.get("keep_case") is not True:
+            return lower_first(text)
+        starts = meta.get("lowercase_starts")
+        first = text.split(" ", 1)[0].rstrip(",:;")
+        return lower_first(text) if isinstance(starts, list) and first in starts else text
 
     @property
     def keys(self) -> frozenset[str]:
@@ -150,6 +195,6 @@ class Translator:
             return key
         if isinstance(entry, str):
             return self._fill(entry, {"n": n, **params})
-        rule = str(self._catalogs[0].meta.get("plural_rule", "one_other"))
+        rule = str(self.meta.get("plural_rule", "one_other"))
         template = entry.get(plural_category(rule, n), entry["other"])
         return self._fill(template, {"n": n, **params})

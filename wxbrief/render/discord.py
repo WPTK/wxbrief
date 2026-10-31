@@ -90,9 +90,9 @@ def condition_emoji(condition: Condition | None, local_hour: int | None = None) 
 # --- shared pieces -----------------------------------------------------------------------------------------------
 
 
-def _temperature(value: Temperature, units: UnitsMode, *, precise: bool = False) -> str:
+def _temperature(t: Translator, value: Temperature, units: UnitsMode, *, precise: bool = False) -> str:
     """``75.9°F``: the degree sign sits against the number in this layout."""
-    return format_temperature(value, units, precise=precise).replace(" °", "°")
+    return format_temperature(value, units, t.numbers, precise=precise).replace(" °", "°")
 
 
 def _clock(moment: datetime) -> str:
@@ -114,8 +114,8 @@ def _wind(t: Translator, wind: Wind, units: UnitsMode, variation: WindVariation 
         return t.t(K.WIND_NOT_REPORTED)
     if wind.calm:
         return t.t(K.WIND_CALM)
-    speed = format_speed(wind.speed, units)
-    gust = format_speed(wind.gust, units) if wind.gust is not None else None
+    speed = format_speed(wind.speed, units, t.numbers)
+    gust = format_speed(wind.gust, units, t.numbers) if wind.gust is not None else None
     if wind.speed_above:
         speed = t.t(K.COMMON_MORE_THAN, value=speed)
     if wind.variable:
@@ -142,7 +142,7 @@ def _elements_lines(t: Translator, elements: ForecastElements, units: UnitsMode)
     lines: list[str] = []
     if elements.wind is not None:
         lines.append(t.t(K.DISCORD_WIND, value=_wind(t, elements.wind, units)))
-    weather = phrases.lower_first(phrases.describe_weather(t, elements.weather)) if elements.weather else ""
+    weather = t.lower_first(phrases.describe_weather(t, elements.weather)) if elements.weather else ""
     if elements.visibility is not None:
         if elements.visibility.cavok:
             value = t.t(K.DISCORD_CAVOK)
@@ -194,8 +194,8 @@ def _tendency(t: Translator, remark: PressureTendency) -> str:
     if remark.direction is TendencyDirection.SAME or remark.change_hpa == 0:
         return t.t(K.DISCORD_TENDENCY_STEADY)
     if remark.direction is TendencyDirection.HIGHER:
-        return t.t(K.DISCORD_TENDENCY_RISING, change=f"+{remark.change_hpa:.1f}")
-    return t.t(K.DISCORD_TENDENCY_FALLING, change=f"-{remark.change_hpa:.1f}")
+        return t.t(K.DISCORD_TENDENCY_RISING, change="+" + t.numbers.fixed(remark.change_hpa, 1))
+    return t.t(K.DISCORD_TENDENCY_FALLING, change="-" + t.numbers.fixed(remark.change_hpa, 1))
 
 
 def _metar_lines(
@@ -214,7 +214,7 @@ def _metar_lines(
     if metar.wind is not None:
         body.append(t.t(K.DISCORD_WIND, value=_wind(t, metar.wind, units, metar.wind_variation)))
     weather = [g for g in metar.weather if not g.nsw and not g.not_observed]
-    weather_text = phrases.lower_first(phrases.describe_weather(t, weather)) if weather else ""
+    weather_text = t.lower_first(phrases.describe_weather(t, weather)) if weather else ""
     if metar.visibility is not None:
         if metar.visibility.cavok:
             value = t.t(K.DISCORD_CAVOK)
@@ -235,14 +235,14 @@ def _metar_lines(
         body.append(
             t.t(
                 K.DISCORD_TEMPERATURE_DEWPOINT,
-                temperature=_temperature(temperature, units, precise=exact),
-                dewpoint=_temperature(dewpoint, units, precise=exact),
+                temperature=_temperature(t, temperature, units, precise=exact),
+                dewpoint=_temperature(t, dewpoint, units, precise=exact),
             )
         )
     elif temperature is not None:
-        body.append(t.t(K.DISCORD_TEMPERATURE, value=_temperature(temperature, units, precise=exact)))
+        body.append(t.t(K.DISCORD_TEMPERATURE, value=_temperature(t, temperature, units, precise=exact)))
     elif dewpoint is not None:
-        body.append(t.t(K.DISCORD_DEWPOINT, value=_temperature(dewpoint, units, precise=exact)))
+        body.append(t.t(K.DISCORD_DEWPOINT, value=_temperature(t, dewpoint, units, precise=exact)))
     if metar.altimeter is not None:
         body.append(t.t(K.DISCORD_ALTIMETER, value=phrases.describe_pressure(t, metar.altimeter, units)))
     lines.extend(body)
@@ -262,7 +262,7 @@ def _metar_lines(
     tail: list[str] = []
     slp = metar.remarks_of(SeaLevelPressure)
     if slp and slp[0].pressure is not None:
-        value = f"{slp[0].pressure.hpa:.1f} mb"
+        value = f"{t.numbers.fixed(slp[0].pressure.hpa, 1)} mb"
         tendency = metar.remarks_of(PressureTendency)
         if tendency:
             value = t.t(K.DISCORD_PRESSURE_WITH_TENDENCY, value=value, tendency=_tendency(t, tendency[0]))
@@ -272,12 +272,12 @@ def _metar_lines(
     high = maxima[0].temperature if maxima else None
     low = minima[0].temperature if minima else None
     if high is not None and low is not None:
-        highest, lowest = _temperature(high, units, precise=True), _temperature(low, units, precise=True)
+        highest, lowest = _temperature(t, high, units, precise=True), _temperature(t, low, units, precise=True)
         tail.append(t.t(K.DISCORD_MAX_MIN_6H, maximum=highest, minimum=lowest))
     elif high is not None:
-        tail.append(t.t(K.DISCORD_MAX_6H, value=_temperature(high, units, precise=True)))
+        tail.append(t.t(K.DISCORD_MAX_6H, value=_temperature(t, high, units, precise=True)))
     elif low is not None:
-        tail.append(t.t(K.DISCORD_MIN_6H, value=_temperature(low, units, precise=True)))
+        tail.append(t.t(K.DISCORD_MIN_6H, value=_temperature(t, low, units, precise=True)))
     for peak in metar.remarks_of(PeakWind):
         hour = f"{peak.time.hour:02d}" if peak.time.hour is not None else ""
         when = f"{hour}:{peak.time.minute:02d}"
@@ -285,7 +285,7 @@ def _metar_lines(
             t.t(
                 K.DISCORD_PEAK_WIND,
                 direction=f"{peak.direction:03d}",
-                speed=format_speed(peak.speed, units),
+                speed=format_speed(peak.speed, units, t.numbers),
                 time=when,
             )
         )
@@ -294,7 +294,7 @@ def _metar_lines(
             t.t(
                 K.DISCORD_TREND,
                 code=trend.kind.value,
-                text=phrases.lower_first(phrases.describe_trend(t, trend, units)),
+                text=t.lower_first(phrases.describe_trend(t, trend, units)),
             )
         )
     if tail:
@@ -363,7 +363,7 @@ def _taf_lines(taf: Taf, t: Translator, units: UnitsMode, station_name: str | No
         parts = [
             t.t(
                 K.DISCORD_TEMPERATURE_MAX if item.kind.value == "MAX" else K.DISCORD_TEMPERATURE_MIN,
-                value=_temperature(item.temperature, units),
+                value=_temperature(t, item.temperature, units),
                 time=_group(item.time) if item.time is not None else f"{item.day:02d}/{item.hour:02d}00Z",
             )
             for item in taf.temperatures

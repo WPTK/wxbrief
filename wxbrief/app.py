@@ -11,21 +11,22 @@ from pathlib import Path
 
 from textual import events, work
 from textual.app import App
-from textual.binding import Binding
 from textual.theme import Theme
 
-from wxbrief.config import Config, ViewConfig, default_config_path, save_config
+from wxbrief.config import TIME_MODES, WATCHLIST_CAP, Config, ViewConfig, default_config_path, save_config
 from wxbrief.data.awc import AwcClient, AwcError
 from wxbrief.data.cache import DiskCache, default_cache_dir
 from wxbrief.data.demo import load_demo
 from wxbrief.data.poll import PollScheduler, Product
 from wxbrief.data.stations import bundled
 from wxbrief.decode.units import UnitsMode
-from wxbrief.i18n import Translator
+from wxbrief.i18n import LANGUAGES, Translator
+from wxbrief.i18n.keys import K
 from wxbrief.render.palette import Palette
 from wxbrief.state import AppState
+from wxbrief.ui.bindings import bind, localize, relabel_tree
 from wxbrief.ui.context import ViewContext
-from wxbrief.ui.glyphs import glyphs_for
+from wxbrief.ui.glyphs import GLYPH_SETS, glyphs_for
 from wxbrief.ui.screens.briefing import BriefingScreen
 from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.screens.theme_picker import ThemePickerScreen
@@ -58,9 +59,9 @@ class WxBriefApp(App[None]):
     TITLE = "wxbrief"
     HORIZONTAL_BREAKPOINTS = [(0, "-narrow"), (90, "-normal"), (140, "-wide")]
     BINDINGS = [
-        Binding("q", "quit", "Quit"),
-        Binding("t", "cycle_theme", "Theme"),
-        Binding("T", "theme_picker", "Themes", show=False),
+        bind("q", "quit", K.UI_BINDING_QUIT),
+        bind("t", "cycle_theme", K.UI_BINDING_CYCLE_THEME),
+        bind("T", "theme_picker", K.UI_BINDING_THEME_PICKER, show=False),
     ]
 
     def __init__(self, options: AppOptions | None = None) -> None:
@@ -72,14 +73,16 @@ class WxBriefApp(App[None]):
         for name in [name for name, theme in self.available_themes.items() if theme.ansi]:
             self.unregister_theme(name)  # the terminal's own colours have no RGB palette for the highlight colours
         self._previewing = False  # the theme picker is open: a highlighted theme is a preview, not a choice
+        translator = Translator.load(view.lang)
         self._theme_notice = ""
         if view.theme in self.available_themes:
             self.theme = view.theme
         else:
             self.theme = "textual-dark"
-            self._theme_notice = f"Unknown theme {view.theme!r}; using textual-dark"
+            self._theme_notice = translator.t(K.UI_TOAST_UNKNOWN_THEME, theme=repr(view.theme))
         self._settled_theme = self.theme  # the theme in effect that nobody has changed yet
         self._chosen_theme: str | None = None  # set once the user picks one: only then is the theme saved
+        self._chosen_view: dict[str, str] = {}  # view settings changed in the settings dialog: saved with the config
         self.glyph_set = view.glyph_set
         cache = DiskCache(self.options.cache_dir) if self.options.use_cache else None
         self.state = AppState(
@@ -90,7 +93,7 @@ class WxBriefApp(App[None]):
         )
         self.ctx = ViewContext(
             app=self,
-            translator=Translator.load(view.lang),
+            translator=translator,
             units=UnitsMode(view.units),
             glyphs=glyphs_for(view.glyph_set),
             time_mode=view.time,
@@ -109,19 +112,21 @@ class WxBriefApp(App[None]):
     # --- start up --------------------------------------------------------------------------------------------------
 
     def on_mount(self) -> None:
+        t = self.ctx.translator
+        localize(self)
         if self.options.demo:
             self.state.load_demo(load_demo())
-            self.notify("Demo: fixed sample reports, no network", timeout=6)
+            self.notify(t.t(K.UI_TOAST_DEMO), timeout=6)
         else:
             self.state.load_cache()
         self.push_screen(self.briefing)
         self.theme_changed_signal.subscribe(self, self._theme_changed)
         if self._theme_notice:
-            self.notify(self._theme_notice, severity="warning", title="Theme", timeout=10)
+            self.notify(self._theme_notice, severity="warning", title=t.t(K.UI_TOAST_THEME_TITLE), timeout=10)
         for warning in self.options.config_warnings:
-            self.notify(warning, severity="warning", title="Config", timeout=10)
+            self.notify(warning, severity="warning", title=t.t(K.UI_TOAST_CONFIG_TITLE), timeout=10)
         for notice in self.options.notices:
-            self.notify(notice, severity="warning", title="Stations", timeout=10)
+            self.notify(notice, severity="warning", title=t.t(K.UI_TOAST_STATIONS_TITLE), timeout=10)
         if self.options.poll:
             self.poll_worker()
 
@@ -198,15 +203,18 @@ class WxBriefApp(App[None]):
         first = product not in self.state.errors
         self.state.record_error(product, f"{product.value}: {error}" if str(error) else type(error).__name__)
         if first:
-            self.notify(f"Could not fetch {product.value.upper()}: {error or type(error).__name__}", severity="warning")
+            fetch = self.ctx.translator.t(
+                K.UI_TOAST_FETCH_FAILED, product=product.value.upper(), error=error or type(error).__name__
+            )
+            self.notify(fetch, severity="warning")
         self.briefing.refresh_view()
 
     def refresh_now(self) -> None:
         if self.scheduler is None:
-            self.notify("Polling is off", severity="warning")
+            self.notify(self.ctx.translator.t(K.UI_TOAST_POLLING_OFF), severity="warning")
             return
         self.scheduler.poll_now()
-        self.notify("Refreshing")
+        self.notify(self.ctx.translator.t(K.UI_TOAST_REFRESHING))
 
     def on_app_blur(self, event: events.AppBlur) -> None:
         if self.scheduler is not None:
@@ -226,23 +234,24 @@ class WxBriefApp(App[None]):
     # --- the list --------------------------------------------------------------------------------------------------
 
     def add_station(self, icao: str) -> None:
+        t = self.ctx.translator
         typed = icao.strip().upper()
         station = self.ctx.station(typed)  # an ICAO id, or a unique IATA or FAA code
         if station is None:
-            self.notify(f"Unknown station {typed}", severity="warning")
+            self.notify(t.t(K.UI_TOAST_UNKNOWN_STATION, code=typed), severity="warning")
             return
         code = station.icao
         if code in self.state.ids:
-            note = f"{code} is already in the list"
+            key = K.UI_TOAST_ALREADY_LISTED
             if self.options.use_config and not self.state.is_saved(code):
                 self.state.add(code, persist=True)  # it was only listed for this run: keep it now
                 self._save()
-                note += " (now saved)"
-            self.notify(note)
+                key = K.UI_TOAST_ALREADY_LISTED_SAVED
+            self.notify(t.t(key, code=code))
             self.briefing.select(code)
             return
         if not self.state.add(code, persist=self.options.use_config):
-            self.notify("The watchlist is full (60 stations)", severity="warning")
+            self.notify(t.t(K.UI_TOAST_WATCHLIST_FULL, limit=WATCHLIST_CAP), severity="warning")
             return
         self._save()
         if self.scheduler is not None:
@@ -253,20 +262,24 @@ class WxBriefApp(App[None]):
     def remove_station(self, icao: str) -> None:
         if self.state.remove(icao):
             self._save()
-            self.notify(f"Removed {icao}")
+            self.notify(self.ctx.translator.t(K.UI_TOAST_REMOVED, code=icao))
             self.briefing.refresh_view()
 
     def _save(self) -> None:
-        """Write the watchlist and the theme back when either changed.
+        """Write the watchlist, the theme and the settings dialog's choices back when any of them changed.
 
         A config file that could not be read is never overwritten. One that loaded with warnings is copied to
         ``<name>.bak`` first, once.
         """
         options = self.options
+        t = self.ctx.translator
         watchlist = list(self.state.watchlist)
-        theme = None if options.theme_from_flag else self._chosen_theme
-        changed = watchlist != options.config.stations.watchlist or (
-            theme is not None and theme != options.config.view.theme
+        chosen = dict(self._chosen_view)
+        if self._chosen_theme is not None and not options.theme_from_flag:
+            chosen["theme"] = self._chosen_theme
+        saved_view = options.config.view
+        changed = watchlist != options.config.stations.watchlist or any(
+            getattr(saved_view, name) != value for name, value in chosen.items()
         )
         if not options.use_config or not changed:
             return
@@ -274,41 +287,95 @@ class WxBriefApp(App[None]):
         if not options.config_usable:
             if not self._warned_unusable:
                 self._warned_unusable = True
-                self.notify(
-                    f"{path} could not be read, so it was left alone. Changes last for this run only.",
-                    severity="warning",
-                    timeout=10,
-                )
+                self.notify(t.t(K.UI_TOAST_CONFIG_UNREADABLE, path=path), severity="warning", timeout=10)
             return
         if options.config_warnings and not self._backed_up and path.exists():
             backup = path.with_name(path.name + ".bak")
             try:
                 shutil.copy2(path, backup)
             except OSError:
-                self.notify("Could not back up the config; not saving it", severity="error")
+                self.notify(t.t(K.UI_TOAST_BACKUP_FAILED), severity="error")
                 return
             self._backed_up = True
-            self.notify(f"The config had problems; the original is kept as {backup}", timeout=10)
+            self.notify(t.t(K.UI_TOAST_BACKED_UP, path=backup), timeout=10)
         options.config.stations.watchlist = watchlist
-        if theme is not None:
-            options.config.view.theme = theme
+        for name, value in chosen.items():
+            setattr(saved_view, name, value)
         if not save_config(options.config, path):
-            self.notify(f"Could not save {path}", severity="error")
+            self.notify(t.t(K.UI_TOAST_SAVE_FAILED, path=path), severity="error")
 
-    def settings_lines(self) -> list[tuple[str, str]]:
-        view = self.options.view
+    # --- settings --------------------------------------------------------------------------------------------------
+
+    def _setting_choices(self, name: str) -> tuple[str, ...]:
+        return {
+            "lang": LANGUAGES,
+            "units": tuple(mode.value for mode in UnitsMode),
+            "time": TIME_MODES,
+            "glyph_set": GLYPH_SETS,
+        }[name]
+
+    def current_setting(self, name: str) -> str:
+        return {
+            "lang": self.ctx.translator.lang,
+            "units": self.ctx.units.value,
+            "time": self.ctx.time_mode,
+            "glyph_set": self.glyph_set,
+        }[name]
+
+    def setting_text(self, name: str) -> str:
+        """The current value of a view setting as the settings dialog shows it (a language by its own name)."""
+        value = self.current_setting(name)
+        if name == "lang":
+            return self.ctx.translator.language_name
+        group = "glyphs" if name == "glyph_set" else name
+        return self.ctx.translator.t(f"ui.option.{group}.{value}")
+
+    def cycle_setting(self, name: str) -> None:
+        """Move a view setting to its next value, apply it at once and save it."""
+        choices = self._setting_choices(name)
+        current = self.current_setting(name)
+        index = choices.index(current) if current in choices else -1
+        self.apply_setting(name, choices[(index + 1) % len(choices)])
+
+    def apply_setting(self, name: str, value: str) -> None:
+        """Change ``lang``, ``units``, ``time`` or ``glyph_set`` for the running app and remember it for the config."""
+        match name:
+            case "lang":
+                self.ctx.translator = Translator.load(value)
+                relabel_tree(self, self.ctx.translator)
+            case "units":
+                self.ctx.units = UnitsMode(value)
+            case "time":
+                self.ctx.time_mode = value
+            case "glyph_set":
+                self.glyph_set = value
+                self.ctx.glyphs = glyphs_for(value)
+            case _:
+                raise ValueError(f"not a view setting: {name}")
+        setattr(self.options.view, name, value)
+        self._chosen_view[name] = value
+        self.briefing.refresh_view()
+        for screen in self.screen_stack:
+            if isinstance(screen, StationDetailScreen):
+                screen.redraw()
+        self._save()
+
+    def settings_extra_lines(self) -> list[tuple[str, str]]:
+        """The settings the dialog only shows: theme, layout, poll times and the file locations."""
+        t = self.ctx.translator
         options = self.options
-        cache = self.state.cache.directory if self.state.cache else "off"
-        config = (options.config_path or default_config_path()) if options.use_config else "off (--no-config)"
+        poll = options.config.poll
+        cache = self.state.cache.directory if self.state.cache else t.t(K.UI_SETTINGS_OFF)
+        off_config = t.t(K.UI_SETTINGS_OFF_NO_CONFIG)
+        config = (options.config_path or default_config_path()) if options.use_config else off_config
+        layout = t.t(f"ui.option.layout.{self.briefing.layout_mode}")
+        poll_text = t.t(
+            K.UI_SETTINGS_POLL_VALUE, metar=poll.metar_interval, taf=poll.taf_interval, away=poll.away_interval
+        )
         return [
-            ("Theme", self.theme),
-            ("Glyphs", view.glyph_set),
-            ("Layout", view.layout),
-            ("Units", view.units),
-            ("Time", view.time),
-            ("Language", self.ctx.translator.lang),
-            ("Poll (s)", f"METAR {options.config.poll.metar_interval}, TAF {options.config.poll.taf_interval}, "
-             f"away {options.config.poll.away_interval}"),
-            ("Config file", str(config)),
-            ("Cache folder", str(cache or default_cache_dir())),
+            (t.t(K.UI_SETTINGS_THEME), self.theme),
+            (t.t(K.UI_SETTINGS_LAYOUT), layout),
+            (t.t(K.UI_SETTINGS_POLL), poll_text),
+            (t.t(K.UI_SETTINGS_CONFIG_FILE), str(config)),
+            (t.t(K.UI_SETTINGS_CACHE_FOLDER), str(cache or default_cache_dir())),
         ]
