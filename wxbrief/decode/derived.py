@@ -74,8 +74,6 @@ _CONTAMINATING_DEPOSITS = frozenset(
     }
 )
 
-DAY_START_HOUR = 6  # local hours [6, 20) count as daytime for the clear-sky glyph
-DAY_END_HOUR = 20
 
 
 def _on_field(groups: Sequence[WeatherGroup]) -> list[WeatherGroup]:
@@ -110,11 +108,11 @@ def compute_condition(metar: Metar) -> Condition | None:
     return None
 
 
-def refine_clear(condition: Condition | None, local_hour: int) -> Condition | None:
-    """Turn ``CLEAR`` into ``CLEAR_DAY``/``CLEAR_NIGHT`` once the station-local hour is known."""
+def refine_clear(condition: Condition | None, daylight: bool) -> Condition | None:
+    """Turn ``CLEAR`` into ``CLEAR_DAY``/``CLEAR_NIGHT`` once it is known whether the sun is up."""
     if condition is not Condition.CLEAR:
         return condition
-    return Condition.CLEAR_DAY if DAY_START_HOUR <= local_hour < DAY_END_HOUR else Condition.CLEAR_NIGHT
+    return Condition.CLEAR_DAY if daylight else Condition.CLEAR_NIGHT
 
 
 def _runway_contaminated(state: RunwayState) -> bool:

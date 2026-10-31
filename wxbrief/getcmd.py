@@ -7,7 +7,6 @@ import asyncio
 import json
 import sys
 from datetime import UTC, datetime
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from wxbrief.data.awc import AwcClient, AwcError
 from wxbrief.data.models import AwcMetar, AwcTaf, latest_by_station
@@ -21,6 +20,7 @@ from wxbrief.i18n.keys import K
 from wxbrief.render.discord import render_discord
 from wxbrief.render.jsonout import to_dict
 from wxbrief.render.plain import render_plain
+from wxbrief.solar import is_daylight
 
 
 def add_get_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser]) -> None:
@@ -73,16 +73,6 @@ async def _fetch(ids: list[str]) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf]
     return latest_by_station(metars), {taf.icao: taf for taf in tafs}, errors
 
 
-def local_hour(tz: str | None, moment: datetime | None) -> int | None:
-    """The hour of day at the station when the report was made, for the day/night glyph."""
-    if tz is None or moment is None:
-        return None
-    try:
-        return moment.astimezone(ZoneInfo(tz)).hour
-    except (ZoneInfoNotFoundError, ValueError, OSError):
-        return None
-
-
 def run_get(args: argparse.Namespace) -> int:
     """Exit 0 when everything arrived, 3 when a product failed but some data arrived, 1 when no station got anything."""
     # Always UTF-8, as `decode` does: never fail on a character the stream cannot encode.
@@ -120,10 +110,10 @@ def run_get(args: argparse.Namespace) -> int:
         name = station.name if station else None
         parts: list[str] = []
         if icao in decoded_metars:
-            hour = local_hour(station.tz if station else None, metars[icao].observed)
+            daylight = is_daylight(station.lat, station.lon, metars[icao].observed) if station else None
             if args.discord:
                 parts.append(
-                    render_discord(decoded_metars[icao], translator, units, station_name=name, local_hour=hour)
+                    render_discord(decoded_metars[icao], translator, units, station_name=name, daylight=daylight)
                 )
             else:
                 parts.append(render_plain(decoded_metars[icao], translator, units))

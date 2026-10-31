@@ -121,11 +121,11 @@ def test_a_metar_without_a_tail_has_no_divider() -> None:
     assert text.endswith("Clouds: Clear below 12,000 ft\n" + FENCE)
 
 
-def test_station_name_and_local_hour_dress_the_title() -> None:
+def test_station_name_and_daylight_dress_the_title() -> None:
     raw = "METAR KDEN 311453Z 00000KT 10SM CLR M05/M12 A3001"
     assert block(raw, station_name="Denver Intl Airport").splitlines()[1] == "☀️ KDEN — DENVER INTL AIRPORT"
-    assert block(raw, local_hour=22).splitlines()[1].startswith("🌙 KDEN")
-    assert block(raw, local_hour=12).splitlines()[1].startswith("☀️ KDEN")
+    assert block(raw, daylight=False).splitlines()[1].startswith("🌙 KDEN")
+    assert block(raw, daylight=True).splitlines()[1].startswith("☀️ KDEN")
 
 
 def test_only_lines_that_exist_in_the_report_appear() -> None:
