@@ -1,0 +1,205 @@
+"""Poll schedule, rate budget and freshness with an injected clock (no real waiting)."""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+import pytest
+
+from wxbrief.data.awc import AwcError, RateLimited, ServerError
+from wxbrief.data.poll import (
+    BACKOFF_CAP,
+    Freshness,
+    PollScheduler,
+    Product,
+    RateBudget,
+    backoff_delay,
+    freshness,
+)
+
+
+class FakeClock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+class FakeClient:
+    """Stands in for AwcClient: records calls, and raises queued errors."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, list[str]]] = []
+        self.errors: list[AwcError] = []
+        self.metar_only = False
+
+    async def metars(self, ids: list[str]) -> list[Any]:
+        return self._go("metar", ids)
+
+    async def tafs(self, ids: list[str]) -> list[Any]:
+        return self._go("taf", ids)
+
+    def _go(self, product: str, ids: list[str]) -> list[Any]:
+        self.calls.append((product, list(ids)))
+        if self.errors and (product == "metar" or not self.metar_only):
+            raise self.errors.pop(0)
+        return [product]
+
+
+def make(
+    clock: FakeClock, client: FakeClient, ids: list[str] | None = None, **kw: Any
+) -> tuple[PollScheduler, list[Any]]:
+    seen: list[Any] = []
+    scheduler = PollScheduler(
+        client,  # type: ignore[arg-type]
+        lambda: ids if ids is not None else ["KDEN", "EGLL"],
+        lambda product, rows: seen.append((product, rows)),
+        lambda product, error: seen.append((product, error)),
+        clock=clock,
+        **kw,
+    )
+    return scheduler, seen
+
+
+async def test_first_cycle_fetches_both_products_once_in_one_batch() -> None:
+    clock, client = FakeClock(), FakeClient()
+    scheduler, seen = make(clock, client)
+    assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
+    assert client.calls == [("metar", ["KDEN", "EGLL"]), ("taf", ["KDEN", "EGLL"])]
+    assert len(seen) == 2
+
+
+async def test_intervals_metar_600_taf_1800() -> None:
+    clock, client = FakeClock(), FakeClient()
+    scheduler, _ = make(clock, client)
+    await scheduler.run_cycle()
+    clock.now += 599
+    assert await scheduler.run_cycle() == []
+    assert scheduler.next_due_in() == 1
+    clock.now += 1
+    assert await scheduler.run_cycle() == [Product.METAR]
+    clock.now += 600
+    assert await scheduler.run_cycle() == [Product.METAR]
+    clock.now += 600  # 1800 s since the start
+    assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
+
+
+async def test_away_mode_slows_metar_to_1800() -> None:
+    clock, client = FakeClock(), FakeClient()
+    scheduler, _ = make(clock, client)
+    scheduler.away = True
+    await scheduler.run_cycle()
+    clock.now += 600
+    assert await scheduler.run_cycle() == []
+    clock.now += 1200
+    assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
+
+
+async def test_failures_back_off_exponentially_and_cap() -> None:
+    clock, client = FakeClock(), FakeClient()
+    client.errors = [ServerError(500)] * 8
+    client.metar_only = True
+    scheduler, seen = make(clock, client, taf_interval=99999)
+    delays = []
+    for _ in range(5):
+        await scheduler.run_cycle()
+        delays.append(scheduler._tracks[Product.METAR].due - clock.now)
+        clock.now += delays[-1]
+    assert delays[:3] == [600, 1200, 2400]
+    assert delays[3] == BACKOFF_CAP
+    assert backoff_delay(1800, 5) == BACKOFF_CAP
+    assert any(isinstance(item[1], ServerError) for item in seen)
+
+
+async def test_success_resets_the_backoff() -> None:
+    clock, client = FakeClock(), FakeClient()
+    client.errors = [ServerError(500)]
+    scheduler, _ = make(clock, client)
+    await scheduler.run_cycle()  # metar fails, taf succeeds
+    clock.now += 600
+    await scheduler.run_cycle()  # metar succeeds again
+    assert scheduler.next_due_in() == 600
+
+
+async def test_retry_after_is_honoured_when_longer_than_the_backoff() -> None:
+    clock, client = FakeClock(), FakeClient()
+    client.errors = [RateLimited(1500)]
+    scheduler, _ = make(clock, client)
+    await scheduler.run_cycle()  # metar gets a 429, taf succeeds
+    clock.now += 1499
+    assert Product.METAR not in await scheduler.run_cycle()
+    clock.now += 1
+    assert Product.METAR in await scheduler.run_cycle()
+
+
+async def test_empty_watchlist_makes_no_requests() -> None:
+    clock, client = FakeClock(), FakeClient()
+    scheduler, _ = make(clock, client, ids=[])
+    assert await scheduler.run_cycle() == []
+    assert client.calls == []
+
+
+async def test_poll_now_makes_everything_due() -> None:
+    clock, client = FakeClock(), FakeClient()
+    scheduler, _ = make(clock, client)
+    await scheduler.run_cycle()
+    scheduler.poll_now()
+    assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
+
+
+async def test_exhausted_budget_defers_instead_of_requesting() -> None:
+    clock, client = FakeClock(), FakeClient()
+    scheduler, _ = make(clock, client, budget=RateBudget(1, 60, clock))
+    assert await scheduler.run_cycle() == [Product.METAR]
+    assert [c[0] for c in client.calls] == ["metar"]
+    clock.now += 60
+    assert await scheduler.run_cycle() == [Product.TAF]
+
+
+async def test_run_loop_sleeps_until_due_then_stops_on_cancel() -> None:
+    import asyncio
+
+    clock, client = FakeClock(), FakeClient()
+    slept: list[float] = []
+
+    async def fake_sleep(seconds: float) -> None:
+        slept.append(seconds)
+        clock.now += seconds
+        if len(slept) >= 2:
+            await asyncio.Event().wait()  # park, as a real sleep would
+
+    scheduler, _ = make(clock, client, sleep=fake_sleep)
+    task = asyncio.ensure_future(scheduler.run())
+    for _ in range(50):
+        await asyncio.sleep(0)
+        if len(slept) >= 2:
+            break
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert slept[0] == 600
+    assert [c[0] for c in client.calls][:3] == ["metar", "taf", "metar"]
+
+
+def test_rate_budget_sliding_window() -> None:
+    clock = FakeClock()
+    budget = RateBudget(100, 60, clock)
+    assert budget.remaining == 100
+    assert all(budget.try_acquire() for _ in range(100))
+    assert not budget.try_acquire()
+    assert budget.used == 100 and budget.remaining == 0
+    assert budget.wait_time() == 60
+    clock.now += 30
+    assert budget.wait_time() == 30
+    clock.now += 30
+    assert budget.remaining == 100 and budget.wait_time() == 0
+    assert budget.try_acquire(100)
+
+
+def test_freshness_threshold_is_75_minutes() -> None:
+    now = datetime(2026, 10, 31, 12, 0, tzinfo=UTC)
+    assert freshness(now - timedelta(minutes=74), now) is Freshness.FRESH
+    assert freshness(now - timedelta(minutes=75), now) is Freshness.STALE
+    assert freshness(None, now) is Freshness.STALE

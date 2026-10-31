@@ -11,6 +11,7 @@ from typing import TextIO
 from wxbrief import __version__
 from wxbrief.decode.metar import parse_metar
 from wxbrief.decode.units import UnitsMode
+from wxbrief.getcmd import add_get_parser, run_get
 from wxbrief.i18n import Translator
 from wxbrief.render.plain import render_plain
 
@@ -60,6 +61,7 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="YYYY-MM-DD",
         help="date used to resolve the day of the month in the report's timestamp (default: now, UTC)",
     )
+    add_get_parser(commands)
     return parser
 
 
@@ -114,6 +116,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "decode":
         return _run_decode(args)
+    if args.command == "get":
+        return run_get(args)
     parser.print_help()
     return 0
 
