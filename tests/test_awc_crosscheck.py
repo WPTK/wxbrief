@@ -71,7 +71,6 @@ EXCEPTIONS: dict[tuple[str, str], str] = {
 
 NO_SKY = "The sky was not observed (`//////`): AWC gives no flight category, we classify on the visibility alone."
 NO_CATEGORY = "AWC gives no flight category for a report whose cloud layers carry only `///` types; we classify it."
-UNKNOWN_VISIBILITY = "The visibility group `M0200` is not a valid group: AWC reads 200 m, we leave it unrecognised."
 NO_VISIBILITY = "AWC leaves visib empty for a 9999 report whose cloud layers carry only `///` types."
 ZERO_CEILING = "A layer at 0 ft (`OVC000`, `BKN000`): AWC drops it from `clouds`, we report a ceiling of 0 ft."
 BGSF = (
@@ -83,28 +82,18 @@ EXCEPTIONS.update(
     {
         ("fltCat", raw): NO_SKY
         for raw in (
-            "METAR ETHS 310820Z AUTO 31001KT 5000 // ////// 09/08 Q1032 ///",
             "METAR ETHB 310820Z AUTO 30002KT 1000 // ////// 08/07 Q1033 ///",
             "METAR ETHC 310820Z AUTO 27002KT 0900 // ////// 08/08 Q1033 ///",
-            "METAR ETHF 310820Z AUTO 33005KT 9999 // ////// 06/05 Q1033 ///",
             "METAR ETNW 310820Z AUTO 29005KT 3500 // ////// 08/08 Q1033 ///",
-            "METAR ETSL 310820Z AUTO 07008KT 9999 // ////// 06/05 Q1029 ///",
             "METAR ETNW 310720Z AUTO 28005KT 3200 // ////// 08/08 Q1033 ///",
             "METAR ETSL 310720Z AUTO 06001KT 2700 // ////// 03/03 Q1029 ///",
             "METAR ETHB 310720Z AUTO 27003KT 3000 // ////// 07/07 Q1033 ///",
             "METAR ETHC 310720Z AUTO VRB01KT 0600 // ////// 08/08 Q1033 ///",
-            "METAR ETHF 310720Z AUTO 31002KT 9999 // ////// 05/04 Q1033 ///",
             "METAR ETHS 310720Z AUTO 00000KT 4800 // ////// 09/08 Q1033 ///",
         )
     }
     | {("visib", raw): NO_VISIBILITY for raw in BGSF}
     | {("fltCat", raw): NO_CATEGORY for raw in BGSF}
-    | {
-        (
-            "visib",
-            "SPECI EGUL 310735Z AUTO 00000KT M0200 FG VV000 04/03 A3048 RMK AO2 RAE0655RAB16E35 SLP325 RVRNO $",
-        ): UNKNOWN_VISIBILITY
-    }
     | {
         ("ceiling", raw): ZERO_CEILING
         for raw in (

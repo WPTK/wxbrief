@@ -177,6 +177,7 @@ def test_wind_variation() -> None:
         ("3000", 3000, DistanceUnit.M, None, 1),
         ("0800", 800, DistanceUnit.M, None, 1),
         ("0000", 50, DistanceUnit.M, VisPrefix.LESS_THAN, 1),
+        ("M0200", 200, DistanceUnit.M, VisPrefix.LESS_THAN, 1),  # less than 200 m, as AWC reads it
         ("10KM", 10, DistanceUnit.KM, None, 1),
     ],
 )
