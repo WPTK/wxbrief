@@ -243,11 +243,82 @@ except the cases in `EXCEPTIONS`, each investigated: Norwegian `RMK WIND 2600FT 
 `maxT`/`minT`, a pressure tendency of 0.0 hPa that AWC leaves empty, and AWC adding a recent `RESHRA` to `wxString`.
 `pcp3hr`, `pcp24hr` and `snow` were not populated in any saved batch, so those decoders are covered by unit tests only.
 
+## TAF
+
+`decode/taf.py` (`parse_taf(raw, reference)`) reads `TAF [AMD|COR|CNL|NIL] STATION DDHHMMZ DDHH/DDHH`, the base
+forecast, then any number of change groups, then an optional `RMK` trailer. It never raises and, like the METAR parser,
+every non-blank character ends up in exactly one token. The result is a `Taf`: `base` and `changes` (both `TafPeriod`),
+`temperatures`, `remarks`, `warnings`, `flags` and `worst_category`; `periods` is the base followed by the changes.
+`parse_any(text, reference)` in `decode/split.py` splits a pasted blob and picks `parse_taf` or `parse_metar` for each
+report.
+
+**Header.** `AMD` and `COR` are modifiers of a forecast that follows; `CNL` and `NIL` leave `base` empty (`cancelled`,
+`nil`). A forecast without an issue time (`TAF KNID 3023/3123 ...`, seen on military TAFs) has `issue_time = None`. The
+keyword `TAF` is optional when `parse_any` can tell from the groups that it is a forecast.
+
+**Times.** The issue time is resolved against the reference (the receipt time, or `--date`). The valid period is
+resolved against the issue time, its end forced to lie after its start, so `3122/0106` runs into the next month. Every
+group window is then resolved against the start of the valid period. Old-style forms are read too, each with a
+`legacy_format` warning: a six-digit valid period (`131212`), `BECMG 1315` and `FM1800`; `Taf.legacy` is set when the
+valid period was old-style.
+
+**Change groups** (`ChangeType`):
+
+| Group | Type | Window | Meaning |
+|---|---|---|---|
+| none | `BASE` | the valid period up to the next `FM` or `BECMG` | the opening forecast |
+| `FMDDHHMM` | `FM` | from the time to the next `FM`/`BECMG` or the end | replaces the whole forecast from then |
+| `BECMG DDHH/DDHH` | `BECMG` | `start` to the window end (`becoming_end`), the group lasting to the next `FM`/`BECMG` | the listed elements change during the window and stay changed |
+| `TEMPO DDHH/DDHH` | `TEMPO` | the window | temporary fluctuation, laid over the prevailing forecast |
+| `INTER DDHH/DDHH` | `INTER` | the window | like `TEMPO` (older ICAO usage; `PROB30 INTER` keeps its probability) |
+| `PROB30|40 DDHH/DDHH` | `PROB` | the window | a possibility, over the prevailing forecast |
+| `PROB30|40 TEMPO DDHH/DDHH` | `PROB_TEMPO` | the window | a probable temporary fluctuation |
+
+A change group lists only the elements it changes (`ForecastElements`: wind, visibility, weather, sky, colour state,
+plus the TAF-only wind shear, forecast pressure, icing and turbulence). `TafPeriod.end` is where the group stops
+mattering: the window end for the overlay kinds, the next `FM`/`BECMG` start (or the valid end) for the rest.
+
+**TAF-only groups.** `WS020/30035KT` (wind shear at 2,000 ft AGL), `TX19/3114Z` and `TNM02/0105Z` (the extremes, with
+their day and hour; they belong to the whole forecast and are collected in `Taf.temperatures` wherever they sit),
+`QNH2992INS` (military; hectopascals without `INS`), `620604` icing (`6 I hhh t`) and `510708` turbulence (`5 B hhh t`;
+base in hundreds of feet above ground, thickness in thousands, 0 meaning unspecified). Closing military notes
+(`LAST NO AMDS AFT 3023 NEXT 0207`, `AMD NOT SKED`, `FS30217`, `AUTOMATED SENSOR METWATCH ...`) are tagged `REMARK` and
+appear in `remarks`. Words after `RMK` are `remarks` verbatim. Notes the catalog does not know (`WND 230V330`,
+`WND21008KT AFT 3122 ALL WINDS GRID`) stay unknown tokens with a warning; the corpus lists the two stations.
+
+**Timeline** (`decode/timeline.py`). `expand_timeline(taf)` cuts the valid period into slices over which nothing
+changes, and `Timeline.hourly()` gives one cell per UTC hour for a strip of cells.
+
+* The base and every `FM` replace the prevailing forecast, overlays included.
+* A `BECMG` takes effect at the *end* of its window. Inside it slices are flagged `becoming` and the old forecast still
+  prevails. A later `FM` that starts before the window ends supersedes it: it is flagged but never lands.
+* `TEMPO`, `PROB`, `PROB_TEMPO` and `INTER` never change the prevailing forecast. They are overlays for their window,
+  cut where a later `FM` starts. `merge(prevailing, overlay)` lays the elements an overlay states over what prevails, so
+  `TEMPO 4000 BR` over `OVC004` is LIFR: it keeps the ceiling. A list (cloud layers, weather) replaces the whole list;
+  `NSW` replaces the weather; `CAVOK` on either side is spelled out as 10 km, no weather, no cloud.
+* A slice's `category` is the prevailing category and `worst_category` the worst of it and every overlay's. A hourly
+  cell takes the worst slice that touches the hour.
+* `TafPeriod.flight_category` is the category of the group's elements merged over what prevails when it starts (base and
+  `FM`: on their own). It can therefore be worse than `Taf.worst_category` for a final `BECMG`, whose conditions begin
+  only at the end of the forecast.
+
+**Output.** `render/discord.py` renders a METAR or a TAF as a fenced block (`discord_block`, `render_discord` for the
+outer four-backtick fence); `wxbrief decode --discord` prints one per report, in US units unless `--units` says
+otherwise. `--json` prints a list of `to_dict` results (language-neutral, never converted or translated), the same form
+as the goldens.
+
+**AWC cross-check.** `tests/test_awc_taf_crosscheck.py` compares each saved TAF (`tests/fixtures/awc/taf_*.json`, 204
+distinct forecasts) with AWC's structured `fcsts`: the valid period, each group's type, probability and times, wind,
+wind shear, visibility, weather, clouds, pressure, icing, turbulence and the extremes. The investigated differences are
+named rules with reasons, as for the METAR cross-check.
+
+
 ## Adding a fixture
 
-Fixtures live in `tests/fixtures/reports/<region>/` as a pair: `<ICAO>_<yyyymmddhhmm>[_handwritten-<note>].txt` holding
+Fixtures live in `tests/fixtures/reports/<region>/` (TAFs in `taf-<region>/`: `taf-americas`, `taf-europe`,
+`taf-world`) as a pair: `<ICAO>_<yyyymmddhhmm>[_handwritten-<note>].txt` holding
 one raw report, and `<same name>.golden.json` holding `render.jsonout.to_dict` of the decode. The timestamp in the name
-is the reference time for the day-of-month group. Regions so far: `us`, `canada`, `uk` (civil and RAF), `france`,
+is the reference time for the day-of-month group (for a TAF, its issue time). Regions so far: `us`, `canada`, `uk` (civil and RAF), `france`,
 `germany` (civil and military), `netherlands`, `norway`, `russia`, `india`, `japan`, `australia`, `brazil`,
 `antarctica` and `world`.
 
@@ -255,9 +326,9 @@ is the reference time for the day-of-month group. Regions so far: `us`, `canada`
    with an honest `User-Agent` (`wxbrief-dev/0.1 (+https://github.com/WPTK/wxbrief)`), a few requests at most. Save the
    JSON batch under `tests/fixtures/awc/` (it feeds the flight-category parity test and the AWC cross-check) and write
    the `rawOb` text and the `reportTime` (as `yyyymmddhhmm`) into the fixture file name. Real fixtures must appear in a
-   saved batch: a test checks.
+   saved batch: a test checks. TAFs come from the `taf` endpoint of the same API (`rawTAF`, `issueTime`).
 2. Hand-written reports (a group the live data lacks) put `handwritten-<note>` after the timestamp.
-3. Generate the golden with `python -m pytest tests/test_goldens.py --update-goldens`, then read it against the raw text:
+3. Generate the golden with `python -m pytest tests/test_goldens.py tests/test_taf_goldens.py --update-goldens`, then read it against the raw text:
    `git diff` shows each field. A golden you did not review is not a test. After an intended decoder change, rerun with
    `--update-goldens` and review the whole diff.
 4. Files are `-text` in `.gitattributes`; keep LF endings.
@@ -268,7 +339,7 @@ is the reference time for the day-of-month group. Regions so far: `us`, `canada`
 reports mutated token by token (dropped, duplicated, truncated, garbled, swapped), and a random run of remark tokens of
 every shape after `RMK`. For each it asserts no exception, tokens in bounds, ordered and non-overlapping with
 `raw[start:end].upper() == text`, every non-whitespace character covered, and that plain, JSON and Rich rendering
-succeed. `WXBRIEF_FUZZ_EXAMPLES=40000 python -m pytest tests/test_fuzz.py` searches deeper.
+succeed. The same properties run on mutated TAFs (plus the timeline, the Discord block and `parse_any` splitting). `WXBRIEF_FUZZ_EXAMPLES=40000 python -m pytest tests/test_fuzz.py` searches deeper.
 
 ## Units
 
@@ -284,4 +355,5 @@ and tendencies keep their tenth).
 * Only English phrases exist (S7 adds es, fr, de, pt); `FreeText` word decoding is English-only.
 * `933RRR` (water equivalent of snow), `931SSS`, `I1xxx` ice accretion and other additive groups not listed above
   stay `FreeText`; the plain decode lists them under "Remarks (not decoded)".
-* Trend and colour-state groups are read from METAR reports only; forecasts are S2b.
+* TAF notes the catalog does not know (`WND 230V330`, Antarctic grid winds) stay unknown tokens with a warning.
+* The Discord title shows no airport name, and a clear sky no moon, until the station database (S3).
