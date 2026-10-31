@@ -635,6 +635,7 @@ class K:
     UI_LAYOUT_GRID = "ui.layout.grid"
     UI_LAYOUT_LIST = "ui.layout.list"
     UI_LIST_NO_REPORT = "ui.list.no_report"
+    UI_LIST_TITLE = "ui.list.title"
     UI_OPTION_GLYPHS_ASCII = "ui.option.glyphs.ascii"
     UI_OPTION_GLYPHS_EMOJI = "ui.option.glyphs.emoji"
     UI_OPTION_GLYPHS_NERD = "ui.option.glyphs.nerd"

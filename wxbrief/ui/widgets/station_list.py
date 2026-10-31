@@ -12,6 +12,7 @@ from wxbrief.data.poll import Freshness
 from wxbrief.decode.model import Metar, SemanticKind
 from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
+from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
 
 
@@ -32,6 +33,15 @@ def short_conditions(metar: Metar | None) -> str:
 
 class StationList(OptionList):
     """Selecting a row (or moving the highlight) shows that station in the detail pane."""
+
+    BINDINGS = [
+        bind("a", "screen.add_station", K.UI_BINDING_ADD_STATION),
+        bind("d", "screen.remove_station", K.UI_BINDING_REMOVE_STATION),
+        bind("v", "screen.toggle_layout", K.UI_BINDING_TOGGLE_LAYOUT),
+    ]
+
+    def on_mount(self) -> None:
+        localize(self)
 
     def set_stations(
         self, reports: list[StationReports], ctx: ViewContext, now: datetime, selected: str | None

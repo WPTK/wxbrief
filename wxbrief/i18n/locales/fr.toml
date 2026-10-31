@@ -813,6 +813,7 @@ requests = "requêtes {used}/{limit}"
 polling_off = "interrogation désactivée"
 
 [ui.list]
+title = "Stations ({n})"
 no_report = "pas de message"
 
 [ui.layout]

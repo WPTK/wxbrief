@@ -25,6 +25,9 @@ class StationGrid(VerticalScroll, can_focus=True):
         bind("up", "move(0, -1)", K.UI_BINDING_UP, show=False),
         bind("down", "move(0, 1)", K.UI_BINDING_DOWN, show=False),
         bind("enter", "open", K.UI_BINDING_OPEN, show=False),
+        bind("a", "screen.add_station", K.UI_BINDING_ADD_STATION),
+        bind("d", "screen.remove_station", K.UI_BINDING_REMOVE_STATION),
+        bind("v", "screen.toggle_layout", K.UI_BINDING_TOGGLE_LAYOUT),
     ]
 
     class Selected(Message):

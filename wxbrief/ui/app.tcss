@@ -297,3 +297,18 @@ BriefingScreen.-short DetailPane .section {
     margin-top: 0;
 }
 /* === end S8 === */
+
+/* The station count rides in the border title of the list and the grid (the list already has its top border). */
+StationList,
+StationGrid {
+    border-title-color: $text-muted;
+    border-title-style: bold;
+}
+
+StationGrid {
+    border-top: tall $primary-background-lighten-2;
+}
+
+StationGrid:focus {
+    border-top: tall $primary;
+}

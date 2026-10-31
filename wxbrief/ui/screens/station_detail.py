@@ -5,30 +5,29 @@ from __future__ import annotations
 from datetime import datetime
 
 from textual.app import ComposeResult
-from textual.screen import Screen
 from textual.widgets import Footer
 
 from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
+from wxbrief.ui.copying import CopyActions
 from wxbrief.ui.widgets.detail import DetailPane
 
 
-class StationDetailScreen(Screen[None]):
+class StationDetailScreen(CopyActions):
+    # 1 2 3 and c live on DetailPane (its bindings reach this screen's copy actions through "screen.").
     BINDINGS = [
         bind("escape", "close", K.UI_BINDING_BACK),
-        bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW, show=False),
-        bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED, show=False),
-        bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF, show=False),
+        bind("C", "copy_both", K.UI_BINDING_COPY_BOTH, show=False),
+        bind("y", "copy_raw", K.UI_BINDING_COPY_RAW, show=False),
     ]
 
-    def __init__(self, entry: StationReports, ctx: ViewContext, now: datetime, position: str = "") -> None:
+    def __init__(self, entry: StationReports, ctx: ViewContext, now: datetime) -> None:
         super().__init__()
         self._entry = entry
         self._ctx = ctx
         self._now = now
-        self._position = position
 
     def compose(self) -> ComposeResult:
         yield DetailPane(id="detail")
@@ -43,10 +42,15 @@ class StationDetailScreen(Screen[None]):
 
     def redraw(self) -> None:
         """Draw the snapshot again, e.g. after a theme change (the colours are baked into the Rich text)."""
-        self.query_one(DetailPane).show(self._entry, self._ctx, self._now, self._position)
+        self.query_one(DetailPane).show(self._entry, self._ctx, self._now)
 
-    def action_jump(self, section: str) -> None:
-        self.query_one(DetailPane).jump(section)
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        """A station's own screen cannot add a station: DetailPane's ``a`` is hidden here."""
+        del parameters
+        return action != "add_station"
+
+    def current(self) -> StationReports:
+        return self._entry
 
     def action_close(self) -> None:
         self.dismiss(None)

@@ -19,6 +19,7 @@ from wxbrief.i18n.keys import K
 from wxbrief.render import phrases
 from wxbrief.render.plain import DecodeRow, decode_rows, taf_blocks, taf_header_rows, warning_lines
 from wxbrief.state import StationReports
+from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.widgets.period_detail import PeriodDetail, rows_text
 from wxbrief.ui.widgets.status_bar import STATE_KEYS
@@ -40,7 +41,7 @@ def age_text(delta: timedelta, t: Translator) -> str:
 class StationHeader(Static):
     """Station code and name, flight category badge, observation time and how fresh it is."""
 
-    def show(self, entry: StationReports, ctx: ViewContext, now: datetime, position: str) -> None:
+    def show(self, entry: StationReports, ctx: ViewContext, now: datetime) -> None:
         palette = ctx.palette
         station = ctx.station(entry.icao)
         name = station.name if station else (entry.awc_metar.name if entry.awc_metar else None)
@@ -56,7 +57,6 @@ class StationHeader(Static):
         theirs = ctx.awc_differs(entry)
         if theirs:  # AWC's own category for this report is not the one we computed
             title.append(f" {ctx.glyphs.differs}{theirs}", style=palette.stale)
-        title.append(f"   {position}", style=palette.muted)
         lines = [title]
         if entry.awc_metar and entry.awc_metar.observed:
             observed = entry.awc_metar.observed
@@ -145,6 +145,13 @@ class DetailPane(VerticalScroll):
     """Everything known about the selected station."""
 
     can_focus = True
+    BINDINGS = [
+        bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW),
+        bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED),
+        bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF),
+        bind("c", "screen.copy_metar", K.UI_BINDING_COPY_METAR),
+        bind("a", "screen.add_station", K.UI_BINDING_ADD_STATION),  # the list is hidden on a narrow terminal
+    ]
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -171,6 +178,7 @@ class DetailPane(VerticalScroll):
         yield Static(id="warnings")
 
     def on_mount(self) -> None:
+        localize(self)
         self._set_visible(False)
 
     def _set_visible(self, shown: bool) -> None:
@@ -179,7 +187,7 @@ class DetailPane(VerticalScroll):
             if child.id != "placeholder":
                 child.display = shown
 
-    def show(self, entry: StationReports | None, ctx: ViewContext, now: datetime, position: str = "") -> None:
+    def show(self, entry: StationReports | None, ctx: ViewContext, now: datetime) -> None:
         self._entry, self._ctx = entry, ctx
         t = ctx.translator
         self.query_one("#placeholder", Static).update(t.t(K.UI_DETAIL_NO_STATIONS))
@@ -191,7 +199,7 @@ class DetailPane(VerticalScroll):
         self.query_one("#decoded-title", Label).update(t.t(K.UI_SECTION_DECODED))
         self.query_one("#taf-title", Label).update(t.t(K.UI_SECTION_FORECAST))
         metar = entry.metar
-        self.query_one(StationHeader).show(entry, ctx, now, position)
+        self.query_one(StationHeader).show(entry, ctx, now)
         self.query_one(FlagsRow).show(metar, ctx)
         self.query_one(RawReport).show(entry, ctx)
 
@@ -265,6 +273,9 @@ class DetailPane(VerticalScroll):
         if message.icao != entry.icao or message.cell is not message.timeline.selected:
             return  # stale: the cursor or the station has moved on since this was posted
         self.query_one(PeriodDetail).show_cell(message.taf, message.data, message.cell, ctx, message.icao)
+
+    def action_jump(self, section: str) -> None:
+        self.jump(section)
 
     def jump(self, section: str) -> None:
         """Scroll to ``raw``, ``decoded`` or ``taf``; the forecast also takes the keyboard focus (cursor keys)."""

@@ -7,17 +7,12 @@ from typing import TYPE_CHECKING, cast
 from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.events import Resize
-from textual.screen import Screen
 from textual.widgets import Footer, OptionList
 
-from wxbrief.clipboard import copy_text
-from wxbrief.decode.model import Metar, Taf
-from wxbrief.decode.units import UnitsMode
-from wxbrief.getcmd import local_hour
 from wxbrief.i18n.keys import K
-from wxbrief.render.discord import render_discord
 from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
+from wxbrief.ui.copying import CopyActions
 from wxbrief.ui.screens.add_station import AddStationScreen
 from wxbrief.ui.screens.help import HelpScreen
 from wxbrief.ui.screens.paste import PasteDecodeScreen
@@ -32,14 +27,16 @@ if TYPE_CHECKING:
     from wxbrief.app import WxBriefApp
 
 
-class BriefingScreen(Screen[None]):
+class BriefingScreen(CopyActions):
     BINDINGS = [
-        bind("a", "add_station", K.UI_BINDING_ADD_STATION),
-        bind("d", "remove_station", K.UI_BINDING_REMOVE_STATION),
+        # a d v and c 1 2 3 work wherever the focus is; the footer shows them from the pane that owns them
+        # (StationList, StationGrid, DetailPane), so these copies are hidden.
+        bind("a", "add_station", K.UI_BINDING_ADD_STATION, show=False),
+        bind("d", "remove_station", K.UI_BINDING_REMOVE_STATION, show=False),
         bind("p", "paste", K.UI_BINDING_PASTE),
         bind("r", "refresh_now", K.UI_BINDING_REFRESH_NOW),
-        bind("v", "toggle_layout", K.UI_BINDING_TOGGLE_LAYOUT),
-        bind("c", "copy_metar", K.UI_BINDING_COPY_METAR),
+        bind("v", "toggle_layout", K.UI_BINDING_TOGGLE_LAYOUT, show=False),
+        bind("c", "copy_metar", K.UI_BINDING_COPY_METAR, show=False),
         bind("C", "copy_both", K.UI_BINDING_COPY_BOTH, show=False),
         bind("y", "copy_raw", K.UI_BINDING_COPY_RAW, show=False),
         bind("S", "settings", K.UI_BINDING_SETTINGS, show=False),
@@ -98,6 +95,8 @@ class BriefingScreen(Screen[None]):
         wx = self.wx
         reports = wx.state.reports()
         ids = [r.icao for r in reports]
+        title = wx.ctx.translator.t(K.UI_LIST_TITLE, n=len(ids))
+        self.query_one(StationList).border_title = self.query_one(StationGrid).border_title = title
         if self.selected not in ids:
             self.selected = ids[0] if ids else None
         if self.layout_mode == "grid":
@@ -110,10 +109,8 @@ class BriefingScreen(Screen[None]):
     def show_selected(self) -> None:
         wx = self.wx
         entry = self.current()
-        ids = wx.state.ids
-        position = f"{ids.index(entry.icao) + 1}/{len(ids)}" if entry else ""
         if self.layout_mode == "list":
-            self.query_one(DetailPane).show(entry, wx.ctx, wx.now(), position)
+            self.query_one(DetailPane).show(entry, wx.ctx, wx.now())
         self.refresh_status()
 
     def refresh_status(self) -> None:
@@ -167,10 +164,8 @@ class BriefingScreen(Screen[None]):
 
     def on_station_grid_opened(self, message: StationGrid.Opened) -> None:
         entry = self.current()
-        ids = self.wx.state.ids
         if entry is not None:
-            position = f"{ids.index(entry.icao) + 1}/{len(ids)}"
-            self.app.push_screen(StationDetailScreen(entry, self.wx.ctx, self.wx.now(), position))
+            self.app.push_screen(StationDetailScreen(entry, self.wx.ctx, self.wx.now()))
 
     # --- selection -------------------------------------------------------------------------------------------------
 
@@ -227,41 +222,3 @@ class BriefingScreen(Screen[None]):
 
     def action_help(self) -> None:
         self.app.push_screen(HelpScreen())
-
-    # --- copying ---------------------------------------------------------------------------------------------------
-
-    def _discord(self, report: Metar | Taf, entry: StationReports) -> str:
-        ctx = self.wx.ctx
-        station = ctx.station(entry.icao)
-        name = station.name if station else None
-        hour = None
-        if isinstance(report, Metar) and entry.awc_metar is not None:
-            hour = local_hour(station.tz if station else None, entry.awc_metar.observed)
-        units = ctx.units if ctx.units is not UnitsMode.MIXED else UnitsMode.US
-        return render_discord(report, ctx.translator, units, station_name=name, local_hour=hour)
-
-    def action_copy_metar(self) -> None:
-        t = self.wx.ctx.translator
-        entry = self.current()
-        if entry is None or entry.metar is None:
-            self.notify(t.t(K.UI_TOAST_NO_METAR_TO_COPY), severity="warning")
-            return
-        copy_text(self.app, self._discord(entry.metar, entry), t.t(K.UI_CLIPBOARD_METAR, icao=entry.icao), t)
-
-    def action_copy_both(self) -> None:
-        t = self.wx.ctx.translator
-        entry = self.current()
-        if entry is None or (entry.metar is None and entry.taf is None):
-            self.notify(t.t(K.UI_TOAST_NOTHING_TO_COPY), severity="warning")
-            return
-        blocks = [self._discord(report, entry) for report in (entry.metar, entry.taf) if report is not None]
-        copy_text(self.app, "\n\n".join(blocks), t.t(K.UI_CLIPBOARD_BOTH, icao=entry.icao), t)
-
-    def action_copy_raw(self) -> None:
-        t = self.wx.ctx.translator
-        entry = self.current()
-        raws = [report.raw for report in (entry.metar, entry.taf) if report is not None] if entry else []
-        if not entry or not raws:
-            self.notify(t.t(K.UI_TOAST_NOTHING_TO_COPY), severity="warning")
-            return
-        copy_text(self.app, "\n".join(raws), t.t(K.UI_CLIPBOARD_RAW, icao=entry.icao), t)
