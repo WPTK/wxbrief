@@ -1,0 +1,55 @@
+{
+  "raw": "METAR LFPG 311030Z NIL",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "LFPG",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "311030Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "NIL",
+      "start": 19,
+      "end": 22,
+      "kind": "MODIFIER"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "LFPG",
+  "observed": "2026-10-31T10:30:00+00:00",
+  "modifiers": [
+    "NIL"
+  ],
+  "wind": null,
+  "wind_variation": null,
+  "visibility": null,
+  "rvr": [],
+  "weather": [],
+  "sky": [],
+  "temperature": null,
+  "dewpoint": null,
+  "altimeters": [],
+  "tail_index": null,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "flavor": "UNKNOWN",
+  "military": false,
+  "ceiling": null,
+  "flight_category": null,
+  "flags": [],
+  "condition": null,
+  "relative_humidity": null,
+  "warnings": []
+}

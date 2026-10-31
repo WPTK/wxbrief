@@ -1,0 +1,160 @@
+{
+  "raw": "METAR EGPK 081720Z 18012KT 9999 -SHSN SCT020CB M01/M03 Q1005 BECMG FM1800 TL1900 4000",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "EGPK",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "081720Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "18012KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 27,
+      "end": 31,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-SHSN",
+      "start": 32,
+      "end": 37,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT020CB",
+      "start": 38,
+      "end": 46,
+      "kind": "SKY"
+    },
+    {
+      "text": "M01/M03",
+      "start": 47,
+      "end": 54,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1005",
+      "start": 55,
+      "end": 60,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "BECMG",
+      "start": 61,
+      "end": 66,
+      "kind": "TREND"
+    },
+    {
+      "text": "FM1800",
+      "start": 67,
+      "end": 73,
+      "kind": "TREND"
+    },
+    {
+      "text": "TL1900",
+      "start": 74,
+      "end": 80,
+      "kind": "TREND"
+    },
+    {
+      "text": "4000",
+      "start": 81,
+      "end": 85,
+      "kind": "TREND"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "EGPK",
+  "observed": "2026-10-08T17:20:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 180,
+    "speed": {
+      "value": 12,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10000,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": true,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "LIGHT",
+      "descriptor": "SH",
+      "phenomena": [
+        "SN"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "SCT",
+      "base": {
+        "value": 2000,
+        "unit": "FT"
+      },
+      "cloud_type": "CB"
+    }
+  ],
+  "temperature": {
+    "value": -1,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": -3,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1005,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 9,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [
+    "CB"
+  ],
+  "condition": "SNOW",
+  "relative_humidity": 86.3,
+  "warnings": []
+}

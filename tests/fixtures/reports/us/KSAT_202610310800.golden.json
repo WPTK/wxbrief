@@ -1,0 +1,218 @@
+{
+  "raw": "METAR KSAT 310751Z 04003KT 1/2SM R13R/P6000FT BR OVC002 19/19 A3006 RMK AO2 SFC VIS 3/4 RAE44 SLP165 P0000 T01940189 $",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KSAT",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310751Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "04003KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "1/2SM",
+      "start": 27,
+      "end": 32,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "R13R/P6000FT",
+      "start": 33,
+      "end": 45,
+      "kind": "RVR"
+    },
+    {
+      "text": "BR",
+      "start": 46,
+      "end": 48,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "OVC002",
+      "start": 49,
+      "end": 55,
+      "kind": "SKY"
+    },
+    {
+      "text": "19/19",
+      "start": 56,
+      "end": 61,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3006",
+      "start": 62,
+      "end": 67,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 68,
+      "end": 71,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 72,
+      "end": 75,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SFC",
+      "start": 76,
+      "end": 79,
+      "kind": "REMARK"
+    },
+    {
+      "text": "VIS",
+      "start": 80,
+      "end": 83,
+      "kind": "REMARK"
+    },
+    {
+      "text": "3/4",
+      "start": 84,
+      "end": 87,
+      "kind": "REMARK"
+    },
+    {
+      "text": "RAE44",
+      "start": 88,
+      "end": 93,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP165",
+      "start": 94,
+      "end": 100,
+      "kind": "REMARK"
+    },
+    {
+      "text": "P0000",
+      "start": 101,
+      "end": 106,
+      "kind": "REMARK"
+    },
+    {
+      "text": "T01940189",
+      "start": 107,
+      "end": 116,
+      "kind": "REMARK"
+    },
+    {
+      "text": "$",
+      "start": 117,
+      "end": 118,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KSAT",
+  "observed": "2026-10-31T07:51:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 40,
+    "speed": {
+      "value": 3,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 0.5,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [
+    {
+      "runway": "13R",
+      "distance": {
+        "value": 6000,
+        "unit": "FT"
+      },
+      "prefix": "GREATER_THAN",
+      "variable_to": null,
+      "variable_to_prefix": null,
+      "trend": null
+    }
+  ],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "BR"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 200,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 19,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 19,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.06,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 10,
+  "remarks_raw": "AO2 SFC VIS 3/4 RAE44 SLP165 P0000 T01940189 $",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 200,
+    "unit": "FT"
+  },
+  "flight_category": "LIFR",
+  "flags": [
+    "LOW_CEILING",
+    "LOW_VISIBILITY"
+  ],
+  "condition": "OBSCURATION",
+  "relative_humidity": 100.0,
+  "warnings": []
+}

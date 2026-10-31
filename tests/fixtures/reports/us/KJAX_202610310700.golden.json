@@ -1,0 +1,181 @@
+{
+  "raw": "METAR KJAX 310656Z 00000KT 7SM -RA OVC006 21/20 A3014 RMK AO2 DZB04E37RAB37 SLP207 P0001 T02110200 $",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KJAX",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310656Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "00000KT",
+      "start": 19,
+      "end": 26,
+      "kind": "WIND"
+    },
+    {
+      "text": "7SM",
+      "start": 27,
+      "end": 30,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-RA",
+      "start": 31,
+      "end": 34,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "OVC006",
+      "start": 35,
+      "end": 41,
+      "kind": "SKY"
+    },
+    {
+      "text": "21/20",
+      "start": 42,
+      "end": 47,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3014",
+      "start": 48,
+      "end": 53,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 54,
+      "end": 57,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 58,
+      "end": 61,
+      "kind": "REMARK"
+    },
+    {
+      "text": "DZB04E37RAB37",
+      "start": 62,
+      "end": 75,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP207",
+      "start": 76,
+      "end": 82,
+      "kind": "REMARK"
+    },
+    {
+      "text": "P0001",
+      "start": 83,
+      "end": 88,
+      "kind": "REMARK"
+    },
+    {
+      "text": "T02110200",
+      "start": 89,
+      "end": 98,
+      "kind": "REMARK"
+    },
+    {
+      "text": "$",
+      "start": 99,
+      "end": 100,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KJAX",
+  "observed": "2026-10-31T06:56:00+00:00",
+  "modifiers": [],
+  "wind": {
+    "direction": 0,
+    "speed": {
+      "value": 0,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 7.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "LIGHT",
+      "descriptor": null,
+      "phenomena": [
+        "RA"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "OVC",
+      "base": {
+        "value": 600,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 21,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 20,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.14,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 9,
+  "remarks_raw": "AO2 DZB04E37RAB37 SLP207 P0001 T02110200 $",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 600,
+    "unit": "FT"
+  },
+  "flight_category": "IFR",
+  "flags": [
+    "LOW_CEILING"
+  ],
+  "condition": "RAIN",
+  "relative_humidity": 94.0,
+  "warnings": []
+}

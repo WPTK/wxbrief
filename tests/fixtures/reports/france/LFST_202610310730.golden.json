@@ -1,0 +1,137 @@
+{
+  "raw": "METAR LFST 310730Z AUTO 35005KT 9999 BKN007 05/05 Q1030 NOSIG",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "LFST",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310730Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "AUTO",
+      "start": 19,
+      "end": 23,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "35005KT",
+      "start": 24,
+      "end": 31,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 32,
+      "end": 36,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BKN007",
+      "start": 37,
+      "end": 43,
+      "kind": "SKY"
+    },
+    {
+      "text": "05/05",
+      "start": 44,
+      "end": 49,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "Q1030",
+      "start": 50,
+      "end": 55,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "NOSIG",
+      "start": 56,
+      "end": 61,
+      "kind": "TREND"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "LFST",
+  "observed": "2026-10-31T07:30:00+00:00",
+  "modifiers": [
+    "AUTO"
+  ],
+  "wind": {
+    "direction": 350,
+    "speed": {
+      "value": 5,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10000,
+      "unit": "M"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": true,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "BKN",
+      "base": {
+        "value": 700,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 5,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 5,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 1030,
+      "unit": "HPA"
+    }
+  ],
+  "tail_index": 9,
+  "remarks_index": null,
+  "remarks_raw": null,
+  "flavor": "ICAO",
+  "military": false,
+  "ceiling": {
+    "value": 700,
+    "unit": "FT"
+  },
+  "flight_category": "IFR",
+  "flags": [
+    "LOW_CEILING",
+    "AUTOMATED"
+  ],
+  "condition": "BROKEN",
+  "relative_humidity": 100.0,
+  "warnings": []
+}

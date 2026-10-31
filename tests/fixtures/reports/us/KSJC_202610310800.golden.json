@@ -1,0 +1,154 @@
+{
+  "raw": "METAR KSJC 310753Z AUTO 15003KT 10SM CLR 11/09 A2991 RMK AO2 SLP127 T01110089 402170111",
+  "tokens": [
+    {
+      "text": "METAR",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KSJC",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310753Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "AUTO",
+      "start": 19,
+      "end": 23,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "15003KT",
+      "start": 24,
+      "end": 31,
+      "kind": "WIND"
+    },
+    {
+      "text": "10SM",
+      "start": 32,
+      "end": 36,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "CLR",
+      "start": 37,
+      "end": 40,
+      "kind": "SKY"
+    },
+    {
+      "text": "11/09",
+      "start": 41,
+      "end": 46,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A2991",
+      "start": 47,
+      "end": 52,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 53,
+      "end": 56,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 57,
+      "end": 60,
+      "kind": "REMARK"
+    },
+    {
+      "text": "SLP127",
+      "start": 61,
+      "end": 67,
+      "kind": "REMARK"
+    },
+    {
+      "text": "T01110089",
+      "start": 68,
+      "end": 77,
+      "kind": "REMARK"
+    },
+    {
+      "text": "402170111",
+      "start": 78,
+      "end": 87,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "METAR",
+  "station": "KSJC",
+  "observed": "2026-10-31T07:53:00+00:00",
+  "modifiers": [
+    "AUTO"
+  ],
+  "wind": {
+    "direction": 150,
+    "speed": {
+      "value": 3,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 10.0,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [],
+  "sky": [
+    {
+      "cover": "CLR",
+      "base": null,
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 11,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 9,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 29.91,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 9,
+  "remarks_raw": "AO2 SLP127 T01110089 402170111",
+  "flavor": "US",
+  "military": false,
+  "ceiling": null,
+  "flight_category": "VFR",
+  "flags": [
+    "AUTOMATED"
+  ],
+  "condition": "CLEAR",
+  "relative_humidity": 87.5,
+  "warnings": []
+}

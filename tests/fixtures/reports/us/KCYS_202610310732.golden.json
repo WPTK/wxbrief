@@ -1,0 +1,180 @@
+{
+  "raw": "SPECI KCYS 310732Z AUTO 18004KT 1/2SM FG VV002 08/08 A3005 RMK AO2 T00780078 RVRNO $",
+  "tokens": [
+    {
+      "text": "SPECI",
+      "start": 0,
+      "end": 5,
+      "kind": "TYPE"
+    },
+    {
+      "text": "KCYS",
+      "start": 6,
+      "end": 10,
+      "kind": "STATION"
+    },
+    {
+      "text": "310732Z",
+      "start": 11,
+      "end": 18,
+      "kind": "TIME"
+    },
+    {
+      "text": "AUTO",
+      "start": 19,
+      "end": 23,
+      "kind": "MODIFIER"
+    },
+    {
+      "text": "18004KT",
+      "start": 24,
+      "end": 31,
+      "kind": "WIND"
+    },
+    {
+      "text": "1/2SM",
+      "start": 32,
+      "end": 37,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "FG",
+      "start": 38,
+      "end": 40,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "VV002",
+      "start": 41,
+      "end": 46,
+      "kind": "SKY"
+    },
+    {
+      "text": "08/08",
+      "start": 47,
+      "end": 52,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "A3005",
+      "start": 53,
+      "end": 58,
+      "kind": "PRESSURE"
+    },
+    {
+      "text": "RMK",
+      "start": 59,
+      "end": 62,
+      "kind": "REMARK"
+    },
+    {
+      "text": "AO2",
+      "start": 63,
+      "end": 66,
+      "kind": "REMARK"
+    },
+    {
+      "text": "T00780078",
+      "start": 67,
+      "end": 76,
+      "kind": "REMARK"
+    },
+    {
+      "text": "RVRNO",
+      "start": 77,
+      "end": 82,
+      "kind": "REMARK"
+    },
+    {
+      "text": "$",
+      "start": 83,
+      "end": 84,
+      "kind": "REMARK"
+    }
+  ],
+  "report_type": "SPECI",
+  "station": "KCYS",
+  "observed": "2026-10-31T07:32:00+00:00",
+  "modifiers": [
+    "AUTO"
+  ],
+  "wind": {
+    "direction": 180,
+    "speed": {
+      "value": 4,
+      "unit": "KT"
+    },
+    "gust": null,
+    "variable": false,
+    "speed_above": false
+  },
+  "wind_variation": null,
+  "visibility": {
+    "distance": {
+      "value": 0.5,
+      "unit": "SM"
+    },
+    "prefix": null,
+    "cavok": false,
+    "unlimited": false,
+    "ndv": false,
+    "directional": [],
+    "not_reported": false
+  },
+  "rvr": [],
+  "weather": [
+    {
+      "intensity": "MODERATE",
+      "descriptor": null,
+      "phenomena": [
+        "FG"
+      ],
+      "vicinity": false,
+      "nsw": false,
+      "not_observed": false
+    }
+  ],
+  "sky": [
+    {
+      "cover": "VV",
+      "base": {
+        "value": 200,
+        "unit": "FT"
+      },
+      "cloud_type": null
+    }
+  ],
+  "temperature": {
+    "value": 8,
+    "unit": "C"
+  },
+  "dewpoint": {
+    "value": 8,
+    "unit": "C"
+  },
+  "altimeters": [
+    {
+      "value": 30.05,
+      "unit": "INHG"
+    }
+  ],
+  "tail_index": null,
+  "remarks_index": 10,
+  "remarks_raw": "AO2 T00780078 RVRNO $",
+  "flavor": "US",
+  "military": false,
+  "ceiling": {
+    "value": 200,
+    "unit": "FT"
+  },
+  "flight_category": "LIFR",
+  "flags": [
+    "LOW_CEILING",
+    "LOW_VISIBILITY",
+    "AUTOMATED",
+    "SPECIAL_REPORT"
+  ],
+  "condition": "OBSCURATION",
+  "relative_humidity": 100.0,
+  "warnings": []
+}
