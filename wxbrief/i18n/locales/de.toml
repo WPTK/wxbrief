@@ -803,6 +803,9 @@ no_metar = "Kein METAR in den letzten 2 Stunden"
 observed_ago = "Beobachtet {time}, vor {age}"
 cached_ago = "(zwischengespeichert vor {age})"
 
+[ui.small]
+text = "Terminal zu klein: wxbrief braucht mindestens {width}x{height}, dieses hat {now_width}x{now_height}. Vergrößern Sie das Fenster oder beenden Sie mit q."
+
 [ui.age]
 minutes = "{minutes} Min."
 hours = "{hours} Std. {minutes:02d} Min."

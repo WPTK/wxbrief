@@ -12,7 +12,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.timer import Timer
-from textual.widgets import Footer, Input, Label, Static, TextArea
+from textual.widgets import Input, Label, Static, TextArea
 
 from wxbrief.clipboard import copy_text
 from wxbrief.decode.model import Metar, Taf
@@ -23,6 +23,7 @@ from wxbrief.render.discord import render_discord
 from wxbrief.render.plain import decode_rows, render_plain, warning_lines
 from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
+from wxbrief.ui.widgets.key_bar import KeyBar
 
 DEBOUNCE_SECONDS = 0.2
 MAX_PASTE_CHARS = 60_000  # a TAF or METAR is a few hundred characters; this is generous and keeps a stray paste cheap
@@ -65,7 +66,7 @@ class PasteDecodeScreen(Screen[None]):
             yield TextArea(id="paste-input", tab_behavior="focus", show_line_numbers=False)
             with VerticalScroll(id="paste-output"):
                 yield Static(self._ctx.translator.t(K.UI_PASTE_PROMPT), id="paste-result")
-        yield Footer()
+        yield KeyBar()
 
     def on_mount(self) -> None:
         localize(self)

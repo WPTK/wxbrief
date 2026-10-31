@@ -671,6 +671,7 @@ class K:
     UI_SETTINGS_TIME = "ui.settings.time"
     UI_SETTINGS_TITLE = "ui.settings.title"
     UI_SETTINGS_UNITS = "ui.settings.units"
+    UI_SMALL_TEXT = "ui.small.text"
     UI_STATE_FRESH = "ui.state.fresh"
     UI_STATE_STALE = "ui.state.stale"
     UI_STATUS_AWAY = "ui.status.away"

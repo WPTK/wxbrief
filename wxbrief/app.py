@@ -10,6 +10,7 @@ from pathlib import Path
 
 from textual import events, work
 from textual.app import App
+from textual.geometry import Size
 from textual.theme import Theme
 
 from wxbrief.config import TIME_MODES, WATCHLIST_CAP, Config, ViewConfig, config_text, default_config_path, save_config
@@ -29,6 +30,7 @@ from wxbrief.ui.glyphs import GLYPH_SETS, glyphs_for
 from wxbrief.ui.screens.briefing import BriefingScreen
 from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.screens.theme_picker import ThemePickerScreen
+from wxbrief.ui.screens.too_small import MIN_SIZE, TooSmallScreen
 from wxbrief.ui.themes import AVIATION_THEMES, THEME_CYCLE
 
 
@@ -132,6 +134,21 @@ class WxBriefApp(App[None]):
             self.notify(notice, severity="warning", title=t.t(K.UI_TOAST_STATIONS_TITLE), timeout=10)
         if self.options.poll:
             self.poll_worker()
+        self._check_size(self.size)
+
+    def on_resize(self, event: events.Resize) -> None:
+        self._check_size(event.size)
+
+    def _check_size(self, size: Size) -> None:
+        """Cover the app with the too-small notice while the terminal cannot hold it; take it away when it can."""
+        small = size.width < MIN_SIZE.width or size.height < MIN_SIZE.height
+        top = self.screen_stack[-1]
+        if small and isinstance(top, TooSmallScreen):
+            top.show_size(size)
+        elif small and len(self.screen_stack) > 1:  # not before the briefing screen is up
+            self.push_screen(TooSmallScreen())
+        elif not small and isinstance(top, TooSmallScreen):
+            self.pop_screen()
 
     # --- themes ----------------------------------------------------------------------------------------------------
 

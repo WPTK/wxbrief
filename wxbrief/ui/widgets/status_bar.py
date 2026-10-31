@@ -29,11 +29,14 @@ class StatusBar(Static):
         ctx: ViewContext,
         now: datetime,
         selected: StationReports | None,
+        position: tuple[int, int] | None = None,
     ) -> None:
         glyphs = ctx.glyphs
         palette = ctx.palette
         t = ctx.translator
         text = Text()
+        if position is not None:  # which station of how many: the list may be out of sight
+            text.append(f"{position[0]}/{position[1]} ", style=palette.muted)
         if state.errors:
             # The label and the message come from the same error: the first network failure, else the first error.
             product = next((p for p in state.errors if p in state.offline), next(iter(state.errors)))

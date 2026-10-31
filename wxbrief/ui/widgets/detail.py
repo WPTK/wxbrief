@@ -21,7 +21,7 @@ from wxbrief.render.plain import DecodeRow, decode_rows, taf_blocks, taf_header_
 from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
-from wxbrief.ui.widgets.period_detail import PeriodDetail, rows_text
+from wxbrief.ui.widgets.period_detail import PeriodDetail, RowBlocks
 from wxbrief.ui.widgets.status_bar import STATE_KEYS
 from wxbrief.ui.widgets.taf_timeline import TafTimeline
 
@@ -169,12 +169,12 @@ class DetailPane(VerticalScroll):
         with Collapsible(id="remarks-box", collapsed=True):
             yield Static(id="remarks")
         yield Label(classes="section", id="taf-title")
-        yield Static(id="taf-summary")
+        yield RowBlocks(id="taf-summary")
         yield Static(id="taf-note")
         yield TafTimeline(id="timeline")
         yield PeriodDetail(id="period")
         with Collapsible(id="taf-groups-box", collapsed=True):
-            yield Static(id="taf-groups")
+            yield RowBlocks(id="taf-groups")
         yield Static(id="warnings")
 
     def on_mount(self) -> None:
@@ -242,14 +242,10 @@ class DetailPane(VerticalScroll):
             return
         skipped = {t.t(K.LABEL_STATION), t.t(K.LABEL_REPORT), t.t(K.LABEL_FLAGS)}
         rows = [row for row in taf_header_rows(taf, ctx.translator, ctx.units) if row.label not in skipped]
-        self.query_one("#taf-summary", Static).update(rows_text(rows, ctx, self.size.width or 70, indent=0))
+        self.query_one("#taf-summary", RowBlocks).set_blocks([(None, rows)], ctx, indent=0)
         blocks = taf_blocks(taf, t, ctx.units)
-        groups: list[Text] = []
-        for block in blocks:
-            groups.append(Text(block.title, style="bold"))
-            groups.append(rows_text(block.rows, ctx, self.size.width or 70))
         self.query_one("#taf-groups-box", Collapsible).title = t.t(K.UI_SECTION_GROUPS, n=len(blocks))
-        self.query_one("#taf-groups", Static).update(Text("\n").join(groups))
+        self.query_one("#taf-groups", RowBlocks).set_blocks([(b.title, b.rows) for b in blocks], ctx)
         drawn = timeline.set_taf(taf, ctx, entry.icao, now)
         timeline.display = period.display = drawn
         note.display = not drawn

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from rich.text import Text
+from textual.events import Resize
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
 
@@ -31,6 +33,9 @@ def short_conditions(metar: Metar | None) -> str:
     return " ".join(part for part in (wind, " ".join(vis)) if part)
 
 
+NAME_FROM = 46  # columns: a list this wide has room for the station name after the conditions
+
+
 class StationList(OptionList):
     """Selecting a row (or moving the highlight) shows that station in the detail pane."""
 
@@ -40,12 +45,25 @@ class StationList(OptionList):
         bind("v", "screen.toggle_layout", K.UI_BINDING_TOGGLE_LAYOUT),
     ]
 
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._last: tuple[list[StationReports], ViewContext, datetime, str | None] | None = None
+        self._named = False  # the rows carry the station name
+
     def on_mount(self) -> None:
         localize(self)
+
+    def on_resize(self, event: Resize) -> None:
+        if self._last is not None and (event.size.width >= NAME_FROM) != self._named:
+            reports, ctx, now, _ = self._last
+            option = self.highlighted_option
+            self.set_stations(reports, ctx, now, option.id if option else None)
 
     def set_stations(
         self, reports: list[StationReports], ctx: ViewContext, now: datetime, selected: str | None
     ) -> None:
+        self._last = (reports, ctx, now, selected)
+        self._named = self.size.width >= NAME_FROM
         palette = ctx.palette
         glyphs = ctx.glyphs
         options: list[Option] = []
@@ -66,6 +84,9 @@ class StationList(OptionList):
                 line.append(" " + conditions)
             elif entry.metar is None:
                 line.append(" " + ctx.translator.t(K.UI_LIST_NO_REPORT), style=palette.muted)
+            station = ctx.station(entry.icao) if self._named else None
+            if station is not None:
+                line.append(f"  {station.name}", style=palette.muted)
             options.append(Option(line, id=entry.icao))
         self.clear_options()
         self.add_options(options)

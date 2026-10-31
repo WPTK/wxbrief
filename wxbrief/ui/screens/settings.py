@@ -8,11 +8,13 @@ from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.screen import ModalScreen
-from textual.widgets import Label, OptionList, Static
+from textual.widgets import Label, OptionList
 from textual.widgets.option_list import Option
 
 from wxbrief.i18n.keys import K
+from wxbrief.render.plain import DecodeRow
 from wxbrief.ui.bindings import bind, localize
+from wxbrief.ui.widgets.period_detail import RowBlocks
 
 if TYPE_CHECKING:
     from wxbrief.app import WxBriefApp
@@ -40,7 +42,7 @@ class SettingsScreen(ModalScreen[None]):
         with VerticalScroll(id="settings-box", classes="dialog"):
             yield Label(classes="dialog-title", id="settings-title")
             yield OptionList(id="settings-options")
-            yield Static(id="settings-info")
+            yield RowBlocks(id="settings-info")
             yield Label(classes="hint", id="settings-hint")
 
     def on_mount(self) -> None:
@@ -57,16 +59,18 @@ class SettingsScreen(ModalScreen[None]):
         keep = options.highlighted if highlight is None else highlight
         editable = [(name, t.t(label), wx.setting_text(name)) for name, label in EDITABLE]
         extras = wx.settings_extra_lines()
-        width = max(len(label) for _, label, _ in editable) if editable else 0
-        width = max([width, *(len(label) for label, _ in extras)]) + 2
+        width = max((len(label) for _, label, _ in editable), default=0) + 2
         with options.prevent(OptionList.OptionHighlighted):
             options.clear_options()
             options.add_options(
-                [Option(Text(f"{label + ':':<{width}}{value}"), id=name) for name, label, value in editable]
+                [
+                    Option(Text(f"{label + ':':<{width}}{value}", no_wrap=True, overflow="ellipsis"), id=name)
+                    for name, label, value in editable
+                ]
             )
             options.highlighted = keep
-        info = Text("\n").join(Text.assemble((f"{label + ':':<{width}}", "bold"), value) for label, value in extras)
-        self.query_one("#settings-info", Static).update(info)
+        rows = [DecodeRow(label, value) for label, value in extras]
+        self.query_one("#settings-info", RowBlocks).set_blocks([(None, rows)], wx.ctx, indent=0)
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         event.stop()

@@ -21,7 +21,7 @@ def rows_text(rows: list[DecodeRow], ctx: ViewContext, width: int, indent: int =
     """Rows as ``Label:  value`` lines with wrapped values hanging under the value column."""
     palette = ctx.palette
     label_width = max((len(row.label) for row in rows), default=0) + 2
-    width -= 4  # the scrollbar and a little slack: a line that is one column too long wraps badly
+    width -= 1  # a line that is one column too long wraps badly
     room = width - indent - label_width
     stacked = room < 28  # a narrow pane: the label gets its own line and the value is indented under it
     lines: list[Text] = []
@@ -44,6 +44,36 @@ def rows_text(rows: list[DecodeRow], ctx: ViewContext, width: int, indent: int =
             line.append(("\n" + " " * hang).join(wrapped), style=palette.style(row.style))
         lines.append(line)
     return Text("\n").join(lines)
+
+
+class RowBlocks(Static):
+    """Blocks of ``Label: value`` rows, each with an optional bold title, wrapped to this widget's own width."""
+
+    def __init__(self, **kwargs: object) -> None:
+        super().__init__(**kwargs)  # type: ignore[arg-type]
+        self._blocks: list[tuple[str | None, list[DecodeRow]]] = []
+        self._ctx: ViewContext | None = None
+        self._indent = 2
+
+    def set_blocks(
+        self, blocks: list[tuple[str | None, list[DecodeRow]]], ctx: ViewContext, *, indent: int = 2
+    ) -> None:
+        self._blocks, self._ctx, self._indent = blocks, ctx, indent
+        self._draw()
+
+    def on_resize(self) -> None:
+        self._draw()  # the width is only known after layout, and changes with the terminal
+
+    def _draw(self) -> None:
+        if self._ctx is None:
+            return
+        width = self.size.width or 70
+        parts: list[Text] = []
+        for title, rows in self._blocks:
+            if title:
+                parts.append(Text(title, style="bold"))
+            parts.append(rows_text(rows, self._ctx, width, self._indent))
+        self.update(Text("\n").join(parts))
 
 
 class PeriodDetail(Static):

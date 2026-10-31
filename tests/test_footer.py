@@ -72,8 +72,9 @@ async def test_hidden_keys_stay_hidden_and_the_footer_stays_short() -> None:
         keys = shown(app)
         assert {"g", "u", "z", "C", "y"}.isdisjoint(keys)
         assert "q" in keys and "t" in keys
-        footer = await screen_text(app, pilot, "Add", "Quit", "Theme")
-        assert "Add" in footer and "Quit" in footer and "Theme" in footer
+        footer = await screen_text(app, pilot, "Add", "Quit", "Help")
+        # at 80 columns the list is hidden, so j/k takes the room; Theme is the first key to drop out, whole
+        assert "Add" in footer and "Quit" in footer and "Help" in footer and "j/k" in footer
 
 
 async def test_the_count_is_in_the_border_title_and_not_in_the_detail_header() -> None:
