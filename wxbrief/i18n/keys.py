@@ -110,6 +110,7 @@ class K:
 
     RECENT_PHRASE = "recent.phrase"
 
+    REMARK_ALTIMETER = "remark.altimeter"
     REMARK_AT_RUNWAY = "remark.at_runway"
     REMARK_BEGAN = "remark.began"
     REMARK_CLOUD_AC = "remark.cloud.AC"
@@ -242,6 +243,7 @@ class K:
     REMARK_TRACE = "remark.trace"
     REMARK_VARIABLE_CEILING = "remark.variable_ceiling"
     REMARK_VARIABLE_VISIBILITY = "remark.variable_visibility"
+    REMARK_WIND_AT_HEIGHT = "remark.wind_at_height"
     REMARK_WIND_SHIFT = "remark.wind_shift"
     REMARK_WIND_SHIFT_FRONTAL = "remark.wind_shift_frontal"
     REMARK_WORD_ACFT = "remark.word.ACFT"

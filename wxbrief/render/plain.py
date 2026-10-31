@@ -43,7 +43,7 @@ def _tail_rows(metar: Metar, t: Translator, units: UnitsMode) -> list[DecodeRow]
     if metar.color_state is not None:
         add(K.LABEL_COLOR_STATE, phrases.describe_color_state(t, metar.color_state), SemanticKind.COLOR_STATE)
         computed = metar.computed_color_state
-        if computed is not None and reported_matches_computed(_reported_color(metar), computed) is False:
+        if computed is not None and reported_matches_computed(_reported_color(metar), computed) is not True:
             shown = phrases.describe_color_code(t, ColorState(computed))
             add(K.LABEL_COLOR_STATE_COMPUTED, shown, SemanticKind.COLOR_STATE)
     for trend in metar.trends:

@@ -17,7 +17,9 @@ _CHANGE_KEYWORDS = {"BECMG": TrendKind.BECMG, "TEMPO": TrendKind.TEMPO}
 
 
 def color_state_of(text: str) -> ColorState | None:
-    """The colour state a token spells (``BLACKRED``, ``BLU+``), or ``None`` if it is not one."""
+    """The colour state a token spells (``BLACKRED``, ``BLU+``, ``///``), or ``None`` if it is not one."""
+    if text == "///":
+        return ColorState(None, not_reported=True)
     match = _COLOR.match(text)
     if match is None:
         return None
@@ -30,7 +32,7 @@ def color_state_of(text: str) -> ColorState | None:
 
 
 def is_color_state(text: str) -> bool:
-    """Colour-state codes (``BLU``, ``YLO2``, ``RED`` ...), optionally ``BLACK``-prefixed or ``+``-suffixed."""
+    """Colour-state codes (``BLU``, ``YLO2``, ``BLACKRED``, ``BLU+``) and ``///`` (not reported)."""
     return color_state_of(text) is not None
 
 

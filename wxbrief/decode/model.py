@@ -329,13 +329,15 @@ class ColorCode(Enum):
 class ColorState:
     """One colour-state code.
 
-    ``code`` is ``None`` for a bare ``BLACK``; ``black`` is the closed-for-other-reasons prefix (``BLACKRED``);
-    ``plus`` is the ``+`` suffix some air forces add (``BLU+``).
+    ``code`` is ``None`` for a bare ``BLACK`` and for ``///``; ``black`` is the closed-for-other-reasons prefix
+    (``BLACKRED``); ``plus`` is the ``+`` suffix some air forces add (``BLU+``); ``not_reported`` is ``///``, which
+    automatic military stations send in the colour-state position when they cannot determine a state.
     """
 
     code: ColorCode | None
     black: bool = False
     plus: bool = False
+    not_reported: bool = False
 
 
 @dataclass(frozen=True)
@@ -793,12 +795,27 @@ class StationPressure(Remark):
 
 
 @dataclass(frozen=True)
+class AltimeterSetting(Remark):
+    """``A3007`` or ``A30.06`` in the remarks: an altimeter setting some Asian stations add to ICAO reports."""
+
+    pressure: Pressure
+
+
+@dataclass(frozen=True)
 class RunwayWind(Remark):
     """``RWY17L 02008KT`` or ``R06/31003MPS``: wind measured at one runway."""
 
     runway: str
     wind: Wind
     variation: WindVariation | None = None
+
+
+@dataclass(frozen=True)
+class WindAtHeight(Remark):
+    """``WIND 2600FT 19040KT``: wind measured at a height above the aerodrome (Norwegian reports)."""
+
+    height: Distance
+    wind: Wind
 
 
 @dataclass(frozen=True)

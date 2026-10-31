@@ -12,6 +12,7 @@ from datetime import datetime
 
 from wxbrief.decode.model import (
     RVR,
+    AltimeterSetting,
     AutomatedStationType,
     CloudLayer,
     CloudOpacity,
@@ -74,6 +75,7 @@ from wxbrief.decode.model import (
     WeatherGroup,
     WeatherTiming,
     Wind,
+    WindAtHeight,
     WindShearRunway,
     WindShift,
     WindVariation,
@@ -371,6 +373,8 @@ def summary_line(t: Translator, metar: Metar, units: UnitsMode) -> str:
 
 def describe_color_code(t: Translator, state: ColorState) -> str:
     """One colour state: the name and the code as reported (``Blue (BLU+)``); ``BLACK`` is spelled out."""
+    if state.not_reported:
+        return t.t(K.COMMON_NOT_REPORTED)
     if state.code is None:
         return t.t(K.COLOR_BLACK_ALONE)
     code = state.code.value + ("+" if state.plus else "")
@@ -727,8 +731,16 @@ def describe_remark(t: Translator, remark: Remark, units: UnitsMode) -> str:
             return _opacity(t, remark)
         case StationPressure():
             return _station_pressure(t, remark)
+        case AltimeterSetting(pressure=pressure):
+            return t.t(K.REMARK_ALTIMETER, value=format_pressure(pressure, units))
         case RunwayWind(runway=runway, wind=wind, variation=variation):
             return t.t(K.REMARK_RUNWAY_WIND, runway=runway, wind=lower_first(describe_wind(t, wind, units, variation)))
+        case WindAtHeight(height=height, wind=wind):
+            return t.t(
+                K.REMARK_WIND_AT_HEIGHT,
+                height=format_short_distance(height, units),
+                wind=lower_first(describe_wind(t, wind, units)),
+            )
         case ColorStateRemark(group=group):
             return t.t(K.REMARK_COLOR_STATE, group=describe_color_state(t, group))
         case FreeText(text=text):

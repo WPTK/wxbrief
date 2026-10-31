@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from wxbrief.decode.model import CloudLayer, FlightCategory, Visibility
+from wxbrief.decode.model import CloudLayer, FlightCategory, SkyCondition, Visibility
 
 LIFR_CEILING_FT = 500
 IFR_CEILING_FT = 1000
@@ -54,9 +54,9 @@ def ceiling_for_classification(sky: Sequence[CloudLayer], cavok: bool) -> float 
         return layer.base.feet
     if any(candidate.is_ceiling_layer for candidate in sky):
         return None  # an obscured or broken sky of unknown height
-    if cavok or sky:
-        return math.inf
-    return None
+    if cavok or any(candidate.cover is not SkyCondition.UNKNOWN for candidate in sky):
+        return math.inf  # CAVOK, or layers/clear-sky codes that leave no ceiling
+    return None  # no sky group, or only "//////" placeholders: the sensor reported nothing
 
 
 def classify(ceiling_ft: float | None, visibility: float | None) -> FlightCategory | None:

@@ -11,7 +11,7 @@ import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from wxbrief.decode.groups.colorstate import is_color_state
+from wxbrief.decode.groups.colorstate import color_state_of
 from wxbrief.decode.model import Flavor
 from wxbrief.decode.tokens import Token
 
@@ -56,7 +56,8 @@ def detect_flavor(tokens: Sequence[Token]) -> Detection:
             us = True
         if any(signal.match(text) for signal in _ICAO_SIGNALS):
             icao = True
-        if is_color_state(text) and text != "BLACK":
+        state = color_state_of(text)
+        if state is not None and state.code is not None:  # not a bare BLACK, not "///"
             military = True
             icao = True
     if us and icao:

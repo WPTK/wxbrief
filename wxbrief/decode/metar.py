@@ -280,6 +280,14 @@ def _guarded(step: _Step, cur: Cursor, draft: _Draft) -> bool:
     return False
 
 
+def _has_coded_color(group: ColorStateGroup | None) -> bool:
+    """Whether a colour-state group names a real colour (a colour in the remarks also marks a military report)."""
+    if group is None:
+        return False
+    states = [group.current, *(item.state for item in group.forecast)]
+    return any(state is not None and state.code is not None for state in states)
+
+
 def _decode_remarks(cur: Cursor, draft: _Draft, rmk: Token) -> None:
     """Decode everything after ``RMK``; if that fails, the rest stays plain ``REMARK`` tokens and a warning."""
     try:
@@ -371,7 +379,7 @@ def _parse(raw: str, reference: datetime | None) -> Metar:
         sea_state=draft.sea_state,
         remarks=tuple(draft.remarks),
         flavor=detection.flavor,
-        military=detection.military,
+        military=detection.military or _has_coded_color(draft.color_state),
         warnings=tuple(draft.warnings),
     )
     return derive(metar)

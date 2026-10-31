@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 from wxbrief.decode.groups.colorstate import parse_color_state_group
 from wxbrief.decode.groups.wind import wind_from_text
 from wxbrief.decode.model import (
+    AltimeterSetting,
     AutomatedStationType,
     CloudOpacity,
     CloudTypes,
@@ -67,6 +68,7 @@ from wxbrief.decode.model import (
     VariableCeiling,
     VariableVisibility,
     WeatherTiming,
+    WindAtHeight,
     WindShift,
     WindVariation,
 )
@@ -696,6 +698,19 @@ def _station_pressure(cur: Cursor, _ctx: Context) -> Remark | None:
     return StationPressure(kind, mmhg=first)
 
 
+_ALTIMETER = re.compile(r"^A(?P<whole>\d{2})\.?(?P<hundredths>\d{2})$")
+
+
+def _altimeter(cur: Cursor, _ctx: Context) -> Remark | None:
+    token = cur.peek()
+    match = _ALTIMETER.match(token.text) if token is not None else None
+    if match is None:
+        return None
+    cur.take(SemanticKind.PRESSURE)
+    inches = int(match.group("whole")) + int(match.group("hundredths")) / 100
+    return AltimeterSetting(Pressure(round(inches, 2), PressureUnit.INHG))
+
+
 _RUNWAY_WIND_SLASH = re.compile(r"^R(?P<rwy>\d{2}[LCR]?)/(?P<wind>\S+)$")
 _RUNWAY_WORD = re.compile(r"^RWY(?P<rwy>\d{2}[LCR]?)$")
 _VARIATION = re.compile(r"^(\d{3})V(\d{3})$")
@@ -732,6 +747,23 @@ def _runway_wind(cur: Cursor, _ctx: Context) -> Remark | None:
     return RunwayWind(runway, wind, variation)
 
 
+_HEIGHT = re.compile(r"^(?P<ft>\d{2,5})FT$")
+
+
+def _wind_at_height(cur: Cursor, _ctx: Context) -> Remark | None:
+    """``WIND 2600FT 19040KT``."""
+    first, second, third = cur.peek(), cur.peek(1), cur.peek(2)
+    if first is None or second is None or third is None or first.text != "WIND":
+        return None
+    height = _HEIGHT.match(second.text)
+    wind = wind_from_text(third.text)
+    if height is None or wind is None:
+        return None
+    for _ in range(3):
+        cur.take(SemanticKind.WIND)
+    return WindAtHeight(Distance(int(height.group("ft")), DistanceUnit.FT), wind)
+
+
 def _color_state(cur: Cursor, _ctx: Context) -> Remark | None:
     group = parse_color_state_group(cur)
     return None if group is None else ColorStateRemark(group)
@@ -765,7 +797,9 @@ _PARSERS: tuple[Parser, ...] = (
     _hail_size,
     _density_altitude,
     _station_pressure,
+    _altimeter,
     _runway_wind,
+    _wind_at_height,
     _color_state,
     _cloud_opacity,
 )
