@@ -5,8 +5,9 @@ Usage::
     python scripts/build_stations.py                 # download the cache (one polite request) and rebuild
     python scripts/build_stations.py --cache FILE    # use a saved stations.cache.json.gz
 
-Needs ``timezonefinder`` (a dev-only dependency; the app itself resolves zones with ``zoneinfo``). Keeps stations that
-have an ICAO id and report METAR or TAF. The output is deterministic: sorted by ICAO, gzip header without a timestamp.
+Needs ``timezonefinder`` (a dev-only dependency; the app itself resolves zones with ``zoneinfo``). Keeps every
+station that has an ICAO id and valid coordinates, at the full precision of the cache (nothing is rounded or dropped
+for size). The output is deterministic: sorted by ICAO, gzip header without a timestamp.
 """
 
 from __future__ import annotations
@@ -37,7 +38,7 @@ def build_rows(source: list[dict[str, object]]) -> list[dict[str, object]]:
         icao = _text(item.get("icaoId"))
         types = [t for t in item.get("siteType") or [] if t in ("METAR", "TAF")]  # type: ignore[attr-defined]
         lat, lon = item.get("lat"), item.get("lon")
-        if not icao or not types or not isinstance(lat, int | float) or not isinstance(lon, int | float):
+        if not icao or not isinstance(lat, int | float) or not isinstance(lon, int | float):
             continue
         if not (-90 <= lat <= 90 and -180 <= lon <= 180):
             continue  # the cache holds placeholder coordinates such as -99.99
@@ -47,8 +48,8 @@ def build_rows(source: list[dict[str, object]]) -> list[dict[str, object]]:
             "iata": _text(item.get("iataId")),
             "faa": _text(item.get("faaId")),
             "name": _text(item.get("site")) or icao.upper(),
-            "lat": round(float(lat), 5),
-            "lon": round(float(lon), 5),
+            "lat": float(lat),
+            "lon": float(lon),
             "elev": elevation if isinstance(elevation, int | float) else None,
             "state": _text(item.get("state")),
             "country": _text(item.get("country")),

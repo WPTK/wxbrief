@@ -445,8 +445,8 @@ fuzz test gained tail and remark inputs (it also passed 20,000 examples per prop
 - `data/cache.py`: `DiskCache(directory=None)` with `write(key, payload)` (atomic, returns `False` on failure) and `read(key)` returning
   `(saved_at, payload)` or `None`; never raises.
 - `data/stations.py`: `StationDB.load(path=None)`, `get(code)` (ICAO, or a unique IATA/FAA code), `search(query, limit=10)`; `bundled()`
-  is the shared instance. `scripts/build_stations.py` builds `wxbrief/data/stations.json.gz` (7,871 stations with an ICAO id and METAR or TAF
-  service, 234 KB) from the AWC `stations.cache.json.gz`, with `timezonefinder` imported only inside the script. It skips placeholder
+  is the shared instance. `scripts/build_stations.py` builds `wxbrief/data/stations.json.gz` (8,751 stations with an ICAO id and valid coordinates,
+  full coordinate precision, 258 KB) from the AWC `stations.cache.json.gz`, with `timezonefinder` imported only inside the script. It skips placeholder
   coordinates such as -99.99. The output is deterministic (sorted, gzip without timestamp).
 - `config.py`: `load_config(path=None) -> LoadedConfig(config, warnings)`, `parse_config`, `save_config`, `default_config_path`, `clean_watchlist`.
   Each bad value falls back on its own and adds a warning; a missing file gives defaults with no warning.
