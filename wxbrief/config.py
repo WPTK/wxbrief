@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import tempfile
@@ -13,7 +14,10 @@ from typing import Any
 import platformdirs
 import tomli_w
 
+from wxbrief.data.cache import sweep_temp_files
 from wxbrief.data.stations import resolve_id
+from wxbrief.i18n import LANGUAGES, resolve_language
+from wxbrief.ui.glyphs import GLYPH_SETS
 
 WATCHLIST_CAP = 60
 UNITS = ("us", "metric", "mixed")
@@ -104,6 +108,17 @@ def _text(table: dict[str, Any], key: str, default: str, where: str, warns: list
     return default
 
 
+def _language(table: dict[str, Any], default: str, warns: list[str]) -> str:
+    """``view.lang`` as the catalog that serves it (``pt-BR`` is ``pt``, ``DE`` is ``de``), else the default."""
+    value = table.get("lang", default)
+    found = resolve_language(value) if isinstance(value, str) and value.strip() else None
+    if found is not None:
+        return found
+    if "lang" in table:
+        warns.append(f"view.lang must be one of {', '.join(LANGUAGES)}; using {default!r}")
+    return default
+
+
 def _flag(table: dict[str, Any], key: str, default: bool, where: str, warns: list[str]) -> bool:
     value = table.get(key, default)
     if isinstance(value, bool):
@@ -122,6 +137,12 @@ def _seconds(table: dict[str, Any], key: str, default: int, where: str, warns: l
     return default
 
 
+def station_id(value: object) -> str | None:
+    """A station id as the list and ``get`` take it (3 or 4 letters or digits; DEN is KDEN), or ``None``."""
+    code = value.strip().upper() if isinstance(value, str) else ""
+    return resolve_id(code) if _STATION_ID.match(code) else None
+
+
 def clean_watchlist(values: object, warnings: list[str] | None = None) -> list[str]:
     """Upper-cased, de-duplicated station ids, dropping anything that is not a plausible id, capped at 60."""
     warns = warnings if warnings is not None else []
@@ -130,11 +151,10 @@ def clean_watchlist(values: object, warnings: list[str] | None = None) -> list[s
         return []
     result: list[str] = []
     for value in values:
-        code = value.strip().upper() if isinstance(value, str) else ""
-        if not _STATION_ID.match(code):
+        code = station_id(value)  # DEN is KDEN: the list holds ICAO ids only
+        if code is None:
             warns.append(f"stations.watchlist: ignoring {value!r}")
             continue
-        code = resolve_id(code)  # DEN is KDEN: the list holds ICAO ids only
         if code not in result:
             result.append(code)
     if len(result) > WATCHLIST_CAP:
@@ -172,11 +192,11 @@ def parse_config(data: dict[str, Any]) -> LoadedConfig:
     vd = ViewConfig()
     config.view = ViewConfig(
         theme=_text(view, "theme", vd.theme, "view", warns),
-        glyph_set=_text(view, "glyph_set", vd.glyph_set, "view", warns),
+        glyph_set=_choice(view, "glyph_set", GLYPH_SETS, vd.glyph_set, "view", warns),
         layout=_choice(view, "layout", LAYOUTS, vd.layout, "view", warns),
         units=_choice(view, "units", UNITS, vd.units, "view", warns),
         time=_choice(view, "time", TIME_MODES, vd.time, "view", warns),
-        lang=_text(view, "lang", vd.lang, "view", warns),
+        lang=_language(view, vd.lang, warns),
         show_computed_color=_flag(view, "show_computed_color", vd.show_computed_color, "view", warns),
     )
     config.decode = DecodeConfig(
@@ -196,9 +216,24 @@ def load_config(path: Path | None = None) -> LoadedConfig:
         return LoadedConfig(Config(), [f"cannot read {target}: {exc}"], usable=False)
     try:
         data = tomllib.loads(text)
-    except tomllib.TOMLDecodeError as exc:
+    except (ValueError, RecursionError) as exc:  # a TOMLDecodeError, a 5000-digit integer, or nesting too deep
         return LoadedConfig(Config(), [f"{target} is not valid TOML ({exc}); using defaults"], usable=False)
     return parse_config(data)
+
+
+def merge_session(disk: Config, saved: list[str], watchlist: list[str], view: dict[str, str]) -> Config:
+    """``disk`` with only this session's changes applied: the stations added to or removed from ``saved`` (the list
+    as this session last knew the file) to reach ``watchlist``, and the view settings in ``view``.
+
+    The file is the base, so a station another instance added or a setting edited by hand since launch survives.
+    """
+    removed = set(saved) - set(watchlist)
+    merged = [code for code in disk.stations.watchlist if code not in removed]
+    merged += [code for code in watchlist if code not in saved and code not in merged]
+    disk.stations.watchlist = merged[:WATCHLIST_CAP]
+    for name, value in view.items():
+        setattr(disk.view, name, value)
+    return disk
 
 
 def config_text(config: Config) -> str:
@@ -208,17 +243,22 @@ def config_text(config: Config) -> str:
 
 def save_config(config: Config, path: Path | None = None) -> bool:
     """Write the config atomically; ``False`` when the disk refuses."""
-    target = path or default_config_path()
     try:
+        target = (path or default_config_path()).resolve()  # a symlinked config is written through, not replaced
         target.parent.mkdir(parents=True, exist_ok=True)
         fd, tmp_name = tempfile.mkstemp(dir=target.parent, prefix=".config.", suffix=".tmp")
         try:
             with os.fdopen(fd, "wb") as handle:
                 handle.write(config_text(config).encode("utf-8"))
+                handle.flush()
+                os.fsync(handle.fileno())  # the data is on disk before the rename can make it the config
+            with contextlib.suppress(OSError):  # a new file keeps the private default
+                os.chmod(tmp_name, target.stat().st_mode & 0o777)  # keep the file's mode (mkstemp makes it 0600)
             os.replace(tmp_name, target)
         except BaseException:
             Path(tmp_name).unlink(missing_ok=True)
             raise
-    except (OSError, TypeError, ValueError):
+    except (OSError, TypeError, ValueError, RecursionError):
         return False
+    sweep_temp_files(target.parent, ".config.")
     return True

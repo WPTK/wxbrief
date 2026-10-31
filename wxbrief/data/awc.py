@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import math
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -28,6 +29,7 @@ DEADLINE_SECONDS = 30.0  # the limit on one whole request, however slowly the se
 MAX_IDS_PER_REQUEST = 400
 DEFAULT_RETRY_AFTER = 60.0
 MAX_RETRY_AFTER = 3600.0
+MAX_BODY_BYTES = 8 * 1024 * 1024  # a full 400-station METAR batch is well under 1 MB
 
 
 class AwcError(Exception):
@@ -73,6 +75,21 @@ def _retry_after(response: httpx.Response) -> float:
     return min(MAX_RETRY_AFTER, max(0.0, seconds))
 
 
+async def _read_limited(response: httpx.Response) -> bytes:
+    """The decoded body, or ``ClientError`` as soon as it passes ``MAX_BODY_BYTES`` (nothing more is read)."""
+    declared = response.headers.get("Content-Length", "")
+    if declared.isdigit() and int(declared) > MAX_BODY_BYTES:
+        raise ClientError(f"response is larger than {MAX_BODY_BYTES // (1024 * 1024)} MB")
+    parts: list[bytes] = []
+    size = 0
+    async for part in response.aiter_bytes():
+        size += len(part)
+        if size > MAX_BODY_BYTES:
+            raise ClientError(f"response is larger than {MAX_BODY_BYTES // (1024 * 1024)} MB")
+        parts.append(part)
+    return b"".join(parts)
+
+
 def _chunks(ids: Sequence[str], size: int) -> list[list[str]]:
     unique = list(dict.fromkeys(i.strip().upper() for i in ids if i.strip()))
     return [unique[start : start + size] for start in range(0, len(unique), size)]
@@ -100,7 +117,12 @@ class AwcClient:
         self._deadline = deadline
         self._owns_client = client is None
         self._base_url = base_url.rstrip("/")
-        self._client = client or httpx.AsyncClient(timeout=timeout, headers={"User-Agent": USER_AGENT})
+        if client is None:
+            try:
+                client = httpx.AsyncClient(timeout=timeout, headers={"User-Agent": USER_AGENT})
+            except Exception as exc:  # what httpx raises here depends on the environment (proxy and CA variables)
+                raise TransportError(f"cannot set up the HTTP client: {type(exc).__name__}: {exc}") from exc
+        self._client = client
 
     async def __aenter__(self) -> Self:
         return self
@@ -115,12 +137,13 @@ class AwcClient:
     async def _get(self, endpoint: str, params: dict[str, str]) -> list[Any]:
         try:
             async with asyncio.timeout(self._deadline):  # httpx's timeout restarts on every read
-                response = await self._client.get(f"{self._base_url}/{endpoint}", params=params)
+                async with self._client.stream("GET", f"{self._base_url}/{endpoint}", params=params) as response:
+                    status = response.status_code
+                    content = await _read_limited(response) if status == 200 else b""
         except httpx.HTTPError as exc:
             raise TransportError(f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__) from exc
         except TimeoutError as exc:
             raise TransportError(f"no complete response within {self._deadline:g} s") from exc
-        status = response.status_code
         if status == 204:
             return []
         if status == 429:
@@ -130,8 +153,8 @@ class AwcClient:
         if status != 200:
             raise ClientError(f"unexpected status {status}")
         try:
-            body = response.json()
-        except ValueError as exc:
+            body = json.loads(content)
+        except (ValueError, RecursionError) as exc:
             raise ClientError("response is not JSON") from exc
         if not isinstance(body, list):
             raise ClientError("response is not a list")
