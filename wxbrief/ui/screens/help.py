@@ -16,8 +16,10 @@ HELP_TEXT = """\
   a                  add a station (code or name)
   d                  remove the selected station
   r                  refresh now
+  v                  toggle the list / grid layout
 [b]Detail[/b]
   1  2  3            jump to raw, decoded, forecast
+  Left/Right         move the forecast timeline cursor (the mouse works too)
   c                  copy the Discord METAR block
   C                  copy Discord METAR and TAF
   y                  copy the raw report text

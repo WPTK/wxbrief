@@ -16,6 +16,7 @@ from textual.binding import Binding
 from wxbrief.config import Config, ViewConfig, default_config_path, save_config
 from wxbrief.data.awc import AwcClient, AwcError
 from wxbrief.data.cache import DiskCache, default_cache_dir
+from wxbrief.data.demo import load_demo
 from wxbrief.data.poll import PollScheduler, Product
 from wxbrief.data.stations import bundled
 from wxbrief.decode.units import UnitsMode
@@ -42,6 +43,7 @@ class AppOptions:
     use_cache: bool = True
     client: AwcClient | None = None  # tests inject one with a mock transport
     poll: bool = True
+    demo: bool = False  # --demo: the bundled reports on a fixed clock; no polling, cache or config writes
     now: Callable[[], datetime] = lambda: datetime.now(UTC)
 
 
@@ -86,14 +88,16 @@ class WxBriefApp(App[None]):
     # --- start up --------------------------------------------------------------------------------------------------
 
     def on_mount(self) -> None:
-        self.state.load_cache()
+        if self.options.demo:
+            self.state.load_demo(load_demo())
+            self.notify("Demo: fixed sample reports, no network", timeout=6)
+        else:
+            self.state.load_cache()
         self.push_screen(self.briefing)
         for warning in self.options.config_warnings:
             self.notify(warning, severity="warning", title="Config", timeout=10)
         for notice in self.options.notices:
             self.notify(notice, severity="warning", title="Stations", timeout=10)
-        if self.options.view.layout == "grid":
-            self.notify("The grid layout is not built yet; showing the list", severity="warning")
         if self.options.poll:
             self.poll_worker()
         self.set_interval(1.0, self._tick)

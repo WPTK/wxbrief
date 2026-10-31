@@ -44,12 +44,17 @@ def _add_global_flags(parser: argparse.ArgumentParser) -> None:
     """The flags that apply to the TUI (and are accepted before a subcommand)."""
     parser.add_argument("--version", action="version", version=f"wxbrief {__version__}")
     parser.add_argument("--glyphs", choices=GLYPH_SETS, help="glyph set (default: from config, nerd)")
-    parser.add_argument("--layout", choices=LAYOUTS, help="list or grid layout (grid arrives later)")
+    parser.add_argument("--layout", choices=LAYOUTS, help="list or grid layout (v toggles it)")
     parser.add_argument("--units", dest="tui_units", choices=[m.value for m in UnitsMode], help="units mode")
     parser.add_argument("--time", choices=TIME_MODES, help="time shown: station, local or zulu")
     parser.add_argument("--lang", help="language of the plain-language decode (en)")
     parser.add_argument("--config", type=Path, metavar="FILE", help="read and save this config file")
     parser.add_argument("--no-config", action="store_true", help="ignore the config file and never write it")
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        help="open with the bundled sample reports of ten stations: fully offline, nothing is fetched, cached or saved",
+    )
 
 
 def _first_positional(argv: Sequence[str]) -> str | None:
@@ -227,6 +232,7 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
     from wxbrief.app import AppOptions
 
     loaded = LoadedConfig(Config()) if args.no_config else load_config(args.config)
+    demo = bool(args.demo)
     view = replace(loaded.config.view)
     for name, value in (
         ("glyph_set", args.glyphs),
@@ -239,6 +245,21 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
             setattr(view, name, value)
     notices: list[str] = []
     cleaned = clean_watchlist([s.strip().upper() for s in args.stations], notices)
+    if demo:
+        # The sample stations replace the list; the config is read for the view settings only and never written.
+        from wxbrief.data.demo import DEMO_NOW, demo_ids
+
+        return AppOptions(
+            ids=demo_ids(),
+            config=Config(),
+            view=view,
+            use_config=False,
+            config_warnings=[],
+            use_cache=False,
+            poll=False,
+            demo=True,
+            now=lambda: DEMO_NOW,
+        )
     return AppOptions(
         ids=resolve_ids(cleaned),
         notices=notices,

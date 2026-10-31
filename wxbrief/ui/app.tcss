@@ -153,3 +153,81 @@ PasteDecodeScreen #paste-output {
 PasteDecodeScreen #paste-result {
     height: auto;
 }
+
+/* === S6: TAF timeline, period detail, station grid and cards (forecast widgets) ================================== */
+
+#taf-summary {
+    height: auto;
+}
+
+#taf-note {
+    height: auto;
+}
+
+TafTimeline {
+    height: 5;
+    margin-top: 1;
+}
+
+TafTimeline:focus {
+    background: $boost;
+}
+
+PeriodDetail {
+    height: auto;
+    margin-top: 1;
+}
+
+#taf-groups-box {
+    margin-top: 1;
+    padding: 0;
+    background: $surface;
+    border: none;
+}
+
+#taf-groups {
+    height: auto;
+}
+
+StationGrid {
+    display: none;
+    width: 1fr;
+    padding: 0 1;
+    background: $surface;
+}
+
+BriefingScreen.-grid StationGrid {
+    display: block;
+}
+
+BriefingScreen.-grid StationList,
+BriefingScreen.-grid DetailPane {
+    display: none;
+}
+
+StationGrid #cards {
+    layout: grid;
+    grid-size: 2;
+    grid-gutter: 0 1;
+    height: auto;
+}
+
+StationCard {
+    height: 6;
+    padding: 0 1;
+    border: round $primary-background-lighten-2;
+    background: $surface;
+}
+
+StationCard.-selected {
+    border: round $primary;
+}
+
+StationGrid:focus StationCard.-selected {
+    border: heavy $primary;
+}
+
+StationDetailScreen DetailPane {
+    height: 1fr;
+}
+/* === end S6 ===================================================================================================== */

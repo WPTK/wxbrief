@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -40,19 +40,33 @@ class ViewContext:
     def station(self, icao: str) -> Station | None:
         return self.stations.get(icao)
 
-    def clock(self, moment: datetime | None, icao: str | None = None) -> str:
-        """``14:53Z``, or the same moment in station-local or computer-local time per the time mode."""
-        if moment is None:
-            return "--"
-        zone: ZoneInfo | None = None
+    def _zone(self, icao: str | None) -> ZoneInfo | None:
+        """The station's own zone in ``station`` mode, when the database knows it."""
         if self.time_mode == "station" and icao:
             found = self.station(icao)
             if found and found.tz:
                 try:
-                    zone = ZoneInfo(found.tz)
+                    return ZoneInfo(found.tz)
                 except (ZoneInfoNotFoundError, ValueError, OSError):
-                    zone = None
-        if self.time_mode == "zulu" or (self.time_mode == "station" and zone is None):
+                    return None
+        return None
+
+    def is_zulu(self, icao: str | None = None) -> bool:
+        """True when times are shown in UTC: ``zulu`` mode, or ``station`` mode for a station without a known zone."""
+        return self.time_mode == "zulu" or (self.time_mode == "station" and self._zone(icao) is None)
+
+    def localize(self, moment: datetime, icao: str | None = None) -> datetime:
+        """``moment`` in the zone the time mode asks for."""
+        if self.is_zulu(icao):
+            return moment.astimezone(UTC)
+        zone = self._zone(icao)
+        return moment.astimezone(zone) if zone is not None else moment.astimezone()
+
+    def clock(self, moment: datetime | None, icao: str | None = None) -> str:
+        """``14:53Z``, or the same moment in station-local or computer-local time per the time mode."""
+        if moment is None:
+            return "--"
+        if self.is_zulu(icao):
             return moment.strftime("%H:%MZ")
-        shifted = moment.astimezone(zone) if zone is not None else moment.astimezone()
+        shifted = self.localize(moment, icao)
         return f"{shifted:%H:%M} {shifted.tzname() or ''}".strip()

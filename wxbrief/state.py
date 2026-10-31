@@ -12,6 +12,7 @@ from typing import Any
 
 from wxbrief.config import WATCHLIST_CAP
 from wxbrief.data.cache import DiskCache
+from wxbrief.data.demo import DemoStation
 from wxbrief.data.models import AwcMetar, AwcTaf, latest_by_station, parse_metars, parse_tafs
 from wxbrief.data.poll import Freshness, Product, freshness
 from wxbrief.decode.metar import parse_metar
@@ -138,6 +139,14 @@ class AppState:
             payload = [row.source for row in self._taf_rows.values()]
         if self.cache is not None:
             self.cache.write(CACHE_KEYS[product], payload)
+
+    def load_demo(self, stations: Iterable[DemoStation]) -> None:
+        """Fill the state from the bundled demo reports. Nothing is cached or fetched."""
+        for demo in stations:
+            self.stations[demo.icao] = StationReports(
+                demo.icao, demo.awc_metar, demo.awc_taf, demo.metar, demo.taf, self.now(), from_cache=False
+            )
+        self.last_success = self.now()
 
     def record_error(self, product: Product, message: str) -> None:
         self.errors[product] = message
