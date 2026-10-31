@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import TextIO
 
 from wxbrief import __version__
-from wxbrief.decode.metar import parse_metar
+from wxbrief.decode.model import Metar, Taf
+from wxbrief.decode.split import parse_any
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import Translator
+from wxbrief.render.discord import render_discord
+from wxbrief.render.jsonout import to_dict
 from wxbrief.render.plain import render_plain
 
 
@@ -35,24 +39,38 @@ def build_parser() -> argparse.ArgumentParser:
 
     decode = commands.add_parser(
         "decode",
-        help="decode METAR/SPECI text given as arguments or on stdin",
+        help="decode METAR, SPECI and TAF text given as arguments or on stdin",
         description=(
-            "Decode METAR or SPECI reports into plain language. Pass each report as one quoted argument (unquoted "
-            "words are joined into a single report), or pipe text on stdin with one report per line. A group such "
-            "as -RA is read as an option unless the report is quoted or follows --."
+            "Decode METAR, SPECI and TAF reports into plain language. Pass each report as one quoted argument "
+            "(unquoted words are joined into a single report), or pipe text on stdin: a blob with several reports, "
+            "TAFs wrapped over several lines, reports separated by blank lines or '=', in upper or lower case. "
+            "A group such as -RA is read as an option unless the report is quoted or follows --."
         ),
     )
     decode.add_argument("reports", nargs="*", metavar="RAW", help="raw report text")
-    decode.add_argument(
+    output = decode.add_mutually_exclusive_group()
+    output.add_argument(
         "--plain",
         action="store_true",
         help="plain text without colour (automatic when stdout is not a terminal)",
     )
+    output.add_argument(
+        "--json",
+        action="store_true",
+        help="print the decoded reports as a JSON list (language-neutral: codes, numbers, UTC times)",
+    )
+    output.add_argument(
+        "--discord",
+        action="store_true",
+        help="print each report as a Discord code block (inside an outer four-backtick fence); imperial units "
+        "unless --units says otherwise",
+    )
     decode.add_argument(
         "--units",
         choices=[mode.value for mode in UnitsMode],
-        default=UnitsMode.MIXED.value,
-        help="us or metric units first, or mixed: as reported with the other system in parentheses (default)",
+        default=None,
+        help="us or metric units first, or mixed: as reported with the other system in parentheses "
+        "(default: mixed, or us with --discord)",
     )
     decode.add_argument(
         "--date",
@@ -63,36 +81,44 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _collect_reports(arguments: Sequence[str], stdin: TextIO) -> list[str]:
-    """One report per quoted argument; bare words are one report; otherwise one report per stdin line."""
+def _collect_texts(arguments: Sequence[str], stdin: TextIO) -> list[str]:
+    """The pieces of text to decode: one per quoted argument (bare words are one), or all of stdin."""
     if arguments:
         if len(arguments) > 1 and not any(any(ch.isspace() for ch in arg) for arg in arguments):
             return [" ".join(arguments)]
         return [arg for arg in arguments if arg.strip()]
     if stdin.isatty():
         return []
-    return [line for line in stdin.read().splitlines() if line.strip()]
+    text = stdin.read()
+    return [text] if text.strip() else []
 
 
 def _run_decode(args: argparse.Namespace) -> int:
-    reports = _collect_reports(args.reports, sys.stdin)
-    if not reports:
+    texts = _collect_texts(args.reports, sys.stdin)
+    reference = args.date if args.date is not None else datetime.now(UTC)
+    decoded: list[Metar | Taf] = [item for text in texts for item in parse_any(text, reference)]
+    if not decoded:
         sys.stderr.write("wxbrief decode: no report text given (pass it as an argument or on stdin)\n")
         return 2
 
-    # Never fail on a character the console cannot encode (the degree sign in a legacy code page, say).
+    # Always UTF-8: a pipe on Windows defaults to the ANSI code page, which turns the degree sign into a lone 0xB0 byte.
+    # Never fail on a character the stream cannot encode.
     reconfigure = getattr(sys.stdout, "reconfigure", None)
     if callable(reconfigure):
-        reconfigure(errors="replace")
+        reconfigure(encoding="utf-8", errors="replace")
 
-    units = UnitsMode(args.units)
-    reference = args.date if args.date is not None else datetime.now(UTC)
+    if args.json:
+        sys.stdout.write(json.dumps([to_dict(item) for item in decoded], indent=2) + "\n")
+        return 0
+
+    units = UnitsMode(args.units or (UnitsMode.US.value if args.discord else UnitsMode.MIXED.value))
     translator = Translator.load("en")
-    decoded = [parse_metar(raw, reference) for raw in reports]
-    plain = args.plain or not sys.stdout.isatty()
+    if args.discord:
+        sys.stdout.write("\n\n".join(render_discord(item, translator, units) for item in decoded) + "\n")
+        return 0
 
-    if plain:
-        sys.stdout.write("\n\n".join(render_plain(metar, translator, units) for metar in decoded) + "\n")
+    if args.plain or not sys.stdout.isatty():
+        sys.stdout.write("\n\n".join(render_plain(item, translator, units) for item in decoded) + "\n")
         return 0
 
     from rich.console import Console
@@ -101,10 +127,10 @@ def _run_decode(args: argparse.Namespace) -> int:
     from wxbrief.render.richtext import DEFAULT_THEME, build_renderable
 
     console = Console(theme=DEFAULT_THEME)
-    for index, metar in enumerate(decoded):
+    for index, item in enumerate(decoded):
         if index:
             console.print(Text(""))
-        console.print(build_renderable(metar, translator, units))
+        console.print(build_renderable(item, translator, units))
     return 0
 
 

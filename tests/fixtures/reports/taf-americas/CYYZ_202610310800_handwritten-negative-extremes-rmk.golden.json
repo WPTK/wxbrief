@@ -1,0 +1,227 @@
+{
+  "raw": "TAF CYYZ 310800Z 3108/0112 27012G22KT P6SM BKN040 TXM02/3118Z TNM08/0108Z BECMG 3112/3114 30015G28KT RMK NXT FCST BY 311400Z",
+  "station": "CYYZ",
+  "issue_time": "2026-10-31T08:00:00+00:00",
+  "valid_from": "2026-10-31T08:00:00+00:00",
+  "valid_to": "2026-11-01T12:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T08:00:00+00:00",
+    "end": "2026-10-31T12:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 270,
+        "speed": {
+          "value": 12,
+          "unit": "KT"
+        },
+        "gust": {
+          "value": 22,
+          "unit": "KT"
+        },
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 6.0,
+          "unit": "SM"
+        },
+        "prefix": "GREATER_THAN",
+        "cavok": false,
+        "unlimited": false,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [],
+      "sky": [
+        {
+          "cover": "BKN",
+          "base": {
+            "value": 4000,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "VFR",
+    "becoming_end": null
+  },
+  "changes": [
+    {
+      "change": "BECMG",
+      "probability": null,
+      "start": "2026-10-31T12:00:00+00:00",
+      "end": "2026-11-01T12:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": 300,
+          "speed": {
+            "value": 15,
+            "unit": "KT"
+          },
+          "gust": {
+            "value": 28,
+            "unit": "KT"
+          },
+          "variable": false,
+          "speed_above": false
+        },
+        "visibility": null,
+        "weather": [],
+        "sky": [],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "VFR",
+      "becoming_end": "2026-10-31T14:00:00+00:00"
+    }
+  ],
+  "remarks": "NXT FCST BY 311400Z",
+  "flavor": "US",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "CYYZ",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "310800Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3108/0112",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "27012G22KT",
+      "start": 27,
+      "end": 37,
+      "kind": "WIND"
+    },
+    {
+      "text": "P6SM",
+      "start": 38,
+      "end": 42,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BKN040",
+      "start": 43,
+      "end": 49,
+      "kind": "SKY"
+    },
+    {
+      "text": "TXM02/3118Z",
+      "start": 50,
+      "end": 61,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "TNM08/0108Z",
+      "start": 62,
+      "end": 73,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "BECMG",
+      "start": 74,
+      "end": 79,
+      "kind": "TREND"
+    },
+    {
+      "text": "3112/3114",
+      "start": 80,
+      "end": 89,
+      "kind": "TREND"
+    },
+    {
+      "text": "30015G28KT",
+      "start": 90,
+      "end": 100,
+      "kind": "WIND"
+    },
+    {
+      "text": "RMK",
+      "start": 101,
+      "end": 104,
+      "kind": "REMARK"
+    },
+    {
+      "text": "NXT",
+      "start": 105,
+      "end": 108,
+      "kind": "REMARK"
+    },
+    {
+      "text": "FCST",
+      "start": 109,
+      "end": 113,
+      "kind": "REMARK"
+    },
+    {
+      "text": "BY",
+      "start": 114,
+      "end": 116,
+      "kind": "REMARK"
+    },
+    {
+      "text": "311400Z",
+      "start": 117,
+      "end": 124,
+      "kind": "REMARK"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "VFR",
+  "report_type": "TAF",
+  "temperatures": [
+    {
+      "kind": "MAX",
+      "temperature": {
+        "value": -2,
+        "unit": "C"
+      },
+      "day": 31,
+      "hour": 18,
+      "time": "2026-10-31T18:00:00+00:00"
+    },
+    {
+      "kind": "MIN",
+      "temperature": {
+        "value": -8,
+        "unit": "C"
+      },
+      "day": 1,
+      "hour": 8,
+      "time": "2026-11-01T08:00:00+00:00"
+    }
+  ],
+  "flags": [
+    "GUSTS"
+  ],
+  "legacy": false
+}

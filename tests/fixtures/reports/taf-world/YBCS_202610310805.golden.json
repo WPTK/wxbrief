@@ -1,0 +1,460 @@
+{
+  "raw": "TAF YBCS 310805Z 3109/0106 05012KT 9999 -SHRA SCT030 FM311000 18005KT 9999 NSW SCT015 BKN022 FM010000 05012KT 9999 -SHRA SCT025 TEMPO 3115/3121 9999 BKN015 INTER 3123/0103 5000 SHRA SCT015",
+  "station": "YBCS",
+  "issue_time": "2026-10-31T08:05:00+00:00",
+  "valid_from": "2026-10-31T09:00:00+00:00",
+  "valid_to": "2026-11-01T06:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T09:00:00+00:00",
+    "end": "2026-10-31T10:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 50,
+        "speed": {
+          "value": 12,
+          "unit": "KT"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 10000,
+          "unit": "M"
+        },
+        "prefix": null,
+        "cavok": false,
+        "unlimited": true,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [
+        {
+          "intensity": "LIGHT",
+          "descriptor": "SH",
+          "phenomena": [
+            "RA"
+          ],
+          "vicinity": false,
+          "nsw": false,
+          "not_observed": false
+        }
+      ],
+      "sky": [
+        {
+          "cover": "SCT",
+          "base": {
+            "value": 3000,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "VFR",
+    "becoming_end": null
+  },
+  "changes": [
+    {
+      "change": "FM",
+      "probability": null,
+      "start": "2026-10-31T10:00:00+00:00",
+      "end": "2026-11-01T00:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": 180,
+          "speed": {
+            "value": 5,
+            "unit": "KT"
+          },
+          "gust": null,
+          "variable": false,
+          "speed_above": false
+        },
+        "visibility": {
+          "distance": {
+            "value": 10000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": true,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": null,
+            "phenomena": [],
+            "vicinity": false,
+            "nsw": true,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "SCT",
+            "base": {
+              "value": 1500,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          },
+          {
+            "cover": "BKN",
+            "base": {
+              "value": 2200,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "MVFR",
+      "becoming_end": null
+    },
+    {
+      "change": "FM",
+      "probability": null,
+      "start": "2026-11-01T00:00:00+00:00",
+      "end": "2026-11-01T06:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": 50,
+          "speed": {
+            "value": 12,
+            "unit": "KT"
+          },
+          "gust": null,
+          "variable": false,
+          "speed_above": false
+        },
+        "visibility": {
+          "distance": {
+            "value": 10000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": true,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "LIGHT",
+            "descriptor": "SH",
+            "phenomena": [
+              "RA"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "SCT",
+            "base": {
+              "value": 2500,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "VFR",
+      "becoming_end": null
+    },
+    {
+      "change": "TEMPO",
+      "probability": null,
+      "start": "2026-10-31T15:00:00+00:00",
+      "end": "2026-10-31T21:00:00+00:00",
+      "elements": {
+        "wind": null,
+        "visibility": {
+          "distance": {
+            "value": 10000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": true,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [],
+        "sky": [
+          {
+            "cover": "BKN",
+            "base": {
+              "value": 1500,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "MVFR",
+      "becoming_end": null
+    },
+    {
+      "change": "INTER",
+      "probability": null,
+      "start": "2026-10-31T23:00:00+00:00",
+      "end": "2026-11-01T03:00:00+00:00",
+      "elements": {
+        "wind": null,
+        "visibility": {
+          "distance": {
+            "value": 5000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": "SH",
+            "phenomena": [
+              "RA"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "SCT",
+            "base": {
+              "value": 1500,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "MVFR",
+      "becoming_end": null
+    }
+  ],
+  "remarks": null,
+  "flavor": "ICAO",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "YBCS",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "310805Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3109/0106",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "05012KT",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-SHRA",
+      "start": 40,
+      "end": 45,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT030",
+      "start": 46,
+      "end": 52,
+      "kind": "SKY"
+    },
+    {
+      "text": "FM311000",
+      "start": 53,
+      "end": 61,
+      "kind": "TREND"
+    },
+    {
+      "text": "18005KT",
+      "start": 62,
+      "end": 69,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 70,
+      "end": 74,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "NSW",
+      "start": 75,
+      "end": 78,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT015",
+      "start": 79,
+      "end": 85,
+      "kind": "SKY"
+    },
+    {
+      "text": "BKN022",
+      "start": 86,
+      "end": 92,
+      "kind": "SKY"
+    },
+    {
+      "text": "FM010000",
+      "start": 93,
+      "end": 101,
+      "kind": "TREND"
+    },
+    {
+      "text": "05012KT",
+      "start": 102,
+      "end": 109,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 110,
+      "end": 114,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-SHRA",
+      "start": 115,
+      "end": 120,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT025",
+      "start": 121,
+      "end": 127,
+      "kind": "SKY"
+    },
+    {
+      "text": "TEMPO",
+      "start": 128,
+      "end": 133,
+      "kind": "TREND"
+    },
+    {
+      "text": "3115/3121",
+      "start": 134,
+      "end": 143,
+      "kind": "TREND"
+    },
+    {
+      "text": "9999",
+      "start": 144,
+      "end": 148,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BKN015",
+      "start": 149,
+      "end": 155,
+      "kind": "SKY"
+    },
+    {
+      "text": "INTER",
+      "start": 156,
+      "end": 161,
+      "kind": "TREND"
+    },
+    {
+      "text": "3123/0103",
+      "start": 162,
+      "end": 171,
+      "kind": "TREND"
+    },
+    {
+      "text": "5000",
+      "start": 172,
+      "end": 176,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "SHRA",
+      "start": 177,
+      "end": 181,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT015",
+      "start": 182,
+      "end": 188,
+      "kind": "SKY"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "MVFR",
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [],
+  "legacy": false
+}

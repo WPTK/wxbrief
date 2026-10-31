@@ -1,0 +1,303 @@
+{
+  "raw": "TAF EGLL 311100Z 3112/0112 25008KT 9999 -RA BKN010 BECMG 3115/3118 25008KT 9999 NSW SCT025 TEMPO 3121/0103 5000 RADZ BKN004",
+  "station": "EGLL",
+  "issue_time": "2026-10-31T11:00:00+00:00",
+  "valid_from": "2026-10-31T12:00:00+00:00",
+  "valid_to": "2026-11-01T12:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T12:00:00+00:00",
+    "end": "2026-10-31T15:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 250,
+        "speed": {
+          "value": 8,
+          "unit": "KT"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 10000,
+          "unit": "M"
+        },
+        "prefix": null,
+        "cavok": false,
+        "unlimited": true,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [
+        {
+          "intensity": "LIGHT",
+          "descriptor": null,
+          "phenomena": [
+            "RA"
+          ],
+          "vicinity": false,
+          "nsw": false,
+          "not_observed": false
+        }
+      ],
+      "sky": [
+        {
+          "cover": "BKN",
+          "base": {
+            "value": 1000,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "MVFR",
+    "becoming_end": null
+  },
+  "changes": [
+    {
+      "change": "BECMG",
+      "probability": null,
+      "start": "2026-10-31T15:00:00+00:00",
+      "end": "2026-11-01T12:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": 250,
+          "speed": {
+            "value": 8,
+            "unit": "KT"
+          },
+          "gust": null,
+          "variable": false,
+          "speed_above": false
+        },
+        "visibility": {
+          "distance": {
+            "value": 10000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": true,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": null,
+            "phenomena": [],
+            "vicinity": false,
+            "nsw": true,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "SCT",
+            "base": {
+              "value": 2500,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "VFR",
+      "becoming_end": "2026-10-31T18:00:00+00:00"
+    },
+    {
+      "change": "TEMPO",
+      "probability": null,
+      "start": "2026-10-31T21:00:00+00:00",
+      "end": "2026-11-01T03:00:00+00:00",
+      "elements": {
+        "wind": null,
+        "visibility": {
+          "distance": {
+            "value": 5000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": null,
+            "phenomena": [
+              "RA",
+              "DZ"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "BKN",
+            "base": {
+              "value": 400,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "LIFR",
+      "becoming_end": null
+    }
+  ],
+  "remarks": null,
+  "flavor": "ICAO",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "EGLL",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "311100Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3112/0112",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "25008KT",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-RA",
+      "start": 40,
+      "end": 43,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BKN010",
+      "start": 44,
+      "end": 50,
+      "kind": "SKY"
+    },
+    {
+      "text": "BECMG",
+      "start": 51,
+      "end": 56,
+      "kind": "TREND"
+    },
+    {
+      "text": "3115/3118",
+      "start": 57,
+      "end": 66,
+      "kind": "TREND"
+    },
+    {
+      "text": "25008KT",
+      "start": 67,
+      "end": 74,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 75,
+      "end": 79,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "NSW",
+      "start": 80,
+      "end": 83,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT025",
+      "start": 84,
+      "end": 90,
+      "kind": "SKY"
+    },
+    {
+      "text": "TEMPO",
+      "start": 91,
+      "end": 96,
+      "kind": "TREND"
+    },
+    {
+      "text": "3121/0103",
+      "start": 97,
+      "end": 106,
+      "kind": "TREND"
+    },
+    {
+      "text": "5000",
+      "start": 107,
+      "end": 111,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "RADZ",
+      "start": 112,
+      "end": 116,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BKN004",
+      "start": 117,
+      "end": 123,
+      "kind": "SKY"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "LIFR",
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [
+    "LOW_CEILING"
+  ],
+  "legacy": false
+}

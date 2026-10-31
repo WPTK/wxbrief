@@ -1,0 +1,403 @@
+{
+  "raw": "TAF YSSY 301700Z 3018/0124 14010KT 9999 SCT030 FM310300 18012KT 9999 -SHRA BKN025 INTER 3106/3110 4000 SHRA SCT015 PROB30 TEMPO 3112/3118 VRB30G45KT 1000 TSRAGR BKN010 SCT040CB",
+  "station": "YSSY",
+  "issue_time": "2026-10-30T17:00:00+00:00",
+  "valid_from": "2026-10-30T18:00:00+00:00",
+  "valid_to": "2026-11-02T00:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-30T18:00:00+00:00",
+    "end": "2026-10-31T03:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 140,
+        "speed": {
+          "value": 10,
+          "unit": "KT"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 10000,
+          "unit": "M"
+        },
+        "prefix": null,
+        "cavok": false,
+        "unlimited": true,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [],
+      "sky": [
+        {
+          "cover": "SCT",
+          "base": {
+            "value": 3000,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "VFR",
+    "becoming_end": null
+  },
+  "changes": [
+    {
+      "change": "FM",
+      "probability": null,
+      "start": "2026-10-31T03:00:00+00:00",
+      "end": "2026-11-02T00:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": 180,
+          "speed": {
+            "value": 12,
+            "unit": "KT"
+          },
+          "gust": null,
+          "variable": false,
+          "speed_above": false
+        },
+        "visibility": {
+          "distance": {
+            "value": 10000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": true,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "LIGHT",
+            "descriptor": "SH",
+            "phenomena": [
+              "RA"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "BKN",
+            "base": {
+              "value": 2500,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "MVFR",
+      "becoming_end": null
+    },
+    {
+      "change": "INTER",
+      "probability": null,
+      "start": "2026-10-31T06:00:00+00:00",
+      "end": "2026-10-31T10:00:00+00:00",
+      "elements": {
+        "wind": null,
+        "visibility": {
+          "distance": {
+            "value": 4000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": "SH",
+            "phenomena": [
+              "RA"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "SCT",
+            "base": {
+              "value": 1500,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "IFR",
+      "becoming_end": null
+    },
+    {
+      "change": "PROB_TEMPO",
+      "probability": 30,
+      "start": "2026-10-31T12:00:00+00:00",
+      "end": "2026-10-31T18:00:00+00:00",
+      "elements": {
+        "wind": {
+          "direction": null,
+          "speed": {
+            "value": 30,
+            "unit": "KT"
+          },
+          "gust": {
+            "value": 45,
+            "unit": "KT"
+          },
+          "variable": true,
+          "speed_above": false
+        },
+        "visibility": {
+          "distance": {
+            "value": 1000,
+            "unit": "M"
+          },
+          "prefix": null,
+          "cavok": false,
+          "unlimited": false,
+          "ndv": false,
+          "directional": [],
+          "not_reported": false
+        },
+        "weather": [
+          {
+            "intensity": "MODERATE",
+            "descriptor": "TS",
+            "phenomena": [
+              "RA",
+              "GR"
+            ],
+            "vicinity": false,
+            "nsw": false,
+            "not_observed": false
+          }
+        ],
+        "sky": [
+          {
+            "cover": "BKN",
+            "base": {
+              "value": 1000,
+              "unit": "FT"
+            },
+            "cloud_type": null
+          },
+          {
+            "cover": "SCT",
+            "base": {
+              "value": 4000,
+              "unit": "FT"
+            },
+            "cloud_type": "CB"
+          }
+        ],
+        "color_state": null,
+        "wind_shear": null,
+        "altimeter": null,
+        "icing": [],
+        "turbulence": []
+      },
+      "flight_category": "LIFR",
+      "becoming_end": null
+    }
+  ],
+  "remarks": null,
+  "flavor": "ICAO",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "YSSY",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "301700Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3018/0124",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "14010KT",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "SCT030",
+      "start": 40,
+      "end": 46,
+      "kind": "SKY"
+    },
+    {
+      "text": "FM310300",
+      "start": 47,
+      "end": 55,
+      "kind": "TREND"
+    },
+    {
+      "text": "18012KT",
+      "start": 56,
+      "end": 63,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 64,
+      "end": 68,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "-SHRA",
+      "start": 69,
+      "end": 74,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BKN025",
+      "start": 75,
+      "end": 81,
+      "kind": "SKY"
+    },
+    {
+      "text": "INTER",
+      "start": 82,
+      "end": 87,
+      "kind": "TREND"
+    },
+    {
+      "text": "3106/3110",
+      "start": 88,
+      "end": 97,
+      "kind": "TREND"
+    },
+    {
+      "text": "4000",
+      "start": 98,
+      "end": 102,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "SHRA",
+      "start": 103,
+      "end": 107,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SCT015",
+      "start": 108,
+      "end": 114,
+      "kind": "SKY"
+    },
+    {
+      "text": "PROB30",
+      "start": 115,
+      "end": 121,
+      "kind": "TREND"
+    },
+    {
+      "text": "TEMPO",
+      "start": 122,
+      "end": 127,
+      "kind": "TREND"
+    },
+    {
+      "text": "3112/3118",
+      "start": 128,
+      "end": 137,
+      "kind": "TREND"
+    },
+    {
+      "text": "VRB30G45KT",
+      "start": 138,
+      "end": 148,
+      "kind": "WIND"
+    },
+    {
+      "text": "1000",
+      "start": 149,
+      "end": 153,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "TSRAGR",
+      "start": 154,
+      "end": 160,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "BKN010",
+      "start": 161,
+      "end": 167,
+      "kind": "SKY"
+    },
+    {
+      "text": "SCT040CB",
+      "start": 168,
+      "end": 176,
+      "kind": "SKY"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "LIFR",
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [
+    "CB",
+    "LOW_VISIBILITY",
+    "GUSTS",
+    "THUNDERSTORM"
+  ],
+  "legacy": false
+}

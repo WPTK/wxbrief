@@ -38,6 +38,7 @@ class SemanticKind(Enum):
     RUNWAY_STATE = "runway_state"  # 88290192, R24L/290255, SNOCLO
     TREND = "trend"  # NOSIG, and BECMG/TEMPO with the groups that follow
     COLOR_STATE = "color_state"  # BLU, WHT, GRN, YLO, AMB, RED
+    HAZARD = "hazard"  # TAF icing and turbulence groups (620004, 510004)
     REMARK = "remark"  # RMK and everything after it
     TERMINATOR = "terminator"  # the trailing "="
     UNKNOWN = "unknown"
@@ -46,6 +47,7 @@ class SemanticKind(Enum):
 class ReportType(Enum):
     METAR = "METAR"
     SPECI = "SPECI"
+    TAF = "TAF"
 
 
 class Modifier(Enum):
@@ -75,6 +77,19 @@ class FlightCategory(Enum):
     IFR = "IFR"
     LIFR = "LIFR"
 
+    @property
+    def rank(self) -> int:
+        """Severity: 0 for VFR up to 3 for LIFR, so ``max(..., key=rank)`` finds the worst."""
+        return _CATEGORY_RANK[self]
+
+
+_CATEGORY_RANK = {
+    FlightCategory.VFR: 0,
+    FlightCategory.MVFR: 1,
+    FlightCategory.IFR: 2,
+    FlightCategory.LIFR: 3,
+}
+
 
 class Flag(Enum):
     """Operationally significant conditions to call out next to a decode."""
@@ -96,6 +111,9 @@ class Flag(Enum):
     MAINTENANCE = "MAINTENANCE"
     VOLCANIC_ASH = "VOLCANIC_ASH"
     MISSING_DATA = "MISSING_DATA"
+    AMENDED = "AMENDED"
+    ICING = "ICING"
+    TURBULENCE = "TURBULENCE"
 
 
 class Condition(Enum):
@@ -360,18 +378,94 @@ class ColorStateGroup:
 
 
 @dataclass(frozen=True)
+class WindShearLayer:
+    """Low-level wind shear in a TAF (``WS020/30035KT``): the wind above ``height`` (above ground level)."""
+
+    height: Distance
+    direction: int | None  # degrees true; None for VRB
+    speed: Speed
+    gust: Speed | None = None
+
+
+class IcingIntensity(Enum):
+    """The intensity digit of an icing group ``6Ichhht`` (WMO code table 1690)."""
+
+    NONE = "0"  # trace icing or none
+    LIGHT = "1"
+    LIGHT_IN_CLOUD = "2"
+    LIGHT_IN_PRECIPITATION = "3"
+    MODERATE = "4"
+    MODERATE_IN_CLOUD = "5"
+    MODERATE_IN_PRECIPITATION = "6"
+    SEVERE = "7"
+    SEVERE_IN_CLOUD = "8"
+    SEVERE_IN_PRECIPITATION = "9"
+
+
+class TurbulenceIntensity(Enum):
+    """The intensity character of a turbulence group ``5Bhhht``: moderate and severe by place and frequency."""
+
+    NONE = "0"
+    LIGHT = "1"
+    MODERATE_CLEAR_OCCASIONAL = "2"
+    MODERATE_CLEAR_FREQUENT = "3"
+    MODERATE_CLOUD_OCCASIONAL = "4"
+    MODERATE_CLOUD_FREQUENT = "5"
+    SEVERE_CLEAR_OCCASIONAL = "6"
+    SEVERE_CLEAR_FREQUENT = "7"
+    SEVERE_CLOUD_OCCASIONAL = "8"
+    SEVERE_CLOUD_FREQUENT = "9"
+    EXTREME = "X"
+
+
+@dataclass(frozen=True)
+class IcingGroup:
+    """A forecast icing layer: its base above ground level and its thickness (``None`` when the group says 0)."""
+
+    intensity: IcingIntensity
+    base: Distance
+    thickness: Distance | None = None
+
+
+@dataclass(frozen=True)
+class TurbulenceGroup:
+    """A forecast turbulence layer, same shape as ``IcingGroup``."""
+
+    intensity: TurbulenceIntensity
+    base: Distance
+    thickness: Distance | None = None
+
+
+@dataclass(frozen=True)
 class ForecastElements:
-    """The elements a trend (or, later, a TAF period) states. Anything left empty is unchanged."""
+    """The elements a trend or a TAF period states. Anything left empty (``None`` or ``()``) is unchanged.
+
+    ``wind_shear``, ``altimeter`` (``QNH2992INS``), ``icing`` and ``turbulence`` only occur in TAFs.
+    """
 
     wind: Wind | None = None
     visibility: Visibility | None = None
     weather: tuple[WeatherGroup, ...] = ()
     sky: tuple[CloudLayer, ...] = ()
     color_state: ColorState | None = None
+    wind_shear: WindShearLayer | None = None
+    altimeter: Pressure | None = None
+    icing: tuple[IcingGroup, ...] = ()
+    turbulence: tuple[TurbulenceGroup, ...] = ()
 
     @property
     def is_empty(self) -> bool:
-        return not (self.wind or self.visibility or self.weather or self.sky or self.color_state)
+        return not (
+            self.wind
+            or self.visibility
+            or self.weather
+            or self.sky
+            or self.color_state
+            or self.wind_shear
+            or self.altimeter
+            or self.icing
+            or self.turbulence
+        )
 
 
 @dataclass(frozen=True)
@@ -905,3 +999,190 @@ class Metar:
         if self.remarks_index is None:
             return ()
         return tuple(tok for tok in self.tokens[self.remarks_index + 1 :] if tok.kind is not SemanticKind.TERMINATOR)
+
+
+# --- TAF -------------------------------------------------------------------------------------------------------
+
+
+class ChangeType(Enum):
+    """How a TAF group relates to the forecast before it.
+
+    ``BASE`` is the opening forecast and ``FM`` a rapid, lasting change that replaces everything; ``BECMG`` a gradual
+    change of the elements it lists; ``TEMPO`` temporary fluctuations; ``PROB`` a probability on its own
+    (``PROB30``) and ``PROB_TEMPO`` a probable temporary fluctuation (``PROB30 TEMPO``); ``INTER`` the Australian
+    intermittent fluctuation and ``PROB_INTER`` a probable one (``PROB30 INTER``).
+    """
+
+    BASE = "BASE"
+    FM = "FM"
+    BECMG = "BECMG"
+    TEMPO = "TEMPO"
+    PROB = "PROB"
+    PROB_TEMPO = "PROB_TEMPO"
+    INTER = "INTER"
+    PROB_INTER = "PROB_INTER"
+
+
+class TemperatureExtreme(Enum):
+    MAX = "MAX"  # TX
+    MIN = "MIN"  # TN
+
+
+@dataclass(frozen=True)
+class TafTemperature:
+    """A forecast temperature extreme (``TX19/3114Z``): ``day`` and ``hour`` as written, ``time`` resolved."""
+
+    kind: TemperatureExtreme
+    temperature: Temperature
+    day: int
+    hour: int
+    time: datetime | None = None
+
+
+@dataclass(frozen=True)
+class TafPeriod:
+    """One group of a TAF: the base forecast or a change group, with the elements it states.
+
+    ``start`` is when the group takes effect (the valid-from time for the base, the ``FM`` time, or the start of the
+    window of a ``BECMG``/``TEMPO``/``PROB``/``INTER``). ``end`` is when it stops applying: the end of the stated
+    window for ``TEMPO``/``PROB``/``PROB_TEMPO``/``INTER``, and for ``BASE``/``FM``/``BECMG`` the start of the next
+    ``FM`` (``BECMG`` also ends at the next ``BECMG``) or the end of the TAF. ``becoming_end`` is the end of the
+    transition window of a ``BECMG`` (the new conditions are fully established from then on) and ``None`` for every
+    other kind. ``flight_category`` is the category of the forecast the group describes: for ``BASE`` and ``FM`` its
+    own elements; for the other kinds the elements merged over what prevails when the group starts (the reference
+    decoder's ``657-INHERIT-GROUP``). ``tokens`` are the report tokens of the group (left out of JSON output; the
+    report's own ``tokens`` carry the same data).
+    """
+
+    change: ChangeType
+    probability: int | None
+    start: datetime | None
+    end: datetime | None
+    elements: ForecastElements = field(default_factory=ForecastElements)
+    flight_category: FlightCategory | None = None
+    tokens: tuple[Token, ...] = field(default=(), metadata={"json": False})
+    becoming_end: datetime | None = None
+
+
+@dataclass(frozen=True)
+class Taf:
+    """A decoded TAF (terminal aerodrome forecast).
+
+    ``base`` is the opening forecast (``None`` for a cancelled or missing one, or a report that goes straight to
+    change groups) and ``changes`` the following groups in report order. ``remarks`` is the verbatim text after
+    ``RMK``. ``temperatures`` holds the ``TX``/``TN`` groups wherever they sit. ``worst_category`` is the worst flight
+    category anywhere in the forecast, overlays included.
+    """
+
+    raw: str
+    station: str | None = None
+    issue_time: datetime | None = None
+    valid_from: datetime | None = None
+    valid_to: datetime | None = None
+    modifiers: tuple[Modifier, ...] = ()
+    base: TafPeriod | None = None
+    changes: tuple[TafPeriod, ...] = ()
+    remarks: str | None = None
+    flavor: Flavor = Flavor.UNKNOWN
+    tokens: tuple[Token, ...] = ()
+    warnings: tuple[ParseWarning, ...] = ()
+    worst_category: FlightCategory | None = None
+    report_type: ReportType = ReportType.TAF
+    temperatures: tuple[TafTemperature, ...] = ()
+    flags: tuple[Flag, ...] = ()
+    legacy: bool = False  # the valid period was given in the old DDHHHH form
+
+    @property
+    def periods(self) -> tuple[TafPeriod, ...]:
+        """The base forecast (when there is one) followed by the change groups."""
+        return (self.base, *self.changes) if self.base is not None else self.changes
+
+    @property
+    def amended(self) -> bool:
+        return Modifier.AMD in self.modifiers
+
+    @property
+    def cancelled(self) -> bool:
+        return Modifier.CNL in self.modifiers
+
+    @property
+    def nil(self) -> bool:
+        return Modifier.NIL in self.modifiers
+
+
+@dataclass(frozen=True)
+class TimelineOverlay:
+    """A ``TEMPO``/``PROB``/``INTER`` group active in a slice.
+
+    ``index`` points into ``Taf.periods``. ``category`` is the flight category of the elements merged over the
+    prevailing ones of that slice, as the reference decoder does for these groups.
+    """
+
+    index: int
+    change: ChangeType
+    probability: int | None
+    elements: ForecastElements
+    category: FlightCategory | None
+
+
+@dataclass(frozen=True)
+class TimelineSlice:
+    """A stretch of the forecast over which nothing changes: the prevailing elements and the overlays in force.
+
+    ``period`` is the index (into ``Taf.periods``) of the group that last set the prevailing forecast: the base,
+    an ``FM``, or a ``BECMG`` whose window has ended. While a ``BECMG`` window is open ``becoming`` is true and
+    ``becoming_index`` names that group; the prevailing elements are still the old ones. ``category`` is the flight
+    category of the prevailing elements and ``worst_category`` the worst of it and every overlay's.
+    """
+
+    start: datetime
+    end: datetime
+    prevailing: ForecastElements
+    becoming: bool
+    overlays: tuple[TimelineOverlay, ...]
+    category: FlightCategory | None
+    worst_category: FlightCategory | None
+    period: int | None = None
+    becoming_index: int | None = None
+
+
+@dataclass(frozen=True)
+class TimelineHour:
+    """One whole UTC hour of the valid period, summarising the slices that touch it.
+
+    ``category`` is the worst prevailing category within the hour and ``worst_category`` the worst including the
+    overlays; ``becoming`` is true if any part of the hour lies in a ``BECMG`` window; ``overlay`` is true if any
+    overlay is active (``overlay_category`` is the worst category among them, ``None`` without overlays or when none
+    could be classified). ``slices`` indexes into ``Timeline.slices``.
+    """
+
+    start: datetime
+    end: datetime
+    category: FlightCategory | None
+    worst_category: FlightCategory | None
+    becoming: bool
+    overlay: bool
+    overlay_category: FlightCategory | None
+    slices: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class Timeline:
+    """A TAF expanded over time: slices from ``start`` to ``end`` (the valid period), in order and without gaps."""
+
+    start: datetime | None
+    end: datetime | None
+    slices: tuple[TimelineSlice, ...]
+    worst_category: FlightCategory | None = None
+
+    def at(self, moment: datetime) -> TimelineSlice | None:
+        """The slice in force at ``moment`` (``start`` inclusive, ``end`` exclusive), or ``None`` outside the TAF."""
+        from wxbrief.decode.timeline import slice_at
+
+        return slice_at(self, moment)
+
+    def hourly(self) -> tuple[TimelineHour, ...]:
+        """One cell per whole UTC hour from the start of the valid period, for a strip of hourly cells."""
+        from wxbrief.decode.timeline import hourly_cells
+
+        return hourly_cells(self)

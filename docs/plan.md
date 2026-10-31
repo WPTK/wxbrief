@@ -170,7 +170,7 @@ Tick a row when the session has landed on `main` (S0 committed directly; later s
 | S0 | Scaffold: package, CI, project docs | [x] 2026-10-31 |
 | S1 | Decoder core | [x] 2026-10-31 |
 | S2a | Decoder depth: METAR/SPECI tail (trends, color states, runway state, remarks) | [x] 2026-10-31 |
-| S2b | Decoder depth: TAF, timeline, `split.py`, Discord and JSON output | [ ] |
+| S2b | Decoder depth: TAF, timeline, `split.py`, Discord and JSON output | [x] 2026-10-31 |
 | S3 | Data layer | [ ] |
 | S4 | TUI MVP | [ ] |
 | S5 | Colorways | [ ] |
@@ -424,4 +424,64 @@ fuzz test gained tail and remark inputs (it also passed 20,000 examples per prop
   needs to be a dataclass. Remark variants carry `"variant"`.
 - Catalog: add keys to `locales/en.toml`, run `python scripts/gen_keys.py`; `test_i18n` checks the tables in
   `decode/tables.py` against the catalog and the enums.
-- AWC TAF JSON was not fetched or saved here.
+- AWC TAF JSON was not fetched or saved here (S2b did; see below).
+
+### S2b (2026-10-31)
+
+**How it was built.** The decoder, timeline, `split.py`, Discord renderer and AWC TAF cross-check were written first
+and arrived as one local snapshot; the rest of S2b (fixtures, unit tests, docs, the review of the METAR golden changes)
+was added around it and the history cut into logical commits.
+
+**Model (names as built).** In `decode/model.py`: `Taf(raw, station, issue_time, valid_from, valid_to, modifiers, base,
+changes, remarks, flavor, tokens, warnings, worst_category, report_type, temperatures, flags, legacy)` with the
+properties `periods`, `amended`, `cancelled` and `nil`; `TafPeriod(change, probability, start, end, elements,
+flight_category, tokens, becoming_end)`; `ChangeType` (`BASE`, `FM`, `BECMG`, `TEMPO`, `INTER`, `PROB`, `PROB_TEMPO`, `PROB_INTER`);
+`TafTemperature(kind, temperature, day, hour, time)` with `TemperatureExtreme`; `WindShearLayer`, `IcingGroup`,
+`TurbulenceGroup` with their intensity enums. `ForecastElements` (from S2a) gains `wind_shear`, `altimeter`, `icing`
+and `turbulence`, so every METAR trend now carries four more (empty) fields. `Timeline`, `TimelineSlice`,
+`TimelineOverlay` and `TimelineHour` describe the expansion. `parse_trend_body` takes an optional `extra` hook for the
+TAF-only groups. The METAR parser's "unsupported TAF" special case is gone (`parse_any` picks the parser).
+
+**Fixtures and tests.** TAFs live in `tests/fixtures/reports/taf-<region>/` (`taf-americas`, `taf-europe`,
+`taf-world`) so the METAR corpus helpers and tests are untouched (`corpus.report_files()` still returns METARs;
+`taf_files()` returns TAFs). 36 report/golden pairs: 24 real (from the five saved AWC TAF batches of 2026-10-31: 204
+distinct forecasts) and 12 hand-written. The real batches contain no `CNL`, no `NIL`, no wind shear group, no
+six-digit legacy valid period and no `INTER` outside Australia, so those forms are hand-written (`CNL`, `NIL`,
+`WS020/30035KT`, `301212` with `BECMG 1517` and `FM2000`, `INTER`, `PROB30 TEMPO`, terminator `=`, negative
+extremes). Every golden was read against its raw text (valid period, each window, the category of each group, extremes,
+icing and turbulence codes). New tests: `test_taf_goldens.py`, `test_taf.py`, `test_tafgroups.py`, `test_timeline.py`,
+`test_split.py`, `test_discord.py`, CLI tests for `--json`/`--discord`, and the fuzz test now covers TAFs (mutated
+corpus, `parse_any` on mixed blobs, a pathological-input timing test).
+
+**The 49 changed METAR goldens.** Every change is the same: `ForecastElements` inside a trend gained `wind_shear: null`,
+`altimeter: null`, `icing: []`, `turbulence: []` and the preceding `color_state` line gained a comma (50 hunks in 49
+files, WSSS has two trends). Nothing else moved in any METAR golden.
+
+**Deviations.**
+
+- The Discord template of the reference notes (`metar-taf-decode`, `SKILL.md`) was not available on this machine. The
+  tests pin the layout documented in `render/discord.py`, which was written from the notes; the "`--discord` reproduces
+  the template" check in the table still needs a comparison against the notes. Known differences from the template as
+  quoted in the module: a station name arrives with the station database (S3), so the title is the ICAO code only; the
+  separator before `AUTO` is an em dash; temperatures show both units.
+- Unread TAF notes: the real KRIV (`WND 230V330`) and NZSP (`WND21008KT AFT 3122 ALL WINDS GRID`) forecasts keep those
+  words as unknown tokens with a warning. Their goldens record it and `test_taf_goldens.py` names the two stations.
+- `parse_any` keeps every non-blank character, so a stray `=` between reports becomes a one-token report with an unknown
+  token warning rather than being dropped.
+
+**For S3 and later.**
+
+- Station name and local hour plug into `discord_block(..., station_name=, local_hour=)` and `condition_emoji`; both are
+  tested but unused by the CLI.
+- `PROB30 INTER` is its own `ChangeType.PROB_INTER` (an overlay like `PROB_TEMPO`), so the probability reaches the plain
+  and Discord headings. AWC reports both `INTER` forms as `TEMPO`.
+- `worst_category` counts a `BECMG` from the start of its window (the change may land at any moment), so it can be worse
+  than the `category` of every slice. `split_reports` keeps `TAF AMD` and the line after it together, and a TAF wraps
+  on any line that does not start with a keyword or a station and issue time. Legacy windows and notes
+  (`1517`, `AFT 3023`) no longer take part in flavor detection (they read as metre visibility). Piped output is UTF-8.
+- The TUI timeline strip should read `Timeline.hourly()` (`category`, `worst_category`, `becoming`, `overlay`); the
+  cell colours are the flight category, and `TimelineSlice` has the prevailing and overlay elements for a detail view.
+- `parse_any(text, reference)` is the entry point for the paste screen; the reference for a TAF is its receipt time.
+- The AWC client should store `rawTAF` and `issueTime` per station; `issueTime` is the right reference for
+  `parse_taf` (as the cross-check does). AWC TAFs sometimes lack an issue time (military `TAF KNID 3023/3123`).
+- Locale catalogs: S2b added the `taf.*` and `discord.*` keys to `locales/en.toml`, the only catalog so far (S7 adds the rest).

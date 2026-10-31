@@ -1,0 +1,144 @@
+{
+  "raw": "TAF CYXY 310540Z 3106/3118 14012G22KT P6SM BKN240 RMK NXT FCST BY 311200Z",
+  "station": "CYXY",
+  "issue_time": "2026-10-31T05:40:00+00:00",
+  "valid_from": "2026-10-31T06:00:00+00:00",
+  "valid_to": "2026-10-31T18:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T06:00:00+00:00",
+    "end": "2026-10-31T18:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 140,
+        "speed": {
+          "value": 12,
+          "unit": "KT"
+        },
+        "gust": {
+          "value": 22,
+          "unit": "KT"
+        },
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 6.0,
+          "unit": "SM"
+        },
+        "prefix": "GREATER_THAN",
+        "cavok": false,
+        "unlimited": false,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [],
+      "sky": [
+        {
+          "cover": "BKN",
+          "base": {
+            "value": 24000,
+            "unit": "FT"
+          },
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "VFR",
+    "becoming_end": null
+  },
+  "changes": [],
+  "remarks": "NXT FCST BY 311200Z",
+  "flavor": "US",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "CYXY",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "310540Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3106/3118",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "14012G22KT",
+      "start": 27,
+      "end": 37,
+      "kind": "WIND"
+    },
+    {
+      "text": "P6SM",
+      "start": 38,
+      "end": 42,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "BKN240",
+      "start": 43,
+      "end": 49,
+      "kind": "SKY"
+    },
+    {
+      "text": "RMK",
+      "start": 50,
+      "end": 53,
+      "kind": "REMARK"
+    },
+    {
+      "text": "NXT",
+      "start": 54,
+      "end": 57,
+      "kind": "REMARK"
+    },
+    {
+      "text": "FCST",
+      "start": 58,
+      "end": 62,
+      "kind": "REMARK"
+    },
+    {
+      "text": "BY",
+      "start": 63,
+      "end": 65,
+      "kind": "REMARK"
+    },
+    {
+      "text": "311200Z",
+      "start": 66,
+      "end": 73,
+      "kind": "REMARK"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "VFR",
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [
+    "GUSTS"
+  ],
+  "legacy": false
+}

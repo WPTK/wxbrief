@@ -1,0 +1,121 @@
+{
+  "raw": "TAF ETNN 300804Z 3009/3018 15002KT 9999 NSW SKC",
+  "station": "ETNN",
+  "issue_time": "2026-10-30T08:04:00+00:00",
+  "valid_from": "2026-10-30T09:00:00+00:00",
+  "valid_to": "2026-10-30T18:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-30T09:00:00+00:00",
+    "end": "2026-10-30T18:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 150,
+        "speed": {
+          "value": 2,
+          "unit": "KT"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": {
+          "value": 10000,
+          "unit": "M"
+        },
+        "prefix": null,
+        "cavok": false,
+        "unlimited": true,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [
+        {
+          "intensity": "MODERATE",
+          "descriptor": null,
+          "phenomena": [],
+          "vicinity": false,
+          "nsw": true,
+          "not_observed": false
+        }
+      ],
+      "sky": [
+        {
+          "cover": "SKC",
+          "base": null,
+          "cloud_type": null
+        }
+      ],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "VFR",
+    "becoming_end": null
+  },
+  "changes": [],
+  "remarks": null,
+  "flavor": "ICAO",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "ETNN",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "300804Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3009/3018",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "15002KT",
+      "start": 27,
+      "end": 34,
+      "kind": "WIND"
+    },
+    {
+      "text": "9999",
+      "start": 35,
+      "end": 39,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "NSW",
+      "start": 40,
+      "end": 43,
+      "kind": "WEATHER"
+    },
+    {
+      "text": "SKC",
+      "start": 44,
+      "end": 47,
+      "kind": "SKY"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "VFR",
+  "report_type": "TAF",
+  "temperatures": [],
+  "flags": [],
+  "legacy": false
+}

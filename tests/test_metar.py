@@ -280,12 +280,12 @@ def test_nil_report() -> None:
     assert m.flight_category is None
 
 
-def test_taf_is_not_decoded_but_not_lost() -> None:
+def test_the_metar_parser_has_no_special_case_for_a_taf() -> None:
+    """TAFs are decoded by ``parse_taf`` (``parse_any`` picks it); handed to ``parse_metar`` the keyword is just unknown."""
     raw = "TAF KDEN 131130Z 1312/1418 06007KT P6SM SKC"
     m = parse_metar(raw, REF)
-    assert [w.code for w in m.warnings] == ["unsupported_report"]
-    assert all(t.kind is SemanticKind.UNKNOWN for t in m.tokens)
-    assert m.wind is None
+    assert "unsupported_report" not in [w.code for w in m.warnings]
+    assert m.tokens[0].kind is SemanticKind.UNKNOWN
     assert_complete(raw)
 
 

@@ -1,7 +1,8 @@
 """JSON-ready dictionaries for decoded reports (the form stored in golden files).
 
 Enums become their member names, datetimes ISO 8601 strings, tuples lists, and tokens carry their kinds. A remark
-also names its variant (``"variant": "SeaLevelPressure"``) because remarks are a union of many classes.
+also names its variant (``"variant": "SeaLevelPressure"``) because remarks are a union of many classes. A field marked
+``metadata={"json": False}`` (a TAF period's ``tokens``, which repeat the report's own) is left out.
 """
 
 from __future__ import annotations
@@ -20,7 +21,8 @@ def _convert(value: object) -> Any:
     if isinstance(value, datetime):
         return value.isoformat()
     if is_dataclass(value) and not isinstance(value, type):
-        converted = {field.name: _convert(getattr(value, field.name)) for field in fields(value)}
+        shown = [field for field in fields(value) if field.metadata.get("json", True)]
+        converted = {field.name: _convert(getattr(value, field.name)) for field in shown}
         if isinstance(value, Remark):
             return {"variant": type(value).__name__, **converted}  # remarks are a union: say which one this is
         return converted

@@ -1,0 +1,124 @@
+{
+  "raw": "TAF UUEE 310803Z 3109/0109 08003MPS CAVOK TX11/3111Z TN00/0103Z",
+  "station": "UUEE",
+  "issue_time": "2026-10-31T08:03:00+00:00",
+  "valid_from": "2026-10-31T09:00:00+00:00",
+  "valid_to": "2026-11-01T09:00:00+00:00",
+  "modifiers": [],
+  "base": {
+    "change": "BASE",
+    "probability": null,
+    "start": "2026-10-31T09:00:00+00:00",
+    "end": "2026-11-01T09:00:00+00:00",
+    "elements": {
+      "wind": {
+        "direction": 80,
+        "speed": {
+          "value": 3,
+          "unit": "MPS"
+        },
+        "gust": null,
+        "variable": false,
+        "speed_above": false
+      },
+      "visibility": {
+        "distance": null,
+        "prefix": null,
+        "cavok": true,
+        "unlimited": false,
+        "ndv": false,
+        "directional": [],
+        "not_reported": false
+      },
+      "weather": [],
+      "sky": [],
+      "color_state": null,
+      "wind_shear": null,
+      "altimeter": null,
+      "icing": [],
+      "turbulence": []
+    },
+    "flight_category": "VFR",
+    "becoming_end": null
+  },
+  "changes": [],
+  "remarks": null,
+  "flavor": "ICAO",
+  "tokens": [
+    {
+      "text": "TAF",
+      "start": 0,
+      "end": 3,
+      "kind": "TYPE"
+    },
+    {
+      "text": "UUEE",
+      "start": 4,
+      "end": 8,
+      "kind": "STATION"
+    },
+    {
+      "text": "310803Z",
+      "start": 9,
+      "end": 16,
+      "kind": "TIME"
+    },
+    {
+      "text": "3109/0109",
+      "start": 17,
+      "end": 26,
+      "kind": "TIME"
+    },
+    {
+      "text": "08003MPS",
+      "start": 27,
+      "end": 35,
+      "kind": "WIND"
+    },
+    {
+      "text": "CAVOK",
+      "start": 36,
+      "end": 41,
+      "kind": "VISIBILITY"
+    },
+    {
+      "text": "TX11/3111Z",
+      "start": 42,
+      "end": 52,
+      "kind": "TEMPERATURE"
+    },
+    {
+      "text": "TN00/0103Z",
+      "start": 53,
+      "end": 63,
+      "kind": "TEMPERATURE"
+    }
+  ],
+  "warnings": [],
+  "worst_category": "VFR",
+  "report_type": "TAF",
+  "temperatures": [
+    {
+      "kind": "MAX",
+      "temperature": {
+        "value": 11,
+        "unit": "C"
+      },
+      "day": 31,
+      "hour": 11,
+      "time": "2026-10-31T11:00:00+00:00"
+    },
+    {
+      "kind": "MIN",
+      "temperature": {
+        "value": 0,
+        "unit": "C"
+      },
+      "day": 1,
+      "hour": 3,
+      "time": "2026-11-01T03:00:00+00:00"
+    }
+  ],
+  "flags": [],
+  "legacy": false
+}

@@ -57,7 +57,6 @@ from wxbrief.decode.units import Pressure, Temperature
 
 WARN_UNKNOWN_TOKEN = "unknown_token"
 WARN_PARSER_ERROR = "parser_error"
-WARN_UNSUPPORTED_REPORT = "unsupported_report"
 
 
 class _Section(IntEnum):
@@ -328,12 +327,6 @@ def _parse(raw: str, reference: datetime | None) -> Metar:
     detection = detect_flavor(tokens)
     draft = _Draft(reference=reference, flavor=detection.flavor)
     cur = Cursor(tokens)
-
-    if tokens and tokens[0].text == "TAF":
-        draft.warn(WARN_UNSUPPORTED_REPORT, tokens[0])
-        while not cur.at_end:
-            cur.take(SemanticKind.UNKNOWN)
-        return Metar(raw=raw, tokens=cur.tagged(), flavor=detection.flavor, warnings=tuple(draft.warnings))
 
     position = _Section.TYPE
     remarks_index: int | None = None
