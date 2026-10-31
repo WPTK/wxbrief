@@ -348,3 +348,14 @@ def test_a_copy_that_is_several_messages_says_so_in_the_toast() -> None:
     assert parts_note(T, "KDEN", short + "\n\n" + short, reports=2) == "KDEN"
     for lang in ("de", "es", "fr", "pt"):
         assert "{" not in parts_note(Translator.load(lang), "X", long_text)
+
+
+def test_a_rising_pressure_tendency() -> None:
+    raw = "METAR KJAX 312256Z AUTO 17005KT 10SM FEW030 24/20 A3003 RMK AO2 SLP163 51008"
+    assert block(raw).endswith("Pressure: 1016.3 mb (rising +0.8 mb/3hr)\n" + FENCE)
+
+
+def test_a_corrected_metar_is_flagged_beside_the_observation_time() -> None:
+    first = block("METAR COR KJAX 312256Z 17005KT 10SM FEW030 24/20 A3003")
+    assert "Obs: 22:56 UTC (312256Z)  — ⚠️ COR" in first.splitlines()
+    assert "COR" not in block("METAR KJAX 312256Z 17005KT 10SM FEW030 24/20 A3003")

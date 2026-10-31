@@ -36,6 +36,7 @@ def test_station_search_finds_heathrow() -> None:
     assert len(db) > 5000
     assert db.search("heathrow")[0].icao == "EGLL"
     assert db.search("LHR")[0].icao == "EGLL"
+    assert db.search("DEN")[0].icao == "KDEN"  # an exact code beats every name that merely starts with it
     egll = db.get("EGLL")
     assert egll is not None and egll.tz == "Europe/London"
     kden = db.get("DEN")
@@ -60,6 +61,10 @@ def test_config_bad_toml_never_raises(tmp_path: Path) -> None:
     assert loaded.config == Config() and len(loaded.warnings) == 1
     path.write_bytes(b"\xff\xfe\x00")
     assert load_config(path).config == Config()
+    path.write_bytes(b"\xff\xfe\x00")
+    unreadable = load_config(path)
+    assert unreadable.config == Config() and not unreadable.usable and len(unreadable.warnings) == 1
+    assert load_config(tmp_path / "none.toml").usable
 
 
 def test_config_bad_values_fall_back_one_by_one() -> None:
@@ -165,3 +170,26 @@ def test_a_failed_cache_write_is_reported_through_the_error_path(tmp_path: Path)
     state.apply(Product.METAR, [])
     assert "could not write the cache" in state.errors[Product.METAR]
     assert Product.METAR not in state.offline
+
+
+def test_a_failed_config_save_returns_false_and_leaves_no_temp_file(tmp_path: Path) -> None:
+    blocker = tmp_path / "file"
+    blocker.write_text("x", encoding="utf-8")
+    assert save_config(Config(), blocker / "sub" / "config.toml") is False
+    assert [p.name for p in tmp_path.iterdir()] == ["file"]
+    path = tmp_path / "config.toml"
+    path.mkdir()  # the target is a directory: the temp file is written, the replace fails and the temp file goes
+    assert save_config(Config(), path) is False
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["config.toml", "file"]
+
+
+def test_a_good_fetch_clears_the_error_and_offline_mark_of_its_product() -> None:
+    from wxbrief.data.poll import Product
+    from wxbrief.state import AppState
+
+    state = AppState(["KDEN"])
+    state.record_error(Product.METAR, "x", offline=True)
+    state.record_error(Product.TAF, "y", offline=True)
+    state.apply(Product.METAR, [])
+    assert Product.METAR not in state.errors and Product.METAR not in state.offline
+    assert state.errors == {Product.TAF: "y"} and state.offline == {Product.TAF}

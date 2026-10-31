@@ -100,6 +100,11 @@ def test_trend_time_uses_the_resolved_moment() -> None:
         (ColorState(ColorCode.AMB), "Amber (AMB)"),
         (ColorState(ColorCode.RED), "Red (RED)"),
         (ColorState(ColorCode.RED, black=True), "Airfield closed for reasons other than weather (BLACK); weather state Red (RED)"),
+        (
+            ColorState(ColorCode.BLU, plus=True, black=True),
+            "Airfield closed for reasons other than weather (BLACK); weather state "
+            "Blue plus (BLU+): visibility 8 km or more, no ceiling below 20,000 ft",
+        ),
         (ColorState(None, black=True), "Airfield closed for reasons other than weather (BLACK)"),
         (ColorState(None, not_reported=True), "Not reported"),
     ],

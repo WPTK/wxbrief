@@ -122,6 +122,10 @@ async def test_success_resets_the_backoff() -> None:
     clock.now += 600
     await scheduler.run_cycle()  # metar succeeds again
     assert scheduler.next_due_in() == 600
+    client.errors = [ServerError(500)]
+    clock.now += 600
+    await scheduler.run_cycle()  # a failure after a success starts the backoff over
+    assert scheduler._tracks[Product.METAR].due == clock.now + 600
 
 
 async def test_retry_after_is_honoured_when_longer_than_the_backoff() -> None:
@@ -323,3 +327,25 @@ async def test_a_raising_error_callback_does_not_end_the_poller() -> None:
     client.errors = [ServerError(500), ServerError(500)]
     scheduler = PollScheduler(client, lambda: ["KDEN"], lambda p, r: None, broken_error, clock=clock)  # type: ignore[arg-type]
     assert await scheduler.run_cycle() == [Product.METAR, Product.TAF]
+
+
+async def test_poll_now_during_a_failing_fetch_is_not_lost() -> None:
+    class Failing(GatedClient):
+        async def metars(self, ids: list[str]) -> list[Any]:
+            await self.gate.wait()
+            raise ServerError(500)
+
+    clock, client = FakeClock(), Failing()
+    ids = ["KDEN"]
+    scheduler, seen = make(clock, client, ids)
+    cycle = asyncio.ensure_future(scheduler.run_cycle())
+    for _ in range(5):
+        await asyncio.sleep(0)  # the METAR request is in flight
+    ids.append("EGLL")
+    scheduler.poll_now()
+    client.gate.set()
+    await cycle
+    assert any(isinstance(item[1], ServerError) for item in seen)
+    assert client.calls == [("taf", ["KDEN", "EGLL"])]  # the TAF fetch sees the new station
+    assert scheduler.next_due_in() == 0  # and the failed METAR is due at once, not after the backoff
+    assert await scheduler.run_cycle() == [Product.METAR]

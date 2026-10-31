@@ -386,3 +386,9 @@ def test_a_two_week_old_report_is_not_placed_in_next_month() -> None:
     assert taf.issue_time == utc(14, 11, minute=30)
     assert (taf.valid_from, taf.valid_to) == (utc(14, 12), utc(15, 18))
     assert taf.valid_to is not None and taf.valid_to < now
+
+
+def test_a_period_that_ends_where_it_starts_is_an_invalid_time() -> None:
+    taf = decode("TAF KDEN 131120Z 1312/1312 18010KT P6SM SKC", utc(13, 12))
+    assert codes(taf) == ["invalid_time"]
+    assert taf.valid_from == utc(13, 12) and taf.valid_to is None
