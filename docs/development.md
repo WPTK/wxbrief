@@ -80,7 +80,10 @@ when the interface does. Commit them with the change that altered them.
 
 `wxbrief/data/stations.json.gz` is built by `scripts/build_stations.py` (needs `timezonefinder`, a dev-only
 dependency). Positions keep the full precision of the AWC list. The time zones come from timezone-boundary-builder
-data under the ODbL; the attribution is in the README and must stay with any release.
+data under the ODbL; the attribution is in the README and must stay with any release. The script prints the two
+facts to record here after a rebuild. The current file was built on 2026-10-31 from that day's AWC cache with
+timezonefinder 9.2.0. `get()` returns `None` for the eight IATA codes two stations share (GWD, ISU, CEM, PTZ, GYA, VTZ, TRK,
+SRG); `tests/test_data_files.py` pins the list, so a rebuild that changes it fails there.
 
 ## Versions and releases
 

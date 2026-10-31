@@ -216,3 +216,21 @@ def test_freshness_threshold_is_75_minutes() -> None:
     assert freshness(now - timedelta(minutes=74), now) is Freshness.FRESH
     assert freshness(now - timedelta(minutes=75), now) is Freshness.STALE
     assert freshness(None, now) is Freshness.STALE
+
+
+def test_rate_budget_count_above_the_limit_does_not_raise() -> None:
+    clock = FakeClock()
+    budget = RateBudget(3, 60, clock)
+    assert budget.wait_time(10) == 0
+    assert budget.try_acquire(10)
+    assert budget.used == 3
+    assert budget.wait_time(10) == 60
+
+
+async def test_a_long_id_list_spends_one_budget_unit_per_request() -> None:
+    clock = FakeClock()
+    client = FakeClient()
+    ids = [f"K{n:03d}" for n in range(401)]  # two chunks per product
+    scheduler, _ = make(clock, client, ids)
+    await scheduler.run_cycle()
+    assert scheduler.budget.used == 4

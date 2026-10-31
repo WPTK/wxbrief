@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from wxbrief.config import WATCHLIST_CAP, Config, load_config, parse_config, save_config
 from wxbrief.data.cache import DiskCache
@@ -99,3 +101,33 @@ def test_config_with_a_bom_is_read(tmp_path: Path) -> None:
     path.write_bytes(b'\xef\xbb\xbf[view]\ntheme = "paper-chart"\n')
     loaded = load_config(path)
     assert loaded.warnings == [] and loaded.config.view.theme == "paper-chart"
+
+
+def test_cache_naive_saved_at_is_damaged(tmp_path: Path) -> None:
+    cache = DiskCache(tmp_path)
+    cache.write("k", [1])
+    path = tmp_path / "k.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    document["saved_at"] = "2026-10-31T11:40:00"
+    path.write_text(json.dumps(document), encoding="utf-8")
+    assert cache.read("k") is None
+
+
+def test_every_bundled_time_zone_is_a_zoneinfo_key() -> None:
+    zones = {s.tz for s in bundled()._stations if s.tz}
+    assert len(zones) > 100
+    for zone in zones:
+        ZoneInfo(zone)
+
+
+def test_station_get_prefers_iata_over_faa_and_refuses_shared_codes() -> None:
+    db = bundled()
+    manchester = db.get("MAN")
+    assert manchester is not None and manchester.icao == "EGCC"
+    shared = ("GWD", "ISU", "CEM", "PTZ", "GYA", "VTZ", "SRG", "TRK")
+    assert all(db.get(code) is None for code in shared)
+    iata: dict[str, int] = {}
+    for station in db._stations:
+        if station.iata:
+            iata[station.iata] = iata.get(station.iata, 0) + 1
+    assert sorted(code for code, n in iata.items() if n > 1) == sorted(shared)
