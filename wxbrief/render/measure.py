@@ -14,6 +14,8 @@ from enum import Enum
 from fractions import Fraction
 
 from wxbrief.decode.units import (
+    HPA_PER_INHG,
+    METERS_PER_FOOT,
     Distance,
     DistanceUnit,
     Pressure,
@@ -114,15 +116,53 @@ def format_speed(speed: Speed, units: UnitsMode) -> str:
     return _combine(units, source, us_text, metric_text)
 
 
-def format_pressure(pressure: Pressure, units: UnitsMode) -> str:
+def format_pressure(pressure: Pressure, units: UnitsMode, *, precise: bool = False) -> str:
+    """Altimeter or QNH; ``precise`` keeps the tenth of a hectopascal that sea-level pressure carries."""
     source = _System.US if pressure.unit is PressureUnit.INHG else _System.METRIC
     us_text = f"{pressure.inhg:.2f} inHg"
-    metric_text = f"{round(pressure.hpa)} hPa"
+    metric_text = f"{pressure.hpa:.1f} hPa" if precise else f"{round(pressure.hpa)} hPa"
     return _combine(units, source, us_text, metric_text)
 
 
-def format_temperature(temperature: Temperature, units: UnitsMode) -> str:
+def format_pressure_change(hpa: float, units: UnitsMode) -> str:
+    """A pressure difference reported in hectopascals (the 3-hour tendency)."""
+    us_text = f"{hpa / HPA_PER_INHG:.2f} inHg"
+    metric_text = f"{format_decimal(hpa, 1)} hPa"
+    return _combine(units, _System.METRIC, us_text, metric_text)
+
+
+def format_temperature(temperature: Temperature, units: UnitsMode, *, precise: bool = False) -> str:
+    """Temperature; ``precise`` keeps the tenth of a degree of the T-group."""
     source = _System.METRIC if temperature.unit is TemperatureUnit.C else _System.US
-    us_text = f"{round(temperature.fahrenheit)} °F"
-    metric_text = f"{round(temperature.celsius)} °C"
+    if precise:
+        us_text = f"{temperature.fahrenheit:.1f} °F"
+        metric_text = f"{temperature.celsius:.1f} °C"
+    else:
+        us_text = f"{round(temperature.fahrenheit)} °F"
+        metric_text = f"{round(temperature.celsius)} °C"
     return _combine(units, source, us_text, metric_text)
+
+
+MM_PER_INCH = 25.4
+MM_PER_CM = 10
+
+
+def format_inches(inches: float, units: UnitsMode) -> str:
+    """A small length reported in inches (precipitation, snow depth, hail size)."""
+    us_text = f"{format_decimal(inches, 2)} in"
+    metric_text = f"{format_decimal(inches * MM_PER_INCH, 1)} mm"
+    return _combine(units, _System.US, us_text, metric_text)
+
+
+def format_millimeters(mm: float, units: UnitsMode) -> str:
+    """A deposit depth reported in millimetres (shown in centimetres from 10 cm up)."""
+    metric_text = f"{format_decimal(mm / MM_PER_CM, 1)} cm" if mm >= 100 else f"{format_decimal(mm, 1)} mm"
+    us_text = f"{format_decimal(mm / MM_PER_INCH, 2)} in"
+    return _combine(units, _System.METRIC, us_text, metric_text)
+
+
+def format_wave_height(meters: float, units: UnitsMode) -> str:
+    """Significant wave height reported in metres."""
+    us_text = f"{format_decimal(meters / METERS_PER_FOOT, 1)} ft"
+    metric_text = f"{format_decimal(meters, 1)} m"
+    return _combine(units, _System.METRIC, us_text, metric_text)
