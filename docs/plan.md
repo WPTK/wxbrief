@@ -21,7 +21,7 @@ He has already built the domain knowledge and the conventions this should reuse:
 | Python | `>=3.12` (local interpreter is 3.12.10; cfbtui's 3.13 floor is deliberately relaxed) |
 | Versioning | **ZeroVer**: `0.MINOR.PATCH`, major stays 0; first release `0.1.0`; tags `v0.x.y`. No FibVer tool. |
 | Changelog | **Common Changelog** (common-changelog.org) — rules below |
-| Attribution | **No Claude credit anywhere**: no `Co-Authored-By` trailers, no "Generated with Claude Code" PR footers, no mention in README/docs/CHANGELOG/commit messages. Stated in the repo's `CLAUDE.md` so every session obeys it. |
+| Attribution | **No AI attribution anywhere**: no co-author trailers, no "generated with" footers, and no authorship credit in README, docs, CHANGELOG, commits, or PR descriptions. Stated in the repo's CLAUDE.md. |
 | Delivery | **One fresh session per milestone**, sequential, each briefed from the committed `docs/plan.md`, to keep context windows small |
 
 ### Common Changelog rules (applied to `CHANGELOG.md`)
@@ -230,7 +230,9 @@ script (not in the repo). None blocks the design.
 - `pyproject.toml` sets `asyncio_default_fixture_loop_scope = "function"` next to `asyncio_mode = "auto"` so
   pytest-asyncio stays warning-free.
 - `.gitignore` also covers `.hypothesis/`, `.coverage`, `htmlcov/`, `.pyi-build/`, `snapshot_report.html`, editor
-  folders and `.claude/`. `.gitattributes` adds `*.yml` to the LF rules.
+  folders and local tooling folders. `.gitattributes` adds `*.yml` to the LF rules.
+- The Attribution row of the Decisions table above was reworded after the verbatim copy so that the repo names no
+  AI vendor; the rule itself is unchanged.
 - mypy: the whole package runs with `check_untyped_defs`, `warn_redundant_casts` and `warn_unused_ignores`;
   the strict set applies to `wxbrief.decode.*` and `wxbrief.i18n.*` through a per-module override. Writing
   `strict = true` inside that override made mypy 2.4.1 apply strict to every module (an untyped function under
