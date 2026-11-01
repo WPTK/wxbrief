@@ -362,24 +362,78 @@ def mouse_move(x: int, y: int) -> int:
     return _send(INPUT(0, _InputUnion(mi=MOUSEINPUT(ax, ay, 0, MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, 0, 0))))
 
 
-def mouse_button(down: bool) -> int:
-    flag = MOUSEEVENTF_LEFTDOWN if down else MOUSEEVENTF_LEFTUP
+_BUTTON_FLAGS = {"left": (0x0002, 0x0004), "right": (0x0008, 0x0010), "middle": (0x0020, 0x0040)}
+MOUSEEVENTF_WHEEL = 0x0800
+
+
+def mouse_button(down: bool, button: str = "left") -> int:
+    flag = _BUTTON_FLAGS[button][0 if down else 1]
     return _send(INPUT(0, _InputUnion(mi=MOUSEINPUT(0, 0, 0, flag, 0, 0))))
 
 
-def click_at(x: int, y: int, *, approach: int = 6) -> int:
-    """A human-shaped click: approach in small moves (a terminal reports motion first), press, hold, release."""
+def _approach(x: int, y: int, steps: int) -> int:
     sent = 0
-    for i in range(approach, 0, -1):
+    for i in range(steps, 0, -1):
         sent += mouse_move(x - 3 * i, y - i)
         time.sleep(0.03)
     sent += mouse_move(x, y)
     time.sleep(0.12)
-    sent += mouse_button(True)
+    return sent
+
+
+def click_at(x: int, y: int, *, approach: int = 6, button: str = "left") -> int:
+    """A human-shaped click: approach in small moves (a terminal reports motion first), press, hold, release."""
+    sent = _approach(x, y, approach)
+    sent += mouse_button(True, button)
     time.sleep(0.07)
-    sent += mouse_button(False)
+    sent += mouse_button(False, button)
     time.sleep(0.15)
     sent += mouse_move(x + 2, y)  # motion after the release, as a real hand produces
+    return sent
+
+
+def double_click_at(x: int, y: int, *, approach: int = 6) -> int:
+    """Two presses at one spot well inside the system double-click time (500 ms by default)."""
+    sent = _approach(x, y, approach)
+    for _ in range(2):
+        sent += mouse_button(True)
+        time.sleep(0.04)
+        sent += mouse_button(False)
+        time.sleep(0.08)
+    time.sleep(0.15)
+    return sent
+
+
+def wheel_at(x: int, y: int, notches: int, *, approach: int = 4) -> int:
+    """Turn the wheel ``notches`` detents (negative = towards the user = scroll down) with the pointer at x, y."""
+    sent = _approach(x, y, approach)
+    step = -120 if notches < 0 else 120
+    for _ in range(abs(notches)):
+        data = step & 0xFFFFFFFF
+        sent += _send(INPUT(0, _InputUnion(mi=MOUSEINPUT(0, 0, data, MOUSEEVENTF_WHEEL, 0, 0))))
+        time.sleep(0.08)
+    time.sleep(0.2)
+    return sent
+
+
+def drag_between(x1: int, y1: int, x2: int, y2: int, *, steps: int = 14, button: str = "left") -> int:
+    """Press at (x1, y1), move to (x2, y2) in small steps, release."""
+    sent = _approach(x1, y1, 3)
+    sent += mouse_button(True, button)
+    time.sleep(0.1)
+    for i in range(1, steps + 1):
+        sent += mouse_move(x1 + (x2 - x1) * i // steps, y1 + (y2 - y1) * i // steps)
+        time.sleep(0.03)
+    time.sleep(0.1)
+    sent += mouse_button(False, button)
+    time.sleep(0.2)
+    return sent
+
+
+def hover_at(x: int, y: int, dwell: float = 1.0) -> int:
+    sent = _approach(x, y, 4)
+    sent += mouse_move(x + 1, y)
+    time.sleep(dwell)
     return sent
 
 
@@ -628,3 +682,53 @@ def integrity_of(pid: int) -> str:
         if tok:
             kernel32.CloseHandle(tok)
         kernel32.CloseHandle(h)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# pixels: prove what the terminal really looks like
+
+
+def _lum(rgb: tuple[int, int, int]) -> float:
+    def ch(v: int) -> float:
+        c = v / 255
+        return c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+
+    r, g, b = rgb
+    return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
+
+
+def contrast(a: tuple[int, int, int], b: tuple[int, int, int]) -> float:
+    la, lb = sorted((_lum(a), _lum(b)), reverse=True)
+    return (la + 0.05) / (lb + 0.05)
+
+
+def analyze_png(path: Path, *, margin: float = 0.1) -> dict[str, Any]:
+    """Background and text colours of a screenshot, from pixels.
+
+    Background = the most common colour in the central area (frame and scroll bars cropped). Text = the colour with the
+    highest contrast against it among colours that cover at least 30 pixels. Returns the WCAG contrast ratio of the two
+    and the background's relative luminance (0 black .. 1 white).
+    """
+    from collections import Counter
+
+    from PIL import Image
+
+    img = Image.open(path).convert("RGB")
+    wd, ht = img.size
+    box = (int(wd * margin), int(ht * margin), int(wd * (1 - margin)), int(ht * (1 - margin)))
+    counts = Counter(img.crop(box).getdata())
+    bg = counts.most_common(1)[0][0]
+    fg, best = bg, 1.0
+    for colour, n in counts.items():
+        if n >= 30:
+            c = contrast(bg, colour)
+            if c > best:
+                fg, best = colour, c
+    return {
+        "bg": "#{:02x}{:02x}{:02x}".format(*bg),
+        "bg_share": round(counts[bg] / sum(counts.values()), 3),
+        "bg_luminance": round(_lum(bg), 3),
+        "text": "#{:02x}{:02x}{:02x}".format(*fg),
+        "contrast": round(best, 2),
+        "distinct_colours": len(counts),
+    }

@@ -33,8 +33,14 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("tool", choices=["wxbrief", "wt", "vscode"])
     ap.add_argument("--dest", required=True, type=Path)
+    ap.add_argument(
+        "--arch",
+        choices=["x64", "arm64"],
+        default="x64",
+        help="wt and vscode only; wxbrief is x86_64 (emulated on arm64)",
+    )
     args = ap.parse_args()
-    pin = PINS[args.tool]
+    pin = PINS[args.tool + ("_arm64" if args.arch == "arm64" and args.tool != "wxbrief" else "")]
     args.dest.mkdir(parents=True, exist_ok=True)
     out: dict[str, str] = {"tool": args.tool, "version": pin["version"], "url": pin["url"]}
     if args.tool == "wxbrief":

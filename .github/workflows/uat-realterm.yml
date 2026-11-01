@@ -1,8 +1,10 @@
 name: UAT real terminals
 
 # Manual only. Drives the pinned wxbrief 0.3.0 release exe inside Windows Terminal (portable zip), legacy conhost and
-# VS Code's integrated terminal (portable zip) on the interactive windows-2025 runner with SendInput + UI Automation,
-# reads the screen back and uploads PNGs and text. Test-only: no secrets, read-only token, artifacts only.
+# VS Code's integrated terminal (portable zip) on the interactive Windows runners with SendInput + UI Automation, reads
+# the screen back and uploads PNGs and text. The runner user is an administrator and elevated, so the checks that matter
+# start the driver and the terminals at Medium integrity (restricted token, see tests/uat_realterm/medium.py) and prove
+# it with the token's integrity level. Test-only: no secrets, read-only token, artifacts only.
 on:
   workflow_dispatch:
 
@@ -11,9 +13,21 @@ permissions:
 
 jobs:
   realterm:
-    name: Real terminals (windows-2025)
-    runs-on: windows-2025
-    timeout-minutes: 40
+    name: ${{ matrix.terminal }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        terminal: [conhost, wt, vscode]
+        os: [windows-2025]
+        arch: [x64]
+        experimental: [false]
+        include:
+          - { terminal: conhost, os: windows-11-arm, arch: arm64, experimental: true }
+          - { terminal: wt, os: windows-11-arm, arch: arm64, experimental: true }
+          - { terminal: vscode, os: windows-11-arm, arch: arm64, experimental: true }
     env:
       PYTHONUTF8: "1"
       PYTHONUNBUFFERED: "1"
@@ -23,6 +37,7 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+          architecture: ${{ matrix.arch }}
       - name: Install driver dependencies
         shell: pwsh
         run: |
@@ -31,99 +46,49 @@ jobs:
       - name: Fetch and verify pinned tools
         shell: pwsh
         run: |
-          foreach ($t in 'wxbrief','wt','vscode') {
-            python tests/uat_realterm/fetch.py $t --dest "$env:RUNNER_TEMP\realterm-tools\$t" | Tee-Object -FilePath "$env:OUT\fetch-$t.json"
-            if ($LASTEXITCODE -ne 0) { throw "fetch $t failed" }
+          python tests/uat_realterm/fetch.py wxbrief --dest "$env:RUNNER_TEMP\realterm-tools\wxbrief" | Tee-Object -FilePath "$env:OUT\fetch-wxbrief.json"
+          if ($LASTEXITCODE -ne 0) { throw "fetch wxbrief failed" }
+          if ('${{ matrix.terminal }}' -ne 'conhost') {
+            $tool = '${{ matrix.terminal }}'
+            python tests/uat_realterm/fetch.py $tool --arch ${{ matrix.arch }} --dest "$env:RUNNER_TEMP\realterm-tools\$tool" | Tee-Object -FilePath "$env:OUT\fetch-$tool.json"
+            if ($LASTEXITCODE -ne 0) { throw "fetch $tool failed" }
           }
       - name: Session and desktop facts
         shell: pwsh
         run: |
           [Environment]::OSVersion | Out-String
-          "UserInteractive: $([Environment]::UserInteractive)  User: $env:USERNAME"
+          "UserInteractive: $([Environment]::UserInteractive)  User: $env:USERNAME  Arch: $env:PROCESSOR_ARCHITECTURE"
           whoami /groups | Select-String 'Mandatory|Administrators'
           reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA
           Add-Type -AssemblyName System.Windows.Forms
           [System.Windows.Forms.Screen]::AllScreens | ForEach-Object { "$($_.DeviceName) $($_.Bounds)" }
-      - name: Conhost
-        if: always()
+      - name: Real-terminal checks
         shell: pwsh
         run: |
           $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
-          python tests/uat_realterm/run_spike.py conhost --wxbrief $w.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-conhost.log"
-          exit $LASTEXITCODE
-      - name: Windows Terminal
-        if: always()
-        shell: pwsh
-        run: |
-          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
-          $t = Get-Content "$env:OUT\fetch-wt.json" | ConvertFrom-Json
-          python tests/uat_realterm/run_spike.py wt --wxbrief $w.exe --tool-exe $t.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-wt.log"
-          exit $LASTEXITCODE
-      - name: VS Code integrated terminal
-        if: always()
-        shell: pwsh
-        run: |
-          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
-          $t = Get-Content "$env:OUT\fetch-vscode.json" | ConvertFrom-Json
-          python tests/uat_realterm/run_spike.py vscode --wxbrief $w.exe --tool-exe $t.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-vscode.log"
-          exit $LASTEXITCODE
-      - name: Windows Terminal, filtered token (experiment)
-        if: always()
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
-          $t = Get-Content "$env:OUT\fetch-wt.json" | ConvertFrom-Json
-          python tests/uat_realterm/run_spike.py wt --limited --wxbrief $w.exe --tool-exe $t.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-wt-limited.log"
-          exit $LASTEXITCODE
-      - name: conhost, filtered token (experiment)
-        if: always()
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
-          python tests/uat_realterm/run_spike.py conhost --limited --wxbrief $w.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-conhost-limited.log"
-          exit $LASTEXITCODE
-      - name: conhost, light profile
-        if: always()
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
-          python tests/uat_realterm/run_spike.py conhost --scheme light --wxbrief $w.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-conhost-light.log"
-          exit $LASTEXITCODE
-      - name: wt, light profile
-        if: always()
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
-          $t = Get-Content "$env:OUT\fetch-wt.json" | ConvertFrom-Json
-          python tests/uat_realterm/run_spike.py wt --scheme light --wxbrief $w.exe --tool-exe $t.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-wt-light.log"
-          exit $LASTEXITCODE
-      - name: vscode, light profile
-        if: always()
-        continue-on-error: true
-        shell: pwsh
-        run: |
-          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
-          $t = Get-Content "$env:OUT\fetch-vscode.json" | ConvertFrom-Json
-          python tests/uat_realterm/run_spike.py vscode --scheme light --wxbrief $w.exe --tool-exe $t.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-vscode-light.log"
+          $argsList = @('tests/uat_realterm/run_all.py', '${{ matrix.terminal }}', '--wxbrief', $w.exe, '--out', $env:OUT)
+          if ('${{ matrix.terminal }}' -ne 'conhost') {
+            $t = Get-Content "$env:OUT\fetch-${{ matrix.terminal }}.json" | ConvertFrom-Json
+            $argsList += @('--tool-exe', $t.exe)
+          }
+          python @argsList 2>&1 | Tee-Object -FilePath "$env:OUT\run-all.log"
           exit $LASTEXITCODE
       - name: Summary
         if: always()
         shell: pwsh
         run: |
+          "## ${{ matrix.terminal }} on ${{ matrix.os }}" | Add-Content $env:GITHUB_STEP_SUMMARY
+          if (Test-Path "$env:OUT\medium-probe.txt") { '```' | Add-Content $env:GITHUB_STEP_SUMMARY; (Get-Content "$env:OUT\medium-probe.txt" -TotalCount 6) | Add-Content $env:GITHUB_STEP_SUMMARY; '```' | Add-Content $env:GITHUB_STEP_SUMMARY }
           foreach ($f in Get-ChildItem "$env:OUT\result-*.json") {
             $r = Get-Content $f | ConvertFrom-Json
-            "### $($r.terminal): passed=$($r.passed) in $($r.runtime_s)s" | Add-Content $env:GITHUB_STEP_SUMMARY
+            "### $($r.terminal): passed=$($r.passed) in $($r.runtime_s)s (window $($r.info.integrity_window), driver $($r.info.integrity_driver))" | Add-Content $env:GITHUB_STEP_SUMMARY
             foreach ($s in $r.steps) { if ($null -ne $s.ok) { "- $(if ($s.ok) {'PASS'} else {'FAIL'}) $($s.step) $($s.detail)" | Add-Content $env:GITHUB_STEP_SUMMARY } }
           }
           Get-Process | Where-Object { $_.ProcessName -match 'WindowsTerminal|OpenConsole|conhost|Code|wxbrief' } | Select-Object Id, ProcessName | Format-Table | Out-String
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
-          name: realterm-out
+          name: realterm-out-${{ matrix.terminal }}-${{ matrix.os }}
           path: realterm-out
           if-no-files-found: warn
           retention-days: 14

@@ -29,6 +29,7 @@ from typing import Any
 import psutil
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import medium
 import winterm as w
 
 START_RE = r"Stations \(10\)"
@@ -89,11 +90,36 @@ class Term:
     name = "?"
 
     def __init__(
-        self, rep: Report, wxbrief: Path, out: Path, tool_exe: Path | None, limited: bool = False, scheme: str = "dark"
+        self,
+        rep: Report,
+        wxbrief: Path,
+        out: Path,
+        tool_exe: Path | None,
+        limited: bool = False,
+        scheme: str = "dark",
+        *,
+        medium_spawn: bool = False,
+        require_medium: bool = False,
+        tag_suffix: str = "",
+        app_args: str = "--demo --no-config",
+        app_cmd: str | None = None,
+        env_extra: dict[str, str] | None = None,
+        codepage: int | None = None,
+        font_pt: int | None = None,
+        profile: str = "cmd",
+        probe: bool = True,
     ) -> None:
         self.rep, self.wxbrief, self.out, self.tool_exe, self.limited = rep, wxbrief, out, tool_exe, limited
         self.scheme = scheme
-        self.tag = self.name + ("-limited" if limited else "") + ("-light" if scheme == "light" else "")
+        self.medium_spawn, self.require_medium = medium_spawn, require_medium
+        self.app_args, self.app_cmd, self.env_extra = app_args, app_cmd, dict(env_extra or {})
+        self.codepage, self.font_pt, self.profile, self.probe = codepage, font_pt, profile, probe
+        self.tag = (
+            self.name
+            + ("-limited" if limited else "")
+            + ("-light" if scheme == "light" else "")
+            + (f"-{tag_suffix}" if tag_suffix else "")
+        )
         self.proc: subprocess.Popen[bytes] | None = None
         self.hwnd = 0
         self.pids: set[int] = set()
@@ -105,14 +131,29 @@ class Term:
         self.env.pop("NO_COLOR", None)
 
     def write_run_cmd(self, prefix: str = "") -> None:
-        self.run_cmd.write_text(
-            f'@echo off\r\nset "WXBRIEF_CACHE_DIR={self.work / "cache"}"\r\n{prefix}"{self.wxbrief}" --demo --no-config\r\n'
-            "exit /b %errorlevel%\r\n",
-            encoding="ascii",
-        )
+        """The launcher the terminal runs: environment, code page, a pause for the profile probe, then the app."""
+        lines = ["@echo off", f'set "WXBRIEF_CACHE_DIR={self.work / "cache"}"']
+        lines += [f'set "{k}={v}"' for k, v in self.env_extra.items()]
+        if self.codepage:
+            lines.append(f"chcp {self.codepage} >nul")
+        if prefix:
+            lines.append(prefix.strip())
+        if self.probe:  # for a few seconds the terminal shows only its own default colours: measured in prove_profile
+            lines += [
+                "echo wxbrief real-terminal profile probe: default text on the default background",
+                "ping -n 6 127.0.0.1 >nul",
+            ]
+        lines.append(self.app_cmd or f'"{self.wxbrief}" {self.app_args}')
+        lines.append("set RC=%errorlevel%")  # a non-zero exit keeps the window up so the screen can be read
+        lines.append("if not %RC%==0 (echo wxbrief exited with code %RC% & ping -n 30 127.0.0.1 >nul)")
+        lines.append("exit /b %RC%")
+        self.run_cmd.write_text("\r\n".join(lines) + "\r\n", encoding="ascii")
 
     def spawn(self, argv: list[str]) -> subprocess.Popen[bytes]:
         """Start the terminal. Limited: through ``runas /trustlevel:0x20000`` so it runs with a filtered (non-admin) token."""
+        if self.medium_spawn:
+            self.rep.note("spawn", f"Medium token (restricted, Administrators deny-only): {argv}")
+            return medium.spawn_medium(argv, env=self.env)  # type: ignore[return-value]
         if self.limited:
             cmd = subprocess.list2cmdline(["runas", "/trustlevel:0x20000", subprocess.list2cmdline(argv)])
             self.rep.note("spawn", cmd)
@@ -121,9 +162,31 @@ class Term:
 
     def note_integrity(self) -> None:
         owner = w.window_info(self.hwnd).pid
-        self.rep.note(
-            "integrity",
-            f"window owner pid {owner}: {w.integrity_of(owner)}; runner python: {w.integrity_of(os.getpid())}",
+        win, drv = w.integrity_of(owner), w.integrity_of(os.getpid())
+        self.rep.note("integrity", f"window owner pid {owner}: {win}; driver pid {os.getpid()}: {drv}")
+        self.rep.info.setdefault("integrity_window", win)
+        self.rep.info.setdefault("integrity_driver", drv)
+        if self.require_medium:
+            self.rep.check("terminal window process is Medium integrity", win.startswith("Medium"), win, critical=True)
+
+    def prove_profile(self) -> None:
+        """Measure the terminal default colours from a screenshot while only the launcher echo is on screen."""
+        if not self.probe:
+            return
+        w.focus(self.hwnd)
+        time.sleep(0.5)
+        path = self.out / f"{self.tag}-00-profile-probe-window.png"
+        left, top, right, bottom = w.window_info(self.hwnd).rect
+        sw, sh = w.screen_size()
+        w.screenshot_screen(path, (max(left, 0), max(top, 0), min(right, sw), min(bottom, sh)))
+        info = w.analyze_png(path)
+        self.rep.info["profile_probe"] = info
+        light = self.scheme == "light"
+        ok = info["bg_luminance"] > 0.7 if light else info["bg_luminance"] < 0.3
+        self.rep.check(
+            f"{self.scheme} profile really applied (background measured from pixels)",
+            ok,
+            f"bg={info['bg']} luminance={info['bg_luminance']} text={info['text']} contrast={info['contrast']}",
         )
 
     def launch(self) -> None:
@@ -214,23 +277,40 @@ class Term:
 
 class Conhost(Term):
     name = "conhost"
-    CONSOLE_KEY = "HKCU\\Console\\C:_Windows_System32_conhost.exe"
+    ROOT = "HKCU\\Console"
+    KEYS = ("HKCU\\Console\\C:_Windows_System32_conhost.exe", "HKCU\\Console\\C:_Windows_System32_cmd.exe")
+    LIGHT = {"ScreenColors": 0xF0, "PopupColors": 0xF5}  # black on white
+
+    def _reg(self, *args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(["reg", *args], check=False, capture_output=True, text=True)
+
+    def _apply_light(self) -> None:
+        """Default colours live in HKCU\\Console, and a per-title key wins over it: set both, remember the old values."""
+        self.saved: dict[str, str | None] = {}
+        for key in (self.ROOT, *self.KEYS):
+            for name, val in self.LIGHT.items():
+                q = self._reg("query", key, "/v", name)
+                prev = re.search(r"REG_DWORD\s+(0x[0-9a-fA-F]+)", q.stdout)
+                self.saved[f"{key}|{name}"] = prev.group(1) if prev else None
+                self._reg("add", key, "/v", name, "/t", "REG_DWORD", "/d", hex(val), "/f")
+        self.rep.note("light profile", f"conhost ScreenColors=0xf0 PopupColors=0xf5 under {self.ROOT} and {self.KEYS}")
 
     def teardown(self) -> None:
         super().teardown()
+        for ident, prev in getattr(self, "saved", {}).items():
+            key, name = ident.split("|")
+            if prev is None:
+                self._reg("delete", key, "/v", name, "/f")
+            else:
+                self._reg("add", key, "/v", name, "/t", "REG_DWORD", "/d", prev, "/f")
         if self.scheme == "light":
-            subprocess.run(["reg", "delete", self.CONSOLE_KEY, "/f"], check=False, capture_output=True)
+            for key in self.KEYS:
+                self._reg("delete", key, "/f")
 
     def launch(self) -> None:
-        self.write_run_cmd("mode con: cols=120 lines=30\r\n")
-        if self.scheme == "light":  # conhost keeps per-window-title defaults here; 0xf0 = black text on a white screen
-            for name in ("ScreenColors", "PopupColors"):
-                subprocess.run(
-                    ["reg", "add", self.CONSOLE_KEY, "/v", name, "/t", "REG_DWORD", "/d", "0xf0", "/f"],
-                    check=False,
-                    capture_output=True,
-                )
-            self.rep.note("light profile", f"conhost ScreenColors=0xf0 under {self.CONSOLE_KEY}")
+        self.write_run_cmd("mode con: cols=120 lines=30")
+        if self.scheme == "light":
+            self._apply_light()
         self.snapshot_baseline()
         conhost = Path(os.environ.get("SYSTEMROOT", r"C:\Windows")) / "System32" / "conhost.exe"
         self.proc = self.spawn([str(conhost), "cmd.exe", "/c", str(self.run_cmd)])
@@ -246,6 +326,31 @@ class Conhost(Term):
         return self._uia.find_rect(text)
 
 
+WT_LIGHT_SCHEME = {
+    "name": "wx-light",
+    "background": "#FFFFFF",
+    "foreground": "#000000",
+    "cursorColor": "#000000",
+    "selectionBackground": "#ADD6FF",
+    "black": "#383A42",
+    "red": "#E45649",
+    "green": "#50A14F",
+    "yellow": "#C18401",
+    "blue": "#0184BC",
+    "purple": "#A626A4",
+    "cyan": "#0997B3",
+    "white": "#FAFAFA",
+    "brightBlack": "#4F525D",
+    "brightRed": "#DF6C75",
+    "brightGreen": "#98C379",
+    "brightYellow": "#E4C07A",
+    "brightBlue": "#61AFEF",
+    "brightPurple": "#C577DD",
+    "brightCyan": "#56B5C1",
+    "brightWhite": "#FFFFFF",
+}
+
+
 class WindowsTerminal(Term):
     name = "wt"
 
@@ -253,13 +358,18 @@ class WindowsTerminal(Term):
         assert self.tool_exe
         (self.tool_exe.parent / ".portable").write_text("", encoding="ascii")  # portable mode: settings beside the exe
         self.image_dirs = (str(self.tool_exe.parent),)
-        if self.scheme == "light":
-            cfg = self.tool_exe.parent / "settings"
-            cfg.mkdir(exist_ok=True)
-            (cfg / "settings.json").write_text(
-                json.dumps({"profiles": {"defaults": {"colorScheme": "One Half Light"}}}), encoding="utf-8"
-            )
-            self.rep.note("light profile", "WT settings.json: profiles.defaults.colorScheme = One Half Light")
+        defaults: dict[str, Any] = {}
+        settings: dict[str, Any] = {"profiles": {"defaults": defaults}, "schemes": []}
+        if self.scheme == "light":  # an explicit scheme, so the result does not depend on a built-in's name
+            settings["schemes"].append(WT_LIGHT_SCHEME)
+            defaults["colorScheme"] = WT_LIGHT_SCHEME["name"]
+            settings["theme"] = "light"
+        if self.font_pt:
+            defaults["font"] = {"size": self.font_pt}
+        cfg = self.tool_exe.parent / "settings"
+        cfg.mkdir(exist_ok=True)
+        (cfg / "settings.json").write_text(json.dumps(settings, indent=2), encoding="utf-8")
+        self.rep.note("wt settings", json.dumps(settings)[:400])
         self.write_run_cmd()
         self.snapshot_baseline()
         self.proc = self.spawn([str(self.tool_exe), "cmd.exe", "/c", str(self.run_cmd)])
@@ -277,6 +387,11 @@ class WindowsTerminal(Term):
 
 class VSCode(Term):
     name = "vscode"
+
+    @property
+    def ps(self) -> str:
+        return "& " if self.profile == "powershell" else ""
+
     SETTINGS = {
         "security.workspace.trust.enabled": False,
         "workbench.startupEditor": "none",
@@ -290,6 +405,7 @@ class VSCode(Term):
         "window.confirmBeforeClose": "never",
         "chat.disableAIFeatures": True,
         "terminal.integrated.defaultProfile.windows": "Command Prompt",
+        "terminal.integrated.fontSize": 14,
         "terminal.integrated.gpuAcceleration": "off",
         "terminal.integrated.enablePersistentSessions": False,
         "terminal.integrated.confirmOnExit": "never",
@@ -310,6 +426,9 @@ class VSCode(Term):
         user = root / "data" / "user-data" / "User"
         user.mkdir(parents=True, exist_ok=True)
         settings = dict(self.SETTINGS)
+        if self.profile == "powershell":
+            settings["terminal.integrated.defaultProfile.windows"] = "PowerShell"
+            self.rep.note("profile", "VS Code default terminal profile: PowerShell")
         if self.scheme == "light":
             settings["workbench.colorTheme"] = "Default Light Modern"
             self.rep.note("light profile", "VS Code settings.json: workbench.colorTheme = Default Light Modern")
@@ -354,7 +473,7 @@ class VSCode(Term):
         self.shot("terminal-open")
         self.shot("terminal-maximised")
         self.geom = self.calibrate()
-        w.send_text(f'"{self.run_cmd}"\n', delay=0.02)
+        w.send_text(f'{self.ps}"{self.run_cmd}"\n', delay=0.02)
 
     def read(self) -> str:
         w.clear_clipboard()
@@ -386,7 +505,7 @@ class VSCode(Term):
         probe = Path(__file__).with_name("probe_mouse.py")
         log = self.work / "probe.log"
         log.unlink(missing_ok=True)
-        w.send_text(f'"{sys.executable}" "{probe}" "{log}"\n', delay=0.02)
+        w.send_text(f'{self.ps}"{sys.executable}" "{probe}" "{log}"\n', delay=0.02)
         time.sleep(3)
         left, top, right, bottom = w.window_info(self.hwnd).rect
         left, top = max(left, 0), max(top, 0)
@@ -457,7 +576,7 @@ class VSCode(Term):
 
     def rect_of(self, text: str) -> tuple[int, int, int, int] | None:
         grid = self.read().split("\n")
-        row = next((i for i, ln in enumerate(grid) if re.search(rf"{text}\s+IFR", ln)), None)
+        row = next((i for i, ln in enumerate(grid) if re.search(rf"{text}\s+(L?IFR|MVFR|VFR)", ln)), None)
         if row is None:
             return None
         col = grid[row].index(text)
@@ -527,6 +646,7 @@ def diagnostics(out: Path) -> dict[str, Any]:
 def journey(t: Term, rep: Report) -> None:
     t.launch()
     t.prepare_window()
+    t.prove_profile()
     last = {"text": ""}
 
     def drawn() -> str:
@@ -627,10 +747,20 @@ def main() -> int:
     ap.add_argument("--tool-exe", type=Path)
     ap.add_argument("--scheme", choices=["dark", "light"], default="dark")
     ap.add_argument("--limited", action="store_true", help="start the terminal with a filtered (non-elevated) token")
+    ap.add_argument(
+        "--medium-spawn", action="store_true", help="start the terminal at Medium integrity (restricted token)"
+    )
+    ap.add_argument("--require-medium", action="store_true", help="fail unless the terminal window process is Medium")
+    ap.add_argument("--profile", choices=["cmd", "powershell"], default="cmd", help="VS Code terminal profile")
+    ap.add_argument("--tag", default="", help="suffix for result and artifact names")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     rep = Report(
-        args.terminal + ("-limited" if args.limited else "") + ("-light" if args.scheme == "light" else ""), args.out
+        args.terminal
+        + ("-limited" if args.limited else "")
+        + ("-light" if args.scheme == "light" else "")
+        + (f"-{args.tag}" if args.tag else ""),
+        args.out,
     )
     rep.info = diagnostics(args.out)
     w.log(f"diagnostics: {json.dumps(rep.info)}")
@@ -641,6 +771,10 @@ def main() -> int:
         args.tool_exe.resolve() if args.tool_exe else None,
         args.limited,
         args.scheme,
+        medium_spawn=args.medium_spawn,
+        require_medium=args.require_medium,
+        profile=args.profile,
+        tag_suffix=args.tag,
     )
     try:
         journey(term, rep)
