@@ -13,7 +13,7 @@ from datetime import datetime
 
 from rich.style import Style
 from rich.text import Text
-from textual.events import Click, MouseMove, Resize
+from textual.events import Click, Leave, MouseMove, Resize
 from textual.message import Message
 from textual.widget import Widget
 
@@ -108,6 +108,7 @@ class TafTimeline(Widget, can_focus=True):
         self._cursor_hour = 0  # index into ``hours``: survives a change of step
         self._ctx: ViewContext | None = None
         self._icao = ""
+        self._now: datetime | None = None
         self._key: tuple[str, str] | None = None
         self._chosen_hour: int | None = None  # the hour the user chose (key or click); None: follow the clock
 
@@ -129,14 +130,19 @@ class TafTimeline(Widget, can_focus=True):
         self._rebuild()
         if fresh:
             self._chosen_hour = None
-        at = next((i for i, hour in enumerate(self.hours) if hour.start <= now < hour.end), 0)
-        # a hover only previewed another cell: the cursor goes back to the chosen hour, or the current one
-        self._cursor_hour = self._chosen_hour if self._chosen_hour is not None else at
-        self._cursor_hour = min(self._cursor_hour, max(0, len(self.hours) - 1))
-        self.cursor = self._cell_of_hour(self._cursor_hour)
+        self._now = now
+        self._seat()
         self._announce()
         self.refresh()
         return bool(self.cells)
+
+    def _seat(self) -> None:
+        """Put the cursor on the chosen hour, or on the current one: a hover only previewed another cell."""
+        now = self._now
+        at = next((i for i, hour in enumerate(self.hours) if now is not None and hour.start <= now < hour.end), 0)
+        hour = self._chosen_hour if self._chosen_hour is not None else at
+        self._cursor_hour = min(hour, max(0, len(self.hours) - 1))
+        self.cursor = self._cell_of_hour(self._cursor_hour)
 
     @property
     def selected(self) -> StripCell | None:
@@ -193,6 +199,14 @@ class TafTimeline(Widget, can_focus=True):
         index = self._index_at(event.x)
         if index is not None:
             self.move_to(index, chosen=False)
+
+    def on_leave(self, event: Leave) -> None:
+        """The pointer left the strip: the preview ends with it, back to the chosen hour or the current one."""
+        before = self.cursor
+        self._seat()
+        if self.cursor != before:
+            self._announce()
+            self.refresh()
 
     def on_click(self, event: Click) -> None:
         index = self._index_at(event.x)

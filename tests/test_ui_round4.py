@@ -15,6 +15,7 @@ from test_timeline_ui import demo_app, settle, text_of
 from wxbrief.data.cache import CACHE_DIR_ENV
 from wxbrief.decode.model import Modifier
 from wxbrief.decode.taf import parse_taf
+from wxbrief.decode.units import UnitsMode
 from wxbrief.ui.screens.briefing import BriefingScreen
 from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.strip import strip_for
@@ -211,3 +212,31 @@ async def test_the_station_screen_keeps_back_help_and_quit(size: tuple[int, int]
         await wait_for(pilot, lambda: isinstance(app.screen, StationDetailScreen), "the station screen")
         last = await key_line(app, pilot)
         assert "esc Back" in last and "? Help" in last and "q Quit" in last, last
+
+
+async def test_the_preview_ends_when_the_pointer_leaves_the_strip() -> None:
+    app = demo_app()
+    async with app.run_test(size=(120, 50)) as pilot:
+        timeline, *_ = await timeline_on(app, pilot)
+        home = timeline.cursor
+        await pilot.hover(TafTimeline, offset=(2 * 14 + 1, 1))
+        await settle(pilot)
+        assert timeline.cursor == 14
+        await pilot.hover(StationList)  # the pointer moves to another widget
+        await settle(pilot)
+        assert timeline.cursor == home  # no redraw needed: the preview ended with the pointer
+
+
+def test_a_cancelled_taf_has_no_worst_category_and_says_so_everywhere() -> None:
+    from wxbrief.i18n import Translator
+    from wxbrief.render.jsonout import to_dict
+    from wxbrief.render.plain import taf_header_rows
+
+    raw = "TAF KDEN 311100Z 3112/0118 32005KT 1/4SM FG VV001"
+    live = parse_taf(raw, REF)
+    assert live.worst_category is not None
+    cancelled = parse_taf(raw, REF, (Modifier.CNL,))
+    assert cancelled.cancelled and cancelled.worst_category is None
+    assert to_dict(cancelled)["worst_category"] is None
+    rows = taf_header_rows(cancelled, Translator.load("en"), UnitsMode.US)
+    assert not any(row.label.startswith("Worst") for row in rows)

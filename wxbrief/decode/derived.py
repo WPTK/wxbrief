@@ -296,4 +296,6 @@ def derive_taf(taf: Taf) -> Taf:
     """Fill in the derived fields of a parsed ``Taf``: its flags and the worst flight category anywhere."""
     timeline = expand_timeline(taf)
     worst = timeline.worst_category if timeline.slices else worst_of(period.flight_category for period in taf.periods)
+    if taf.cancelled:  # withdrawn: whatever its text still says, no forecast stands, so there is no worst case
+        worst = None
     return replace(taf, flags=compute_taf_flags(taf), worst_category=worst)
