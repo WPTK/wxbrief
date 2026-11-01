@@ -7,7 +7,7 @@ when the owner says so.
 ## Cut a release
 
 1. Set `__version__` in `wxbrief/__init__.py` (minor for features, patch for fixes).
-2. Add the `## 0.x.y - YYYY-MM-DD` section to `CHANGELOG.md` (Common Changelog; see `CLAUDE.md`). Commit both in a PR
+2. Add the `## 0.x.y - YYYY-MM-DD` section to `CHANGELOG.md` (Common Changelog; see [CONTRIBUTING.md](../CONTRIBUTING.md)). Commit both in a PR
    and merge it once CI is green.
 3. Optionally build and test the Windows binary locally: `scripts\build_exe.ps1` (see below).
 4. On `main` at the merged commit: `git tag v0.x.y` then `git push origin v0.x.y`.
