@@ -208,9 +208,11 @@ class MacTerminal:
                 self.cols, self.rows = cols, rows
                 return
             _, (_, _, w, h) = self._window()
-            cw, ch = w / cur[0], (h - TITLE_BAR) / cur[1]
+            cw, ch = w / cur[0], (h - TITLE_BAR) / cur[1]  # slightly over the real cell: includes the window padding
             x, y = ORIGIN
-            nw, nh = round((cols + 0.4) * cw), round((rows + 0.4) * ch + TITLE_BAR)
+            # Step by the missing cells, with a third of a cell extra so a rounding loss cannot stall one cell short.
+            nw = round(w + (cols - cur[0]) * cw + (cw / 3 if cols > cur[0] else -cw / 3 if cols < cur[0] else 0))
+            nh = round(h + (rows - cur[1]) * ch + (ch / 3 if rows > cur[1] else -ch / 3 if rows < cur[1] else 0))
             target = "front window" if self.app == "Terminal" else "current window"
             _osa(f"tell {self._spec['scripting']} to set bounds of {target} to {{{x}, {y}, {x + nw}, {y + nh}}}")
             time.sleep(1)
@@ -238,6 +240,8 @@ class MacTerminal:
         size = self._wait_size()
         _, bounds = self._window()
         x, y = cell_center(bounds, size, col, row)
+        with (self.out_dir / "clicks.log").open("a") as f:
+            f.write(f"cell ({col},{row}) -> point ({x},{y}) window {bounds} size {size}\n")
         rc, out = _sh(["cliclick", f"m:{x},{y}", "w:150", f"c:{x},{y}"])
         if rc != 0:
             raise AssertionError(f"cliclick failed for click at {(x, y)}: {out}")
