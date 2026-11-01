@@ -22,7 +22,7 @@ The aviation themes live in `wxbrief/ui/themes/aviation.py` as Textual `Theme` o
 `ansi-light`: those use the terminal's own colours (`ansi_default` ...) and have no fixed RGB palette to match, so
 `all_themes()` leaves them out.
 
-![The briefing screen in paper-chart](s5-paper-chart.svg)
+![The briefing screen in paper-chart](img/paper-chart.png)
 
 ## In the app
 
@@ -36,7 +36,7 @@ The aviation themes live in `wxbrief/ui/themes/aviation.py` as Textual `Theme` o
   that loaded with warnings is backed up once first. A saved name that no theme answers to falls back to
   `textual-dark` with a notice and is left in the file until you choose another.
 
-![The theme picker over phosphor-amber](s5-theme-picker.svg)
+![The theme picker over phosphor-amber](img/theme-picker.png)
 
 ## Token layers
 

@@ -18,12 +18,18 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import os
 import re
 import sys
 import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from svgcolour import require_colour  # noqa: E402
+
+os.environ.pop("NO_COLOR", None)  # the pictures are for showing colour, whatever the shell sets
 COMMENT = re.compile(r"[ \t]*<!-- Generated with Rich [^>]*-->\r?\n")
 ENDS_WITH_SIZE = re.compile(r"\d+x\d+$")
 EVERY_SIZE = ("120x30", "200x50", "100x50", "280x70", "80x24", "60x20", "60x16")
@@ -81,6 +87,8 @@ def export_svgs(out: Path, sizes: list[str], journeys: list[str], everything: bo
                     return
                 svg = COMMENT.sub("", run.app.export_screenshot(title="wxbrief"))
                 stem = f"{spec_name}-{label}" if ENDS_WITH_SIZE.search(label) else f"{spec_name}-{label}-{size}"
+                if stem.startswith(("briefing_list-start", "grid-start")):
+                    require_colour(svg, stem)  # these show flight categories, so they must not be monochrome
                 path = out / f"{stem}.svg"
                 path.write_text(svg, encoding="utf-8", newline="\n")
                 written.append(path)

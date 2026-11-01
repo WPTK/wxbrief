@@ -214,7 +214,7 @@ ThemePickerScreen .dialog {
 .cs-amb { background: $cs-amb; color: auto; }
 .cs-red { background: $cs-red; color: auto; }
 
-/* === S6: TAF timeline, period detail, station grid and cards (forecast widgets) ================================== */
+/* === TAF timeline, period detail, station grid and cards (forecast widgets) ================================== */
 
 #taf-summary {
     height: auto;
@@ -292,9 +292,9 @@ StationGrid:focus StationCard.-selected {
 StationDetailScreen DetailPane {
     height: 1fr;
 }
-/* === end S6 ===================================================================================================== */
+/* === end TAF timeline ===================================================================================================== */
 
-/* === S8: scrollbars in theme colours; the track blends into the surface and a bar only shows when content overflows === */
+/* === scrollbars in theme colours; the track blends into the surface and a bar only shows when content overflows === */
 * {
     scrollbar-background: $surface;
     scrollbar-background-hover: $surface;
@@ -313,7 +313,7 @@ BriefingScreen.-short FlagsRow,
 BriefingScreen.-short DetailPane .section {
     margin-top: 0;
 }
-/* === end S8 === */
+/* === end scrollbars === */
 
 /* The station count rides in the border title of the list and the grid (the list already has its top border). */
 StationList,
