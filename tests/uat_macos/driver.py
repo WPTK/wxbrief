@@ -178,7 +178,9 @@ class MacTerminal:
             raise RuntimeError(f"could not start {app} (osascript rc={rc}): {out}")
         try:
             self._wait_size()
+            self._fit(cols - 30, rows - 10)  # a second, very different size: the cell size is the slope between the two
             self._fit(cols, rows)
+            self._focus()
         except BaseException:
             self.close()
             raise
@@ -243,10 +245,12 @@ class MacTerminal:
             time.sleep(0.5)
 
     def _measure(self) -> tuple[tuple[int, int], Bounds]:
-        """The settled size and window bounds; every pair is kept to work out the real cell size."""
+        """The settled size and window bounds. A pair is kept (for the cell size) only if both held still for a moment."""
         size = self._wait_size()
         _, bounds = self._window()
-        self._samples.append((bounds[2], bounds[3], size[0], size[1]))
+        time.sleep(0.7)
+        if self._size() == size and self._window()[1] == bounds:
+            self._samples.append((bounds[2], bounds[3], size[0], size[1]))
         return size, bounds
 
     def _fit(self, cols: int, rows: int) -> None:
@@ -256,8 +260,10 @@ class MacTerminal:
         too many, so a scroller or padding of unknown size cannot leave it one cell off.
         """
         mw = mh = 0.4
-        for _ in range(8):
+        for _ in range(12):
             cur, (_, _, w, h) = self._measure()
+            with (self.out_dir / "fit.log").open("a") as f:
+                f.write(f"want {(cols, rows)} reported {cur} window {(w, h)} margins {(mw, mh)}\n")
             if cur == (cols, rows):
                 self.cols, self.rows = cols, rows
                 return
@@ -272,6 +278,12 @@ class MacTerminal:
         raise AssertionError(f"{self.app}: could not reach {cols}x{rows}, the terminal reports {self._size()}")
 
     # -- input ------------------------------------------------------------------------------------------------------
+
+    def _focus(self) -> None:
+        """Click the title bar: activating an iTerm2 window does not make it the key window, so the first keys were lost."""
+        _, (x, y, w, _) = self._window()
+        _sh(["cliclick", f"c:{round(x + w / 2)},{round(y + TITLE_BAR / 2)}"])
+        time.sleep(0.5)
 
     def _activate(self) -> None:
         _osa(f"tell {self._spec['scripting']} to activate")
@@ -371,11 +383,18 @@ class MacTerminal:
         stem = self.out_dir / f"{self._shots:02d}_{name}"
         with contextlib.suppress(AssertionError):
             stem.with_suffix(".txt").write_text(self.screen_text())
-        wid, _ = self._window()
         png = stem.with_suffix(".png")
-        rc, out = _sh(["screencapture", "-x", "-o", "-l", str(wid), str(png)])
-        if rc != 0:
-            raise AssertionError(f"screencapture failed: {out}")
+        out = ""
+        for _ in range(3):
+            wid, _ = self._window()
+            rc, out = _sh(["screencapture", "-x", "-o", "-l", str(wid), str(png)])
+            if rc == 0:
+                return png
+            time.sleep(1)
+        # Evidence must not fail a step: record the error and take the whole screen instead.
+        with (self.out_dir / "screenshot_errors.txt").open("a") as f:
+            f.write(f"{png.name}: screencapture -l failed 3 times: {out}\n")
+        _sh(["screencapture", "-x", str(png)])
         return png
 
     # -- lifetime ---------------------------------------------------------------------------------------------------
