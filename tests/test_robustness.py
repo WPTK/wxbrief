@@ -346,6 +346,16 @@ def test_get_exits_3_when_one_of_two_stations_returned_nothing(capsys: pytest.Ca
         router.get(f"{BASE_URL}/metar").mock(return_value=httpx.Response(200, content=metar))
         router.get(f"{BASE_URL}/taf").mock(return_value=httpx.Response(204))
         assert main(["get", "KDEN", "ZZZZ", "--plain"]) == 3
+    captured = capsys.readouterr()
+    assert "ZZZZ: no METAR" in captured.out
+    assert "ZZZZ" not in captured.err  # one line, not a second one on stderr
+
+
+def test_get_json_names_a_station_with_no_report_on_stderr(capsys: pytest.CaptureFixture[str]) -> None:
+    with respx.mock() as router:
+        router.get(f"{BASE_URL}/metar").mock(return_value=httpx.Response(204))
+        router.get(f"{BASE_URL}/taf").mock(return_value=httpx.Response(204))
+        assert main(["get", "ZZZZ", "--json"]) == 1
     assert "no report for ZZZZ" in capsys.readouterr().err
 
 

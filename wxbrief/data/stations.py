@@ -36,6 +36,12 @@ def _fold(text: str) -> str:
     return " ".join(letters.split())
 
 
+def _region(value: object) -> str | None:
+    """AWC's state field, or None when it is a numeric admin code (Japan's "13"), which means nothing to a reader."""
+    text = value.strip() if isinstance(value, str) else ""
+    return text if text and not text.isdigit() else None
+
+
 def _station(row: dict[str, Any]) -> Station:
     return Station(
         icao=row["icao"],
@@ -45,7 +51,7 @@ def _station(row: dict[str, Any]) -> Station:
         lat=float(row["lat"]),
         lon=float(row["lon"]),
         elevation_m=row.get("elev"),
-        state=row.get("state"),
+        state=_region(row.get("state")),
         country=row.get("country"),
         tz=row.get("tz"),
         types=tuple(row.get("types") or ()),

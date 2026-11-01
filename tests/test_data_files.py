@@ -193,3 +193,10 @@ def test_a_good_fetch_clears_the_error_and_offline_mark_of_its_product() -> None
     state.apply(Product.METAR, [])
     assert Product.METAR not in state.errors and Product.METAR not in state.offline
     assert state.errors == {Product.TAF: "y"} and state.offline == {Product.TAF}
+
+
+def test_numeric_admin_codes_are_not_shown_as_a_region() -> None:
+    db = bundled()
+    haneda, denver = db.get("RJTT"), db.get("KDEN")
+    assert haneda is not None and haneda.state is None  # AWC gives Japan "13"
+    assert denver is not None and denver.state == "CO"
