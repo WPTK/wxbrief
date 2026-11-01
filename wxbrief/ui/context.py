@@ -29,6 +29,7 @@ class ViewContext:
     glyphs: Glyphs
     time_mode: str
     stations: StationDB
+    demo: bool = False  # --demo: the status bar and refresh say so instead of "polling off"
     crosscheck: bool = True  # mark a station whose AWC flight category differs from ours
     local_zone: tzinfo | None = None  # the zone of ``local`` time mode; ``None`` is the computer's own
     _palette: ViewPalette | None = None

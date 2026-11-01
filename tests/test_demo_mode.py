@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 from test_app_smoke import notes
 from textual.widgets import Static
 
@@ -43,7 +42,6 @@ async def test_demo_with_a_saved_watchlist_shows_only_demo_stations_and_leaves_t
     assert not path.with_name("config.toml.bak").exists()
 
 
-@pytest.mark.xfail(strict=True, reason="#221")
 async def test_demo_status_bar_says_it_is_not_live(tmp_path: Path) -> None:
     app, _ = saved_config_app(tmp_path)
     t = Translator.load("en")
@@ -54,7 +52,6 @@ async def test_demo_status_bar_says_it_is_not_live(tmp_path: Path) -> None:
         assert isinstance(app.briefing.query_one(StatusBar), Static)
 
 
-@pytest.mark.xfail(strict=True, reason="#222")
 async def test_refresh_in_demo_raises_one_toast_however_often_it_is_pressed(tmp_path: Path) -> None:
     app, _ = saved_config_app(tmp_path)
     expected = Translator.load("en").t(K.UI_TOAST_DEMO_REFRESH)

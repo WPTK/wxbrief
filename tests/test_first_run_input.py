@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from test_timeline_ui import demo_app, settle, text_of
 from textual.widgets import Footer
 
@@ -25,7 +24,6 @@ def status_of(app: WxBriefApp) -> str:
     return text_of(app.screen.query_one(StatusBar))
 
 
-@pytest.mark.xfail(strict=True, reason="#225")
 async def test_clicking_a_station_selects_it_and_keeps_the_list_focused() -> None:
     app = demo_app()
     async with app.run_test(size=(120, 30)) as pilot:
@@ -70,7 +68,6 @@ async def test_clicking_a_card_in_the_grid_selects_it() -> None:
         assert briefing.selected == card.icao and isinstance(app.focused, StationGrid)
 
 
-@pytest.mark.xfail(strict=True, reason="#224")
 async def test_a_section_key_with_no_report_says_so_once() -> None:
     app = demo_app()
     async with app.run_test(size=(120, 30)) as pilot:
@@ -107,7 +104,6 @@ async def test_section_keys_scroll_the_detail_pane_from_the_list_and_after_a_cli
         assert pane.scroll_y > mid
 
 
-@pytest.mark.xfail(strict=True, reason="#223")
 async def test_offline_status_is_one_state_never_fresh() -> None:
     app = demo_app()
     async with app.run_test(size=(120, 30)) as pilot:
@@ -120,7 +116,6 @@ async def test_offline_status_is_one_state_never_fresh() -> None:
         assert "offline, showing saved data from" in status and "fresh" not in status and "stale" not in status
 
 
-@pytest.mark.xfail(strict=True, reason="#219")
 async def test_one_failed_fetch_is_not_offline_and_raises_no_toast() -> None:
     app = demo_app()
     async with app.run_test(size=(120, 30)) as pilot:
@@ -146,7 +141,6 @@ async def test_two_failures_in_a_row_are_offline_with_one_toast() -> None:
         assert len(app._notifications) == shown + 1
 
 
-@pytest.mark.xfail(strict=True, reason="#219")
 async def test_a_failing_taf_beside_a_good_metar_is_never_offline() -> None:
     app = demo_app()
     async with app.run_test(size=(120, 30)) as pilot:
@@ -159,7 +153,6 @@ async def test_a_failing_taf_beside_a_good_metar_is_never_offline() -> None:
         assert "offline" not in status_of(app)
 
 
-@pytest.mark.xfail(strict=True, reason="#219")
 async def test_a_real_outage_is_offline_and_the_next_success_clears_it() -> None:
     app = demo_app()
     async with app.run_test(size=(120, 30)) as pilot:

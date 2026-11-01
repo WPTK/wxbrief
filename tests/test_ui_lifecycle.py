@@ -237,7 +237,7 @@ async def test_a_long_error_cuts_the_message_not_the_freshness() -> None:
     app = demo_app()
     async with app.run_test(size=(60, 20)) as pilot:
         await settle(pilot)
-        app.state.record_error(Product.METAR, "metar: ConnectError: " + "x" * 120, offline=True)
+        app.state.record_error(Product.METAR, "metar: server error " + "x" * 120)
         app.briefing.refresh_view()
         await settle(pilot)
         rendered = app.screen.query_one(StatusBar).render()

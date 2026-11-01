@@ -183,16 +183,17 @@ def test_a_failed_config_save_returns_false_and_leaves_no_temp_file(tmp_path: Pa
     assert sorted(p.name for p in tmp_path.iterdir()) == ["config.toml", "file"]
 
 
-def test_a_good_fetch_clears_the_error_and_offline_mark_of_its_product() -> None:
+def test_a_good_fetch_clears_the_error_and_offline_mark_of_every_product() -> None:
     from wxbrief.data.poll import Product
     from wxbrief.state import AppState
 
     state = AppState(["KDEN"])
-    state.record_error(Product.METAR, "x", offline=True)
-    state.record_error(Product.TAF, "y", offline=True)
-    state.apply(Product.METAR, [])
-    assert Product.METAR not in state.errors and Product.METAR not in state.offline
-    assert state.errors == {Product.TAF: "y"} and state.offline == {Product.TAF}
+    for _ in range(2):
+        state.record_error(Product.METAR, "x", offline=True)
+        state.record_error(Product.TAF, "y", offline=True)
+    assert state.offline == {Product.METAR, Product.TAF}
+    state.apply(Product.METAR, [])  # offline is the network's: one answer of either product ends it for both
+    assert state.errors == {} and state.offline == set() and state.transport_failures == {}
 
 
 def test_numeric_admin_codes_are_not_shown_as_a_region() -> None:
