@@ -1,4 +1,4 @@
-"""Write the README screenshots to ``docs/img/`` from the bundled ``--demo`` reports.
+"""Write the small-terminal screenshot to ``docs/img/`` from the bundled ``--demo`` reports.
 
 Usage::
 

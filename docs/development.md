@@ -34,7 +34,7 @@ Changes that only touch Markdown, `docs/` or `LICENSE` skip CI.
 | `wxbrief/data/` | AWC client, poll scheduler, disk cache, station database, the `--demo` reports |
 | `wxbrief/render/` | phrases, plain, Rich, Discord and JSON output, the CLI palette |
 | `wxbrief/ui/` | the Textual interface: `app.tcss`, glyph sets, themes, screens, widgets |
-| `scripts/` | `gen_keys.py`, `build_stations.py`, `make_screenshots.py`, `uat_screenshots.py` |
+| `scripts/` | `gen_keys.py`, `build_stations.py`, `make_screenshots.py`, `uat_screenshots.py`, `make_demo_gif.py` |
 | `tests/` | the suite; `fixtures/` saved reports and AWC batches; `uat/` user journeys |
 
 ## Tests
@@ -101,6 +101,15 @@ the SVG's web font. The demo clock is fixed, so the pictures change only when th
 change that altered them, and look at each one first. The scripts clear `NO_COLOR` for their own process and fail on a
 picture with no chromatic colour. The app itself honours `NO_COLOR` (monochrome output, tested in
 `tests/test_screenshot_colour.py`).
+
+The animated demo at the top of the README is recorded the same way, from the real app on `--demo`:
+
+```powershell
+python scripts\make_demo_gif.py
+```
+
+It writes `docs/img/demo.gif`. It needs Pillow and a monospaced TrueType font (see the script), and re-record it after
+an interface change that shows in it.
 
 ## Station database
 
