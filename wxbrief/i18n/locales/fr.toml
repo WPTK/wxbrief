@@ -649,6 +649,7 @@ legend_temporary = "temporaire"
 none = "Pas de frise chronologique : la prévision n'a pas de période de validité exploitable."
 no_taf = "pas de TAF"
 expired = "TAF expiré"
+cancelled = "TAF annulé"
 
 [timeline.letter]
 VFR = "V"

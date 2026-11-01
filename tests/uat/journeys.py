@@ -300,6 +300,15 @@ async def add_station(run: Run) -> None:
     await run.press("d")
     await run.until(lambda: "KSEA" not in run.app.state.ids and screen.selected != "KSEA", "KSEA removed")
     await run.until(lambda: "KSEA" not in run.saved()["stations"]["watchlist"], "KSEA removed from the saved list")
+    assert screen.selected == "KDEN"  # KSEA was the first row, so the row that took its place
+    screen.select("ETHB")  # a row in the middle: the selection and the list highlight move to the row that closes the gap
+    await run.settle()
+    await run.press("d")
+    await run.until(lambda: "ETHB" not in run.app.state.ids, "ETHB removed")
+    ids = run.app.state.ids
+    assert ids.index("UUEE") == 2 and screen.selected == "UUEE", screen.selected  # not KDEN, so a second d is safe
+    if run.wide:
+        assert screen.query_one(StationList).highlighted == 2
 
 
 async def help_screen(run: Run) -> None:

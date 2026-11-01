@@ -13,7 +13,7 @@ from datetime import datetime
 
 from rich.style import Style
 from rich.text import Text
-from textual.events import Click, MouseMove, Resize
+from textual.events import Click, Leave, MouseMove, Resize
 from textual.message import Message
 from textual.widget import Widget
 
@@ -108,14 +108,15 @@ class TafTimeline(Widget, can_focus=True):
         self._cursor_hour = 0  # index into ``hours``: survives a change of step
         self._ctx: ViewContext | None = None
         self._icao = ""
+        self._now: datetime | None = None
         self._key: tuple[str, str] | None = None
-        self._moved = False  # the user moved the cursor: until then it follows the clock
+        self._chosen_hour: int | None = None  # the hour the user chose (key or click); None: follow the clock
 
     # --- data ------------------------------------------------------------------------------------------------------
 
     def set_taf(self, taf: Taf | None, ctx: ViewContext, icao: str, now: datetime) -> bool:
-        """Show ``taf``; returns whether there is anything to draw. For an unchanged TAF the cursor stays where the user
-        put it, and until they move it, it follows the current hour."""
+        """Show ``taf``; returns whether there is anything to draw. For an unchanged TAF the cursor returns to the hour
+        the user chose, and until they choose one, to the current hour."""
         self._ctx = ctx
         self._icao = icao
         key = (icao, taf.raw) if taf is not None else None
@@ -128,14 +129,20 @@ class TafTimeline(Widget, can_focus=True):
             self.timeline, self.hours = strip_for(taf)
         self._rebuild()
         if fresh:
-            self._moved = False
-        if fresh or not self._moved:
-            at = next((i for i, hour in enumerate(self.hours) if hour.start <= now < hour.end), 0)
-            self._cursor_hour = at
-            self.cursor = self._cell_of_hour(at)
+            self._chosen_hour = None
+        self._now = now
+        self._seat()
         self._announce()
         self.refresh()
         return bool(self.cells)
+
+    def _seat(self) -> None:
+        """Put the cursor on the chosen hour, or on the current one: a hover only previewed another cell."""
+        now = self._now
+        at = next((i for i, hour in enumerate(self.hours) if now is not None and hour.start <= now < hour.end), 0)
+        hour = self._chosen_hour if self._chosen_hour is not None else at
+        self._cursor_hour = min(hour, max(0, len(self.hours) - 1))
+        self.cursor = self._cell_of_hour(self._cursor_hour)
 
     @property
     def selected(self) -> StripCell | None:
@@ -161,15 +168,16 @@ class TafTimeline(Widget, can_focus=True):
     # --- cursor ----------------------------------------------------------------------------------------------------
 
     def move_to(self, index: int, *, chosen: bool = True) -> None:
-        """Put the cursor on a cell. A hover only previews it (chosen=False): the cursor keeps following the clock."""
+        """Put the cursor on a cell. A hover only previews it (chosen=False): the chosen hour, or the clock when
+        none is chosen, comes back at the next refresh."""
         if not self.cells:
             return
         index = max(0, min(index, len(self.cells) - 1))
+        if chosen:  # even when the pointer was already there: a click on the hovered cell is still a choice
+            self._chosen_hour = self.cells[index].hours[0]
         if index == self.cursor:
             return
         self.cursor = index
-        if chosen:
-            self._moved = True
         self._cursor_hour = self.cells[index].hours[0]
         self._announce()
         self.refresh()
@@ -191,6 +199,14 @@ class TafTimeline(Widget, can_focus=True):
         index = self._index_at(event.x)
         if index is not None:
             self.move_to(index, chosen=False)
+
+    def on_leave(self, event: Leave) -> None:
+        """The pointer left the strip: the preview ends with it, back to the chosen hour or the current one."""
+        before = self.cursor
+        self._seat()
+        if self.cursor != before:
+            self._announce()
+            self.refresh()
 
     def on_click(self, event: Click) -> None:
         index = self._index_at(event.x)

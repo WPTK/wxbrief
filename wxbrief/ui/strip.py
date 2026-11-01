@@ -64,7 +64,10 @@ def group_cells(hours: Sequence[TimelineHour], step: int = 1) -> tuple[StripCell
 
 
 def strip_for(taf: Taf) -> tuple[Timeline, tuple[TimelineHour, ...]]:
-    """The expanded timeline of a TAF and its hourly summaries (both empty without a usable valid period)."""
+    """The expanded timeline of a TAF and its hourly summaries (both empty without a usable valid period, and for a
+    cancelled TAF, which has no forecast to draw even when its text still carries groups)."""
+    if taf.cancelled:
+        return Timeline(None, None, ()), ()
     timeline = expand_timeline(taf)
     return timeline, timeline.hourly()
 

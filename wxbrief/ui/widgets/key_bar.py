@@ -9,7 +9,7 @@ from textual.widget import Widget
 from textual.widgets import Footer
 from textual.widgets._footer import FooterKey
 
-ALWAYS = ("help", "quit")  # never dropped: a small-terminal user must see how to get help and how to leave
+ALWAYS = ("help", "quit", "close")  # never dropped: a small-terminal user must see how to get help, go back and leave
 STEPPING = "next_station"  # j/k, shown only while the station list is hidden: the next to last to go
 COMPACT_BELOW = 100  # columns: tighter keys
 # The command palette hint shows from the first width the app calls -normal (WxBriefApp.HORIZONTAL_BREAKPOINTS).

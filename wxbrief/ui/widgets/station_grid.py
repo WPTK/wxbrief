@@ -51,6 +51,7 @@ class StationGrid(VerticalScroll, can_focus=True):
         self._to_reveal: str | None = None  # the card a pending reveal is for
         self._seen: Region | None = None  # where that card was at the last look
         self._laid_out_columns = 0  # the column count the cards were last laid out with
+        self._laid_out_height = 0  # the height they were last laid out with
 
     def compose(self) -> ComposeResult:
         yield Static(id="empty")  # the text is set in set_stations, in the language in use
@@ -65,8 +66,11 @@ class StationGrid(VerticalScroll, can_focus=True):
 
     def on_resize(self, event: Resize) -> None:
         self.query_one("#cards", Container).styles.grid_size_columns = self.columns
-        if self.columns != self._laid_out_columns:  # the cards moved to other rows: the selected one must stay in view
+        height = event.size.height
+        # the cards moved to other rows, or the viewport shrank under them: the selected one must stay in view
+        if self.columns != self._laid_out_columns or height != self._laid_out_height:
             self._laid_out_columns = self.columns
+            self._laid_out_height = height
             self._reveal(self._card(self.selected) if self.selected else None)
 
     def set_stations(

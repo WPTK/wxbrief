@@ -50,7 +50,7 @@ if all pass; it never uses the network, config or cache.
 On each platform you can reach, with the downloaded file (not a dev install):
 
 - [ ] `wxbrief --version` prints the tag's version.
-- [ ] `wxbrief --selftest` exits 0 with five `ok` lines.
+- [ ] `wxbrief --selftest` exits 0 with six `ok` lines.
 - [ ] `wxbrief decode --plain "METAR KDEN 131453Z 06007KT 3/4SM BR OVC003 09/08 A3001"` shows LIFR.
 - [ ] `wxbrief decode --lang de ...` prints German with no English labels.
 - [ ] `wxbrief --demo` opens the TUI offline, shows ten stations, `t` changes the colorway, `v` switches layouts, `?`
