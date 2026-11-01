@@ -45,6 +45,7 @@ dev = [
     "vulture>=2.14",
     "mypy>=1.13",
     "types-pyperclip",
+    "tui-test==0.1.1",
 ]
 # Installed only when building a standalone binary, so every binary carries its own zone files.
 binary = ["tzdata>=2024.1"]
@@ -73,7 +74,9 @@ testpaths = ["tests"]
 # A test that has not finished in two minutes is hung. The slowest test in the suite takes a few seconds.
 timeout = 120
 timeout_method = "thread"
-markers = ["slow: UAT journeys that take several seconds (deselect with -m \"not slow\")"]
+markers = [
+    "pty: real-terminal journeys (pseudo-terminal + pyte); skipped when the PTY layer is unavailable",
+    "slow: UAT journeys that take several seconds (deselect with -m \"not slow\")"]
 
 [tool.ruff]
 line-length = 120
