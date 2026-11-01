@@ -249,3 +249,34 @@ async def test_roomy_terminals_give_the_cards_a_taller_box() -> None:
     async with demo_app("--layout", "grid").run_test(size=(120, 30)) as pilot:
         await pilot.pause(0.3)
         assert {card.outer_size.height for card in pilot.app.screen.query(StationCard)} == {7}
+
+
+async def test_the_maintenance_chip_keeps_a_blank_row_above_raw_at_60x16(monkeypatch: pytest.MonkeyPatch) -> None:
+    import wxbrief.data.demo as demo
+
+    original = demo.demo_text
+    monkeypatch.setattr(demo, "demo_text", lambda icao: original(icao) + " $" if icao == "KDEN" else original(icao))
+    app = demo_app()
+    async with app.run_test(size=(60, 16)) as pilot:
+        await pilot.pause(0.5)
+        lines = screen_lines(app)
+    chip = max(i for i, line in enumerate(lines) if "maintenance" in line or "Some data missing" in line)
+    raw = next(i for i, line in enumerate(lines) if line.strip() == "Raw")
+    assert raw - chip == 2 and not lines[chip + 1][:50].strip()  # one blank row (the scrollbar is past column 50) between the chips and the Raw header
+
+
+async def test_a_toast_is_one_row_on_the_status_bar_and_covers_no_card() -> None:
+    from textual.widgets._toast import Toast
+
+    app = demo_app("--layout", "grid")
+    async with app.run_test(size=(120, 30), notifications=True) as pilot:
+        await pilot.pause(0.3)
+        app.clear_notifications()
+        await pilot.pause(0.2)
+        app.notify("Grid layout")
+        await pilot.pause(0.3)
+        toasts = list(app.screen.query(Toast))
+        assert len(toasts) == 1
+        status = app.screen.query_one(StatusBar).region
+        assert toasts[0].region.height == 1  # no padding rows
+        assert toasts[0].region.y == status.y  # on the status bar's row, not over a card
