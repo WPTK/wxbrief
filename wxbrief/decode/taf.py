@@ -308,7 +308,11 @@ def _read_group(cur: Cursor, draft: _Draft, *, base: bool) -> _Group:
     extras = PeriodExtras(draft.temperatures, draft.notes)
 
     def stop(token: Token) -> bool:
-        return token.kind is SemanticKind.TERMINATOR or token.text == "RMK" or starts_change_group(token.text)
+        return (
+            token.kind is SemanticKind.TERMINATOR
+            or token.text in ("RMK", "CNL")
+            or starts_change_group(token.text)
+        )
 
     _, elements = parse_trend_body(cur, None, stop, extras)
     group.elements = replace(
@@ -396,6 +400,10 @@ def _parse(raw: str, reference: datetime | None) -> Taf:
             while (rest := cur.peek()) is not None:
                 cur.take(SemanticKind.TERMINATOR if rest.kind is SemanticKind.TERMINATOR else SemanticKind.REMARK)
             break
+        if token.text == "CNL":  # a cancellation word after the groups: it withdraws the whole report
+            cur.take(SemanticKind.MODIFIER)
+            draft.modifiers.append(Modifier.CNL)
+            continue
         is_base = first_body and not starts_change_group(token.text)
         draft.groups.append(_read_group(cur, draft, base=is_base))
         first_body = False

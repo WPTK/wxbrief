@@ -293,9 +293,13 @@ def compute_taf_flags(taf: Taf) -> tuple[Flag, ...]:
 
 
 def derive_taf(taf: Taf) -> Taf:
-    """Fill in the derived fields of a parsed ``Taf``: its flags and the worst flight category anywhere."""
+    """Fill in the derived fields of a parsed ``Taf``: its flags and the worst flight category anywhere.
+
+    A cancelled TAF has no forecast: whatever groups its text still carries (AWC keeps the old body on a feed row
+    marked ``CNL``) are dropped from the model, so no renderer can present them as a live forecast.
+    """
+    if taf.cancelled:
+        taf = replace(taf, base=None, changes=(), temperatures=())
     timeline = expand_timeline(taf)
     worst = timeline.worst_category if timeline.slices else worst_of(period.flight_category for period in taf.periods)
-    if taf.cancelled:  # withdrawn: whatever its text still says, no forecast stands, so there is no worst case
-        worst = None
     return replace(taf, flags=compute_taf_flags(taf), worst_category=worst)

@@ -209,12 +209,17 @@ def taf_header_rows(taf: Taf, t: Translator, units: UnitsMode) -> list[DecodeRow
     def add(label_key: str, value: str, kind: SemanticKind | None = None) -> None:
         rows.append(DecodeRow(t.t(label_key), value, style_name(kind) if kind is not None else None))
 
+    def add_notes() -> None:
+        notes = "; ".join(phrases.describe_modifier(t, modifier) for modifier in taf.modifiers)
+        add(K.LABEL_MODIFIERS, notes, SemanticKind.MODIFIER)
+
+    if taf.cancelled:  # a withdrawn forecast says so before anything else
+        add_notes()
     if taf.station:
         add(K.LABEL_STATION, taf.station, SemanticKind.STATION)
     add(K.LABEL_REPORT, phrases.describe_report_type(t, taf.report_type), SemanticKind.TYPE)
-    if taf.modifiers:
-        notes = "; ".join(phrases.describe_modifier(t, modifier) for modifier in taf.modifiers)
-        add(K.LABEL_MODIFIERS, notes, SemanticKind.MODIFIER)
+    if taf.modifiers and not taf.cancelled:
+        add_notes()
     if taf.issue_time is not None:
         add(K.LABEL_ISSUED, phrases.describe_time(t, taf.issue_time), SemanticKind.TIME)
     if taf.valid_from is not None:
