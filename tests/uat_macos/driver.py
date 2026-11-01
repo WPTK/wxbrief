@@ -176,19 +176,29 @@ class MacTerminal:
             time.sleep(0.5)
         raise AssertionError(f"{self.app}: the terminal did not report a stable size in {timeout:g} s")
 
-    def _window(self) -> tuple[int, tuple[float, float, float, float]]:
+    def _window(self, timeout: float = 15.0) -> tuple[int, tuple[float, float, float, float]]:
         import Quartz
 
-        best: tuple[float, int, tuple[float, float, float, float]] | None = None
-        for w in Quartz.CGWindowListCopyWindowInfo(Quartz.kCGWindowListOptionOnScreenOnly, Quartz.kCGNullWindowID):
-            if w.get("kCGWindowOwnerName") == self._spec["owner"] and w.get("kCGWindowLayer") == 0:
+        deadline = time.monotonic() + timeout
+        while True:
+            best: tuple[float, int, tuple[float, float, float, float]] | None = None
+            seen = []
+            for w in Quartz.CGWindowListCopyWindowInfo(Quartz.kCGWindowListOptionOnScreenOnly, Quartz.kCGNullWindowID):
                 b = w["kCGWindowBounds"]
-                area = b["Width"] * b["Height"]
-                if area > 20000 and (best is None or area > best[0]):
-                    best = (area, int(w["kCGWindowNumber"]), (b["X"], b["Y"], b["Width"], b["Height"]))
-        if best is None:
-            raise AssertionError(f"no on-screen {self.app} window")
-        return best[1], best[2]
+                seen.append(
+                    f"{w.get('kCGWindowOwnerName')}/layer {w.get('kCGWindowLayer')}/{b['Width']:g}x{b['Height']:g}"
+                )
+                if w.get("kCGWindowOwnerName") == self._spec["owner"] and w.get("kCGWindowLayer") == 0:
+                    area = b["Width"] * b["Height"]
+                    if area > 20000 and (best is None or area > best[0]):
+                        best = (area, int(w["kCGWindowNumber"]), (b["X"], b["Y"], b["Width"], b["Height"]))
+            if best is not None:
+                return best[1], best[2]
+            if time.monotonic() >= deadline:
+                raise AssertionError(
+                    f"no on-screen {self.app} window after {timeout:g} s; on screen: {'; '.join(seen)}"
+                )
+            time.sleep(0.5)
 
     def _fit(self, cols: int, rows: int) -> None:
         """Set the window bounds until the terminal reports ``cols`` x ``rows`` (cell size is measured, not assumed)."""

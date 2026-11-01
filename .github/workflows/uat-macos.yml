@@ -56,6 +56,7 @@ jobs:
           done
           tail -3 out/grant*.txt
       - name: Real-terminal journey
+        shell: bash
         run: |
           "$HOME/uatvenv/bin/python" -m pytest tests/uat_macos -v -p no:cacheprovider -o addopts= \
             --junitxml=out/junit.xml 2>&1 | tee out/pytest.txt

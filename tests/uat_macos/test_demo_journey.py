@@ -1,4 +1,4 @@
-"""wxbrief demo mode in a real Terminal.app or iTerm2 window: launch, wait for text, keys 1/2/3, click, resize, quit.
+"""wxbrief demo mode in a real Terminal.app or iTerm2 window: launch, wait for text, keys 1/2/3, click, resize, escape, quit.
 
 Runs only when ``WXBRIEF_UAT_MACOS`` names the app (``Terminal`` or ``iTerm2``) on a Mac set up by
 ``scripts/grant_tcc.sh``; ``.github/workflows/uat-macos.yml`` does that. Screenshots and screen text go to
@@ -57,12 +57,11 @@ def test_2_keys_1_2_3_move_between_sections(term: MacTerminal) -> None:
     term.send_keys("2")
     term.wait_for(lambda s: detail_first_line(term) == "Decoded", 15, "section 2 (Decoded) at the top")
     term.send_keys("3")
-    term.wait_for(lambda s: "3 TAF" in s.lines[-1], 15, "the section keys in the footer after key 3")
+    # key 3 moves focus into the forecast: the footer offers "esc Back" and the TAF detail is on screen
+    term.wait_for(lambda s: "esc Back" in s.lines[-1] and "Prevailing" in s, 15, "focus in the forecast after key 3")
 
 
 def test_3_click_a_station(term: MacTerminal) -> None:
-    term.send_keys("escape")
-    term.wait_for(lambda s: "Move" not in s.lines[-1], 15, "the station list focused again")
     term.click_text("EGLL")
     term.wait_for_text("London/Heathrow", 15)
     assert "2/10" in term.settle().text
@@ -77,6 +76,13 @@ def test_4_resize(term: MacTerminal) -> None:
     assert "Stations" in term.settle()
 
 
-def test_5_quit(term: MacTerminal) -> None:
+def test_5_escape_goes_back(term: MacTerminal) -> None:
+    term.send_keys("3")
+    term.wait_for(lambda s: "esc Back" in s.lines[-1], 15, "focus in the forecast after key 3")
+    term.send_keys("escape")
+    term.wait_for(lambda s: "esc Back" not in s.lines[-1], 15, "the station list focused again after escape")
+
+
+def test_6_quit(term: MacTerminal) -> None:
     term.send_keys("q")
     assert term.wait_exit(20) == 0
