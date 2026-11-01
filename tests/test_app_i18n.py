@@ -3,6 +3,8 @@ toasts follow the catalog."""
 
 from __future__ import annotations
 
+import importlib
+import pkgutil
 import tomllib
 from dataclasses import replace
 from pathlib import Path
@@ -194,3 +196,24 @@ async def test_every_binding_carries_a_catalog_id(tmp_path: Path) -> None:
                         assert english.t(binding.id) != binding.id
                         assert translator_of(node).lang == "en"
         assert app.screen.query(Footer)
+
+
+def test_every_binding_of_ours_has_a_catalog_id() -> None:
+    """The label of a binding comes from the catalog by its id, so a plain ``Binding`` stays English in every language.
+    Scans every class of the UI (screens and dialogs included), not just the widgets of one running screen."""
+    from textual.binding import Binding
+    from textual.dom import DOMNode
+
+    import wxbrief.ui as ui
+
+    english = Translator.load("en")
+    bare: list[str] = []
+    for module_info in pkgutil.walk_packages(ui.__path__, "wxbrief.ui."):
+        module = importlib.import_module(module_info.name)
+        for name, cls in vars(module).items():
+            if not (isinstance(cls, type) and issubclass(cls, DOMNode) and cls.__module__ == module.__name__):
+                continue
+            for item in cls.__dict__.get("BINDINGS", []):
+                if not isinstance(item, Binding) or not item.id or english.t(item.id) == item.id:
+                    bare.append(f"{module.__name__}.{name}: {item}")
+    assert not bare, bare

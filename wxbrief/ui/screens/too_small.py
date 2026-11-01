@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 from textual.app import ComposeResult
-from textual.binding import Binding
 from textual.geometry import Size
 from textual.screen import ModalScreen
 from textual.widgets import Static
 
 from wxbrief.i18n.keys import K
-from wxbrief.ui.bindings import translator_of
+from wxbrief.ui.bindings import bind, translator_of
 
 MIN_SIZE = Size(60, 16)  # below this the briefing and its dialogs cannot be drawn whole; 80x24 is the supported floor
 
@@ -29,7 +28,7 @@ class TooSmallScreen(ModalScreen[None]):
     }
     """
 
-    BINDINGS = [Binding("q", "quit", "Quit", show=False)]
+    BINDINGS = [bind("q", "quit", K.UI_BINDING_QUIT, show=False)]
 
     def action_quit(self) -> None:
         self.app.exit()

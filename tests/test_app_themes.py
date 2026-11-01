@@ -160,7 +160,8 @@ async def test_the_flag_theme_is_never_written_back(tmp_path: Path) -> None:
         assert app.theme != "phosphor-green"
         app.add_station("KDEN")  # a save for another reason still leaves the theme alone
         await pilot.pause()
-    assert saved_theme(config_path) != "phosphor-green"  # the save happened, and the flag theme stayed out of it
+    assert config_path.exists() and "KDEN" in config_path.read_text(encoding="utf-8")  # the save happened
+    assert saved_theme(config_path) != "phosphor-green"  # and the flag theme stayed out of it
 
 
 async def test_a_change_made_while_the_config_is_unreadable_is_not_saved(tmp_path: Path) -> None:

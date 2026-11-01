@@ -6,11 +6,13 @@ below 90 columns the station list gives way to the detail pane. ``JOURNEYS`` say
 
 from __future__ import annotations
 
+import io
 import re
 from dataclasses import dataclass
 
 from harness import COMMON, SMALL, Journey, Run, toasts
-from textual.widgets import Input, OptionList, TextArea
+from rich.console import Console
+from textual.widgets import Input, OptionList, Static, TextArea
 
 from wxbrief.data.demo import DEMO_ORDER
 from wxbrief.i18n import Translator
@@ -29,6 +31,13 @@ from wxbrief.ui.widgets.station_list import StationList
 from wxbrief.ui.widgets.taf_timeline import TafTimeline
 
 WIND = re.compile(r"\b(?:VRB|\d{3})\d{2}(?:G\d{2,3})?(?:KT|MPS)\b")
+def _plain(widget: Static) -> str:
+    """The text a widget draws, from its own renderable (not from the screen, where the typed text also shows)."""
+    console = Console(width=100, record=True, file=io.StringIO())
+    console.print(widget.content)
+    return console.export_text()
+
+
 PASTED = "KDEN 311153Z 32005KT 1/4SM FG VV001 07/07 A3001"
 
 
@@ -125,7 +134,12 @@ async def station_detail_from_list(run: Run) -> None:
         assert run.app.focused is screen.query_one(StationList)
         await run.press("enter")
         await run.until(lambda: isinstance(run.app.focused, DetailPane), "the detail pane focused")
-    await run.press("down", "down", "pageup")
+    pane = screen.query_one(DetailPane)
+    await run.press("down", "down")
+    if pane.max_scroll_y:
+        assert pane.scroll_y > 0, "the arrows do not scroll the report"
+        await run.press("pageup")
+        assert pane.scroll_y < pane.max_scroll_y, "page up does not scroll back"
     assert isinstance(run.app.focused, DetailPane)
     await run.press("3")
     await run.until(lambda: screen.query_one(TafTimeline).has_focus, "the timeline focused")
@@ -239,7 +253,9 @@ async def paste(run: Run) -> None:
     for char in "METAR " + PASTED:
         await run.pilot.press("space" if char == " " else char)
     await run.until(lambda: bool(run.app.screen.decoded), "the decode of the typed report")  # type: ignore[attr-defined]
-    await run.until(lambda: "KDEN" in run.text(), "the decode on screen")
+    result = run.app.screen.query_one("#paste-result")
+    await run.until(lambda: "KDEN" in _plain(result), "the decode in the output pane")  # not the typed text
+    assert result.region.height > 0 and result.region.y < run.size[1], "the output pane is not on screen"
     if run.size[1] >= 20:
         await run.until(lambda: "Wind" in run.text(), "the decoded wind row")
     assert area.text == "METAR " + PASTED

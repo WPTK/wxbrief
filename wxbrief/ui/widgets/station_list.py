@@ -58,15 +58,30 @@ class StationList(OptionList):
         super().__init__(**kwargs)
         self._last: tuple[list[StationReports], ViewContext, datetime, str | None] | None = None
         self._named = False  # the rows carry the station name
+        self._height = 0  # the height the highlight was last kept in view for
 
     def on_mount(self) -> None:
         localize(self)
 
     def on_resize(self, event: Resize) -> None:
+        if event.size.height != self._height:  # fewer rows fit now: the highlighted one must stay in view
+            self._height = event.size.height
+            self.call_after_refresh(self._reveal_highlight, 8)
         if self._last is not None and (event.size.width >= NAME_FROM) != self._named:
             reports, ctx, now, _ = self._last
             option = self.highlighted_option
             self.set_stations(reports, ctx, now, option.id if option else None)
+
+    def _reveal_highlight(self, tries: int) -> None:
+        """Scroll the highlight into view once the resize is laid out; look again while it is still outside."""
+        if self.highlighted is None:
+            return
+        self.scroll_to_highlight()
+        line = self._index_to_line.get(self.highlighted)
+        top = self.scroll_offset.y
+        inside = line is not None and top <= line < top + self.scrollable_content_region.height
+        if tries > 1 and not inside:
+            self.call_after_refresh(self._reveal_highlight, tries - 1)
 
     def set_stations(
         self, reports: list[StationReports], ctx: ViewContext, now: datetime, selected: str | None
