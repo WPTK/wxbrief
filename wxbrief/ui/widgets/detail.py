@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 from rich.text import Text
@@ -14,7 +14,6 @@ from textual.widgets import Collapsible, DataTable, Label, Static
 
 from wxbrief.data.poll import Freshness
 from wxbrief.decode.model import Metar, Taf
-from wxbrief.i18n import Translator
 from wxbrief.i18n.keys import K
 from wxbrief.render import phrases
 from wxbrief.render.plain import DecodeBlock, DecodeRow, decode_rows, taf_blocks, taf_header_rows, warning_lines
@@ -23,21 +22,9 @@ from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.strip import is_expired
 from wxbrief.ui.widgets.period_detail import PeriodDetail, RowBlocks
-from wxbrief.ui.widgets.status_bar import STATE_KEYS
+from wxbrief.ui.widgets.status_bar import STATE_KEYS, age_text
 from wxbrief.ui.widgets.taf_timeline import TafTimeline
 from wxbrief.ui.wrap import wrap
-
-
-def age_text(delta: timedelta, t: Translator) -> str:
-    """``12 min``, ``3 h 05 min``, ``2 d 4 h``: how long ago, never negative."""
-    minutes = max(0, int(delta.total_seconds() // 60))
-    if minutes < 60:
-        return t.t(K.UI_AGE_MINUTES, minutes=minutes)
-    hours, rest = divmod(minutes, 60)
-    if hours < 24:
-        return t.t(K.UI_AGE_HOURS, hours=hours, minutes=rest)
-    days, hours = divmod(hours, 24)
-    return t.t(K.UI_AGE_DAYS, days=days, hours=hours)
 
 
 class StationHeader(Static):
@@ -336,7 +323,14 @@ class DetailPane(VerticalScroll):
         """Scroll to ``raw``, ``decoded`` or ``taf``; the forecast also takes the keyboard focus (cursor keys)."""
         target = {"raw": "#raw-title", "decoded": "#decoded-title", "taf": "#taf-title"}[section]
         widget = self.query_one(target)
-        if widget.display:
-            self.scroll_to_widget(widget, top=True, animate=False)
-            if section == "taf" and self.query_one(TafTimeline).display:
-                self.query_one(TafTimeline).focus(scroll_visible=False)  # the jump has placed the section
+        entry, ctx = self._entry, self._ctx
+        empty = entry is not None and entry.metar is None and entry.taf is None
+        if entry is not None and ctx is not None and (empty or not widget.display):
+            # nothing to go to: say so, a key that does nothing looks broken
+            no_taf = section == "taf" and entry.taf is None and entry.metar is not None
+            key = K.TIMELINE_NO_TAF if no_taf else K.UI_DETAIL_NO_REPORT
+            self.app.notify(ctx.translator.t(key), severity="warning")
+            return
+        self.scroll_to_widget(widget, top=True, animate=False)
+        if section == "taf" and self.query_one(TafTimeline).display:
+            self.query_one(TafTimeline).focus(scroll_visible=False)  # the jump has placed the section

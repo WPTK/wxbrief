@@ -38,6 +38,9 @@ def decode_taf_row(row: AwcTaf, fallback_issued: datetime) -> Taf:
     return parse_taf(row.raw, row.issued or fallback_issued, row.modifiers)
 
 
+OFFLINE_AFTER = 2  # consecutive network failures of one product before the app says it is offline
+
+
 @dataclass(slots=True)
 class StationReports:
     """What is known about one station: the newest AWC rows and their decodes."""
@@ -84,6 +87,7 @@ class AppState:
         self.stations: dict[str, StationReports] = {}
         self.errors: dict[Product, str] = {}
         self.offline: set[Product] = set()  # products whose last failure was the network, not the server or the disk
+        self.transport_failures: dict[Product, int] = {}  # consecutive network failures per product since any success
 
     # --- the list -----------------------------------------------------------------------------------------------
 
@@ -120,6 +124,7 @@ class AppState:
         if not self.ids:  # nothing left to fetch, so no fetch will ever clear an old failure
             self.errors.clear()
             self.offline.clear()
+            self.transport_failures.clear()
         return True
 
     def is_saved(self, icao: str) -> bool:
@@ -158,7 +163,10 @@ class AppState:
         listed = set(self.ids)
         asked = listed if requested is None else set(requested)
         self.errors.pop(product, None)  # any successful answer, even an empty one, means the network works
-        self.offline.discard(product)
+        for down in self.offline:  # ... for every product: offline is a property of the network, not of one feed
+            self.errors.pop(down, None)
+        self.offline.clear()
+        self.transport_failures.clear()
         if product is Product.TAF and not rows and any(self._holds_taf(icao, now) for icao in asked if icao in listed):
             # An empty answer (a 204, an empty list, or rows that did not parse) while a forecast we hold is still
             # in its validity window is the feed having nothing to say, not every forecast having been withdrawn:
@@ -265,11 +273,22 @@ class AppState:
                 demo.icao, demo.awc_metar, demo.awc_taf, demo.metar, demo.taf, self.now(), self.now()
             )
 
-    def record_error(self, product: Product, message: str, *, offline: bool = False) -> None:
+    def record_error(self, product: Product, message: str, *, offline: bool = False, certain: bool = False) -> bool:
+        """Note a failed fetch; ``True`` when it is now shown. One dropped connection is not an outage: a network
+        failure shows (as offline) only from the second in a row for the product, until any fetch succeeds.
+        ``certain`` is for a failure that will not pass by itself (no HTTP client could be built)."""
+        if offline:
+            count = self.transport_failures.get(product, 0) + 1
+            self.transport_failures[product] = count
+            if count < OFFLINE_AFTER and not certain:
+                return False
+        else:
+            self.transport_failures.pop(product, None)
         self.errors[product] = message
         self.offline.discard(product)
         if offline:
             self.offline.add(product)
+        return True
 
     def load_cache(self) -> int:
         """Fill the state from the cache files; returns how many stations got a report. Damaged files are skipped."""

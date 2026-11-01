@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import shutil
+import time
 from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -97,6 +98,7 @@ class WxBriefApp(App[None]):
             self.register_theme(theme)
         for name in [name for name, theme in self.available_themes.items() if theme.ansi]:
             self.unregister_theme(name)  # the terminal's own colours have no RGB palette for the highlight colours
+        self._toast_until: dict[tuple[str, str, str], float] = {}  # when each toast now showing goes away
         self._previewing = False  # the theme picker is open: a highlighted theme is a preview, not a choice
         translator = Translator.load(view.lang)
         self._theme_notice = ""
@@ -123,6 +125,7 @@ class WxBriefApp(App[None]):
             glyphs=glyphs_for(view.glyph_set),
             time_mode=view.time,
             stations=bundled(),
+            demo=self.options.demo,
             crosscheck=self.options.config.decode.show_awc_crosscheck,
         )
         self.scheduler: PollScheduler | None = None
@@ -143,7 +146,14 @@ class WxBriefApp(App[None]):
         **_markup: bool,
     ) -> None:
         """Show a toast with the text exactly as given (a ``markup`` argument is ignored): station ids, paths and
-        errors may hold ``[...]``, which Textual would read as markup."""
+        errors may hold ``[...]``, which Textual would read as markup.
+
+        A toast that is already showing with the same text is not raised again: a held key would stack copies."""
+        key = (message, title, severity)
+        now = time.monotonic()
+        if self._toast_until.get(key, 0.0) > now:
+            return
+        self._toast_until[key] = now + (self.NOTIFICATION_TIMEOUT if timeout is None else timeout)
         super().notify(message, title=title, severity=severity, timeout=timeout, markup=False)
 
     # --- start up --------------------------------------------------------------------------------------------------
@@ -250,7 +260,7 @@ class WxBriefApp(App[None]):
         try:
             client = self.options.client or AwcClient()
         except AwcError as exc:  # no HTTP client can be built here (a proxy or CA setting): stay up on the cache
-            self._on_error(Product.METAR, exc)
+            self._on_error(Product.METAR, exc, certain=True)
             return
         self.scheduler = PollScheduler(
             client,
@@ -270,14 +280,15 @@ class WxBriefApp(App[None]):
         self.state.apply(product, rows, self.scheduler.requested if self.scheduler is not None else None)
         self.redraw_screens(paste=False)
 
-    def _on_error(self, product: Product, error: AwcError) -> None:
+    def _on_error(self, product: Product, error: AwcError, *, certain: bool = False) -> None:
         if self.scheduler is not None and not set(self.scheduler.requested) & set(self.state.ids):
             return  # the stations it was for are gone from the list: nothing will fetch again to clear this
         first = product not in self.state.errors
         offline = isinstance(error, TransportError)
         raw = f"{product.value}: {error}" if str(error) else f"{product.value}: {type(error).__name__}"
         log.warning("fetch failed: %s", raw)  # the raw text is for the log; the screen says it in plain words
-        self.state.record_error(product, raw, offline=offline)
+        if not self.state.record_error(product, raw, offline=offline, certain=certain):
+            return  # a first dropped connection: the saved data stays as it is and the next poll tries again
         if first:
             t = self.ctx.translator
             product_name = product.value.upper()
@@ -287,7 +298,8 @@ class WxBriefApp(App[None]):
 
     def refresh_now(self) -> None:
         if self.scheduler is None:
-            self.notify(self.ctx.translator.t(K.UI_TOAST_POLLING_OFF), severity="warning")
+            off = K.UI_TOAST_DEMO_REFRESH if self.options.demo else K.UI_TOAST_POLLING_OFF
+            self.notify(self.ctx.translator.t(off), severity="warning")
             return
         held = self.scheduler.hold_remaining()
         if held > 0:  # a 429 hold: nothing is fetched until it ends

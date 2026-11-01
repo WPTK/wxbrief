@@ -471,7 +471,9 @@ async def test_the_tui_stays_up_when_the_http_client_cannot_be_built(
 async def test_a_station_removed_while_offline_clears_the_offline_mark(tmp_path: Path) -> None:
     app = make_app(tmp_path, ["KDEN"], offline_client())
     async with app.run_test(size=(100, 30)) as pilot:
-        await wait_for(pilot, lambda: Product.METAR in app.state.offline)
+        await wait_for(pilot, lambda: app.state.transport_failures.get(Product.METAR))
+        app.state.record_error(Product.METAR, "metar: down", offline=True)  # the second failure in a row
+        assert Product.METAR in app.state.offline
         app.remove_station("KDEN")
         await pilot.pause()
         assert not app.state.offline and not app.state.errors
