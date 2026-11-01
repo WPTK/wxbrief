@@ -87,6 +87,26 @@ release), `click_text`, `resize`, `wait_for(predicate)` (fails with a screen dum
 working directory are a scratch directory with a dead proxy. `tests/uat_kit/test_kit.py` tests the kit against a tiny
 echo program. Set `PYTHONUTF8=1` on Windows when printing screen text.
 
+## Real-terminal suite
+
+`tests/pty/` runs the real program (`python -m wxbrief --demo`, or the built exe when `WXBRIEF_PTY_EXE` is set) in a
+pseudo-terminal through `tests/uat_kit`, with the bytes a terminal sends, and asserts on the rendered screen. It has
+journeys (list and grid click, selection that sticks, keys 1/2/3, dialogs, resize, exit code), an input inventory
+(`test_pty_inventory.py`: every `bind()` key, every clickable widget and every key in the README table must have a
+scenario, or the meta-tests fail), a state matrix (`test_pty_matrix.py`: five states, four sizes, seven screens, with
+rules that no screen contradicts itself) and terminal compatibility (`test_pty_compat.py`: `NO_COLOR`, `TERM` and
+`COLORTERM` variants, ASCII glyphs, minimum size, clean exit). The suite takes about 2.5 minutes with `-n 4`; it is
+marked `pty` and skipped with a reason when tui-test is missing. `WXBRIEF_PTY_SRC` runs another source tree.
+Each pty test has a 90 s limit and each call into tui-test a 30 s limit, so a hang fails with a message (waits fail with a
+screen dump) instead of stalling CI. The suite adds about two to two and a half minutes per OS with `-n 4`. The kit
+gives the child empty `COLUMNS` and `LINES`: under pytest on Linux the native layer otherwise passes the child
+`COLUMNS=80 LINES=24` from its C environment, the app lays out for 80x24 in a 120x30 terminal and every start waits
+in vain for the station list. #235 (focus reporting left on at exit) shows on Windows only; Linux and macOS exit clean.
+
+Severity: a dead advertised key, a click that does not stick and a screen that contradicts itself are P1.
+Not covered: Windows Terminal rendering, sixel, real tmux or SSH sessions, a partial-failure feed (the AWC base URL
+cannot be overridden).
+
 ## Snapshots
 
 `tests/test_snapshots.py` compares screenshots of the briefing screen in three themes
