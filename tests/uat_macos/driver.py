@@ -253,7 +253,8 @@ class MacTerminal:
                 )
                 if w.get("kCGWindowOwnerName") == self._spec["owner"] and w.get("kCGWindowLayer") == 0:
                     area = b["Width"] * b["Height"]
-                    if area > 20000 and (best is None or area > best[0]):
+                    # The list is front to back: take the first window, not the largest (macos-26 Terminal.app opens two).
+                    if area > 20000 and best is None:
                         best = (area, int(w["kCGWindowNumber"]), (b["X"], b["Y"], b["Width"], b["Height"]))
             if best is not None:
                 return best[1], best[2]
@@ -310,7 +311,7 @@ class MacTerminal:
         The window is the cell grid plus slack of up to a cell, so the cell size cannot be worked out from window sizes.
         """
         log = self.dir / "calib.log"
-        self.run([sys.executable, str(HERE / "scripts" / "rawprobe.py"), "{dir}/calib.log"])
+        self.run([sys.executable, str(HERE / "scripts" / "rawprobe.py"), "{dir}/calib.log", "6"])
         self.wait_for_text("probe ready", 60)
         size, bounds = self._measure()
         cell = cell_size(self._samples) or (bounds[2] / size[0], (bounds[3] - TITLE_BAR) / size[1])
@@ -334,8 +335,7 @@ class MacTerminal:
             if got == target:
                 break
         self._cell = cell
-        self.send_keys("q")
-        self.wait_exit(10)
+        self.wait_exit(30)  # the probe leaves by itself after 6 idle seconds: a lost key must not fail the setup
 
     def _activate(self) -> None:
         _osa(f"tell {self._spec['scripting']} to activate")
