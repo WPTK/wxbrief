@@ -34,7 +34,7 @@ Changes that only touch Markdown, `docs/` or `LICENSE` skip CI.
 | `wxbrief/data/` | AWC client, poll scheduler, disk cache, station database, the `--demo` reports |
 | `wxbrief/render/` | phrases, plain, Rich, Discord and JSON output, the CLI palette |
 | `wxbrief/ui/` | the Textual interface: `app.tcss`, glyph sets, themes, screens, widgets |
-| `scripts/` | `gen_keys.py`, `build_stations.py`, `make_screenshots.py` |
+| `scripts/` | `gen_keys.py`, `build_stations.py`, `make_screenshots.py`, `make_demo_gif.py` |
 | `tests/` | the suite; `fixtures/` saved reports and AWC batches; `uat/` user journeys |
 
 ## Tests
@@ -95,6 +95,15 @@ A key binding uses `bind()` from `wxbrief/ui/bindings.py` so its footer label co
 
 writes `docs/img/*.svg` from `--demo` with Textual's exporter. The demo clock is fixed, so the pictures change only
 when the interface does. Commit them with the change that altered them.
+
+The animated demo at the top of the README is recorded the same way, from the real app on `--demo`:
+
+```powershell
+python scripts\make_demo_gif.py
+```
+
+It writes `docs/img/demo.gif`. It needs Pillow and a monospaced TrueType font (see the script), and re-record it after
+an interface change that shows in it.
 
 ## Station database
 

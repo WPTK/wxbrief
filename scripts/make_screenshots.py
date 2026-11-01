@@ -1,4 +1,4 @@
-"""Write the README screenshots to ``docs/img/`` from the bundled ``--demo`` reports.
+"""Write the small-terminal screenshot to ``docs/img/`` from the bundled ``--demo`` reports.
 
 Usage::
 
@@ -26,9 +26,6 @@ COMMENT = re.compile(r"[ \t]*<!-- Generated with Rich [^>]*-->\r?\n")
 
 # name, terminal size, flags, keys pressed before the shot
 SHOTS = [
-    ("briefing", (120, 38), ["--theme", "textual-dark"], ["2"]),
-    ("forecast", (120, 38), ["--theme", "paper-chart"], ["3"]),
-    ("grid", (140, 36), ["--theme", "nord", "--layout", "grid"], []),
     ("small", (60, 20), ["--theme", "phosphor-green"], []),
 ]
 

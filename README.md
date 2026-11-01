@@ -9,11 +9,9 @@ wxbrief fetches METAR/SPECI observations and TAF forecasts from aviationweather.
 parser, and shows them in a terminal UI with switchable colorways, a forecast timeline and a plain-language
 translation (English complete; Spanish, French, German and Portuguese seeded).
 
-![The briefing screen: station list, decoded METAR and the status bar](docs/img/briefing.svg)
+![wxbrief on its bundled demo reports: the station list, decoded METAR, TAF timeline, a colorway change and the grid layout](docs/img/demo.gif)
 
-![The TAF timeline with the period under the cursor decoded](docs/img/forecast.svg)
-
-![The grid layout, one card per station with a mini forecast strip](docs/img/grid.svg)
+*Recorded from the real app running on its bundled `--demo` reports (fixed demo data, not live weather).*
 
 ## Status
 
