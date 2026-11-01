@@ -47,6 +47,7 @@ class StationGrid(VerticalScroll, can_focus=True):
         self.selected: str | None = None
         self._going: set[StationCard] = set()
         self._revealed: str | None = None  # the card last scrolled into view
+        self._laid_out_columns = 0  # the column count the cards were last laid out with
 
     def compose(self) -> ComposeResult:
         yield Static(id="empty")  # the text is set in set_stations, in the language in use
@@ -61,6 +62,9 @@ class StationGrid(VerticalScroll, can_focus=True):
 
     def on_resize(self, event: Resize) -> None:
         self.query_one("#cards", Container).styles.grid_size_columns = self.columns
+        if self.columns != self._laid_out_columns:  # the cards moved to other rows: the selected one must stay in view
+            self._laid_out_columns = self.columns
+            self._reveal(self._card(self.selected) if self.selected else None)
 
     def set_stations(
         self, reports: list[StationReports], ctx: ViewContext, now: datetime, selected: str | None
@@ -104,7 +108,11 @@ class StationGrid(VerticalScroll, can_focus=True):
         chosen = self._card(self.selected) if self.selected else None
         if chosen is not None and self.selected != self._revealed:  # a periodic redraw must not undo a hand scroll
             self._revealed = self.selected
-            self.call_after_refresh(chosen.scroll_visible, animate=False)
+            self._reveal(chosen)
+
+    def _reveal(self, card: StationCard | None) -> None:
+        if card is not None:  # two refreshes: the first lays the cards out (after a resize), the second can scroll
+            self.call_after_refresh(self.call_after_refresh, card.scroll_visible, animate=False)
 
     def _card(self, icao: str) -> StationCard | None:
         return next((card for card in self.query(StationCard) if card.icao == icao and card not in self._going), None)

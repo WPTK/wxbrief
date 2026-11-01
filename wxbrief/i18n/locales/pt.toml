@@ -46,6 +46,7 @@ worst_category = "Pior categoria de voo"
 details = "Detalhes"
 
 [common]
+notice = "O wxbrief não substitui um briefing meteorológico oficial nem serve sozinho para planejar um voo. Obtenha um briefing oficial antes de voar."
 not_reported = "Não informado"
 more_than = "mais de {value}"
 less_than = "menos de {value}"
@@ -919,7 +920,7 @@ title = "Teclas do wxbrief"
 hint = "Esc fecha"
 body = """\
 [b]Estações[/b]
-  Acima/Abaixo  j/k  escolher uma estação (grade: setas sobre os cartões; j/k também sem lista)
+  Acima/Abaixo   j/k   escolher uma estação (grade: setas sobre os cartões; j/k também sem lista)
   Enter              entrar no painel de detalhes (grade: abrir a estação)
   a                  adicionar uma estação (código ou nome)
   d                  remover a estação escolhida

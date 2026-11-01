@@ -12,8 +12,11 @@ monospaced TrueType font: Cascadia Code, Consolas, DejaVu Sans Mono or Menlo, wh
 from __future__ import annotations
 
 import asyncio
+import os
 import sys
 from pathlib import Path
+
+os.environ.pop("NO_COLOR", None)  # the demo shows colour, whatever the shell sets; before Rich reads the environment
 
 from PIL import Image, ImageDraw, ImageFont
 from rich.color import Color
@@ -21,6 +24,9 @@ from rich.style import Style
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "scripts"))
+
+from svgcolour import chromatic_colours  # noqa: E402
 
 from wxbrief.__main__ import build_tui_parser, tui_options  # noqa: E402
 from wxbrief.app import WxBriefApp  # noqa: E402
@@ -44,9 +50,9 @@ SCRIPT = [
     ("3", 2.5),
     ("down", 1.5),
     ("3", 1.0),
+    ("v", 2.5),
     ("t", 1.5),
     ("t", 1.5),
-    ("v", 3.0),
 ]
 
 
@@ -105,9 +111,21 @@ async def record() -> tuple[list[Image.Image], list[int]]:
     return frames, durations
 
 
+def require_colour(frames: list[Image.Image]) -> None:
+    """Fail when the frames have no chromatic colour, as happens when NO_COLOR reaches the app."""
+    colours = {c for f in frames for _, c in f.getcolors(maxcolors=1 << 24) or []}
+    as_svg = " ".join(f'fill="#{r:02x}{g:02x}{b:02x}"' for r, g, b in colours)
+    if len(chromatic_colours(as_svg)) < 3:
+        sys.exit("the frames have no chromatic colour: they were captured without colour (is NO_COLOR set?)")
+
+
 def main() -> None:
     frames, durations = asyncio.run(record())
-    shared = frames[0].quantize(colors=128, method=Image.Quantize.MEDIANCUT)
+    require_colour(frames)
+    montage = Image.new("RGB", (frames[0].width, frames[0].height * len(frames)))
+    for i, f in enumerate(frames):
+        montage.paste(f, (0, i * f.height))
+    shared = montage.quantize(colors=128, method=Image.Quantize.MEDIANCUT)
     paletted = [f.quantize(palette=shared, dither=Image.Dither.NONE) for f in frames]
     OUT.parent.mkdir(parents=True, exist_ok=True)
     paletted[0].save(OUT, save_all=True, append_images=paletted[1:], duration=durations, loop=0, optimize=True)

@@ -1,6 +1,6 @@
 # Development
 
-Setup, checks, tests, snapshots and screenshots. The design is in [plan.md](plan.md); the workflow for changes is in
+Setup, checks, tests, snapshots and screenshots. The workflow for changes is in
 [../CONTRIBUTING.md](../CONTRIBUTING.md). Windows paths shown; use `.venv/bin/python` elsewhere.
 
 ## Setup
@@ -34,7 +34,7 @@ Changes that only touch Markdown, `docs/` or `LICENSE` skip CI.
 | `wxbrief/data/` | AWC client, poll scheduler, disk cache, station database, the `--demo` reports |
 | `wxbrief/render/` | phrases, plain, Rich, Discord and JSON output, the CLI palette |
 | `wxbrief/ui/` | the Textual interface: `app.tcss`, glyph sets, themes, screens, widgets |
-| `scripts/` | `gen_keys.py`, `build_stations.py`, `make_screenshots.py`, `make_demo_gif.py` |
+| `scripts/` | `gen_keys.py`, `build_stations.py`, `make_screenshots.py`, `uat_screenshots.py`, `make_demo_gif.py` |
 | `tests/` | the suite; `fixtures/` saved reports and AWC batches; `uat/` user journeys |
 
 ## Tests
@@ -90,11 +90,17 @@ A key binding uses `bind()` from `wxbrief/ui/bindings.py` so its footer label co
 ## Screenshots
 
 ```powershell
-.venv\Scripts\python scripts\make_screenshots.py
+.venv\Scripts\python scripts\make_screenshots.py              # SVGs into .shots/ (gitignored)
+python scripts\make_screenshots.py --png-only                 # .shots/*.svg to docs/img/*.png
 ```
 
-writes `docs/img/*.svg` from `--demo` with Textual's exporter. The demo clock is fixed, so the pictures change only
-when the interface does. Commit them with the change that altered them.
+The first step renders five 120x30 screens from `--demo` with Textual's exporter. The second converts them with
+Playwright and Chromium (`pip install playwright`, `playwright install chromium`), which are not project dependencies
+and may live in a different Python from the venv. The README and `themes.md` use the PNGs because GitHub does not load
+the SVG's web font. The demo clock is fixed, so the pictures change only when the interface does. Commit them with the
+change that altered them, and look at each one first. The scripts clear `NO_COLOR` for their own process and fail on a
+picture with no chromatic colour. The app itself honours `NO_COLOR` (monochrome output, tested in
+`tests/test_screenshot_colour.py`).
 
 The animated demo at the top of the README is recorded the same way, from the real app on `--demo`:
 

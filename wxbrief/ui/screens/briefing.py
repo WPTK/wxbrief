@@ -13,9 +13,8 @@ from textual.widgets import OptionList
 from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
-from wxbrief.ui.copying import CopyActions
 from wxbrief.ui.screens.add_station import AddStationScreen
-from wxbrief.ui.screens.help import HelpScreen
+from wxbrief.ui.screens.base import StationScreen
 from wxbrief.ui.screens.paste import PasteDecodeScreen
 from wxbrief.ui.screens.settings import SettingsScreen
 from wxbrief.ui.screens.station_detail import StationDetailScreen
@@ -30,14 +29,13 @@ if TYPE_CHECKING:
 
 
 
-class BriefingScreen(CopyActions):
+class BriefingScreen(StationScreen):
     BINDINGS = [
         # a d v and c 1 2 3 work wherever the focus is; the footer shows them from the pane that owns them
         # (StationList, StationGrid, DetailPane), so these copies are hidden.
         bind("a", "add_station", K.UI_BINDING_ADD_STATION, show=False),
         bind("d", "remove_station", K.UI_BINDING_REMOVE_STATION, show=False),
         bind("p", "paste", K.UI_BINDING_PASTE),
-        bind("r", "refresh_now", K.UI_BINDING_REFRESH_NOW),
         bind("v", "toggle_layout", K.UI_BINDING_TOGGLE_LAYOUT, show=False),
         bind("c", "copy_metar", K.UI_BINDING_COPY_METAR, show=False),
         bind("C", "copy_both", K.UI_BINDING_COPY_BOTH, show=False),
@@ -49,7 +47,6 @@ class BriefingScreen(CopyActions):
         bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW, show=False),
         bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED, show=False),
         bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF, show=False),
-        bind("question_mark", "help", K.UI_BINDING_HELP),
     ]
 
     def __init__(self) -> None:
@@ -231,11 +228,5 @@ class BriefingScreen(CopyActions):
     def action_paste(self) -> None:
         self.app.push_screen(PasteDecodeScreen(self.wx.ctx, self.wx.now))
 
-    def action_refresh_now(self) -> None:
-        self.wx.refresh_now()
-
     def action_settings(self) -> None:
         self.app.push_screen(SettingsScreen())
-
-    def action_help(self) -> None:
-        self.app.push_screen(HelpScreen())

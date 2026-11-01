@@ -9,7 +9,7 @@ from textual.app import ComposeResult
 from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
-from wxbrief.ui.copying import CopyActions
+from wxbrief.ui.screens.base import StationScreen
 from wxbrief.ui.widgets.detail import DetailPane
 from wxbrief.ui.widgets.key_bar import KeyBar
 
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 REDRAW_SECONDS = 30.0  # the age and the fresh/stale mark move with the clock, so the screen draws itself again
 
 
-class StationDetailScreen(CopyActions):
+class StationDetailScreen(StationScreen):
     # 1 2 3 and c live on DetailPane (its bindings reach this screen's copy actions through "screen.").
     BINDINGS = [
         bind("escape", "close", K.UI_BINDING_BACK),

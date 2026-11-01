@@ -73,18 +73,19 @@ def test_the_cached_label_is_tracked_per_product(tmp_path: Path) -> None:
     assert not entry.from_cache  # the label describes the report shown first
 
 
-def test_rows_for_unlisted_stations_and_expired_tafs_are_not_written(tmp_path: Path) -> None:
+def test_rows_for_unlisted_stations_are_kept_until_they_age_out_and_expired_tafs_are_not_written(tmp_path: Path) -> None:
     cache = DiskCache(tmp_path)
     state = AppState(["KDEN", "EGLL"], cache=cache, now=lambda: NOW)
     state.apply(Product.METAR, metar_rows("KDEN", "EGLL"))
     state.apply(Product.TAF, taf_rows("KDEN", "EGLL"))
     state.remove("EGLL")
     state.apply(Product.METAR, metar_rows("KDEN"))
-    assert [row["icaoId"] for row in cache.read("metars")[1]] == ["KDEN"]  # type: ignore[index]
+    assert [row["icaoId"] for row in cache.read("metars")[1]] == ["KDEN", "EGLL"]  # type: ignore[index]
     state.now = lambda: NOW + timedelta(days=3)  # long past every forecast in the batch
     state.apply(Product.METAR, [])
     state.apply(Product.TAF, taf_rows("KDEN"))
     assert cache.read("tafs")[1] == []  # type: ignore[index]
+    assert [row["icaoId"] for row in cache.read("metars")[1]] == ["KDEN"]  # type: ignore[index]  # EGLL aged out
 
 
 def test_a_cached_row_keeps_its_own_fetch_time(tmp_path: Path) -> None:
@@ -346,6 +347,16 @@ def test_get_exits_3_when_one_of_two_stations_returned_nothing(capsys: pytest.Ca
         router.get(f"{BASE_URL}/metar").mock(return_value=httpx.Response(200, content=metar))
         router.get(f"{BASE_URL}/taf").mock(return_value=httpx.Response(204))
         assert main(["get", "KDEN", "ZZZZ", "--plain"]) == 3
+    captured = capsys.readouterr()
+    assert "ZZZZ: no METAR" in captured.out
+    assert "ZZZZ" not in captured.err  # one line, not a second one on stderr
+
+
+def test_get_json_names_a_station_with_no_report_on_stderr(capsys: pytest.CaptureFixture[str]) -> None:
+    with respx.mock() as router:
+        router.get(f"{BASE_URL}/metar").mock(return_value=httpx.Response(204))
+        router.get(f"{BASE_URL}/taf").mock(return_value=httpx.Response(204))
+        assert main(["get", "ZZZZ", "--json"]) == 1
     assert "no report for ZZZZ" in capsys.readouterr().err
 
 

@@ -140,9 +140,11 @@ async def test_settings_rows_stay_on_one_line_at_60x16() -> None:
         await pilot.pause(0.3)
         await pilot.press("S")
         await pilot.pause(0.3)
-        rows = [line for line in screen_lines(app) if "Sprache:" in line or "Einheiten:" in line]
-        assert any("Deutsch" in row for row in rows)
-        assert any(row.count("Einheiten:") and "…" in row for row in rows) or len(rows) == 2
+        lines = screen_lines(app)
+        language = next(line for line in lines if "Sprache:" in line)
+        units = next(line for line in lines if "Einheiten:" in line)
+        assert "Deutsch" in language
+        assert "Wie gemeldet" in units and "…" in units  # the value starts on the label's row and is cut, not wrapped
 
 
 async def test_a_terminal_below_60x16_shows_the_notice_and_the_app_returns_when_it_grows() -> None:

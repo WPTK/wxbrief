@@ -301,3 +301,18 @@ async def test_a_paste_past_the_limit_says_so(monkeypatch: pytest.MonkeyPatch) -
         screen.query_one(TextArea).text = (report + "\n") * 5
         screen.decode_now()
         assert "first 80 characters" in screen.query_one("#paste-result").content.renderables[0].plain  # type: ignore[attr-defined]
+
+
+async def test_the_help_screen_says_what_the_app_is_not() -> None:
+    from textual.widgets import Label
+
+    from wxbrief.ui.screens.help import HelpScreen
+
+    app = demo_app()
+    async with app.run_test(size=(120, 40)) as pilot:
+        await settle(pilot)
+        await pilot.press("question_mark")
+        await settle(pilot)
+        assert isinstance(app.screen, HelpScreen)
+        texts = [text_of(label) for label in app.screen.query(Label)]
+        assert any("not a substitute for an official weather briefing" in text for text in texts)
