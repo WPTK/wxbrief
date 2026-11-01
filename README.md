@@ -7,6 +7,10 @@ A terminal app for reading METARs and TAFs. It fetches the reports from aviation
 parser, and shows each station with the raw report, a plain-language translation and a TAF timeline. The colours are
 switchable, and the text is available in English, Spanish, French, German and Portuguese.
 
+![wxbrief on its bundled demo reports: the station list, decoded METAR, TAF timeline, grid layout and a colorway change](docs/img/demo.gif)
+
+*Recorded from the real app running on its bundled `--demo` reports (fixed demo data, not live weather).*
+
 ![Station list on the left, the decoded METAR and the start of the TAF on the right](docs/img/briefing.png)
 
 Version 0.2.0. The project uses ZeroVer, so the version stays 0.x and anything may still change.
