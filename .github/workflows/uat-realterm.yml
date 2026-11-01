@@ -32,7 +32,8 @@ jobs:
         shell: pwsh
         run: |
           foreach ($t in 'wxbrief','wt','vscode') {
-            python tests/uat_realterm/fetch.py $t --dest "$env:RUNNER_TEMPealterm-tools\$t" | Tee-Object -FilePath "$env:OUT\fetch-$t.json"
+            python tests/uat_realterm/fetch.py $t --dest "$env:RUNNER_TEMP
+ealterm-tools\$t" | Tee-Object -FilePath "$env:OUT\fetch-$t.json"
             if ($LASTEXITCODE -ne 0) { throw "fetch $t failed" }
           }
       - name: Session and desktop facts
