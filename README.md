@@ -13,7 +13,7 @@ switchable, and the text is available in English, Spanish, French, German and Po
 
 ![Station list on the left, the decoded METAR and the start of the TAF on the right](docs/img/briefing.png)
 
-Version 0.2.0. The project uses ZeroVer, so the version stays 0.x and anything may still change.
+Version 0.3.0. The project uses ZeroVer, so the version stays 0.x and anything may still change.
 
 ## What it does
 
@@ -44,10 +44,10 @@ There is no PyPI package. Each [release](https://github.com/WPTK/wxbrief/release
 
 | File | For |
 | --- | --- |
-| `wxbrief-0.2.0-windows-x86_64.exe` | Windows, no Python needed |
-| `wxbrief-0.2.0-linux-x86_64.tar.gz`, `wxbrief-0.2.0-linux-arm64.tar.gz` | Linux; the archive holds one `wxbrief` executable |
-| `wxbrief-0.2.0-macos-arm64.tar.gz`, `wxbrief-0.2.0-macos-x86_64.tar.gz` | macOS; the archive holds one `wxbrief` executable |
-| `wxbrief-0.2.0-py3-none-any.whl` | any platform with Python 3.12 or newer: `pip install wxbrief-0.2.0-py3-none-any.whl` |
+| `wxbrief-0.3.0-windows-x86_64.exe` | Windows, no Python needed |
+| `wxbrief-0.3.0-linux-x86_64.tar.gz`, `wxbrief-0.3.0-linux-arm64.tar.gz` | Linux; the archive holds one `wxbrief` executable |
+| `wxbrief-0.3.0-macos-arm64.tar.gz`, `wxbrief-0.3.0-macos-x86_64.tar.gz` | macOS; the archive holds one `wxbrief` executable |
+| `wxbrief-0.3.0-py3-none-any.whl` | any platform with Python 3.12 or newer: `pip install wxbrief-0.3.0-py3-none-any.whl` |
 | `SHA256SUMS` | checking the downloads; each file also has a build provenance attestation |
 
 To run from source instead, you need Python 3.12 or newer:
