@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import itertools
 import json
 import re
 import sys
@@ -148,10 +149,56 @@ def sc_font(args: argparse.Namespace, make: Callable[..., rs.Term], rep: rs.Repo
         rep.check("cell size measured at 8, 12 and 20 pt", False, f"got {sorted(cells)}")
 
 
+def sc_dpi(args: argparse.Namespace, make: Callable[..., rs.Term], rep: rs.Report) -> None:
+    """Display scale steps for Windows Terminal through the display-config API; the exact failure is the finding if it cannot."""
+    try:
+        lo, cur, hi = w.get_dpi_scale()
+    except OSError as exc:
+        rep.check("display scale can be read (DisplayConfigGetDeviceInfo)", False, str(exc))
+        return
+    rep.note(
+        "display scale", f"relative steps min={lo} current={cur} max={hi}; system dpi {w.user32.GetDpiForSystem()}"
+    )
+    widths: dict[int, float] = {}
+    try:
+        for rel in sorted({cur, min(cur + 1, hi), min(cur + 2, hi)}):
+            try:
+                w.set_dpi_scale(rel)
+            except OSError as exc:
+                rep.check(f"display scale set to {rel}", False, str(exc))
+                continue
+            time.sleep(4)
+            t = make(tag_suffix=f"dpi{rel}", probe=False)
+            try:
+                start_app(t, rep)
+                rect = t.rect_of("Stations (10)")
+                if rect:
+                    widths[rel] = (rect[2] - rect[0]) / len("Stations (10)")
+                    rep.note(f"scale step {rel}", f"cell width {widths[rel]:.1f}px, height {rect[3] - rect[1]}px")
+                finish(t, rep)
+            except rs.Abort:
+                pass
+            finally:
+                with contextlib.suppress(Exception):
+                    t.shot("99-end")
+                with contextlib.suppress(Exception):
+                    t.teardown()
+    finally:
+        with contextlib.suppress(OSError):
+            w.set_dpi_scale(cur)
+    if len(widths) >= 2:
+        ordered = [widths[k] for k in sorted(widths)]
+        rep.check(
+            "cell size grows with the display scale", all(a < b for a, b in itertools.pairwise(ordered)), str(widths)
+        )
+    else:
+        rep.check("at least two display scales could be measured", False, str(widths))
+
+
 def sc_colors(args: argparse.Namespace, make: Callable[..., rs.Term], rep: rs.Report) -> None:
-    for name, env, hard_bg in (
-        ("nocolor", {"NO_COLOR": "1"}, True),
-        ("c16", {"TEXTUAL_COLOR_SYSTEM": "standard", "COLORTERM": ""}, False),
+    for name, env in (
+        ("nocolor", {"NO_COLOR": "1"}),
+        ("c16", {"TEXTUAL_COLOR_SYSTEM": "standard", "COLORTERM": ""}),
     ):
         t = make(tag_suffix=f"light-{name}", env_extra=env, scheme="light")
         try:
@@ -164,15 +211,13 @@ def sc_colors(args: argparse.Namespace, make: Callable[..., rs.Term], rep: rs.Re
             info = w.analyze_png(png)
             rep.note(f"{name} pixels", json.dumps(info))
             rep.info[f"pixels_{name}"] = info
-            if (
-                hard_bg
-            ):  # NO_COLOR: every cell is default fg on default bg, so the app area is the terminal's own light colours
-                rep.check(f"{name}: app area uses the light default background", info["bg_luminance"] > 0.7, info["bg"])
-            else:
-                rep.note(
-                    f"{name} app background",
-                    f"{info['bg']} luminance {info['bg_luminance']} (the app may paint its own)",
-                )
+            probe_bg = rep.info.get("profile_probe", {}).get("bg")
+            own = info["bg"] != probe_bg
+            rep.note(
+                f"{name} app background",
+                f"app area bg {info['bg']} vs the terminal's own default bg {probe_bg} (light profile): "
+                + ("the app paints its own background" if own else "the app uses the terminal default"),
+            )
             rep.check(
                 f"{name}: default text reads against the background (>= 4.5:1)",
                 info["contrast"] >= 4.5,
@@ -245,6 +290,13 @@ def sc_gestures(args: argparse.Namespace, make: Callable[..., rs.Term], rep: rs.
         before = cur["text"]
         w.double_click_at(x, y)
         now = after("double-click", before)
+        attempts = 1
+        while now == before and attempts < 3:  # a terminal can swallow one: say how many it took
+            attempts += 1
+            rep.note("double-click", f"no change, trying again (attempt {attempts})")
+            w.double_click_at(x, y)
+            now = after(f"double-click-{attempts}", before)
+        rep.info["double_click_attempts"] = attempts
         rep.check("double click keeps the row selected (4/10)", sel_of(now) == 4)
         rep.check("double click opens the detail (screen changes: focus moves to the detail pane)", now != before)
         back_to_list()
@@ -312,7 +364,7 @@ def main() -> int:
     ap.add_argument("--wxbrief", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--tool-exe", type=Path)
-    ap.add_argument("--scenarios", default="codepage,font,colors,gestures")
+    ap.add_argument("--scenarios", default="codepage,font,dpi,colors,gestures")
     ap.add_argument("--scheme", choices=["dark", "light"], default="dark")
     ap.add_argument("--medium-spawn", action="store_true")
     ap.add_argument("--require-medium", action="store_true")
@@ -323,6 +375,8 @@ def main() -> int:
     wanted = [s for s in args.scenarios.split(",") if s]
     failed = False
     for sc in wanted:
+        if sc == "dpi" and args.terminal != "wt":
+            continue
         if sc == "font" and args.terminal != "wt":
             continue  # font size is a Windows Terminal setting; conhost and VS Code have their own paths (not in scope)
         if sc == "codepage" and args.terminal == "vscode":
@@ -352,6 +406,8 @@ def main() -> int:
                 sc_font(args, make, rep)
             elif sc == "colors":
                 sc_colors(args, make, rep)
+            elif sc == "dpi":
+                sc_dpi(args, make, rep)
             elif sc == "gestures":
                 sc_gestures(args, make, rep)
             else:

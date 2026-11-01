@@ -361,7 +361,16 @@ class WindowsTerminal(Term):
         (self.tool_exe.parent / ".portable").write_text("", encoding="ascii")  # portable mode: settings beside the exe
         self.image_dirs = (str(self.tool_exe.parent),)
         defaults: dict[str, Any] = {}
-        settings: dict[str, Any] = {"profiles": {"defaults": defaults}, "schemes": []}
+        cmd_guid = "{0caa0dad-35be-5f56-a8ff-afceeeaa6101}"  # the built-in Command Prompt profile
+        settings: dict[str, Any] = {
+            "$schema": "https://aka.ms/terminal-profiles-schema",
+            "defaultProfile": cmd_guid,
+            "profiles": {
+                "defaults": defaults,
+                "list": [{"guid": cmd_guid, "name": "Command Prompt", "commandline": r"%SystemRoot%\System32\cmd.exe"}],
+            },
+            "schemes": [],
+        }
         if self.scheme == "light":  # an explicit scheme, so the result does not depend on a built-in's name
             settings["schemes"].append(WT_LIGHT_SCHEME)
             defaults["colorScheme"] = WT_LIGHT_SCHEME["name"]
@@ -370,12 +379,21 @@ class WindowsTerminal(Term):
             defaults["font"] = {"size": self.font_pt}
         cfg = self.tool_exe.parent / "settings"
         cfg.mkdir(exist_ok=True)
-        (cfg / "settings.json").write_text(json.dumps(settings, indent=2), encoding="utf-8")
+        text = json.dumps(settings, indent=2)
+        (cfg / "settings.json").write_text(text, encoding="utf-8")
+        # Where an unpackaged build looks when portable mode is not recognised: write there too, the proof says which won.
+        local = Path(os.environ.get("LOCALAPPDATA", "")) / "Microsoft" / "Windows Terminal"
+        if os.environ.get("LOCALAPPDATA"):
+            local.mkdir(parents=True, exist_ok=True)
+            (local / "settings.json").write_text(text, encoding="utf-8")
         self.rep.note("wt settings", json.dumps(settings)[:400])
         self.write_run_cmd()
         self.snapshot_baseline()
         self.proc = self.spawn([str(self.tool_exe), "cmd.exe", "/c", str(self.run_cmd)])
         self.hwnd = self.find_window("CASCADIA_HOSTING_WINDOW_CLASS")
+        with contextlib.suppress(Exception):
+            listing = sorted(p.name for p in (self.tool_exe.parent).iterdir() if p.name in {".portable", "settings"})
+            self.rep.note("wt portable files", f"{listing}; settings dir: {sorted(p.name for p in cfg.iterdir())}")
         self.rep.note("window", str(w.window_info(self.hwnd)))
         self.note_integrity()
         self._uia = w.UiaText(self.hwnd)

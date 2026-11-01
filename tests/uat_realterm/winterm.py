@@ -779,3 +779,55 @@ def dismiss_blockers(own_hwnd: int) -> list[str]:
         if not acted:
             break
     return done
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# display scale (DPI) of the primary source, through the display-config API
+
+
+def _dpi_sources() -> list[tuple[int, int, int]]:
+    import struct
+
+    np_, nm = wt.UINT(), wt.UINT()
+    user32.GetDisplayConfigBufferSizes.argtypes = (wt.UINT, ctypes.POINTER(wt.UINT), ctypes.POINTER(wt.UINT))
+    rc = user32.GetDisplayConfigBufferSizes(2, ctypes.byref(np_), ctypes.byref(nm))  # QDC_ONLY_ACTIVE_PATHS
+    if rc:
+        raise OSError(f"GetDisplayConfigBufferSizes returned {rc}")
+    paths = ctypes.create_string_buffer(72 * max(np_.value, 1))
+    modes = ctypes.create_string_buffer(64 * max(nm.value, 1))
+    user32.QueryDisplayConfig.argtypes = (
+        wt.UINT,
+        ctypes.POINTER(wt.UINT),
+        ctypes.c_void_p,
+        ctypes.POINTER(wt.UINT),
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+    )
+    rc = user32.QueryDisplayConfig(2, ctypes.byref(np_), paths, ctypes.byref(nm), modes, None)
+    if rc:
+        raise OSError(f"QueryDisplayConfig returned {rc}")
+    return [struct.unpack_from("<IiI", paths.raw, i * 72) for i in range(np_.value)]
+
+
+def get_dpi_scale() -> tuple[int, int, int]:
+    """(min, current, max) relative to the recommended scale (0 = recommended; +1 is the next step up, 125% -> 150%...)."""
+    import struct
+
+    lo, hi, sid = _dpi_sources()[0]
+    buf = ctypes.create_string_buffer(struct.pack("<iIIiI", -3, 32, lo, hi, sid) + bytes(12))
+    user32.DisplayConfigGetDeviceInfo.argtypes = (ctypes.c_void_p,)
+    rc = user32.DisplayConfigGetDeviceInfo(buf)
+    if rc:
+        raise OSError(f"DisplayConfigGetDeviceInfo(GET_DPI_SCALE) returned {rc}")
+    return struct.unpack_from("<iii", buf.raw, 20)
+
+
+def set_dpi_scale(rel: int) -> None:
+    import struct
+
+    lo, hi, sid = _dpi_sources()[0]
+    buf = ctypes.create_string_buffer(struct.pack("<iIIiIi", -4, 24, lo, hi, sid, rel))
+    user32.DisplayConfigSetDeviceInfo.argtypes = (ctypes.c_void_p,)
+    rc = user32.DisplayConfigSetDeviceInfo(buf)
+    if rc:
+        raise OSError(f"DisplayConfigSetDeviceInfo(SET_DPI_SCALE {rel}) returned {rc}")
