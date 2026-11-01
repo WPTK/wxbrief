@@ -301,6 +301,8 @@ class VSCode(Term):
         w.chord(w.VK_CONTROL, w.VK_MENU, VK_M)
         time.sleep(2)
         self.shot("terminal-open")
+        self.shot("terminal-maximised")
+        self.geom = self.calibrate()
         w.send_text(f'"{self.run_cmd}"\n', delay=0.02)
 
     def read(self) -> str:
@@ -313,39 +315,108 @@ class VSCode(Term):
         w.chord(w.VK_CONTROL, w.VK_MENU, VK_X)
         return "\n".join(line.rstrip() for line in text.replace("\r\n", "\n").split("\n"))
 
-    def rect_of(self, text: str) -> tuple[int, int, int, int] | None:
-        """Row rectangle from the xterm.js accessibility tree (the screen-reader row div), cell x from the text."""
-        import uiautomation as auto
+    # --- geometry: VS Code exposes no terminal cells through UIA, so the pixel -> cell map is measured with clicks
+    def _probe_click(self, x: int, y: int, log: Path) -> tuple[int, int] | None:
+        """Click a pixel and return the (col, row) the probe in the terminal reports, or None if nothing arrived."""
+        before = len(log.read_text(encoding="ascii").splitlines()) if log.exists() else 0
+        w.click_at(x, y, approach=1)
+        end = time.monotonic() + 1.5
+        while time.monotonic() < end:
+            if log.exists():
+                lines = log.read_text(encoding="ascii").splitlines()
+                if len(lines) > before:
+                    col, row = lines[-1].split()
+                    return int(col), int(row)
+            time.sleep(0.05)
+        return None
 
-        grid = self.read()
-        line = next((ln for ln in grid.split("\n") if re.search(rf"{text}\s+IFR", ln)), None)
-        if line is None:
+    def calibrate(self) -> tuple[float, float, float, float]:
+        """Return (origin_x, origin_y, cell_w, cell_h) in screen pixels, measured by clicking with a mouse probe."""
+        probe = Path(__file__).with_name("probe_mouse.py")
+        log = self.work / "probe.log"
+        log.unlink(missing_ok=True)
+        w.send_text(f'"{sys.executable}" "{probe}" "{log}"\n', delay=0.02)
+        time.sleep(3)
+        left, top, right, bottom = w.window_info(self.hwnd).rect
+        left, top = max(left, 0), max(top, 0)
+
+        def hit(x: int, y: int) -> tuple[int, int] | None:
+            return self._probe_click(int(x), int(y), log)
+
+        start = None  # a point inside the terminal viewport: scan around the middle of the window
+        for fx, fy in ((0.5, 0.5), (0.4, 0.6), (0.6, 0.4), (0.3, 0.5), (0.7, 0.6), (0.5, 0.3)):
+            x0, y0 = int(left + (right - left) * fx), int(top + (bottom - top) * fy)
+            got = hit(x0, y0)
+            if got:
+                start = (x0, y0, got)
+                break
+        if start is None:
+            raise Abort("calibration: the probe never reported a click (mouse reporting not reaching the terminal)")
+        x0, y0, (c0, r0) = start
+
+        def edge(axis: int, p0: int, a0: int, direction: int) -> tuple[int, int]:
+            """Step from p0 until the cell index on ``axis`` changes, then bisect; returns (first pixel of the new cell side, new index)."""
+
+            def at(p: int) -> tuple[int, int] | None:
+                return hit(p, y0) if axis == 0 else hit(x0, p)
+
+            lo, hi, idx_hi = p0, p0, a0
+            while idx_hi == a0:
+                hi = lo + direction * 10
+                got = at(hi)
+                if got is None:
+                    raise Abort("calibration: ran off the terminal viewport")
+                if got[axis] == a0:
+                    lo = hi
+                else:
+                    idx_hi = got[axis]
+            while abs(hi - lo) > 1:
+                mid = (lo + hi) // 2
+                got = at(mid)
+                if got is None:
+                    raise Abort("calibration: lost the viewport during the search")
+                if got[axis] == a0:
+                    lo = mid
+                else:
+                    hi, idx_hi = mid, got[axis]
+            return hi, idx_hi
+
+        ex, cx_next = edge(0, x0, c0, +1)  # left edge of column c0+1 (first pixel of it)
+        ey, ry_next = edge(1, y0, r0, +1)
+        far_x = min(x0 + 520, right - 40)
+        far_got = hit(far_x, y0)
+        if far_got is None:
+            raise Abort("calibration: the far x point is outside the viewport")
+        fx_last, _ = edge(0, far_x, far_got[0], -1)  # last pixel of the previous column, so the far cell starts +1
+        far_y = min(y0 + 260, bottom - 60)
+        far_got_y = hit(x0, far_y)
+        if far_got_y is None:
+            raise Abort("calibration: the far y point is outside the viewport")
+        fy_last, _ = edge(1, far_y, far_got_y[1], -1)
+        if far_got[0] == cx_next or far_got_y[1] == ry_next:
+            raise Abort("calibration: far point in the same cell as the near one")
+        cw = (fx_last + 1 - ex) / (far_got[0] - cx_next)
+        ch = (fy_last + 1 - ey) / (far_got_y[1] - ry_next)
+        ox = ex - (cx_next - 1) * cw
+        oy = ey - (ry_next - 1) * ch
+        w.send_text("q")
+        time.sleep(1.0)
+        self.rep.note("calibration", f"origin=({ox:.1f},{oy:.1f}) cell={cw:.2f}x{ch:.2f} px (probe clicks, probe.log)")
+        return ox, oy, cw, ch
+
+    def rect_of(self, text: str) -> tuple[int, int, int, int] | None:
+        grid = self.read().split("\n")
+        row = next((i for i, ln in enumerate(grid) if re.search(rf"{text}\s+IFR", ln)), None)
+        if row is None:
             return None
-        cols = max(len(ln) for ln in grid.split("\n"))
-        pat = re.compile(rf"{text}\s+IFR")
-        found: Any = None
-        root = auto.ControlFromHandle(self.hwnd)
-        queue: list[tuple[Any, int]] = [(root, 0)]
-        seen = 0
-        end = time.monotonic() + 60
-        while queue and found is None and seen < 8000 and time.monotonic() < end:
-            ctrl, depth = queue.pop(0)
-            seen += 1
-            with contextlib.suppress(Exception):
-                if pat.search(ctrl.Name or ""):
-                    found = ctrl
-                    break
-            if depth < 16:
-                with contextlib.suppress(Exception):
-                    queue.extend((c, depth + 1) for c in ctrl.GetChildren())
-        self.rep.note("vscode uia search", f"nodes={seen} found={found is not None}")
-        if found is None:
-            return None
-        r = found.BoundingRectangle
-        left, top, right, bottom = int(r.left), int(r.top), int(r.right), int(r.bottom)
-        idx = line.index(text)
-        cell = (right - left) / cols
-        return (round(left + idx * cell), top, round(left + (idx + len(text)) * cell), bottom)
+        col = grid[row].index(text)
+        ox, oy, cw, ch = self.geom
+        return (
+            round(ox + col * cw),
+            round(oy + row * ch),
+            round(ox + (col + len(text)) * cw),
+            round(oy + (row + 1) * ch),
+        )
 
     def window_gone(self) -> bool:
         return False  # VS Code stays open; the terminal returns to its prompt
