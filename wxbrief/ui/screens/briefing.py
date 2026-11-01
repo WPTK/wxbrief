@@ -47,6 +47,7 @@ class BriefingScreen(StationScreen):
         bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW, show=False),
         bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED, show=False),
         bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF, show=False),
+        bind("escape", "back_to_list", K.UI_BINDING_BACK),  # only while the focus is in the detail pane (check_action)
     ]
 
     def __init__(self) -> None:
@@ -209,6 +210,25 @@ class BriefingScreen(StationScreen):
     def action_focus_detail(self) -> None:
         if self.layout_mode == "list":  # the detail pane is hidden in the grid
             self.query_one(DetailPane).focus()
+
+    def _detail_has_focus(self) -> bool:
+        """The detail pane holds the focus while the station list is on screen to go back to."""
+        pane = self.query_one(DetailPane)
+        focused = self.focused
+        return (
+            self.layout_mode == "list"
+            and self.query_one(StationList).display
+            and focused is not None
+            and pane in focused.ancestors_with_self
+        )
+
+    def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
+        """Esc is offered, and answered, only from the detail pane: elsewhere it has nothing to go back to."""
+        del parameters
+        return self._detail_has_focus() if action == "back_to_list" else True
+
+    def action_back_to_list(self) -> None:
+        self.query_one(StationList).focus()
 
     def action_jump(self, section: str) -> None:
         if self.layout_mode == "list":  # the detail pane is hidden in the grid; Enter opens a station's detail instead

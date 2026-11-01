@@ -857,6 +857,8 @@ away = "en arrière-plan"
 next_poll = "prochaine interrogation {time}"
 requests = "requêtes {used}/{limit}"
 polling_off = "interrogation désactivée"
+unreachable = "aviationweather.gov injoignable, données enregistrées affichées"
+feed_problem = "problème avec aviationweather.gov, données enregistrées affichées"
 
 [ui.list]
 title = "Stations ({n})"
@@ -871,7 +873,8 @@ unknown_theme = "Thème inconnu {theme}; textual-dark est utilisé"
 theme_title = "Thème"
 stations_title = "Stations"
 config_title = "Configuration"
-fetch_failed = "Impossible d'obtenir {product} : {error}"
+fetch_failed = "Impossible d'obtenir {product} ; données enregistrées affichées"
+unreachable = "aviationweather.gov injoignable ; données enregistrées affichées"
 polling_off = "L'interrogation périodique est désactivée"
 refreshing = "Actualisation"
 rate_limited = "Limite atteinte ; nouvel essai dans {seconds} s"
@@ -930,6 +933,7 @@ body = """\
 [b]Détail[/b]
   1  2  3            aller à l'original, au décodé, à la prévision
   Gauche/Droite      déplacer le curseur de la frise (la souris aussi)
+  Esc                revenir à la liste des stations
   c                  copier le bloc METAR pour Discord
   C                  copier METAR et TAF pour Discord
   y                  copier le texte d'origine du message

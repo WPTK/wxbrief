@@ -104,13 +104,23 @@ async def test_settings_values_stay_beside_their_labels_at_60x16(tmp_path: Path)
     await _check(probe, "60x16", tmp_path)
 
 
+def settled_footer(run: Run, seen: list[str]) -> bool:
+    """Read the footer once; keep what was read in ``seen`` when it lists the detail keys, help and quit."""
+    text = footer_text(run.app)
+    if "Add" in text and "Help" in text and "Quit" in text:
+        seen.append(text)
+        return True
+    return False
+
+
 @pytest.mark.parametrize("size", ["60x16", "60x20"])
 async def test_footer_shows_help_and_quit(size: str, tmp_path: Path) -> None:
     """A tiny terminal still tells the user how to get help and how to leave."""
 
     async def probe(run: Run) -> None:
-        await run.until(lambda: "Add" in footer_text(run.app), "the detail keys in the footer")
-        text = footer_text(run.app)
+        seen: list[str] = []
+        await run.until(lambda: settled_footer(run, seen), "the detail keys, help and quit in the footer")
+        text = seen[-1]  # the string the wait accepted: the key bar recomposes, a second read can be empty
         assert "Quit" in text and "Help" in text, f"footer: {text!r}"
 
     await _check(probe, size, tmp_path)
@@ -119,8 +129,9 @@ async def test_footer_shows_help_and_quit(size: str, tmp_path: Path) -> None:
 @pytest.mark.parametrize("size", ["60x16", "60x20"])
 async def test_footer_does_not_cut_a_label_in_half(size: str, tmp_path: Path) -> None:
     async def probe(run: Run) -> None:
-        await run.until(lambda: "Add" in footer_text(run.app), "the detail keys in the footer")
-        text = footer_text(run.app).rstrip()
+        seen: list[str] = []
+        await run.until(lambda: settled_footer(run, seen), "the detail keys, help and quit in the footer")
+        text = seen[-1].rstrip()
         known_labels = ("Raw", "Decoded", "TAF", "Copy METAR", "Add", "Paste", "Refresh", "Help", "Quit", "Theme", "List/grid", "Next")
         last = text.split()[-1]
         assert last in known_labels, f"footer ends mid-word: {text!r}"

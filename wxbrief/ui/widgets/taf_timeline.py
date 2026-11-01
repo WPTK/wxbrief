@@ -46,11 +46,14 @@ def cell_width(step: int) -> int:
     return 2 if step == 1 else 4
 
 
-def tick_labels(cells: Sequence[StripCell], width: int, ctx: ViewContext, icao: str, *, every_cell: bool) -> Text:
+def tick_labels(
+    cells: Sequence[StripCell], width: int, ctx: ViewContext, icao: str, *, every_cell: bool, all_zones: bool = True
+) -> Text:
     """The hour labels above a strip of ``width``-column cells, then the zone name(s) in the order they occur.
 
     A label sits over a cell that starts on a multiple of three hours (every cell when ``every_cell``, for strips
-    of merged hours); several zones appear when a daylight-saving change falls inside the strip.
+    of merged hours); several zones appear when a daylight-saving change falls inside the strip, unless ``all_zones``
+    is off (a card has no room for them): then the zone of the first cell stands for the strip.
     """
     ticks = Text(no_wrap=True)
     label_end = 0
@@ -66,7 +69,7 @@ def tick_labels(cells: Sequence[StripCell], width: int, ctx: ViewContext, icao: 
             ticks.append(" " * (position - len(ticks.plain)))
             ticks.append(hour, style=ctx.palette.muted)
             label_end = position + len(hour) + 1
-    ticks.append("  " + "/".join(zones), style=ctx.palette.muted)
+    ticks.append("  " + "/".join(zones if all_zones else zones[:1]), style=ctx.palette.muted)
     return ticks
 
 

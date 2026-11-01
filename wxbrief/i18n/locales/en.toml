@@ -853,6 +853,8 @@ away = "away"
 next_poll = "next poll {time}"
 requests = "req {used}/{limit}"
 polling_off = "polling off"
+unreachable = "can't reach aviationweather.gov, showing saved data"
+feed_problem = "aviationweather.gov problem, showing saved data"
 
 [ui.list]
 title = "Stations ({n})"
@@ -867,7 +869,8 @@ unknown_theme = "Unknown theme {theme}; using textual-dark"
 theme_title = "Theme"
 stations_title = "Stations"
 config_title = "Config"
-fetch_failed = "Could not fetch {product}: {error}"
+fetch_failed = "Could not fetch {product}; showing saved data"
+unreachable = "Can't reach aviationweather.gov; showing saved data"
 polling_off = "Polling is off"
 refreshing = "Refreshing"
 rate_limited = "Rate limited; retrying in {seconds} s"
@@ -926,6 +929,7 @@ body = """\
 [b]Detail[/b]
   1  2  3            jump to raw, decoded, forecast
   Left/Right         move the forecast timeline cursor (the mouse works too)
+  Esc                back to the station list
   c                  copy the Discord METAR block
   C                  copy Discord METAR and TAF
   y                  copy the raw report text

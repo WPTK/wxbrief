@@ -441,7 +441,7 @@ async def test_a_server_error_is_not_labelled_offline(tmp_path: Path) -> None:
         await wait_for(pilot, lambda: app.state.errors)
         await pilot.pause()
         status = str(app.screen.query_one(StatusBar).render())
-        assert "503" in status and "offline" not in status
+        assert "aviationweather.gov problem" in status and "503" not in status and "offline" not in status
 
 
 async def test_a_deeply_nested_reply_does_not_close_the_app(tmp_path: Path) -> None:
@@ -506,7 +506,7 @@ async def test_the_offline_label_and_message_come_from_the_same_error(tmp_path: 
         app.briefing.refresh_view()
         await pilot.pause()
         status = str(app.screen.query_one(StatusBar).render())
-        assert "offline" in status and "(metar: TransportError: down)" in status and "503" not in status
+        assert "offline" in status and "can't reach aviationweather.gov" in status and "problem" not in status
 
 
 async def test_a_hand_written_config_is_backed_up_before_the_first_save(tmp_path: Path) -> None:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import shutil
 from collections.abc import Callable
 from copy import deepcopy
@@ -46,6 +47,8 @@ from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.screens.theme_picker import ThemePickerScreen
 from wxbrief.ui.screens.too_small import MIN_SIZE, TooSmallScreen
 from wxbrief.ui.themes import AVIATION_THEMES, THEME_CYCLE
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -271,15 +274,14 @@ class WxBriefApp(App[None]):
         if self.scheduler is not None and not set(self.scheduler.requested) & set(self.state.ids):
             return  # the stations it was for are gone from the list: nothing will fetch again to clear this
         first = product not in self.state.errors
-        self.state.record_error(
-            product,
-            f"{product.value}: {error}" if str(error) else type(error).__name__,
-            offline=isinstance(error, TransportError),
-        )
+        offline = isinstance(error, TransportError)
+        raw = f"{product.value}: {error}" if str(error) else f"{product.value}: {type(error).__name__}"
+        log.warning("fetch failed: %s", raw)  # the raw text is for the log; the screen says it in plain words
+        self.state.record_error(product, raw, offline=offline)
         if first:
-            fetch = self.ctx.translator.t(
-                K.UI_TOAST_FETCH_FAILED, product=product.value.upper(), error=error or type(error).__name__
-            )
+            t = self.ctx.translator
+            product_name = product.value.upper()
+            fetch = t.t(K.UI_TOAST_UNREACHABLE) if offline else t.t(K.UI_TOAST_FETCH_FAILED, product=product_name)
             self.notify(fetch, severity="warning")
         self.redraw_screens(paste=False)
 

@@ -63,5 +63,6 @@ class StatusBar(Static):
         else:
             text.append(f" | {t.t(K.UI_STATUS_POLLING_OFF)}", style=palette.muted)
         if failed is not None:  # the message can be long: last, so a narrow bar cuts it and not the freshness
-            text.append(f" ({state.errors[failed]})", style=palette.muted)
+            problem = K.UI_STATUS_UNREACHABLE if failed in state.offline else K.UI_STATUS_FEED_PROBLEM
+            text.append(f" ({t.t(problem)})", style=palette.muted)
         self.update(text)
