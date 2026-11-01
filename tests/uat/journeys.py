@@ -75,13 +75,14 @@ async def briefing_list(run: Run) -> None:
         assert isinstance(run.app.focused, DetailPane)
     await run.shot("start")
     await run.press("j")
-    assert screen.selected == "EGLL" and "EGLL" in header_text(run) and "KDEN" not in header_text(run)
+    await run.until(lambda: screen.selected == "EGLL" and "EGLL" in header_text(run), "EGLL selected and in the header")
+    assert "KDEN" not in header_text(run)
     if run.wide:
         assert stations.highlighted == 1
     await run.press("k", "k")  # wraps to the last station
-    assert screen.selected == "NZSP" and "NZSP" in header_text(run)
+    await run.until(lambda: screen.selected == "NZSP" and "NZSP" in header_text(run), "NZSP selected and in the header")
     await run.press("j")
-    assert screen.selected == "KDEN"
+    await run.until(lambda: screen.selected == "KDEN", "KDEN selected again")
     await run.shot("walked")
 
 
@@ -91,21 +92,29 @@ async def sections(run: Run) -> None:
     pane = screen.query_one(DetailPane)
     await run.press("2")
     table = screen.query_one(DecodedTable)
-    assert table.row_count > 5
     top = pane.region.y
-    assert top <= screen.query_one("#decoded-title").region.y < pane.region.bottom
+
+    def decoded_in_view() -> bool:
+        return table.row_count > 5 and top <= screen.query_one("#decoded-title").region.y < pane.region.bottom
+
+    await run.until(decoded_in_view, "the decoded table scrolled into the pane")
     assert "Decoded" in run.text()
     await run.shot("decoded")
     await run.press("3")
     timeline = screen.query_one(TafTimeline)
-    assert timeline.has_focus
-    assert top <= screen.query_one("#taf-title").region.y < pane.region.bottom
+    await run.until(
+        lambda: timeline.has_focus and top <= screen.query_one("#taf-title").region.y < pane.region.bottom,
+        "the forecast focused and scrolled into the pane",
+    )
     assert "TAF" in run.text()
     await run.shot("taf")
     await run.press("right")
     await run.shot("taf-period")
     await run.press("1")
-    assert pane.scroll_y == 0 or top <= screen.query_one("#raw-title").region.y < pane.region.bottom
+    await run.until(
+        lambda: pane.scroll_y == 0 or top <= screen.query_one("#raw-title").region.y < pane.region.bottom,
+        "the raw report scrolled into the pane",
+    )
     assert "Raw" in run.text()
 
 
@@ -115,11 +124,11 @@ async def station_detail_from_list(run: Run) -> None:
     if run.wide:
         assert run.app.focused is screen.query_one(StationList)
         await run.press("enter")
-        assert isinstance(run.app.focused, DetailPane)
+        await run.until(lambda: isinstance(run.app.focused, DetailPane), "the detail pane focused")
     await run.press("down", "down", "pageup")
     assert isinstance(run.app.focused, DetailPane)
     await run.press("3")
-    assert screen.query_one(TafTimeline).has_focus
+    await run.until(lambda: screen.query_one(TafTimeline).has_focus, "the timeline focused")
     await run.press("2")
     await run.press("escape")  # nothing to go back to: the briefing stays
     assert run.app.screen is screen
@@ -132,11 +141,14 @@ async def grid(run: Run) -> None:
     """v shows a card per station with real report data; the arrows walk the cards; v goes back."""
     screen = run.briefing
     await run.press("v")
-    assert screen.layout_mode == "grid"
-    cards = list(screen.query(StationCard))
-    assert [c.icao for c in cards] == list(DEMO_ORDER)
     view = screen.query_one(StationGrid)
-    assert run.app.focused is view
+    await run.until(
+        lambda: screen.layout_mode == "grid"
+        and run.app.focused is view
+        and [c.icao for c in screen.query(StationCard)] == list(DEMO_ORDER),
+        "the grid shown with a card per station and the focus on it",
+    )
+    cards = list(screen.query(StationCard))
     assert view.columns == max(1, view.size.width // 38)
     assert not screen.query_one(StationList).display and not screen.query_one(DetailPane).display
     assert "Stations (10)" in run.text()
@@ -153,29 +165,34 @@ async def grid(run: Run) -> None:
     # the cards are laid out in rows of view.columns: right/left walk along a row, down/up between rows
     columns = view.columns
     await run.press("right" if columns > 1 else "down")
-    assert screen.selected == "EGLL"
+    await run.until(lambda: screen.selected == "EGLL", "EGLL selected")
     await run.press("left" if columns > 1 else "up")
-    assert screen.selected == "KDEN"
+    await run.until(lambda: screen.selected == "KDEN", "KDEN selected")
     for _ in range(len(DEMO_ORDER) // columns + 1):
         await run.press("down")
     last = screen.selected
     assert last is not None and last != "KDEN"
     selected_card = next(c for c in cards if c.icao == last)
-    assert selected_card.has_class("-selected")
-    # the selected card has been scrolled into the grid's viewport
-    assert view.region.contains_region(selected_card.region.intersection(view.region))
-    assert selected_card.region.height > 0
+    # the selected card has been marked and scrolled into the grid's viewport
+    await run.until(
+        lambda: selected_card.has_class("-selected")
+        and view.region.contains_region(selected_card.region.intersection(view.region))
+        and selected_card.region.height > 0,
+        "the selected card marked and scrolled into view",
+    )
     await run.shot("scrolled")
     await run.press("v")
-    assert screen.layout_mode == "list" and screen.selected == last
-    assert last in header_text(run)
+    await run.until(
+        lambda: screen.layout_mode == "list" and screen.selected == last and last in header_text(run),
+        "the list layout back with the same station",
+    )
 
 
 async def grid_detail(run: Run) -> None:
     """Enter on a card opens that station's own screen: header first, 1 2 3 and c work, Esc returns to the same card."""
     screen = run.briefing
     await run.press("v", "j")
-    assert screen.selected == "EGLL"
+    await run.until(lambda: screen.layout_mode == "grid" and screen.selected == "EGLL", "EGLL selected in the grid")
     await run.press("enter")
     await run.until(lambda: isinstance(run.app.screen, StationDetailScreen), "the station screen")
     detail = run.app.screen
@@ -186,22 +203,26 @@ async def grid_detail(run: Run) -> None:
     assert "METAR EGLL" in run.text()
     await run.shot("top")
     await run.press("3")
-    assert detail.query_one(TafTimeline).has_focus
+    await run.until(lambda: detail.query_one(TafTimeline).has_focus, "the timeline focused")
     await run.shot("taf")
     await run.press("2")
     await run.shot("decoded")
     await run.press("1")
     await run.press("c")
-    assert run.copied and "EGLL" in run.copied[-1] and run.copied[-1].startswith("```")
+    await run.until(lambda: bool(run.copied), "the copy")
+    assert "EGLL" in run.copied[-1] and run.copied[-1].startswith("```")
     await run.press("escape")
-    assert run.app.screen is screen and screen.layout_mode == "grid" and screen.selected == "EGLL"
-    assert run.app.focused is screen.query_one(StationGrid)
+    await run.until(
+        lambda: run.app.screen is screen and run.app.focused is screen.query_one(StationGrid),
+        "the grid focused again",
+    )
+    assert screen.layout_mode == "grid" and screen.selected == "EGLL"
     # open another one with the keys alone
     await run.press("j", "enter")
     await run.until(lambda: isinstance(run.app.screen, StationDetailScreen), "the second station screen")
     assert "ETHB" in plain(run.app.screen.query_one(StationHeader))
     await run.press("escape")
-    assert run.app.screen is screen
+    await run.until(lambda: run.app.screen is screen, "the briefing")
 
 
 # --- dialogs and screens -------------------------------------------------------------------------------------------
@@ -210,9 +231,9 @@ async def grid_detail(run: Run) -> None:
 async def paste(run: Run) -> None:
     """p opens the paste screen; typing a report decodes it as you type; c copies the Discord text; Esc leaves."""
     await run.press("p")
-    assert isinstance(run.app.screen, PasteDecodeScreen)
+    await run.until(lambda: isinstance(run.app.screen, PasteDecodeScreen), "the paste screen")
     area = run.app.screen.query_one(TextArea)
-    assert run.app.focused is area
+    await run.until(lambda: run.app.focused is area, "the box focused")
     assert "Paste" in run.text() or "paste" in run.text()
     await run.shot("empty")
     for char in "METAR " + PASTED:
@@ -224,9 +245,10 @@ async def paste(run: Run) -> None:
     assert area.text == "METAR " + PASTED
     await run.shot("decoded")
     await run.press("f2")
-    assert run.copied and "KDEN" in run.copied[-1] and run.copied[-1].startswith("```")
+    await run.until(lambda: bool(run.copied), "the copy")
+    assert "KDEN" in run.copied[-1] and run.copied[-1].startswith("```")
     await run.press("escape")
-    assert run.app.screen is run.briefing
+    await run.until(lambda: run.app.screen is run.briefing, "the briefing")
     assert run.briefing.selected == "KDEN"
 
 
@@ -234,9 +256,9 @@ async def add_station(run: Run) -> None:
     """a opens the add dialog; an unknown code is refused; a real one is added, saved to the config, and removable."""
     screen = run.briefing
     await run.press("a")
-    assert isinstance(run.app.screen, AddStationScreen)
+    await run.until(lambda: isinstance(run.app.screen, AddStationScreen), "the add dialog")
     box = run.app.screen.query_one(Input)
-    assert run.app.focused is box
+    await run.until(lambda: run.app.focused is box, "the input focused")
     await run.shot("empty")
     for char in "zzzz":
         await run.pilot.press(char)
@@ -260,14 +282,14 @@ async def add_station(run: Run) -> None:
         assert "KSEA" in run.text() and "Stations (11)" in run.text()
     await run.shot("added")
     await run.press("d")
-    assert "KSEA" not in run.app.state.ids and screen.selected != "KSEA"
-    assert "KSEA" not in run.saved()["stations"]["watchlist"]
+    await run.until(lambda: "KSEA" not in run.app.state.ids and screen.selected != "KSEA", "KSEA removed")
+    await run.until(lambda: "KSEA" not in run.saved()["stations"]["watchlist"], "KSEA removed from the saved list")
 
 
 async def help_screen(run: Run) -> None:
     """? opens the key help (all of it reachable by scrolling), ? or Esc closes it."""
     await run.press("question_mark")
-    assert isinstance(run.app.screen, HelpScreen)
+    await run.until(lambda: isinstance(run.app.screen, HelpScreen), "the help screen")
     t = Translator.load("en")
     body = [" ".join(re.sub(r"\[/?b\]", "", line).split()) for line in t.t(K.UI_HELP_BODY).splitlines() if line.strip()]
     box = run.app.screen.query_one("#help-box")
@@ -281,9 +303,9 @@ async def help_screen(run: Run) -> None:
     assert body[-1].split()[-1] in run.text(), "the last help line is not on screen at the end"
     await run.shot("end")
     await run.press("escape")
-    assert run.app.screen is run.briefing
+    await run.until(lambda: run.app.screen is run.briefing, "the briefing")
     await run.press("question_mark", "question_mark")
-    assert run.app.screen is run.briefing
+    await run.until(lambda: run.app.screen is run.briefing, "the briefing after opening and closing the help")
 
 
 async def theme_cycle(run: Run) -> None:
@@ -296,7 +318,7 @@ async def theme_cycle(run: Run) -> None:
     for i in range(len(names)):
         await run.press("t")
         expected = names[(names.index(start) + i + 1) % len(names)]
-        assert run.app.theme == expected
+        await run.until(lambda expected=expected: run.app.theme == expected, f"the theme {expected}")
         seen.append(run.app.theme)
         text = run.text()
         assert "KDEN" in text and "Raw" in text, f"theme {expected} lost the report"
@@ -312,22 +334,22 @@ async def theme_picker(run: Run) -> None:
     names = themes(run)
     start = app.theme
     await run.press("T")
-    assert isinstance(app.screen, ThemePickerScreen)
+    await run.until(lambda: isinstance(app.screen, ThemePickerScreen), "the theme picker")
     options = app.screen.query_one(OptionList)
     assert options.highlighted == names.index(start)
     for name in names[:4]:
         assert name in run.text() or run.size[1] < 20  # a short terminal scrolls the list
     await run.shot("open")
     await run.press("down")
-    assert app.theme == names[(names.index(start) + 1) % len(names)]  # previewed
+    await run.until(lambda: app.theme == names[(names.index(start) + 1) % len(names)], "the previewed theme")
     await run.press("down")
     await run.shot("preview")
     await run.press("escape")
-    assert app.screen is run.briefing and app.theme == start
+    await run.until(lambda: app.screen is run.briefing and app.theme == start, "the briefing in the old theme")
     assert "theme" not in run.saved().get("view", {})
     await run.press("T", "down", "down", "enter")
     kept = names[(names.index(start) + 2) % len(names)]
-    assert app.screen is run.briefing and app.theme == kept
+    await run.until(lambda: app.screen is run.briefing and app.theme == kept, "the briefing in the kept theme")
     await run.until(lambda: run.saved().get("view", {}).get("theme") == kept, "the saved theme")
 
 
@@ -335,9 +357,9 @@ async def settings(run: Run) -> None:
     """S: Enter cycles language (through de and back), units, time and glyphs; each is applied and saved."""
     app = run.app
     await run.press("S")
-    assert isinstance(app.screen, SettingsScreen)
+    await run.until(lambda: isinstance(app.screen, SettingsScreen), "the settings screen")
     box = app.screen.query_one(OptionList)
-    assert app.focused is box and box.highlighted == 0
+    await run.until(lambda: app.focused is box and box.highlighted == 0, "the first setting highlighted")
     assert "Language" in run.text()
     await run.shot("open")
     german = Translator.load("de")
@@ -352,7 +374,7 @@ async def settings(run: Run) -> None:
         assert german.language_name in run.text()
     await run.shot("german")
     await run.press("escape")
-    assert app.screen is run.briefing
+    await run.until(lambda: app.screen is run.briefing, "the briefing")
     assert german.t(K.UI_LIST_TITLE, n=10) in run.text() or not run.wide
     await run.press("S")
     for _ in range(8):  # back to English
@@ -369,7 +391,7 @@ async def settings(run: Run) -> None:
     assert app.ctx.glyphs != glyphs and run.saved()["view"]["glyph_set"] == app.glyph_set
     await run.shot("changed")
     await run.press("S")
-    assert app.screen is run.briefing
+    await run.until(lambda: app.screen is run.briefing, "the briefing")
 
 
 async def copy_keys(run: Run) -> None:
@@ -378,6 +400,7 @@ async def copy_keys(run: Run) -> None:
     entry = screen.current()
     assert entry is not None and entry.metar is not None and entry.taf is not None
     await run.press("c")
+    await run.until(lambda: bool(run.copied), "the copy")
     assert run.copied[-1].startswith("```") and "KDEN" in run.copied[-1] and "TAF" not in run.copied[-1].split("\n")[0]
     await run.until(lambda: any("KDEN" in note and "Copied" in note for note in toasts(run.app)), "the copied toast")
     await run.shot("copied")
@@ -398,8 +421,9 @@ async def copy_keys(run: Run) -> None:
 async def quit_app(run: Run) -> None:
     """q ends the program from the briefing; from a dialog Esc comes first."""
     await run.press("p")
-    assert isinstance(run.app.screen, PasteDecodeScreen)
+    await run.until(lambda: isinstance(run.app.screen, PasteDecodeScreen), "the paste screen")
     await run.press("escape")
+    await run.until(lambda: run.app.screen is run.briefing, "the briefing")
     assert run.app.is_running
     await run.pilot.press("q")
     await run.until(lambda: not run.app.is_running, "the app to exit")
@@ -413,7 +437,7 @@ async def resize(run: Run) -> None:
     app = run.app
     screen = run.briefing
     await run.press("j")
-    assert screen.selected == "EGLL"
+    await run.until(lambda: screen.selected == "EGLL", "EGLL selected")
     steps = [(120, 30), (100, 50), (200, 50), (80, 24), (60, 20), (280, 70), (120, 30)]
     for width, height in steps:
         await run.pilot.resize_terminal(width, height)
@@ -431,6 +455,7 @@ async def resize(run: Run) -> None:
         assert footer_line(run).strip(), f"footer blank at {name}"
         await run.shot(f"list-{name}")
     await run.press("v")
+    await run.until(lambda: screen.layout_mode == "grid", "the grid layout")
     for width, height in [(200, 50), (80, 24), (120, 30)]:
         await run.pilot.resize_terminal(width, height)
         await run.settle()
@@ -449,14 +474,16 @@ async def resize(run: Run) -> None:
     await run.pilot.resize_terminal(120, 30)
     await run.settle()
     await run.press("escape")
-    assert app.screen is screen and screen.selected == "EGLL"
+    await run.until(lambda: app.screen is screen, "the briefing")
+    assert screen.selected == "EGLL"
     await run.press("S")
+    await run.until(lambda: isinstance(app.screen, SettingsScreen), "the settings screen")
     await run.pilot.resize_terminal(60, 16)
     await run.settle()
     assert isinstance(app.screen, SettingsScreen)
     await run.pilot.resize_terminal(120, 30)
     await run.press("escape")
-    assert app.screen is screen
+    await run.until(lambda: app.screen is screen, "the briefing")
 
 
 @dataclass(frozen=True)

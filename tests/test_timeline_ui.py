@@ -8,6 +8,7 @@ from pathlib import Path
 import httpx
 import pytest
 from rich.text import Text
+from test_app_smoke import wait_for
 
 from wxbrief import app as app_module
 from wxbrief.__main__ import build_tui_parser, tui_options
@@ -121,29 +122,24 @@ async def test_timeline_cells_and_cursor_keys() -> None:
         assert "Prevailing: Base forecast" in text_of(detail)
 
         await pilot.press("3")  # jump to the forecast: the timeline takes the keyboard
-        await settle(pilot)
-        assert timeline.has_focus
+        await wait_for(pilot, lambda: timeline.has_focus, "the timeline focused")
         for _ in range(10):
             await pilot.press("right")
-        await settle(pilot)
-        assert timeline.cursor == 10  # 22:00Z, inside the BECMG 21-24 window
+        await wait_for(pilot, lambda: timeline.cursor == 10, "the cursor at 22:00Z, inside the BECMG 21-24 window")
+        await wait_for(pilot, lambda: "22:00 GMT to 23:00 GMT" in text_of(detail), "the period text")
         shown = text_of(detail)
-        assert "22:00 GMT to 23:00 GMT" in shown
         assert "Becoming" in shown and "haze" in shown.lower()
         await pilot.press("right", "right")  # 00:00Z: the TEMPO group
-        await settle(pilot)
+        await wait_for(pilot, lambda: "Temporary" in text_of(detail), "the TEMPO group")
         shown = text_of(detail)
         assert "Temporary" in shown and "30% chance" not in shown
         assert "Worst case in this window:" in shown
         await pilot.press("right")  # 01:00Z: the PROB30 group joins it
-        await settle(pilot)
-        assert "30% chance" in text_of(detail)
+        await wait_for(pilot, lambda: "30% chance" in text_of(detail), "the PROB30 group")
         await pilot.press("end")
-        await settle(pilot)
-        assert timeline.cursor == 29
+        await wait_for(pilot, lambda: timeline.cursor == 29, "the cursor at the end")
         await pilot.press("home", "left")
-        await settle(pilot)
-        assert timeline.cursor == 0
+        await wait_for(pilot, lambda: timeline.cursor == 0, "the cursor at the start")
 
 
 async def test_hover_selects_the_period_under_the_mouse() -> None:
@@ -178,9 +174,12 @@ async def test_narrow_terminal_uses_three_hour_cells() -> None:
         assert timeline.step == 3 and len(timeline.cells) == 10
         assert all(len(c.hours) == 3 for c in timeline.cells)
         await pilot.press("3", "right")
-        await settle(pilot)
-        assert timeline.cursor == 1
-        assert "15:00 GMT to 18:00 GMT" in text_of(briefing.query_one(PeriodDetail))
+        await wait_for(pilot, lambda: timeline.cursor == 1, "the cursor on the second block")
+        await wait_for(
+            pilot,
+            lambda: "15:00 GMT to 18:00 GMT" in text_of(briefing.query_one(PeriodDetail)),
+            "the second block's period text",
+        )
 
 
 async def test_timeline_follows_the_time_mode() -> None:
@@ -220,19 +219,23 @@ async def test_grid_layout_columns(width: int, columns: int) -> None:
         assert isinstance(briefing, BriefingScreen)
         assert briefing.query_one(DetailPane).display
         await pilot.press("v")
-        await settle(pilot)
         grid = briefing.query_one(StationGrid)
-        assert grid.display and not briefing.query_one(StationList).display
-        assert not briefing.query_one(DetailPane).display
-        assert grid.columns == columns
+        await wait_for(
+            pilot,
+            lambda: grid.display
+            and not briefing.query_one(StationList).display
+            and not briefing.query_one(DetailPane).display
+            and grid.columns == columns
+            and len(briefing.query(StationCard)) == 10,
+            "the grid laid out",
+        )
         cards = list(briefing.query(StationCard))
         assert len(cards) == 10
         xs = {card.region.x for card in cards[:columns]}
         assert len(xs) == columns
         assert sum(1 for card in cards if card.has_class("-selected")) == 1
         await pilot.press("v")
-        await settle(pilot)
-        assert briefing.query_one(DetailPane).display and not grid.display
+        await wait_for(pilot, lambda: briefing.query_one(DetailPane).display and not grid.display, "the list layout")
 
 
 async def test_grid_keys_select_and_open_detail() -> None:
@@ -243,15 +246,13 @@ async def test_grid_keys_select_and_open_detail() -> None:
         assert isinstance(briefing, BriefingScreen)
         assert briefing.layout_mode == "grid" and briefing.query_one(StationGrid).display
         await pilot.press("right", "down")
-        await settle(pilot)
-        assert briefing.selected == "YSSY"  # EGLL is the second card; one row (three columns) down is the fifth
+        # EGLL is the second card; one row (three columns) down is the fifth
+        await wait_for(pilot, lambda: briefing.selected == "YSSY", "YSSY selected")
         await pilot.press("enter")
-        await settle(pilot)
-        assert isinstance(app.screen, StationDetailScreen)
-        assert len(app.screen.query(TafTimeline)) == 1
+        await wait_for(pilot, lambda: isinstance(app.screen, StationDetailScreen), "the station screen")
+        await wait_for(pilot, lambda: len(app.screen.query(TafTimeline)) == 1, "the timeline")
         await pilot.press("escape")
-        await settle(pilot)
-        assert isinstance(app.screen, BriefingScreen)
+        await wait_for(pilot, lambda: isinstance(app.screen, BriefingScreen), "the briefing")
 
 
 async def test_card_mini_strip_text() -> None:
@@ -318,7 +319,7 @@ async def test_digit_keys_do_nothing_in_the_grid() -> None:
         assert isinstance(briefing, BriefingScreen)
         await pilot.press("3", "1", "2")
         await settle(pilot)
-        assert briefing.query_one(StationGrid).has_focus
+        await wait_for(pilot, lambda: briefing.query_one(StationGrid).has_focus, "the grid focused")
         assert not briefing.query_one(TafTimeline).has_focus
 
 
@@ -329,9 +330,8 @@ async def test_timeline_focus_is_released_when_the_taf_goes_away() -> None:
         briefing = app.screen
         assert isinstance(briefing, BriefingScreen)
         await pilot.press("3")
-        await settle(pilot)
         timeline = briefing.query_one(TafTimeline)
-        assert timeline.has_focus
+        await wait_for(pilot, lambda: timeline.has_focus, "the timeline focused")
         app.state.stations["KDEN"].taf = None
         briefing.refresh_view()
         await settle(pilot)
@@ -366,10 +366,9 @@ async def test_toggling_layout_twice_at_60_columns_keeps_focus_visible() -> None
         briefing = app.screen
         assert isinstance(briefing, BriefingScreen)
         await pilot.press("v", "v")
-        await settle(pilot)
+        await wait_for(pilot, lambda: briefing.query_one(DetailPane).has_focus, "the detail pane focused")
         assert not briefing.query_one(StationList).display
         assert not briefing.query_one(StationList).has_focus
-        assert briefing.query_one(DetailPane).has_focus
 
 
 async def test_detail_screen_redraws_on_theme_change() -> None:
@@ -377,7 +376,7 @@ async def test_detail_screen_redraws_on_theme_change() -> None:
     async with app.run_test(size=(140, 40)) as pilot:
         await settle(pilot)
         await pilot.press("enter")
-        await settle(pilot)
+        await wait_for(pilot, lambda: isinstance(app.screen, StationDetailScreen), "the station screen")
         screen = app.screen
         assert isinstance(screen, StationDetailScreen)
         calls: list[int] = []
