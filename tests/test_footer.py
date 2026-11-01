@@ -46,12 +46,12 @@ async def test_the_footer_follows_focus() -> None:
     async with app.run_test(size=(120, 40)) as pilot:
         await pilot.pause()
         assert isinstance(app.focused, StationList)
-        assert await shown_is(app, pilot, ["a", "d", "v", "p", "r", "question_mark", "q", "t"]) == ["a", "d", "v", "p", "r", "question_mark", "q", "t"]
+        assert await shown_is(app, pilot, ["a", "d", "v", "r", "question_mark", "p", "q", "t"]) == ["a", "d", "v", "r", "question_mark", "p", "q", "t"]
         await pilot.press("enter")  # into the detail pane
-        assert await shown_is(app, pilot, ["1", "2", "3", "c", "a", "p", "r", "question_mark", "q", "t"]) == ["1", "2", "3", "c", "a", "p", "r", "question_mark", "q", "t"]
+        assert await shown_is(app, pilot, ["1", "2", "3", "c", "a", "r", "question_mark", "p", "q", "t"]) == ["1", "2", "3", "c", "a", "r", "question_mark", "p", "q", "t"]
         await pilot.press("v")  # still works from the detail pane, though the footer does not list it
         assert isinstance(app.focused, StationGrid)
-        assert await shown_is(app, pilot, ["a", "d", "v", "p", "r", "question_mark", "q", "t"]) == ["a", "d", "v", "p", "r", "question_mark", "q", "t"]
+        assert await shown_is(app, pilot, ["a", "d", "v", "r", "question_mark", "p", "q", "t"]) == ["a", "d", "v", "r", "question_mark", "p", "q", "t"]
 
 
 async def screen_text(app: object, pilot: object, *wanted: str) -> str:
@@ -97,8 +97,8 @@ async def test_the_station_screen_copies_and_jumps(monkeypatch: pytest.MonkeyPat
         await pilot.press("v", "enter")
         await pilot.pause()
         assert isinstance(app.screen, StationDetailScreen)
-        keys = await shown_is(app, pilot, ["1", "2", "3", "c", "escape", "r", "q", "t", "question_mark"])
-        assert "a" not in keys and keys[:4] == ["1", "2", "3", "c"]
+        keys = await shown_is(app, pilot, ["1", "2", "3", "c", "r", "question_mark", "escape", "q", "t"])
+        assert keys == ["1", "2", "3", "c", "r", "question_mark", "escape", "q", "t"]  # no "a" on this screen
         await pilot.press("c")
         assert len(copied) == 1 and "METAR" in copied[0]
         await pilot.press("3", "2", "1", "a")  # none of these may raise; a is not offered on this screen

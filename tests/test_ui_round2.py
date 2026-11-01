@@ -95,8 +95,7 @@ async def test_the_decoded_table_hands_back_focus_when_it_is_hidden() -> None:
         briefing.refresh_view()
         await settle(pilot)
         assert not table.display and not table.has_focus
-        assert briefing.focused is not None  # the keyboard went somewhere, not nowhere
-        assert briefing.query_one(DetailPane) in briefing.focused.ancestors_with_self
+        assert briefing.focused is briefing.query_one(DetailPane)  # the pane, not nowhere and not the timeline
 
 
 async def test_the_timeline_cursor_follows_the_clock_until_the_user_moves_it() -> None:
