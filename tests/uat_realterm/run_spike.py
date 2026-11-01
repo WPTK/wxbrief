@@ -34,6 +34,8 @@ import winterm as w
 START_RE = r"Stations \(10\)"
 INITIAL_RE = r"\b1/10\b"
 TARGET_ROW = "UUEE"
+GRID_RE = r"KDEN\s+LIFR\s+Denver"
+LIST_RE = r"KDEN\s+LIFR\s+32005KT"
 AFTER_CLICK = [r"\b4/10\b", r"UUEE\s+Moscow"]
 VK_BACKTICK = 0xC0
 VK_J, VK_K = ord("J"), ord("K")
@@ -523,13 +525,9 @@ def journey(t: Term, rep: Report) -> None:
     after_v = keys("v")
     t.save_text("03-after-v", after_v)
     t.shot("03-after-v")
-    rep.check(
-        "v changes the layout (screen text differs)",
-        after_v != after2,
-        f"list title still shown={bool(re.search(START_RE, after_v))}",
-    )
+    rep.check("v switches to the grid (cards show the station name)", bool(re.search(GRID_RE, after_v)))
     back = keys("v")
-    rep.check("v again returns to the list", bool(re.search(START_RE, back)))
+    rep.check("v again returns to the list", bool(re.search(LIST_RE, back)) and not re.search(GRID_RE, back))
 
     w.focus(t.hwnd)
     rect = None

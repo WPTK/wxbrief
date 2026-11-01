@@ -179,6 +179,8 @@ def foreground() -> int:
 
 def focus(hwnd: int, tries: int = 5) -> bool:
     """Bring a window to the foreground. The ALT tap is the classic way past the foreground lock."""
+    if foreground() == hwnd:  # no ALT tap then: in VS Code it would move focus to the menu bar and eat the next key
+        return True
     user32.ShowWindow(hwnd, SW_RESTORE)
     for _ in range(tries):
         key_event(VK_MENU, False)
