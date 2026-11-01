@@ -222,6 +222,29 @@ async def test_run_loop_sleeps_until_due_then_stops_on_cancel() -> None:
     assert [c[0] for c in client.calls][:3] == ["metar", "taf", "metar"]
 
 
+async def test_run_loop_ends_when_the_injected_sleep_raises() -> None:
+    import asyncio
+
+    clock, client = FakeClock(), FakeClient()
+    slept: list[float] = []
+
+    async def fake_sleep(seconds: float) -> None:
+        slept.append(seconds)
+        clock.now += seconds
+        if len(slept) >= 2:
+            raise asyncio.CancelledError
+
+    scheduler, _ = make(clock, client, sleep=fake_sleep)
+    task = asyncio.ensure_future(scheduler.run())
+    for _ in range(50):
+        await asyncio.sleep(0)
+        if task.done():
+            break
+    assert task.done(), "run() kept looping after its sleep failed"
+    assert len(slept) == 2
+    assert task.cancelled()
+
+
 def test_rate_budget_sliding_window() -> None:
     clock = FakeClock()
     budget = RateBudget(100, 60, clock)
@@ -314,6 +337,18 @@ async def test_a_short_blur_does_not_leave_the_away_interval_in_force() -> None:
     clock.now += 1
     scheduler.return_from_away()
     assert scheduler.next_due_in() == 599
+
+
+async def test_a_failure_while_away_backs_off_from_the_normal_interval_once_back() -> None:
+    clock, client = FakeClock(), FakeClient()
+    client.errors.append(ServerError(500))
+    scheduler, _ = make(clock, client, ["KDEN"])
+    scheduler.away = True
+    await scheduler.run_cycle()  # fails while away: the delay is the 1800 s away interval doubled
+    assert scheduler._tracks[Product.METAR].due - clock.now == 1800
+    clock.now += 10
+    scheduler.return_from_away()
+    assert scheduler.next_due_in() == 590  # 600 s, the normal interval, since the failure
 
 
 async def test_returning_after_a_long_blur_polls_what_is_overdue() -> None:

@@ -48,13 +48,26 @@ def lowest_ceiling(sky: Sequence[CloudLayer]) -> CloudLayer | None:
     return min(candidates, key=lambda layer: layer.base.feet if layer.base is not None else math.inf)
 
 
+def _could_lower(layer: CloudLayer, known_ft: float | None) -> bool:
+    """Whether a layer of unknown amount or unknown height might sit below the known ceiling."""
+    unknown = layer.base is None if layer.is_ceiling_layer else layer.cover is SkyCondition.UNKNOWN
+    if not unknown:
+        return False
+    return layer.base is None or known_ft is None or layer.base.feet < known_ft
+
+
 def ceiling_for_classification(sky: Sequence[CloudLayer], cavok: bool) -> float | None:
-    """Ceiling for classification: feet, ``inf`` for a sky known to have none, ``None`` when unknown."""
+    """Ceiling for classification: feet, ``inf`` for a sky known to have none, ``None`` when unknown.
+
+    A layer of unknown amount or height that might lower the ceiling makes it unknown, unless the known ceiling
+    already forces IFR or LIFR.
+    """
     layer = lowest_ceiling(sky)
-    if layer is not None and layer.base is not None:
-        return layer.base.feet
-    if any(candidate.is_ceiling_layer for candidate in sky):
-        return None  # an obscured or broken sky of unknown height
+    known_ft = layer.base.feet if layer is not None and layer.base is not None else None
+    if any(_could_lower(candidate, known_ft) for candidate in sky):
+        return known_ft if known_ft is not None and known_ft < IFR_CEILING_FT else None
+    if known_ft is not None:
+        return known_ft
     if cavok or any(candidate.cover is not SkyCondition.UNKNOWN for candidate in sky):
         return math.inf  # CAVOK, or layers/clear-sky codes that leave no ceiling
     return None  # no sky group, or only "//////" placeholders: the sensor reported nothing

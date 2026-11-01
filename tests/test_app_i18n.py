@@ -94,7 +94,7 @@ async def test_every_language_draws_the_whole_app(tmp_path: Path) -> None:
             await pilot.pause()
             t = Translator.load(lang)
             assert app.ctx.translator.lang == lang
-            assert app.briefing.query_one(StatusBar) is not None
+            assert t.t(K.UI_STATUS_POLLING_OFF) in str(app.briefing.query_one(StatusBar).render())
             assert t.t(K.UI_BINDING_ADD_STATION) in descriptions(app)
             assert t.t(K.UI_BINDING_QUIT) in descriptions(app)
         app.apply_setting("lang", "en")
@@ -108,7 +108,7 @@ async def test_detail_labels_follow_the_language(tmp_path: Path) -> None:
         app.apply_setting("lang", "de")
         await pilot.pause()
         text = "\n".join(str(w.render()) for w in app.screen.query("Static"))
-        assert "Wolkenuntergrenze" in text or "Wind" in text
+        assert "Wolkenuntergrenze" in text
         assert "Flight category" not in text
 
 

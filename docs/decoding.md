@@ -1,8 +1,7 @@
 # Decoding
 
-How a raw METAR becomes a `Metar`, what the parser promises, and how to add a test report. The architecture and the
-session plan live in [plan.md](plan.md); this page covers the decoder as built in S1 (the body) and S2a (the tail and the
-remarks). TAF decoding is covered under "TAF" below.
+How a raw METAR becomes a `Metar`, what the parser promises, and how to add a test report. It covers the body, the
+tail and the remarks; TAF decoding is under "TAF" below.
 
 ## Pipeline
 
@@ -198,7 +197,7 @@ shows it as "Color state (computed)" when it differs from the reported one or th
 
 ## Flags
 
-`derived.compute_flags` adds, to the S1 set: `WIND_SHEAR` (a `WS` group), `COLOR_BELOW_GRN` (the current reported state
+`derived.compute_flags` adds, to the flags of the body groups: `WIND_SHEAR` (a `WS` group), `COLOR_BELOW_GRN` (the current reported state
 is `YLO`, `YLO1`, `YLO2`, `AMB` or `RED`), `RAPID_PRESSURE_CHANGE` (`PRESRR`/`PRESFR`), `RUNWAY_CONTAMINATED` (a runway
 state that is not cleared and has frost, snow, slush, ice, compacted snow or frozen ruts, or `SNOCLO`; wet and damp do
 not count), `MAINTENANCE` (`$`), `VOLCANIC_ASH` (`VA` in present weather, recent weather or a trend) and
@@ -214,8 +213,8 @@ issue times and the valid period of a TAF with no issue time. Forecast groups li
 `resolve_day_time` (nearest candidate, ties to the earlier one) still resolves a valid period against the issue time and
 change groups against the period start. `parse_metar(raw, reference)` takes the reference; fixtures use the timestamp in
 the file name and `wxbrief decode --date YYYY-MM-DD` (and the paste date field) uses the end of that day, 23:59:59 UTC,
-so every report of the day is dated that day (default: now). Times are shown as UTC; station
-local time needs the station database (S3). Trend times (`FM1130`) have no day: `resolve_clock_time` picks the
+so every report of the day is dated that day (default: now). Times are shown as UTC by
+the `decode` command; the TUI converts to station time with the station database. Trend times (`FM1130`) have no day: `resolve_clock_time` picks the
 yesterday, today or tomorrow that puts them nearest the observation.
 
 ## Flight category
@@ -367,4 +366,4 @@ and tendencies keep their tenth).
 * `933RRR` (water equivalent of snow), `931SSS`, `I1xxx` ice accretion and other additive groups not listed above
   stay `FreeText`; the plain decode lists them under "Remarks (not decoded)".
 * TAF notes the catalog does not know (`WND 230V330`, Antarctic grid winds) stay unknown tokens with a warning.
-* The Discord title shows no airport name, and a clear sky no moon, until the station database (S3).
+* `decode` does no station lookup, so its Discord title shows no airport name, and a clear sky no moon.

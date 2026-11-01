@@ -1,0 +1,89 @@
+name: Feed check
+
+# Daily check that the live aviationweather.gov feeds wxbrief reads still parse with the app's own client and parsers.
+# One request per endpoint. It writes nothing and is not part of CI.
+#
+# A format change opens an issue at once. A feed that is down or empty is not a format change: it fails the run
+# with its own message and raises an issue only when the two runs before it failed as well.
+
+on:
+  schedule:
+    - cron: '43 7 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: feed-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Check the live feeds
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install .
+      - name: Check the feeds
+        id: check
+        run: |
+          set +e
+          python scripts/check_feeds.py | tee feeds.txt
+          status=${PIPESTATUS[0]}
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+      - name: Decide whether to raise
+        id: decide
+        if: failure() && steps.check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATUS: ${{ steps.check.outputs.status }}
+        run: |
+          if [ "$STATUS" = "1" ]; then
+            echo "raise=true" >> "$GITHUB_OUTPUT"
+            echo "reason=format change" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Unavailable: raise only when the two previous completed runs failed too.
+          failed=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow feed-check.yml --status completed --limit 2 \
+            --json conclusion --jq '[.[] | select(.conclusion == "failure")] | length')
+          if [ "$failed" = "2" ]; then
+            echo "raise=true" >> "$GITHUB_OUTPUT"
+            echo "reason=unavailable for three runs in a row" >> "$GITHUB_OUTPUT"
+          else
+            echo "A feed was unavailable ($failed of the last 2 runs failed). Not a format change; no issue yet."
+          fi
+      - name: Open or update the issue
+        if: steps.decide.outputs.raise == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REASON: ${{ steps.decide.outputs.reason }}
+        run: |
+          title="Live feed check failed"
+          {
+            echo "Cause: $REASON"
+            echo
+            echo '```'
+            cat feeds.txt
+            echo '```'
+            echo
+            echo "Run: $RUN_URL"
+          } > body.md
+          number=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label data --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --repo "$GITHUB_REPOSITORY" --body-file body.md
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label data --body-file body.md
+          fi

@@ -1,4 +1,4 @@
-"""S8 polish: the g/u/z keys, the AWC cross-check mark, save failures, rate-limit holds and the scroll fixes."""
+"""Polish: the g/u/z keys, the AWC cross-check mark, save failures, rate-limit holds and the scroll fixes."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 import httpx
 import pytest
 from rich.text import Text
-from test_app_smoke import make_app
+from test_app_smoke import make_app, wait_for
 from test_timeline_ui import demo_app
 
 from wxbrief import app as app_module
@@ -46,14 +46,14 @@ async def test_g_u_z_cycle_the_view_settings(tmp_path: Path) -> None:
         await pilot.pause()
         assert (app.glyph_set, app.ctx.units.value, app.ctx.time_mode) == ("unicode", "mixed", "station")
         await pilot.press("g")
-        assert app.glyph_set == "emoji" and app.ctx.glyphs.fresh == "🟢"
+        await wait_for(pilot, lambda: app.glyph_set == "emoji" and app.ctx.glyphs.fresh == "🟢", "the emoji glyphs")
         await pilot.press("u")
-        assert app.ctx.units.value == "us"
+        await wait_for(pilot, lambda: app.ctx.units.value == "us", "US units")
         await pilot.press("z")
-        assert app.ctx.time_mode == "local"
+        await wait_for(pilot, lambda: app.ctx.time_mode == "local", "local time")
         for _ in range(3):
             await pilot.press("z")
-        assert app.ctx.time_mode == "local"  # three modes: a full turn comes back to where it was
+        await wait_for(pilot, lambda: app.ctx.time_mode == "local", "local time after a full turn")  # three modes: a full turn comes back to where it was
 
 
 async def test_the_status_bar_shows_live_state_only(tmp_path: Path) -> None:
@@ -153,8 +153,8 @@ async def test_a_redraw_does_not_snap_the_grid_back(tmp_path: Path) -> None:
     async with app.run_test(size=(80, 16)) as pilot:
         await pilot.pause()
         await pilot.press("v")
-        await pilot.pause(0.2)
         grid = app.screen.query_one(StationGrid)
+        await wait_for(pilot, lambda: grid.display and grid.max_scroll_y > 0, "the grid shown and scrollable")
         grid.scroll_to(y=grid.max_scroll_y, animate=False)
         await pilot.pause()
         bottom = grid.scroll_y
@@ -169,9 +169,9 @@ async def test_enter_in_the_grid_does_not_focus_the_hidden_detail_pane(tmp_path:
     async with app.run_test(size=(120, 40)) as pilot:
         await pilot.pause()
         await pilot.press("v")
-        await pilot.pause()
         screen = app.screen
         assert isinstance(screen, BriefingScreen)
+        await wait_for(pilot, lambda: screen.layout_mode == "grid" and screen.query_one(StationGrid).has_focus, "the grid")
         screen.action_focus_detail()
         await pilot.pause()  # Widget.focus only schedules the change
         assert not screen.query_one(DetailPane).has_focus
@@ -183,15 +183,16 @@ async def test_period_detail_uses_one_time_base(tmp_path: Path) -> None:
     async with app.run_test(size=(120, 40)) as pilot:
         await pilot.pause()
         await pilot.press("3")
-        await pilot.pause(0.2)
         from wxbrief.ui.widgets.period_detail import PeriodDetail
 
-        text = plain(app.screen.query_one(PeriodDetail))
-        assert "MDT" in text and "UTC" not in text
+        def period() -> str:
+            return plain(app.screen.query_one(PeriodDetail))
+
+        await wait_for(pilot, lambda: "MDT" in period(), "the period in station time")
+        assert "UTC" not in period()
         await pilot.press("z", "z")  # station -> local -> zulu
-        await pilot.pause(0.2)
-        text = plain(app.screen.query_one(PeriodDetail))
-        assert "UTC" not in text and "Z" in text
+        await wait_for(pilot, lambda: "MDT" not in period() and "Z" in period(), "the period in zulu time")
+        assert "UTC" not in period()
 
 
 async def test_timeline_names_both_zones_across_a_clock_change_and_labels_half_hours(tmp_path: Path) -> None:
