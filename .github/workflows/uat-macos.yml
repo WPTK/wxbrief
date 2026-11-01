@@ -41,6 +41,8 @@ jobs:
         run: |
           brew install --cask iterm2
           sudo xattr -dr com.apple.quarantine /Applications/iTerm.app
+          /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f /Applications/iTerm.app
+          mdls -name kMDItemCFBundleIdentifier /Applications/iTerm.app
           defaults write com.googlecode.iterm2 EnableAPIServer -bool true
           defaults write com.googlecode.iterm2 SUEnableAutomaticChecks -bool false
           defaults write com.googlecode.iterm2 SUHasLaunchedBefore -bool true

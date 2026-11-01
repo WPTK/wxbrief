@@ -6,9 +6,11 @@ screen text is read back through the terminal itself (AppleScript for Terminal.a
 iTerm2). There is no `tmux send-keys` and no pty write anywhere.
 
 The method comes from eyewall's S4 spike (`spike/s4-macos-input`, runs 4 to 6, PASS on macos-26, macos-15 and
-macos-15-intel for both terminals). `MacTerminal` has the same shape as `uat_kit.Terminal`: an argv goes in, screen
+macos-15-intel for both terminals). `MacTerminal` has the same shape as `uat_kit.Terminal`: an argv goes in (`run`), screen
 text and PNGs come out (`wait_for_text`, `send_keys`, `click`, `click_text`, `resize`, `screen_text`, `settle`,
-`wait_exit`, plus `screenshot`).
+`wait_exit`, plus `screenshot`). The window is started once and runs one program after another, so iTerm2 is
+launched once per job. `test_probe.py` runs a raw byte reader in the same window to show what the terminal sent for
+an Esc key and for clicks at six cells, apart from the app.
 
 ## Run
 
@@ -26,8 +28,10 @@ Locally the tests skip unless `WXBRIEF_UAT_MACOS` is `Terminal` or `iTerm2`, and
    is `/opt/hca/hosted-compute-agent`.
 2. The driver starts the terminal, runs the app from a small `inner.sh` that publishes the terminal size (`stty size`)
    and the exit code, and sets the window to the requested cols x rows by measuring the cell size (no hard-coded font).
-3. A click targets the centre of a cell: `x = win.x + (c + 0.5) * win.w / cols`, `y = win.y + 28 + (r + 0.5) * (win.h - 28) / rows`
-   (28 points of title bar). `click_text` aims at the middle of a word, so a one-column miss still lands on it.
+3. A click targets the centre of a cell. The cell size is worked out from the window width and height at two different
+   sizes (Terminal.app's scroller makes `window width / cols` too big, which misses by 2 to 4 columns at column 60 to
+   100); the grid starts after the 28 point title bar. `click_text` aims at the middle of a word, so a one-column miss
+   still lands on it.
 
 ## Caveats (keep these true)
 

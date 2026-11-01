@@ -11,7 +11,6 @@ from __future__ import annotations
 import os
 import re
 import sys
-import tempfile
 import time
 import warnings
 from collections.abc import Iterator
@@ -20,6 +19,7 @@ from pathlib import Path
 import pytest
 
 from uat_macos import MacTerminal, unavailable_reason
+from uat_macos.conftest import stop_program
 
 APP = os.environ.get("WXBRIEF_UAT_MACOS", "")
 PROBE = Path(__file__).resolve().parent / "scripts" / "rawprobe.py"
@@ -31,13 +31,11 @@ CELLS = [(20, 8), (5, 11), (6, 11), (2, 2), (60, 20), (100, 30)]
 
 
 @pytest.fixture(scope="module")
-def probe() -> Iterator[MacTerminal]:
-    out = Path(os.environ.get("WXBRIEF_UAT_MACOS_OUT") or tempfile.mkdtemp(prefix="uat-macos-out-"))
-    with MacTerminal(
-        [sys.executable, str(PROBE), "{dir}/raw.log"], 110, 36, app=APP, out_dir=out / f"{APP}-probe"
-    ) as t:
-        t.wait_for_text("probe ready", 60)
-        yield t
+def probe(session: MacTerminal) -> Iterator[MacTerminal]:
+    session.run([sys.executable, str(PROBE), "{dir}/raw.log"])
+    session.wait_for_text("probe ready", 60)
+    yield session
+    stop_program(session)
 
 
 def received(term: MacTerminal) -> bytes:

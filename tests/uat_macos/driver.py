@@ -4,9 +4,13 @@ Keys and clicks are posted to the window server by ``cliclick`` (no tmux send-ke
 with Quartz; screenshots are ``screencapture -l``; the screen text is read back through the terminal itself
 (AppleScript ``contents`` for Terminal.app, the ``iterm2`` Python API for iTerm2).
 
+One terminal window is started once and can run several programs one after another (``run``): launching iTerm2 twice
+in one job is the part that is least proven on the hosted runners.
+
 Usage::
 
-    with MacTerminal(["python", "-m", "myapp"], 110, 36, app="Terminal") as t:
+    with MacTerminal(110, 36, app="Terminal") as t:
+        t.run(["python", "-m", "myapp"])
         t.wait_for_text("Ready", 30)
         t.send_keys("2", "enter")
         t.click_text("Stations")
@@ -30,6 +34,7 @@ from pathlib import Path
 from uat_kit.terminal import Screen
 
 TITLE_BAR = 28.0  # points; measured on macos-15 and macos-26 (eyewall S4), Terminal.app and iTerm2
+PAD = (4.0, 2.0)  # left and top padding inside the window, in points (a guess; a click lands mid-cell, so +-3 is fine)
 ORIGIN = (40, 60)  # window top-left in screen points
 HERE = Path(__file__).resolve().parent
 APPS = {
@@ -52,6 +57,7 @@ KEYS = {
     "pageup": "page-up",
     "pagedown": "page-down",
 }
+Bounds = tuple[float, float, float, float]
 
 
 def unavailable_reason() -> str | None:
@@ -68,12 +74,29 @@ def unavailable_reason() -> str | None:
 
 
 def cell_center(
-    bounds: tuple[float, float, float, float], size: tuple[int, int], col: int, row: int
+    bounds: Bounds, size: tuple[int, int], col: int, row: int, cell: tuple[float, float] | None = None
 ) -> tuple[int, int]:
-    """Screen point at the centre of 0-based cell (col, row) of a window; ``size`` is (cols, rows)."""
+    """Screen point at the centre of 0-based cell (col, row) of a window; ``size`` is (cols, rows).
+
+    With a measured ``cell`` (width, height in points) the grid starts at the window padding. Without one, the window
+    is divided evenly, which overshoots on the right when the window has a scroller (Terminal.app).
+    """
     x, y, w, h = bounds
     cols, rows = size
+    if cell is not None:
+        return round(x + PAD[0] + (col + 0.5) * cell[0]), round(y + TITLE_BAR + PAD[1] + (row + 0.5) * cell[1])
     return round(x + (col + 0.5) * w / cols), round(y + TITLE_BAR + (row + 0.5) * (h - TITLE_BAR) / rows)
+
+
+def cell_size(samples: list[tuple[float, float, int, int]]) -> tuple[float, float] | None:
+    """Cell width and height from (window width, window height, cols, rows) samples taken at different sizes."""
+    if len(samples) < 2:
+        return None
+    lo_c, hi_c = min(samples, key=lambda s: s[2]), max(samples, key=lambda s: s[2])
+    lo_r, hi_r = min(samples, key=lambda s: s[3]), max(samples, key=lambda s: s[3])
+    if hi_c[2] - lo_c[2] < 3 or hi_r[3] - lo_r[3] < 3:
+        return None
+    return (hi_c[0] - lo_c[0]) / (hi_c[2] - lo_c[2]), (hi_r[1] - lo_r[1]) / (hi_r[3] - lo_r[3])
 
 
 def _sh(cmd: list[str], timeout: float = 30) -> tuple[int, str]:
@@ -89,16 +112,14 @@ def _osa(script: str, timeout: float = 30) -> tuple[int, str]:
 
 
 class MacTerminal:
-    """``argv`` running in a real ``app`` ("Terminal" or "iTerm2") window of about ``cols`` x ``rows`` cells."""
+    """A real ``app`` ("Terminal" or "iTerm2") window of about ``cols`` x ``rows`` cells, running programs one at a time."""
 
     def __init__(
         self,
-        argv: list[str],
         cols: int = 110,
         rows: int = 36,
         *,
         app: str = "Terminal",
-        env: dict[str, str] | None = None,
         out_dir: Path | None = None,
     ) -> None:
         reason = unavailable_reason()
@@ -113,20 +134,28 @@ class MacTerminal:
         self.out_dir.mkdir(parents=True, exist_ok=True)
         self._closed = False
         self._shots = 0
+        self._runs = 0
+        self._samples: list[tuple[float, float, int, int]] = []
         _sh(["pkill", "-x", self._spec["process"]])
         time.sleep(1)
-        # inner.sh runs the program as a child, publishes the window size (for geometry) and the exit code.
-        lines = ["#!/bin/bash", f"cd {shlex.quote(str(self.dir))}", "export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8"]
-        for k, v in (env or {}).items():
-            lines.append(f"export {k}={shlex.quote(v.replace('{dir}', str(self.dir)))}")
-        lines += [
-            "( while [ ! -e exitcode ]; do stty size < /dev/tty > size.tmp 2>/dev/null && mv size.tmp size; sleep 0.3; done ) &",
-            " ".join(shlex.quote(a.replace("{dir}", str(self.dir))) for a in argv),
-            "echo $? > exitcode",
-            "sleep 3600",
-        ]
+        # inner.sh publishes the window size (for geometry) and runs each queued script in the foreground, one by one,
+        # recording its exit code. The window stays open between programs.
         inner = self.dir / "inner.sh"
-        inner.write_text("\n".join(lines) + "\n")
+        inner.write_text(
+            "\n".join(
+                [
+                    "#!/bin/bash",
+                    f"cd {shlex.quote(str(self.dir))}",
+                    "export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8",
+                    "( while [ ! -e stop ]; do stty size < /dev/tty > size.tmp 2>/dev/null && mv size.tmp size; sleep 0.3; done ) &",
+                    "n=1",
+                    "while [ ! -e stop ]; do",
+                    '  if [ -e "run.$n" ]; then bash "run.$n"; echo $? > "done.$n"; n=$((n + 1)); else sleep 0.2; fi',
+                    "done",
+                    "",
+                ]
+            )
+        )
         inner.chmod(0o755)
         x, y = ORIGIN
         bounds = f"{{{x}, {y}, {x + 860}, {y + 600}}}"
@@ -154,6 +183,19 @@ class MacTerminal:
             self.close()
             raise
 
+    def run(self, argv: list[str], env: dict[str, str] | None = None) -> None:
+        """Start ``argv`` in the window (after clearing it). ``{dir}`` in an argument or value is the scratch directory."""
+        if self.alive():
+            raise RuntimeError("the previous program is still running")
+        self._runs += 1
+        lines = ["printf '\\033[3J\\033[H\\033[2J'"]
+        for k, v in (env or {}).items():
+            lines.append(f"export {k}={shlex.quote(v.replace('{dir}', str(self.dir)))}")
+        lines.append(" ".join(shlex.quote(a.replace("{dir}", str(self.dir))) for a in argv))
+        tmp = self.dir / f"run.{self._runs}.tmp"
+        tmp.write_text("\n".join(lines) + "\n")
+        tmp.rename(self.dir / f"run.{self._runs}")
+
     # -- geometry ---------------------------------------------------------------------------------------------------
 
     def _size(self) -> tuple[int, int] | None:
@@ -176,12 +218,12 @@ class MacTerminal:
             time.sleep(0.5)
         raise AssertionError(f"{self.app}: the terminal did not report a stable size in {timeout:g} s")
 
-    def _window(self, timeout: float = 15.0) -> tuple[int, tuple[float, float, float, float]]:
+    def _window(self, timeout: float = 15.0) -> tuple[int, Bounds]:
         import Quartz
 
         deadline = time.monotonic() + timeout
         while True:
-            best: tuple[float, int, tuple[float, float, float, float]] | None = None
+            best: tuple[float, int, Bounds] | None = None
             seen = []
             for w in Quartz.CGWindowListCopyWindowInfo(Quartz.kCGWindowListOptionOnScreenOnly, Quartz.kCGNullWindowID):
                 b = w["kCGWindowBounds"]
@@ -200,19 +242,30 @@ class MacTerminal:
                 )
             time.sleep(0.5)
 
+    def _measure(self) -> tuple[tuple[int, int], Bounds]:
+        """The settled size and window bounds; every pair is kept to work out the real cell size."""
+        size = self._wait_size()
+        _, bounds = self._window()
+        self._samples.append((bounds[2], bounds[3], size[0], size[1]))
+        return size, bounds
+
     def _fit(self, cols: int, rows: int) -> None:
-        """Set the window bounds until the terminal reports ``cols`` x ``rows`` (cell size is measured, not assumed)."""
-        for _ in range(5):
-            cur = self._wait_size()
+        """Set the window bounds until the terminal reports ``cols`` x ``rows``; the window is the cell grid plus padding.
+
+        The extra width/height (in cells) is searched: grown while the terminal reports too few cells, shrunk while
+        too many, so a scroller or padding of unknown size cannot leave it one cell off.
+        """
+        mw = mh = 0.4
+        for _ in range(8):
+            cur, (_, _, w, h) = self._measure()
             if cur == (cols, rows):
                 self.cols, self.rows = cols, rows
                 return
-            _, (_, _, w, h) = self._window()
-            cw, ch = w / cur[0], (h - TITLE_BAR) / cur[1]  # slightly over the real cell: includes the window padding
+            cw, ch = w / cur[0], (h - TITLE_BAR) / cur[1]
+            mw += 0.3 if cur[0] < cols else -0.3 if cur[0] > cols else 0
+            mh += 0.3 if cur[1] < rows else -0.3 if cur[1] > rows else 0
+            nw, nh = round((cols + mw) * cw), round((rows + mh) * ch + TITLE_BAR)
             x, y = ORIGIN
-            # Step by the missing cells, with a third of a cell extra so a rounding loss cannot stall one cell short.
-            nw = round(w + (cols - cur[0]) * cw + (cw / 3 if cols > cur[0] else -cw / 3 if cols < cur[0] else 0))
-            nh = round(h + (rows - cur[1]) * ch + (ch / 3 if rows > cur[1] else -ch / 3 if rows < cur[1] else 0))
             target = "front window" if self.app == "Terminal" else "current window"
             _osa(f"tell {self._spec['scripting']} to set bounds of {target} to {{{x}, {y}, {x + nw}, {y + nh}}}")
             time.sleep(1)
@@ -229,7 +282,11 @@ class MacTerminal:
         self._activate()
         for key in keys:
             named = KEYS.get(key.lower())
-            rc, out = _sh(["cliclick", f"kp:{named}"] if named else ["cliclick", f"t:{key}"])
+            if key.lower() == "ctrl+c":
+                cmd = ["cliclick", "kd:ctrl", "t:c", "ku:ctrl"]
+            else:
+                cmd = ["cliclick", f"kp:{named}"] if named else ["cliclick", f"t:{key}"]
+            rc, out = _sh(cmd)
             if rc != 0:
                 raise AssertionError(f"cliclick failed for key {key!r}: {out}")
             time.sleep(0.15)
@@ -237,11 +294,11 @@ class MacTerminal:
     def click(self, col: int, row: int) -> None:
         """Move the pointer to the middle of cell (col, row), press and release the left button."""
         self._activate()
-        size = self._wait_size()
-        _, bounds = self._window()
-        x, y = cell_center(bounds, size, col, row)
+        size, bounds = self._measure()
+        cell = cell_size(self._samples)
+        x, y = cell_center(bounds, size, col, row, cell)
         with (self.out_dir / "clicks.log").open("a") as f:
-            f.write(f"cell ({col},{row}) -> point ({x},{y}) window {bounds} size {size}\n")
+            f.write(f"cell ({col},{row}) -> point ({x},{y}) window {bounds} size {size} cell {cell}\n")
         rc, out = _sh(["cliclick", f"m:{x},{y}", "w:150", f"c:{x},{y}"])
         if rc != 0:
             raise AssertionError(f"cliclick failed for click at {(x, y)}: {out}")
@@ -269,8 +326,9 @@ class MacTerminal:
             rc, out = _sh([sys.executable, str(HERE / "scripts" / "iterm_readback.py")], 30)
         if rc != 0:
             raise AssertionError(f"{self.app} read-back failed (rc={rc}): {out}")
-        lines = [line.rstrip() for line in out.replace("\r", "\n").split("\n")]
-        if len(lines) > self.rows:  # Terminal.app returns scrollback above the screen
+        # Terminal.app keeps cells right of the current width after a resize, and returns scrollback above the screen.
+        lines = [line[: self.cols].rstrip() for line in out.replace("\r", "\n").split("\n")]
+        if len(lines) > self.rows:
             lines = lines[-self.rows :]
         return Screen(tuple((lines + [""] * self.rows)[: self.rows]))
 
@@ -324,13 +382,15 @@ class MacTerminal:
 
     @property
     def exit_code(self) -> int | None:
+        """The exit code of the current program, or None while it runs (or when none was started)."""
         try:
-            return int((self.dir / "exitcode").read_text().strip())
+            return int((self.dir / f"done.{self._runs}").read_text().strip())
         except (OSError, ValueError):
             return None
 
     def alive(self) -> bool:
-        return self.exit_code is None
+        """True while the current program runs."""
+        return self._runs > 0 and not (self.dir / f"done.{self._runs}").exists()
 
     def wait_exit(self, timeout: float = 20.0) -> int:
         deadline = time.monotonic() + timeout
@@ -345,7 +405,7 @@ class MacTerminal:
         if self._closed:
             return
         self._closed = True
-        (self.dir / "exitcode").touch()  # stops the size watcher
+        (self.dir / "stop").touch()  # stops the size watcher and the run loop
         _osa(f"tell {self._spec['scripting']} to quit", 10)
         time.sleep(1)
         _sh(["pkill", "-x", self._spec["process"]])

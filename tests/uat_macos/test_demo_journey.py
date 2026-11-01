@@ -9,13 +9,12 @@ from __future__ import annotations
 
 import os
 import sys
-import tempfile
 from collections.abc import Iterator
-from pathlib import Path
 
 import pytest
 
 from uat_macos import MacTerminal, unavailable_reason
+from uat_macos.conftest import stop_program
 
 APP = os.environ.get("WXBRIEF_UAT_MACOS", "")
 pytestmark = [
@@ -25,11 +24,10 @@ pytestmark = [
 
 
 @pytest.fixture(scope="module")
-def term() -> Iterator[MacTerminal]:
-    out = Path(os.environ.get("WXBRIEF_UAT_MACOS_OUT") or tempfile.mkdtemp(prefix="uat-macos-out-"))
-    argv = [sys.executable, "-m", "wxbrief", "--demo", "--no-config"]
-    with MacTerminal(argv, 110, 36, app=APP, env={"WXBRIEF_CACHE_DIR": "{dir}/cache"}, out_dir=out / APP) as t:
-        yield t
+def term(session: MacTerminal) -> Iterator[MacTerminal]:
+    session.run([sys.executable, "-m", "wxbrief", "--demo", "--no-config"], {"WXBRIEF_CACHE_DIR": "{dir}/cache"})
+    yield session
+    stop_program(session)
 
 
 @pytest.fixture(autouse=True)
