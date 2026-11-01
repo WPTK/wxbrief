@@ -22,6 +22,7 @@ Usage::
 from __future__ import annotations
 
 import contextlib
+import re
 import shlex
 import shutil
 import subprocess
@@ -41,21 +42,21 @@ APPS = {
     "Terminal": {"scripting": 'application "Terminal"', "owner": "Terminal", "process": "Terminal"},
     "iTerm2": {"scripting": 'application id "com.googlecode.iterm2"', "owner": "iTerm2", "process": "iTerm2"},
 }
-KEYS = {
-    "enter": "enter",
-    "return": "return",
-    "escape": "esc",
-    "esc": "esc",
-    "tab": "tab",
-    "space": "space",
-    "up": "arrow-up",
-    "down": "arrow-down",
-    "left": "arrow-left",
-    "right": "arrow-right",
-    "home": "home",
-    "end": "end",
-    "pageup": "page-up",
-    "pagedown": "page-down",
+KEY_CODES = {
+    "enter": 76,
+    "return": 36,
+    "escape": 53,
+    "esc": 53,
+    "tab": 48,
+    "space": 49,
+    "left": 123,
+    "right": 124,
+    "down": 125,
+    "up": 126,
+    "home": 115,
+    "end": 119,
+    "pageup": 116,
+    "pagedown": 121,
 }
 Bounds = tuple[float, float, float, float]
 
@@ -136,6 +137,7 @@ class MacTerminal:
         self._shots = 0
         self._runs = 0
         self._samples: list[tuple[float, float, int, int]] = []
+        self._cell: tuple[float, float] | None = None
         _sh(["pkill", "-x", self._spec["process"]])
         time.sleep(1)
         # inner.sh publishes the window size (for geometry) and runs each queued script in the foreground, one by one,
@@ -178,9 +180,9 @@ class MacTerminal:
             raise RuntimeError(f"could not start {app} (osascript rc={rc}): {out}")
         try:
             self._wait_size()
-            self._fit(cols - 30, rows - 10)  # a second, very different size: the cell size is the slope between the two
             self._fit(cols, rows)
             self._focus()
+            self._calibrate()
         except BaseException:
             self.close()
             raise
@@ -285,6 +287,39 @@ class MacTerminal:
         _sh(["cliclick", f"c:{round(x + w / 2)},{round(y + TITLE_BAR / 2)}"])
         time.sleep(0.5)
 
+    def _calibrate(self) -> None:
+        """Find the real cell size by clicking: run a raw byte reader, click a far cell, read which cell it reported, adjust.
+
+        The window is the cell grid plus slack of up to a cell, so the cell size cannot be worked out from window sizes.
+        """
+        log = self.dir / "calib.log"
+        self.run([sys.executable, str(HERE / "scripts" / "rawprobe.py"), "{dir}/calib.log"])
+        self.wait_for_text("probe ready", 60)
+        size, bounds = self._measure()
+        cell = cell_size(self._samples) or (bounds[2] / size[0], (bounds[3] - TITLE_BAR) / size[1])
+        target = (size[0] - 8, size[1] - 6)
+        for _ in range(4):
+            x, y = cell_center(bounds, size, *target, cell)
+            before = log.read_text() if log.exists() else ""
+            _sh(["cliclick", f"m:{x},{y}", "w:150", f"c:{x},{y}"])
+            time.sleep(1)
+            text = log.read_text() if log.exists() else ""
+            data = b"".join(
+                bytes.fromhex(ln.split()[1]) for ln in text[len(before) :].splitlines() if len(ln.split()) == 2
+            )
+            hits = re.findall(rb"\x1b\[<0;(\d+);(\d+)M", data)
+            with (self.out_dir / "calibrate.log").open("a") as f:
+                f.write(f"target {target} point {(x, y)} cell {cell} reported {hits[:1]}\n")
+            if not hits:
+                break  # nothing reported: keep the estimate, the click tests will say so
+            got = (int(hits[0][0]) - 1, int(hits[0][1]) - 1)
+            cell = ((x - bounds[0] - PAD[0]) / (got[0] + 0.5), (y - bounds[1] - TITLE_BAR - PAD[1]) / (got[1] + 0.5))
+            if got == target:
+                break
+        self._cell = cell
+        self.send_keys("q")
+        self.wait_exit(10)
+
     def _activate(self) -> None:
         _osa(f"tell {self._spec['scripting']} to activate")
         time.sleep(0.5)
@@ -293,21 +328,26 @@ class MacTerminal:
         """Each argument is a named key (``"enter"``, ``"escape"``, ``"down"``) or literal text typed as is."""
         self._activate()
         for key in keys:
-            named = KEYS.get(key.lower())
-            if key.lower() == "ctrl+c":
-                cmd = ["cliclick", "kd:ctrl", "t:c", "ku:ctrl"]
+            low = key.lower()
+            if low == "ctrl+c":
+                rc, out = _osa('tell application "System Events" to keystroke "c" using control down')
+            elif low in KEY_CODES:  # System Events, not cliclick: cliclick's escape never reached the terminal
+                rc, out = _osa(f'tell application "System Events" to key code {KEY_CODES[low]}')
             else:
-                cmd = ["cliclick", f"kp:{named}"] if named else ["cliclick", f"t:{key}"]
-            rc, out = _sh(cmd)
+                rc, out = _osa(
+                    'tell application "System Events" to keystroke "'
+                    + key.replace("\\", "\\\\").replace('"', '\\"')
+                    + '"'
+                )
             if rc != 0:
-                raise AssertionError(f"cliclick failed for key {key!r}: {out}")
+                raise AssertionError(f"System Events failed for key {key!r}: {out}")
             time.sleep(0.15)
 
     def click(self, col: int, row: int) -> None:
         """Move the pointer to the middle of cell (col, row), press and release the left button."""
         self._activate()
         size, bounds = self._measure()
-        cell = cell_size(self._samples)
+        cell = self._cell or cell_size(self._samples)
         x, y = cell_center(bounds, size, col, row, cell)
         with (self.out_dir / "clicks.log").open("a") as f:
             f.write(f"cell ({col},{row}) -> point ({x},{y}) window {bounds} size {size} cell {cell}\n")
