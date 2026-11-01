@@ -23,23 +23,35 @@ permissions:
   contents: read
 
 jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        shell: python
+        env:
+          TERMINALS: ${{ inputs.terminals || 'conhost,wt,vscode' }}
+          ARM: ${{ inputs.arm }}
+        run: |
+          import json, os
+          terms = [t for t in os.environ["TERMINALS"].split(",") if t]
+          cells = [{"terminal": t, "os": "windows-2025", "arch": "x64", "experimental": False} for t in terms]
+          if os.environ.get("ARM", "true") != "false":
+              cells += [{"terminal": t, "os": "windows-11-arm", "arch": "arm64", "experimental": True} for t in terms]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write("matrix=" + json.dumps({"include": cells}) + chr(10))
+
   realterm:
     name: ${{ matrix.terminal }} (${{ matrix.os }})
-    if: ${{ contains(format(',{0},', inputs.terminals), format(',{0},', matrix.terminal)) && (inputs.arm || matrix.arch == 'x64') }}
+    needs: plan
     runs-on: ${{ matrix.os }}
     timeout-minutes: 75
     continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
-      matrix:
-        terminal: [conhost, wt, vscode]
-        os: [windows-2025]
-        arch: [x64]
-        experimental: [false]
-        include:
-          - { terminal: conhost, os: windows-11-arm, arch: arm64, experimental: true }
-          - { terminal: wt, os: windows-11-arm, arch: arm64, experimental: true }
-          - { terminal: vscode, os: windows-11-arm, arch: arm64, experimental: true }
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     env:
       PYTHONUTF8: "1"
       PYTHONUNBUFFERED: "1"
