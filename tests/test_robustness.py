@@ -474,3 +474,115 @@ async def test_a_station_removed_while_offline_clears_the_offline_mark(tmp_path:
         app.remove_station("KDEN")
         await pilot.pause()
         assert not app.state.offline and not app.state.errors
+
+
+# --- round 3: what a TAF answer is allowed to clear ---------------------------------------------------------------------
+
+
+def test_an_empty_taf_answer_keeps_held_forecasts_and_the_cache(tmp_path: Path) -> None:
+    cache = DiskCache(tmp_path)
+    state = AppState(["KDEN", "EGLL"], cache=cache, now=lambda: NOW)
+    state.apply(Product.TAF, taf_rows("KDEN", "EGLL"))
+    state.record_error(Product.TAF, "taf: server error 503")
+    state.apply(Product.TAF, [])  # a 204 or an empty list: the feed said nothing
+    assert state.stations["KDEN"].taf is not None and state.stations["EGLL"].taf is not None
+    assert Product.TAF in state.errors  # not reported as recovered
+    found = cache.read("tafs")
+    assert found is not None and {row["icaoId"] for row in found[1]} == {"KDEN", "EGLL"}
+
+
+def test_an_empty_taf_answer_for_stations_with_no_forecast_is_an_ordinary_success() -> None:
+    state = AppState(["KDEN"], now=lambda: NOW)
+    state.record_error(Product.TAF, "taf: server error 503")
+    state.apply(Product.TAF, [])
+    assert Product.TAF not in state.errors
+
+
+def test_a_station_added_while_a_taf_fetch_was_in_flight_keeps_its_forecast() -> None:
+    state = AppState(["KDEN"], now=lambda: NOW)
+    state.apply(Product.TAF, taf_rows("KDEN", "EGLL"))  # EGLL's forecast is held (loaded earlier)
+    assert state.add("EGLL", persist=False)
+    state.apply(Product.TAF, taf_rows("KDEN"), requested=["KDEN"])  # the request predates the add
+    assert state.stations["EGLL"].taf is not None
+    state.apply(Product.TAF, taf_rows("KDEN"), requested=["KDEN", "EGLL"])  # asked about both: EGLL is withdrawn
+    assert state.stations["EGLL"].taf is None
+
+
+async def test_a_fetch_error_for_stations_since_removed_is_ignored(tmp_path: Path) -> None:
+    from types import SimpleNamespace
+
+    app = make_app(tmp_path, ["KDEN"])
+    app.options.poll = False
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause()
+        app.scheduler = SimpleNamespace(requested=("KDEN",))  # type: ignore[assignment]
+        app.state.remove("KDEN")
+        app._on_error(Product.METAR, TransportError("down"))
+        assert not app.state.errors and not app.state.offline
+        app.scheduler = None
+
+
+# --- round 3: a save at the watchlist cap ---------------------------------------------------------------------------------
+
+
+def _codes(count: int) -> list[str]:
+    return [f"K{chr(65 + i // 26)}{chr(65 + i % 26)}X" for i in range(count)]
+
+
+def test_merge_session_reports_the_additions_it_could_not_fit() -> None:
+    from wxbrief.config import WATCHLIST_CAP, merge_session
+
+    disk = Config()
+    disk.stations.watchlist = _codes(WATCHLIST_CAP)  # another instance filled the file
+    merged, dropped = merge_session(disk, _codes(WATCHLIST_CAP - 1), [*_codes(WATCHLIST_CAP - 1), "KDEN"], {})
+    assert dropped == ["KDEN"] and "KDEN" not in merged.stations.watchlist
+    assert len(merged.stations.watchlist) == WATCHLIST_CAP
+
+
+async def test_a_station_cut_at_the_cap_is_not_recorded_as_saved(tmp_path: Path) -> None:
+    from wxbrief.config import WATCHLIST_CAP
+
+    known = _codes(WATCHLIST_CAP - 1)
+    on_disk = Config()
+    on_disk.stations.watchlist = [*known, "KOTH"]  # another instance added KOTH after this one launched
+    path = tmp_path / "config.toml"
+    assert save_config(on_disk, path)
+    app = make_app(tmp_path, [], watchlist=known)
+    app.options.poll = False
+    async with app.run_test(size=(120, 40)) as pilot:
+        await pilot.pause()
+        app.add_station("KDEN")
+        await pilot.pause()
+        assert not app.state.is_saved("KDEN") and "KDEN" in app.state.session
+        assert app.ctx.translator.t(K.UI_TOAST_WATCHLIST_FULL, limit=WATCHLIST_CAP) in notes(app)
+    assert "KDEN" not in load_config(path).config.stations.watchlist
+
+
+class _ClosedPipe:
+    """A stdout whose reader has gone: the write is buffered, the flush fails."""
+
+    def __init__(self, error: OSError) -> None:
+        self.error = error
+
+    def write(self, text: str) -> int:
+        return len(text)
+
+    def flush(self) -> None:
+        raise self.error
+
+    def fileno(self) -> int:
+        raise ValueError("no descriptor")
+
+
+def test_a_flush_that_fails_on_a_closed_pipe_ends_quietly(monkeypatch: pytest.MonkeyPatch) -> None:
+    import errno
+
+    monkeypatch.setattr(cli, "run_get", lambda args: 0)  # wrote and returned: the failure comes at the flush
+    monkeypatch.setattr(sys, "stdout", _ClosedPipe(BrokenPipeError()))
+    assert main(["get", "KDEN"]) == 1
+    monkeypatch.setattr(sys, "platform", "win32")  # the CRT reports a closed pipe as EINVAL
+    monkeypatch.setattr(sys, "stdout", _ClosedPipe(OSError(errno.EINVAL, "Invalid argument")))
+    assert main(["get", "KDEN"]) == 1
+    monkeypatch.setattr(sys, "stdout", _ClosedPipe(OSError(errno.EIO, "I/O error")))  # any other error still shows
+    with pytest.raises(OSError):
+        main(["get", "KDEN"])

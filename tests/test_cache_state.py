@@ -125,3 +125,20 @@ def test_clean_leaves_other_programs_temp_files_alone(tmp_path: Path) -> None:
         os.utime(tmp_path / name, (old, old))
     DiskCache(tmp_path).clean(["metars", "tafs"])
     assert sorted(p.name for p in tmp_path.iterdir()) == [".other.xyz.tmp", ".upload.tmp"]
+
+
+def test_a_long_running_run_does_not_overwrite_a_newer_row_another_run_wrote(tmp_path: Path) -> None:
+    cache = DiskCache(tmp_path)
+    early = AppState(["KDEN", "KSEA"], cache=cache, now=lambda: NOW)
+    early.apply(Product.METAR, _metars("KDEN", "KSEA"))
+    clock = [NOW + timedelta(minutes=1)]
+    long_running = AppState(["KDEN"], cache=cache, now=lambda: clock[0])
+    long_running.load_cache()  # holds KSEA from 12:00
+    other = AppState(["KSEA"], cache=cache, now=lambda: NOW + timedelta(hours=4))
+    other.apply(Product.METAR, _metars("KSEA"))
+    clock[0] = NOW + timedelta(hours=4, minutes=10)
+    long_running.apply(Product.METAR, _metars("KDEN"))
+    found = cache.read("metars")
+    assert found is not None
+    stamps = {row["icaoId"]: row["wxbriefFetched"] for row in found[1]}
+    assert stamps["KSEA"] == (NOW + timedelta(hours=4)).isoformat()

@@ -105,16 +105,38 @@ def _header_only(lines: list[str]) -> bool:
     return all(word in _KEYWORDS or word in _MODIFIERS for word in words)
 
 
-def _in_remarks(lines: list[str]) -> bool:
-    return any(word.upper() == "RMK" for line in lines for word in _WORD.findall(line))
+class _Open:
+    """The report being built: its lines, and the two facts about them the splitter asks again for every new line.
+
+    Both are kept up to date as lines are added, so each line is scanned once and a long report costs linear time
+    (asking ``_header_only`` or ``_in_remarks`` of the whole report per line was quadratic).
+    """
+
+    __slots__ = ("first", "header_only", "in_remarks", "lines")
+
+    def __init__(self, piece: str) -> None:
+        self.lines: list[str] = []
+        self.first = _first_word(piece)
+        self.header_only = True  # only keywords and modifiers so far (``TAF AMD``)
+        self.in_remarks = False  # an ``RMK`` has been seen
+        self.add(piece)
+
+    def add(self, piece: str) -> None:
+        self.lines.append(piece)
+        for word in _WORD.findall(piece):
+            upper = word.upper()
+            if upper == "RMK":
+                self.in_remarks = True
+            if self.header_only and upper not in _KEYWORDS and upper not in _MODIFIERS:
+                self.header_only = False
 
 
 def _split_chunk(chunk: str) -> list[str]:
     """Split text that holds no ``=`` (apart from a final one) into reports."""
-    reports: list[list[str]] = []
-    current: list[str] | None = None
+    reports: list[_Open] = []
+    current: _Open | None = None
     for line in chunk.split("\n"):
-        in_remarks = current is not None and _in_remarks(current)
+        in_remarks = current is not None and current.in_remarks
         for piece in _split_keywords(line, in_remarks):
             if not piece.strip():
                 current = None
@@ -123,20 +145,20 @@ def _split_chunk(chunk: str) -> list[str]:
             indented = piece[:1].isspace()
             if current is None:
                 continues = False
-            elif _header_only(current):
+            elif current.header_only:
                 continues = word not in _KEYWORDS
-            elif word in _KEYWORDS and _in_remarks(current):
+            elif word in _KEYWORDS and current.in_remarks:
                 continues = not (_header_only([piece]) or _full_head(_WORD.findall(piece.upper())))
-            elif _first_word(current[0]) == "TAF":
+            elif current.first == "TAF":
                 continues = not _starts_report(piece)  # a TAF wraps anywhere, not only before a change group
             else:
                 continues = word not in _KEYWORDS and (indented or _CONTINUATION.match(word) is not None)
             if continues and current is not None:
-                current.append(piece)
+                current.add(piece)
             else:
-                current = [piece]
+                current = _Open(piece)
                 reports.append(current)
-    return ["\n".join(lines).strip() for lines in reports if "".join(lines).strip()]
+    return ["\n".join(item.lines).strip() for item in reports if "".join(item.lines).strip()]
 
 
 def split_reports(text: str) -> list[str]:

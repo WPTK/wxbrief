@@ -8,12 +8,14 @@ from pathlib import Path
 
 import httpx
 import pytest
+from corpus import awc_taf_rows
 from rich.text import Text
 from test_timeline_ui import demo_app, settle, text_of
 from textual.widgets import Collapsible, TextArea
 
 from wxbrief import app as app_module
 from wxbrief.data.demo import DEMO_NOW
+from wxbrief.data.models import parse_tafs
 from wxbrief.data.poll import Product
 from wxbrief.decode.taf import parse_taf
 from wxbrief.ui.screens import station_detail
@@ -69,7 +71,8 @@ async def test_the_station_screen_shows_what_a_poll_brought() -> None:
         screen = app.screen
         assert isinstance(screen, StationDetailScreen)
         assert "TAF KDEN" in text_of(screen.query_one("#raw"))
-        app._on_result(Product.TAF, [])  # a successful TAF fetch that no longer lists the station
+        others = [r for r in awc_taf_rows() if r["icaoId"] == "KATL"]
+        app._on_result(Product.TAF, parse_tafs(others))  # a TAF answer that no longer lists the station
         await settle(pilot)
         assert "TAF KDEN" not in text_of(screen.query_one("#raw"))
 

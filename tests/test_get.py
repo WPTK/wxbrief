@@ -120,3 +120,17 @@ def test_get_discord_clear_sky_glyph_follows_the_sun_at_the_station(
         assert main(["get", "KDEN", "--discord"]) == 0
     title = next(line for line in capsys.readouterr().out.splitlines() if "KDEN" in line and "DENVER" in line.upper())
     assert title.startswith(emoji)
+
+
+def test_get_keeps_the_modifier_awc_puts_in_remarks(capsys: pytest.CaptureFixture[str]) -> None:
+    rows = json.loads((FIXTURES / "taf_us_20261031.json").read_text(encoding="utf-8"))
+    katl = [row for row in rows if row["icaoId"] == "KATL"]
+    assert katl[0]["remarks"].strip() == "AMD" and "AMD" not in katl[0]["rawTAF"].split()[:3]
+    with respx.mock() as router:
+        router.get(f"{BASE_URL}/metar").mock(return_value=httpx.Response(204))
+        router.get(f"{BASE_URL}/taf").mock(return_value=httpx.Response(200, json=katl))
+        main(["get", "KATL", "--json"])
+        document = json.loads(capsys.readouterr().out)
+        assert "AMD" in json.dumps(document["KATL"]["taf"]["modifiers"])
+        main(["get", "KATL", "--discord"])
+    assert "AMD" in capsys.readouterr().out

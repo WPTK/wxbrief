@@ -107,7 +107,8 @@ class PollScheduler:
 
     ``on_result(product, rows)`` is called with each successful fetch, ``on_error(product, error)`` with each failure.
     Failures back off exponentially on their own product; a 429 also holds every product for the ``Retry-After``
-    the server gave.
+    the server gave. While a callback runs, ``requested`` holds the ids that fetch was sent for (the list may have
+    changed since), so a callback judges the answer against what was asked.
     """
 
     def __init__(
@@ -135,6 +136,7 @@ class PollScheduler:
         self._tracks = {Product.METAR: _Track(metar_interval), Product.TAF: _Track(taf_interval)}
         self._base = {Product.METAR: metar_interval, Product.TAF: taf_interval}
         self.away = False
+        self.requested: tuple[str, ...] = ()
         self.hold_until = 0.0  # clock time before which nothing may be fetched (a 429's Retry-After)
         self._requests = 0  # how many times poll_now() has been called
         self._wake = asyncio.Event()
@@ -188,6 +190,7 @@ class PollScheduler:
                 continue
             attempted.append(product)
             requested = self._requests
+            sent = tuple(ids)
             try:
                 rows: list[Any] = (
                     await self._client.metars(ids) if product is Product.METAR else await self._client.tafs(ids)
@@ -208,6 +211,7 @@ class PollScheduler:
                     self.hold_until = max(self.hold_until, hold)
                     for other in self._tracks.values():
                         other.due = max(other.due, hold)
+                self.requested = sent
                 if self._on_error:
                     self._notify(self._on_error, product, error)
                 if isinstance(error, RateLimited):
@@ -218,6 +222,7 @@ class PollScheduler:
             track.fetched = self._clock()
             if self._requests == requested:
                 track.due = track.fetched + self._interval(product)
+            self.requested = sent
             self._notify(self._on_result, product, rows)
         return attempted
 

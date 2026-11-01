@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import errno
 import json
 import os
 import sys
@@ -297,6 +298,11 @@ def tui_options(args: argparse.Namespace) -> AppOptions:
     )
 
 
+def _reader_went_away(exc: OSError) -> bool:
+    """A write to a closed pipe: ``BrokenPipeError``, or on Windows ``OSError`` with EINVAL (the CRT's answer)."""
+    return isinstance(exc, BrokenPipeError) or (sys.platform == "win32" and exc.errno == errno.EINVAL)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line and return the process exit code."""
     words = list(sys.argv[1:] if argv is None else argv)
@@ -315,10 +321,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _run_tui(tui_args, translator)
     args = build_parser(translator).parse_args(words)
     try:
-        return _run_decode(args) if args.command == "decode" else run_get(args)
+        status = _run_decode(args) if args.command == "decode" else run_get(args)
+        sys.stdout.flush()  # inside the try: output under the buffer size is otherwise written after this handler
+        return status
     except KeyboardInterrupt:
         return 130
-    except BrokenPipeError:  # the reader (``| head``) went away: stop quietly
+    except OSError as exc:
+        if not _reader_went_away(exc):
+            raise
+        # the reader (``| head``) went away: stop quietly
         with contextlib.suppress(OSError, ValueError):  # point stdout at nothing, so the flush at exit cannot raise
             devnull = os.open(os.devnull, os.O_WRONLY)
             os.dup2(devnull, sys.stdout.fileno())

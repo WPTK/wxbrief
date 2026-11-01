@@ -15,7 +15,6 @@ from wxbrief.data.poll import STALE_AFTER, Freshness, freshness
 from wxbrief.data.stations import bundled
 from wxbrief.decode.metar import parse_metar
 from wxbrief.decode.model import Metar, Taf
-from wxbrief.decode.taf import parse_taf
 from wxbrief.decode.units import UnitsMode
 from wxbrief.i18n import DEFAULT_LANGUAGE, Translator
 from wxbrief.i18n.keys import K
@@ -23,6 +22,7 @@ from wxbrief.render.discord import render_discord
 from wxbrief.render.jsonout import to_dict
 from wxbrief.render.plain import render_plain
 from wxbrief.solar import is_daylight
+from wxbrief.state import decode_taf_row
 
 
 def add_get_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser], t: Translator) -> None:
@@ -99,7 +99,7 @@ def run_get(args: argparse.Namespace) -> int:
         if m.observed is not None and freshness(m.observed, now) is Freshness.STALE
     }
     decoded_metars: dict[str, Metar] = {icao: parse_metar(m.raw, m.observed or now) for icao, m in metars.items()}
-    decoded_tafs: dict[str, Taf] = {icao: parse_taf(t.raw, t.issued or now) for icao, t in tafs.items()}
+    decoded_tafs: dict[str, Taf] = {icao: decode_taf_row(t, now) for icao, t in tafs.items()}
 
     if args.json:
         document = {

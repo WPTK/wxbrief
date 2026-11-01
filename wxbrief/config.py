@@ -221,11 +221,15 @@ def load_config(path: Path | None = None) -> LoadedConfig:
     return parse_config(data)
 
 
-def merge_session(disk: Config, saved: list[str], watchlist: list[str], view: dict[str, str]) -> Config:
+def merge_session(
+    disk: Config, saved: list[str], watchlist: list[str], view: dict[str, str]
+) -> tuple[Config, list[str]]:
     """``disk`` with only this session's changes applied: the stations added to or removed from ``saved`` (the list
     as this session last knew the file) to reach ``watchlist``, and the view settings in ``view``.
 
     The file is the base, so a station another instance added or a setting edited by hand since launch survives.
+    Returns the merged config and the stations of this session's that did not fit under ``WATCHLIST_CAP`` (the
+    file's own entries keep their place, so a cut can only fall on additions).
     """
     removed = set(saved) - set(watchlist)
     merged = [code for code in disk.stations.watchlist if code not in removed]
@@ -233,7 +237,7 @@ def merge_session(disk: Config, saved: list[str], watchlist: list[str], view: di
     disk.stations.watchlist = merged[:WATCHLIST_CAP]
     for name, value in view.items():
         setattr(disk.view, name, value)
-    return disk
+    return disk, merged[WATCHLIST_CAP:]
 
 
 def config_text(config: Config) -> str:

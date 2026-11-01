@@ -59,3 +59,23 @@ def test_without_a_clipboard_tool_the_terminal_route_is_the_fallback(
     app = FakeApp()
     assert clipboard.copy_text(app, "hello", "METAR", T)  # type: ignore[arg-type]
     assert app.terminal == ["hello"]
+
+
+def test_a_copy_that_leaves_the_clipboard_unchanged_falls_back_to_the_terminal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import sys
+    import types
+
+    fake = types.SimpleNamespace(copy=lambda text: None, paste=lambda: "the previous contents")  # a dead xclip
+    monkeypatch.setitem(sys.modules, "pyperclip", fake)
+    monkeypatch.setattr(sys, "platform", "linux")
+    for name in ("SSH_TTY", "SSH_CONNECTION"):
+        monkeypatch.delenv(name, raising=False)
+    app = FakeApp()
+    assert clipboard.copy_text(app, "hello", "METAR", T)  # type: ignore[arg-type]
+    assert app.terminal == ["hello"]
+    fake.paste = lambda: "hello\n"  # a tool that did take it
+    app = FakeApp()
+    assert clipboard.copy_text(app, "hello", "METAR", T)  # type: ignore[arg-type]
+    assert app.terminal == []

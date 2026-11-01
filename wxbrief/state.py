@@ -33,6 +33,11 @@ def _fetched_at(source: Mapping[str, Any], default: datetime) -> datetime:
     return stamp if stamp.tzinfo is not None else default
 
 
+def decode_taf_row(row: AwcTaf, fallback_issued: datetime) -> Taf:
+    """Decode a feed TAF row with the AMD/COR/CNL modifiers AWC keeps in its own field; the one place that does it."""
+    return parse_taf(row.raw, row.issued or fallback_issued, row.modifiers)
+
+
 @dataclass(slots=True)
 class StationReports:
     """What is known about one station: the newest AWC rows and their decodes."""
@@ -137,31 +142,46 @@ class AppState:
         entry = self.entry(row.icao)
         previous = entry.awc_taf
         if previous is None or previous.raw != row.raw or previous.modifiers != row.modifiers or entry.taf is None:
-            entry.taf = parse_taf(row.raw, row.issued or updated, row.modifiers)
+            entry.taf = decode_taf_row(row, updated)
         entry.awc_taf = row
         entry.taf_updated = updated
         entry.taf_cached = from_cache
 
-    def apply(self, product: Product, rows: list[Any]) -> None:
-        """Take a successful fetch: newest report per station, then write the cache."""
+    def apply(self, product: Product, rows: list[Any], requested: Iterable[str] | None = None) -> None:
+        """Take a successful fetch: newest report per station, then write the cache.
+
+        ``requested`` is the station ids the fetch was sent for (default: the whole current list). A TAF fetch is
+        judged only against those, so a station added while it was in flight is not cleared by an answer that never
+        asked about it.
+        """
         now = self.now()
+        asked = set(self.ids if requested is None else requested)
+        if product is Product.TAF and not rows and any(self._holds_taf(icao) for icao in asked):
+            # An empty answer for stations whose forecasts we hold (a 204, an empty list, or rows that did not parse)
+            # is the feed having nothing to say, not every forecast having been withdrawn: no information. The held
+            # forecasts and the cache stay, and an earlier failure is not reported as cleared.
+            return
         self.errors.pop(product, None)
         self.offline.discard(product)
         if product is Product.METAR:
             for row in latest_by_station(rows).values():
                 self._set_metar(row, now, from_cache=False)
         else:
-            # A TAF fetch that succeeded is the whole truth about the listed stations: one it no longer returns has
-            # lapsed or been withdrawn, so the old forecast goes rather than staying on screen as if current.
+            # A non-empty answer covers the stations it was asked about: one it no longer returns has lapsed or been
+            # withdrawn, so the old forecast goes rather than staying on screen as if current.
             returned = {row.icao for row in rows}
             for icao in self.ids:
                 entry = self.stations.get(icao)
-                if entry is not None and entry.awc_taf is not None and icao not in returned:
+                if icao in asked and entry is not None and entry.awc_taf is not None and icao not in returned:
                     entry.awc_taf = entry.taf = entry.taf_updated = None
                     entry.taf_cached = False
             for row in rows:
                 self._set_taf(row, now, from_cache=False)
         self._write_cache(product, now)
+
+    def _holds_taf(self, icao: str) -> bool:
+        entry = self.stations.get(icao)
+        return entry is not None and entry.awc_taf is not None
 
     def _write_cache(self, product: Product, now: datetime) -> None:
         """Write the cache file for ``product``, each row stamped with its own fetch time.
@@ -175,6 +195,7 @@ class AppState:
         payload: list[dict[str, Any]] = []
         written: set[str] = set()
         listed = set(self.ids)
+        on_disk = self._cache_stamps(product)
         for icao in [*self.ids, *(i for i in self.stations if i not in listed)]:
             entry = self.stations.get(icao)
             if entry is None:
@@ -188,6 +209,8 @@ class AppState:
                     continue
             if row is None or fetched is None:
                 continue
+            if icao not in listed and on_disk.get(icao, fetched) > fetched:
+                continue  # another run fetched this one since: its newer row (read below) beats our copy
             written.add(icao)
             if icao not in listed and now - fetched > CACHE_MAX_AGE:
                 continue
@@ -195,6 +218,21 @@ class AppState:
         payload.extend(self._others_cached(product, now, written | listed))
         if not self.cache.write(CACHE_KEYS[product], payload):
             self.record_error(product, f"{product.value}: could not write the cache in {self.cache.directory}")
+
+    def _cache_stamps(self, product: Product) -> dict[str, datetime]:
+        """The newest fetch time per station in the cache file as it is now (empty when there is none)."""
+        assert self.cache is not None
+        found = self.cache.read(CACHE_KEYS[product])
+        if found is None or not isinstance(found[1], list):
+            return {}
+        saved_at, rows = found
+        stamps: dict[str, datetime] = {}
+        parse = parse_metars if product is Product.METAR else parse_tafs
+        for parsed in parse(rows):
+            fetched = _fetched_at(parsed.source, saved_at)
+            if parsed.icao not in stamps or fetched > stamps[parsed.icao]:
+                stamps[parsed.icao] = fetched
+        return stamps
 
     def _others_cached(self, product: Product, now: datetime, skip: set[str]) -> list[dict[str, Any]]:
         """Unexpired rows in the cache file for stations this run knows nothing about (another run wrote them)."""

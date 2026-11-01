@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from typing import TYPE_CHECKING, Any
 
 from wxbrief.i18n import Translator
@@ -12,10 +13,19 @@ if TYPE_CHECKING:
     from textual.app import App
 
 
+def _plain(text: str) -> str:
+    return text.replace("\r\n", "\n").rstrip()
+
+
 def _pyperclip_copy(text: str) -> None:
     import pyperclip
 
     pyperclip.copy(text)
+    if sys.platform.startswith("linux"):
+        # pyperclip's xclip route never checks the exit status, so with a dead DISPLAY the copy "works" and nothing
+        # is on the clipboard. Read it back; a mismatch raises, which sends the caller to the terminal route.
+        if _plain(pyperclip.paste()) != _plain(text):
+            raise RuntimeError("the clipboard tool did not take the text")
 
 
 def _over_ssh() -> bool:
