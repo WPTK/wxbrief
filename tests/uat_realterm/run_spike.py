@@ -242,6 +242,8 @@ class Term:
         (self.out / f"{self.tag}-{tag}.txt").write_text(text, encoding="utf-8")
 
     def prepare_window(self) -> None:
+        for line in w.dismiss_blockers(self.hwnd):
+            self.rep.note("blocker", line)
         sw, sh = w.screen_size()
         width, height = min(sw - 20, 1280), min(sh - 60, 800)
         w.move_resize(self.hwnd, 0, 0, width, height)
@@ -439,7 +441,7 @@ class VSCode(Term):
         folder = self.work / "folder"
         folder.mkdir(exist_ok=True)
         self.snapshot_baseline()
-        self.proc = subprocess.Popen(
+        self.proc = self.spawn(
             [
                 str(self.tool_exe),
                 "--disable-extensions",
@@ -449,8 +451,7 @@ class VSCode(Term):
                 "--force-renderer-accessibility",
                 "--new-window",
                 str(folder),
-            ],
-            env=self.env,
+            ]
         )
         self.hwnd = self.find_window("Chrome_WidgetWin_1", timeout=90)
         self.rep.note("window", str(w.window_info(self.hwnd)))

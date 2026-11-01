@@ -31,6 +31,18 @@ def main() -> int:
     out = args.out
     out.mkdir(parents=True, exist_ok=True)
     t = args.terminal
+    # The runner's processes are elevated, so files they create are owned by Administrators; the Medium token has
+    # Administrators deny-only and could not write the output folder, read the launcher scripts or write VS Code's data dir.
+    # Everyone:Modify on the folders the runs use (an ephemeral runner; nothing else lives there).
+    roots = {str(out), str(args.wxbrief.resolve().parents[1]), str(Path.cwd())}
+    for root in sorted(roots):
+        rc = subprocess.run(
+            ["icacls", root, "/grant", "*S-1-1-0:(OI)(CI)M", "/T", "/C", "/Q"],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).returncode
+        print(f"icacls grant Everyone:Modify on {root}: exit {rc}", flush=True)
     common = ["--wxbrief", str(args.wxbrief), "--out", str(out)] + (
         ["--tool-exe", str(args.tool_exe)] if args.tool_exe else []
     )

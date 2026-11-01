@@ -732,3 +732,32 @@ def analyze_png(path: Path, *, margin: float = 0.1) -> dict[str, Any]:
         "contrast": round(best, 2),
         "distinct_colours": len(counts),
     }
+
+
+def dismiss_blockers(own_hwnd: int) -> list[str]:
+    """Close a full-screen system window that sits above the terminal (a first-run or sign-in prompt on some images).
+
+    Only windows of class ``Windows.UI.Core.CoreWindow`` that cover the whole screen are touched: WM_CLOSE first, then the
+    owning process is killed by PID. Returns what was done, for the log.
+    """
+    done: list[str] = []
+    sw, sh = screen_size()
+    for win in all_windows():
+        left, top, right, bottom = win.rect
+        if win.hwnd == own_hwnd or not win.visible or win.cls != "Windows.UI.Core.CoreWindow":
+            continue
+        if right - left < sw - 4 or bottom - top < sh - 4:
+            continue
+        try:
+            name = psutil.Process(win.pid).name()
+        except psutil.Error:
+            name = "?"
+        close_window(win.hwnd)
+        time.sleep(1.0)
+        if is_window(win.hwnd) and window_info(win.hwnd).visible:
+            with contextlib.suppress(psutil.Error):
+                psutil.Process(win.pid).kill()
+            done.append(f"killed full-screen {win.title!r} owner {name} pid {win.pid}")
+        else:
+            done.append(f"closed full-screen {win.title!r} owner {name} pid {win.pid}")
+    return done
