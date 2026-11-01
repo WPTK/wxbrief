@@ -14,6 +14,7 @@ from wxbrief.i18n.keys import K
 from wxbrief.render.discord import block_count, discord_block
 from wxbrief.solar import is_daylight
 from wxbrief.state import StationReports
+from wxbrief.ui.strip import is_expired, strip_for
 
 if TYPE_CHECKING:
     from wxbrief.app import WxBriefApp
@@ -56,7 +57,13 @@ class CopyActions(Screen[None]):
         if entry is None or (entry.metar is None and entry.taf is None):
             self.notify(t.t(K.UI_TOAST_NOTHING_TO_COPY), severity="warning")
             return
-        blocks = [self._discord(report, entry) for report in (entry.metar, entry.taf) if report is not None]
+        taf = entry.taf
+        if taf is not None and is_expired(strip_for(taf)[1], cast("WxBriefApp", self.app).now()):
+            taf = None  # the pane calls it expired, so the copy does not hand it on as a live forecast
+            self.notify(t.t(K.UI_TOAST_TAF_EXPIRED_NOT_COPIED), severity="warning")
+        blocks = [self._discord(report, entry) for report in (entry.metar, taf) if report is not None]
+        if not blocks:
+            return
         text = "\n\n".join(blocks)
         copy_text(self.app, text, parts_note(t, t.t(K.UI_CLIPBOARD_BOTH, icao=entry.icao), text, len(blocks)), t)
 

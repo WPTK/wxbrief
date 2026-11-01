@@ -244,7 +244,11 @@ class DetailPane(VerticalScroll):
 
         self._show_taf(entry, ctx, now, taf_rows, blocks, labels)
 
-        warnings = warning_lines(metar, t) if metar else []
+        taf = entry.taf if isinstance(entry.taf, Taf) else None
+        taf_warnings = warning_lines(taf, t) if taf else []
+        if taf_warnings:  # the forecast's heading says whose they are
+            taf_warnings[0] = f"{t.t(K.UI_SECTION_FORECAST)}: {taf_warnings[0]}"
+        warnings = [*(warning_lines(metar, t) if metar else []), *taf_warnings]
         warn_box = self.query_one("#warnings", Static)
         warn_box.display = bool(warnings)
         warn_box.update(Text("\n".join(warnings), style=palette.style("wx.warning")))
@@ -256,7 +260,7 @@ class DetailPane(VerticalScroll):
         if taf is None:
             return [], []
         t = ctx.translator
-        skipped = {t.t(K.LABEL_STATION), t.t(K.LABEL_REPORT), t.t(K.LABEL_FLAGS)}
+        skipped = {t.t(K.LABEL_STATION), t.t(K.LABEL_REPORT)}
         rows = [row for row in taf_header_rows(taf, t, ctx.units) if row.label not in skipped]
         return rows, taf_blocks(taf, t, ctx.units)
 
