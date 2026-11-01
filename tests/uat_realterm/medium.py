@@ -23,7 +23,7 @@ kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
 
 TOKEN_ASSIGN_PRIMARY, TOKEN_DUPLICATE, TOKEN_QUERY, TOKEN_ADJUST_DEFAULT = 0x1, 0x2, 0x8, 0x80
 DISABLE_MAX_PRIVILEGE = 0x1
-TOKEN_USER, TOKEN_OWNER, TOKEN_INTEGRITY_LEVEL = 1, 4, 25
+TOKEN_USER, TOKEN_OWNER, TOKEN_DEFAULT_DACL_CLASS, TOKEN_INTEGRITY_LEVEL = 1, 4, 6, 25
 SE_GROUP_INTEGRITY = 0x20
 CREATE_UNICODE_ENVIRONMENT, CREATE_NO_WINDOW, CREATE_NEW_CONSOLE = 0x400, 0x08000000, 0x10
 
@@ -53,6 +53,10 @@ class STARTUPINFOW(ctypes.Structure):
         ("hStdOutput", wt.HANDLE),
         ("hStdError", wt.HANDLE),
     ]
+
+
+class SECURITY_ATTRIBUTES(ctypes.Structure):
+    _fields_ = [("nLength", wt.DWORD), ("lpSecurityDescriptor", ctypes.c_void_p), ("bInheritHandle", wt.BOOL)]
 
 
 class PROCESS_INFORMATION(ctypes.Structure):
@@ -122,6 +126,46 @@ class MediumProcess:
         return code
 
 
+class TOKEN_DEFAULT_DACL(ctypes.Structure):
+    _fields_ = [("DefaultDacl", ctypes.c_void_p)]
+
+
+def _set_default_dacl(token: wt.HANDLE, user_sid: int) -> None:
+    """Default DACL for objects the new process creates: the user and SYSTEM, as in a normal user token.
+
+    The elevated token's default DACL names the Administrators group, which is deny-only here, so without this every
+    object the Medium process creates (its child processes, pipes) is unusable by the user and e.g. Windows Terminal
+    cannot open the shell it just started (ACCESS_DENIED).
+    """
+    sid_str = ctypes.c_wchar_p()
+    advapi32.ConvertSidToStringSidW.argtypes = (ctypes.c_void_p, ctypes.POINTER(ctypes.c_wchar_p))
+    if not advapi32.ConvertSidToStringSidW(user_sid, ctypes.byref(sid_str)):
+        raise _fail("ConvertSidToStringSid")
+    sddl = f"D:(A;;GA;;;{sid_str.value})(A;;GA;;;SY)"
+    sd = ctypes.c_void_p()
+    advapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes = (
+        wt.LPCWSTR,
+        wt.DWORD,
+        ctypes.POINTER(ctypes.c_void_p),
+        ctypes.c_void_p,
+    )
+    if not advapi32.ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl, 1, ctypes.byref(sd), None):
+        raise _fail("ConvertStringSecurityDescriptorToSecurityDescriptor")
+    present, defaulted = wt.BOOL(), wt.BOOL()
+    dacl = ctypes.c_void_p()
+    advapi32.GetSecurityDescriptorDacl.argtypes = (
+        ctypes.c_void_p,
+        ctypes.POINTER(wt.BOOL),
+        ctypes.POINTER(ctypes.c_void_p),
+        ctypes.POINTER(wt.BOOL),
+    )
+    if not advapi32.GetSecurityDescriptorDacl(sd, ctypes.byref(present), ctypes.byref(dacl), ctypes.byref(defaulted)):
+        raise _fail("GetSecurityDescriptorDacl")
+    info = TOKEN_DEFAULT_DACL(dacl.value)
+    if not advapi32.SetTokenInformation(token, TOKEN_DEFAULT_DACL_CLASS, ctypes.byref(info), ctypes.sizeof(info)):
+        raise _fail("SetTokenInformation(TokenDefaultDacl)")
+
+
 def medium_token() -> int:
     """A primary token: this process's, Administrators deny-only, privileges stripped, integrity Medium."""
     src = wt.HANDLE()
@@ -139,10 +183,12 @@ def medium_token() -> int:
     need = wt.DWORD()
     advapi32.GetTokenInformation(src, TOKEN_USER, None, 0, ctypes.byref(need))
     ubuf = ctypes.create_string_buffer(need.value)
-    if advapi32.GetTokenInformation(src, TOKEN_USER, ubuf, need, ctypes.byref(need)):
-        user_sid = ctypes.c_void_p.from_buffer(ubuf).value
-        owner = ctypes.c_void_p(user_sid)
-        advapi32.SetTokenInformation(new, TOKEN_OWNER, ctypes.byref(owner), ctypes.sizeof(owner))
+    if not advapi32.GetTokenInformation(src, TOKEN_USER, ubuf, need, ctypes.byref(need)):
+        raise _fail("GetTokenInformation(TokenUser)")
+    user_sid = ctypes.c_void_p.from_buffer(ubuf).value
+    owner = ctypes.c_void_p(user_sid)
+    advapi32.SetTokenInformation(new, TOKEN_OWNER, ctypes.byref(owner), ctypes.sizeof(owner))
+    _set_default_dacl(new, user_sid)
     medium = ctypes.c_void_p()
     if not advapi32.ConvertStringSidToSidW("S-1-16-8192", ctypes.byref(medium)):
         raise _fail("ConvertStringSidToSid(Medium)")
@@ -160,7 +206,12 @@ def _env_block(env: dict[str, str]) -> ctypes.Array[ctypes.c_wchar]:
 
 
 def spawn_medium(
-    argv: list[str] | str, *, env: dict[str, str] | None = None, cwd: str | None = None, hidden_console: bool = False
+    argv: list[str] | str,
+    *,
+    env: dict[str, str] | None = None,
+    cwd: str | None = None,
+    hidden_console: bool = False,
+    stdout_path: str | None = None,
 ) -> MediumProcess:
     """CreateProcessAsUser on the interactive desktop (winsta0\\default) with a Medium token."""
     token = medium_token()
@@ -168,6 +219,17 @@ def spawn_medium(
     si.cb = ctypes.sizeof(si)
     si.lpDesktop = "winsta0\\default"
     pi = PROCESS_INFORMATION()
+    log_handle = 0
+    if stdout_path:  # an inheritable handle to the log file for stdout and stderr: no cmd.exe redirection in between
+        sa = SECURITY_ATTRIBUTES(ctypes.sizeof(SECURITY_ATTRIBUTES), None, True)
+        kernel32.CreateFileW.restype = wt.HANDLE
+        kernel32.CreateFileW.argtypes = (wt.LPCWSTR, wt.DWORD, wt.DWORD, ctypes.c_void_p, wt.DWORD, wt.DWORD, wt.HANDLE)
+        log_handle = kernel32.CreateFileW(stdout_path, 0x40000000, 0x3, ctypes.byref(sa), 2, 0x80, None)
+        if log_handle in (None, -1, 0xFFFFFFFFFFFFFFFF):
+            raise _fail("CreateFileW(log)")
+        si.dwFlags |= 0x100  # STARTF_USESTDHANDLES
+        si.hStdOutput = si.hStdError = log_handle
+        si.hStdInput = None
     cmdline = ctypes.create_unicode_buffer(argv if isinstance(argv, str) else subprocess.list2cmdline(argv))
     flags = CREATE_UNICODE_ENVIRONMENT | (CREATE_NO_WINDOW if hidden_console else 0)
     block = _env_block(dict(env if env is not None else os.environ))
@@ -177,7 +239,7 @@ def spawn_medium(
         cmdline,
         None,
         None,
-        False,
+        bool(log_handle),
         flags,
         ctypes.cast(block, ctypes.c_void_p),
         cwd,
@@ -186,6 +248,8 @@ def spawn_medium(
     )
     err = ctypes.get_last_error()
     kernel32.CloseHandle(token)
+    if log_handle:
+        kernel32.CloseHandle(log_handle)
     if not ok:
         raise OSError(f"CreateProcessAsUser failed: Win32 error {err}")
     kernel32.CloseHandle(pi.hThread)

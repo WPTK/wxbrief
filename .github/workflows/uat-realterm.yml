@@ -7,6 +7,17 @@ name: UAT real terminals
 # it with the token's integrity level. Test-only: no secrets, read-only token, artifacts only.
 on:
   workflow_dispatch:
+    inputs:
+      terminals:
+        description: "Comma separated: conhost,wt,vscode"
+        default: "conhost,wt,vscode"
+      arm:
+        description: "Also run the windows-11-arm cells"
+        type: boolean
+        default: true
+      runs:
+        description: "Only these run names (see run_all.py); empty = all"
+        default: ""
 
 permissions:
   contents: read
@@ -14,6 +25,7 @@ permissions:
 jobs:
   realterm:
     name: ${{ matrix.terminal }} (${{ matrix.os }})
+    if: ${{ contains(format(',{0},', inputs.terminals), format(',{0},', matrix.terminal)) && (inputs.arm || matrix.arch == 'x64') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 75
     continue-on-error: ${{ matrix.experimental }}
@@ -71,6 +83,7 @@ jobs:
             $t = Get-Content "$env:OUT\fetch-${{ matrix.terminal }}.json" | ConvertFrom-Json
             $argsList += @('--tool-exe', $t.exe)
           }
+          if ('${{ inputs.runs }}') { $argsList += @('--only', '${{ inputs.runs }}') }
           python @argsList 2>&1 | Tee-Object -FilePath "$env:OUT\run-all.log"
           exit $LASTEXITCODE
       - name: Summary

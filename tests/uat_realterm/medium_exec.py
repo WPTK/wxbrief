@@ -10,7 +10,6 @@ behaves as if it had run the command directly, only non-elevated. The child's ow
 
 from __future__ import annotations
 
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -26,9 +25,7 @@ def main() -> int:
     log = Path(sys.argv[1]).resolve()
     log.parent.mkdir(parents=True, exist_ok=True)
     log.write_text("", encoding="utf-8")
-    inner = subprocess.list2cmdline(sys.argv[3:])
-    # cmd strips the outer quotes of /c "..." once; the redirection belongs to the whole command line.
-    proc = medium.spawn_medium(f'cmd.exe /c "{inner} > "{log}" 2>&1"', hidden_console=True)
+    proc = medium.spawn_medium(sys.argv[3:], hidden_console=True, stdout_path=str(log))
     pos = 0
     while True:
         done = proc.poll() is not None

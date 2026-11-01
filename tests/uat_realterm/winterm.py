@@ -742,10 +742,15 @@ def dismiss_blockers(own_hwnd: int) -> list[str]:
     """
     done: list[str] = []
     sw, sh = screen_size()
-    for win in all_windows():
+    seen: set[int] = set()
+    # The foreground window first: some of these are not returned by EnumWindows, but GetForegroundWindow names them.
+    candidates = [window_info(foreground())] if foreground() else []
+    candidates += all_windows()
+    for win in candidates:
         left, top, right, bottom = win.rect
-        if win.hwnd == own_hwnd or not win.visible or win.cls != "Windows.UI.Core.CoreWindow":
+        if win.hwnd in seen or win.hwnd == own_hwnd or not win.visible or win.cls != "Windows.UI.Core.CoreWindow":
             continue
+        seen.add(win.hwnd)
         if right - left < sw - 4 or bottom - top < sh - 4:
             continue
         try:
@@ -757,7 +762,10 @@ def dismiss_blockers(own_hwnd: int) -> list[str]:
         if is_window(win.hwnd) and window_info(win.hwnd).visible:
             with contextlib.suppress(psutil.Error):
                 psutil.Process(win.pid).kill()
-            done.append(f"killed full-screen {win.title!r} owner {name} pid {win.pid}")
+            time.sleep(1.0)
+            done.append(
+                f"killed full-screen {win.title!r} owner {name} pid {win.pid}; still there: {is_window(win.hwnd)}"
+            )
         else:
             done.append(f"closed full-screen {win.title!r} owner {name} pid {win.pid}")
     return done
