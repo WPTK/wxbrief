@@ -6,12 +6,12 @@ from pathlib import Path
 
 import httpx
 import pytest
-from test_app_smoke import wait_for
+from test_app_smoke import assert_jump_keys_scroll, wait_for
 from test_timeline_ui import demo_app
 
 from wxbrief.data.cache import CACHE_DIR_ENV
 from wxbrief.ui.screens.station_detail import StationDetailScreen
-from wxbrief.ui.widgets.detail import StationHeader
+from wxbrief.ui.widgets.detail import DetailPane, StationHeader
 from wxbrief.ui.widgets.station_grid import StationGrid
 from wxbrief.ui.widgets.station_list import StationList
 
@@ -102,7 +102,8 @@ async def test_the_station_screen_copies_and_jumps(monkeypatch: pytest.MonkeyPat
         await pilot.press("c")
         await wait_for(pilot, lambda: len(copied) == 1, "the copy")
         assert "METAR" in copied[0]
-        await pilot.press("3", "2", "1", "a")  # none of these may raise; a is not offered on this screen
+        await assert_jump_keys_scroll(pilot, app.screen.query_one(DetailPane))
+        await pilot.press("a")  # must not raise; a is not offered on this screen
         await pilot.pause()
         assert isinstance(app.screen, StationDetailScreen)
 

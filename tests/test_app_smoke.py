@@ -108,6 +108,23 @@ async def wait_for(pilot: object, condition: object, what: str = "the condition"
         await pilot.pause(0.02)  # type: ignore[attr-defined]
 
 
+async def assert_jump_keys_scroll(pilot: object, pane: DetailPane) -> None:
+    """Keys 3, 2 and 1 bring the forecast, the decoded table and the raw report to the top of the pane."""
+    def title_in_view(title_id: str) -> bool:
+        title = pane.query_one(title_id)
+        return pane.region.y <= title.region.y < pane.region.bottom
+
+    assert pane.scroll_y == 0 and pane.max_scroll_y > 0, "the test needs a pane taller than its window"
+    await pilot.press("3")  # type: ignore[attr-defined]
+    await wait_for(pilot, lambda: pane.scroll_y > 0, "key 3 to scroll to the forecast")
+    assert title_in_view("#taf-title")
+    await pilot.press("2")  # type: ignore[attr-defined]
+    await wait_for(pilot, lambda: title_in_view("#decoded-title"), "key 2 to bring the decoded table into view")
+    scrolled = pane.scroll_y
+    await pilot.press("1")  # type: ignore[attr-defined]
+    await wait_for(pilot, lambda: pane.scroll_y < scrolled and title_in_view("#raw-title"), "key 1 to scroll back up")
+
+
 async def test_live_data_fills_list_and_detail(tmp_path: Path) -> None:
     app = make_app(tmp_path, ["KDEN", "EGLL"], online_client())
     async with app.run_test(size=(120, 40)) as pilot:
@@ -140,7 +157,7 @@ async def test_keys_select_jump_and_copy(tmp_path: Path, copied: list[str]) -> N
         assert briefing.selected == "KDEN"
         await pilot.press("j")
         assert briefing.selected == "EGLL"
-        await pilot.press("3", "2", "1")
+        await assert_jump_keys_scroll(pilot, briefing.query_one(DetailPane))
         await pilot.press("c")
         assert copied and "EGLL" in copied[-1]
         assert copied[-1].startswith("```\n") and copied[-1].endswith("\n```") and "````" not in copied[-1]
@@ -462,6 +479,10 @@ async def test_flight_category_row_wraps_in_a_narrow_pane(tmp_path: Path) -> Non
         table = app.screen.query_one(DecodedTable)
         cells = [row[1].plain for row in (table.get_row_at(i) for i in range(table.row_count))]
         category = next(c for c in cells if "LIFR" in c)
+        lines = category.split("\n")
+        width = list(table.columns.values())[1].width
+        assert len(lines) >= 3  # wrapped onto several lines, not one long one
+        assert all(len(line) <= width for line in lines)
         assert "instrument flight rules" in " ".join(category.split())
 
 
