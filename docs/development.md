@@ -46,6 +46,14 @@ Changes that only touch Markdown, `docs/` or `LICENSE` skip CI.
 - `tests/uat/test_journeys.py` walks complete journeys key by key: reading and copying a station, the dialogs, `g` `u`
   `z`, the grid, a 60x20 terminal, and the timeline markers without colour.
 - A test that fails is run alone before it is called a flake.
+- A runaway test ends the run instead of exhausting the machine. pytest-timeout stops a test after 120 s
+  (`pyproject.toml`), and a watcher thread in `tests/conftest.py` ends a process over `WXBRIEF_TEST_RSS_MB` (2048) of
+  resident memory. Both are Python threads, so neither runs while a test holds the GIL inside C code (a regex that
+  backtracks for ever, one allocation of many GiB). Two backstops do not depend on Python code running: a `faulthandler`
+  timer exits the process with a stack dump after `WXBRIEF_TEST_HARD_TIMEOUT` seconds (300), and on Windows a job object
+  makes the kernel refuse a process more than `WXBRIEF_TEST_COMMIT_MB` (4096), so the test gets a `MemoryError`. Under
+  `-n`, xdist reports the crashed worker's test. `0` turns a backstop off, for a debugger session.
+  `tests/test_limits.py` checks each limit.
 
 ## UAT suite
 

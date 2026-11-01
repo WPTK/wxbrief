@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import faulthandler
 import os
 import sys
 import threading
 import time
+import warnings
+from collections.abc import Generator
 
 import psutil
 import pytest
@@ -14,6 +17,15 @@ import pytest
 # reads the process's own resident memory. Every xdist worker is its own pytest session and runs this too.
 RSS_LIMIT_MB = int(os.environ.get("WXBRIEF_TEST_RSS_MB", "2048"))
 RSS_POLL_SECONDS = 0.25
+
+# Backstops for what the time limit (pytest-timeout's thread) and the watcher cannot stop. Both are Python threads, so
+# neither runs while a test holds the GIL inside C code: a regex that backtracks for ever, one allocation of many GiB.
+# faulthandler's timer runs on a thread of its own that needs no GIL. On Windows a job object makes the kernel refuse
+# memory past the limit, so the test gets a MemoryError. 0 turns either off.
+HARD_TIMEOUT_SECONDS = float(os.environ.get("WXBRIEF_TEST_HARD_TIMEOUT", "300"))
+COMMIT_LIMIT_MB = int(os.environ.get("WXBRIEF_TEST_COMMIT_MB", "4096"))
+
+_stderr_fd = pytest.StashKey[int]()
 
 
 def _say(config: pytest.Config, text: str) -> None:
@@ -52,6 +64,79 @@ def _memory_limit(pytestconfig: pytest.Config) -> None:
         daemon=True,
         name="rss-watch",
     ).start()
+
+
+def _limit_commit(limit_bytes: int) -> None:
+    """Make Windows refuse this process, and any it starts, memory past ``limit_bytes``.
+
+    Windows has no overcommit: a process that commits all it can makes every other program's allocations fail instead of
+    being killed. Linux and macOS overcommit and end a process under memory pressure, so nothing is done there.
+    """
+    if sys.platform != "win32":
+        return
+    import ctypes
+    from ctypes import wintypes
+
+    class Basic(ctypes.Structure):  # JOBOBJECT_BASIC_LIMIT_INFORMATION
+        _fields_ = [
+            ("PerProcessUserTimeLimit", ctypes.c_int64),
+            ("PerJobUserTimeLimit", ctypes.c_int64),
+            ("LimitFlags", wintypes.DWORD),
+            ("MinimumWorkingSetSize", ctypes.c_size_t),
+            ("MaximumWorkingSetSize", ctypes.c_size_t),
+            ("ActiveProcessLimit", wintypes.DWORD),
+            ("Affinity", ctypes.c_size_t),
+            ("PriorityClass", wintypes.DWORD),
+            ("SchedulingClass", wintypes.DWORD),
+        ]
+
+    class Extended(ctypes.Structure):  # JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+        _fields_ = [
+            ("Basic", Basic),
+            ("IoInfo", ctypes.c_ulonglong * 6),
+            ("ProcessMemoryLimit", ctypes.c_size_t),
+            ("JobMemoryLimit", ctypes.c_size_t),
+            ("PeakProcessMemoryUsed", ctypes.c_size_t),
+            ("PeakJobMemoryUsed", ctypes.c_size_t),
+        ]
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32.CreateJobObjectW.restype = wintypes.HANDLE
+    kernel32.GetCurrentProcess.restype = wintypes.HANDLE
+    kernel32.SetInformationJobObject.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    kernel32.AssignProcessToJobObject.argtypes = [wintypes.HANDLE, wintypes.HANDLE]
+
+    limits = Extended()
+    limits.Basic.LimitFlags = 0x100  # JOB_OBJECT_LIMIT_PROCESS_MEMORY
+    limits.ProcessMemoryLimit = limit_bytes
+    job = kernel32.CreateJobObjectW(None, None)  # never closed: the limit lasts as long as this process
+    if not (
+        job
+        and kernel32.SetInformationJobObject(job, 9, ctypes.byref(limits), ctypes.sizeof(limits))  # 9: extended limits
+        and kernel32.AssignProcessToJobObject(job, kernel32.GetCurrentProcess())
+    ):
+        warnings.warn(f"the commit limit was not applied (job object error {ctypes.get_last_error()})", stacklevel=2)
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    # faulthandler writes to a descriptor of its own: pytest's capture swaps fd 2 while a test runs.
+    assert sys.__stderr__ is not None
+    fd = os.dup(sys.__stderr__.fileno())
+    config.add_cleanup(lambda: os.close(fd))
+    config.stash[_stderr_fd] = fd
+    if COMMIT_LIMIT_MB > 0:
+        _limit_commit(COMMIT_LIMIT_MB * 2**20)
+
+
+@pytest.hookimpl(wrapper=True, trylast=True)  # pytest's faulthandler_timeout arms the same timer; the later call wins
+def pytest_runtest_protocol(item: pytest.Item) -> Generator[None, object, object]:
+    if HARD_TIMEOUT_SECONDS <= 0:
+        return (yield)
+    faulthandler.dump_traceback_later(HARD_TIMEOUT_SECONDS, exit=True, file=item.config.stash[_stderr_fd])
+    try:
+        return (yield)
+    finally:
+        faulthandler.cancel_dump_traceback_later()
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
