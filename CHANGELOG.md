@@ -27,6 +27,7 @@
 - Fix three TAF decoder and Discord edge cases, and wind, runway visual range, gust and cumulonimbus decoding (#34, #74, #139)
 - Fix the station list and grid not keeping the selected item in view after a resize (#170, #181)
 - Drop numeric admin codes from station regions (#147)
+- Return Esc from the detail pane to the station list, say "can't reach aviationweather.gov" instead of raw error text, and show one time-zone label on a grid card (#209)
 
 ## 0.2.0 - 2026-10-31
 
