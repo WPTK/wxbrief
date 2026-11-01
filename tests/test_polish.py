@@ -1,4 +1,4 @@
-"""S8 polish: the g/u/z keys, the AWC cross-check mark, save failures, rate-limit holds and the scroll fixes."""
+"""Polish: the g/u/z keys, the AWC cross-check mark, save failures, rate-limit holds and the scroll fixes."""
 
 from __future__ import annotations
 

@@ -94,6 +94,7 @@ class _Track:
     due: float = 0.0
     failures: int = 0
     fetched: float | None = None  # clock time of the last successful fetch
+    failed: float | None = None  # clock time of the last failed fetch (reset by a success)
 
 
 def backoff_delay(interval: float, failures: int) -> float:
@@ -149,11 +150,17 @@ class PollScheduler:
         self._wake.set()
 
     def return_from_away(self) -> None:
-        """Back in focus: a product whose away interval has not run out yet is rescheduled on its normal interval."""
+        """Back in focus: a product whose away interval has not run out yet is rescheduled on its normal interval,
+        and a failed one on the backoff its normal interval would have given."""
         self.away = False
         for product, track in self._tracks.items():
             if track.failures == 0 and track.fetched is not None:
-                track.due = max(self.hold_until, min(track.due, track.fetched + self._interval(product)))
+                normal = track.fetched + self._interval(product)
+            elif track.failures and track.failed is not None:
+                normal = track.failed + backoff_delay(self._interval(product), track.failures - 1)
+            else:
+                continue
+            track.due = max(self.hold_until, min(track.due, normal))
         self._wake.set()
 
     def hold_remaining(self) -> float:
@@ -190,6 +197,7 @@ class PollScheduler:
                     log.exception("unexpected error fetching %s", product.value)
                 error = exc if isinstance(exc, AwcError) else ClientError(f"unexpected {type(exc).__name__}")
                 track.failures += 1
+                track.failed = self._clock()
                 delay = backoff_delay(self._interval(product), track.failures - 1)
                 if self._requests == requested:  # a poll_now() during the fetch keeps the due time it set
                     track.due = self._clock() + delay
@@ -206,6 +214,7 @@ class PollScheduler:
                     break
                 continue
             track.failures = 0
+            track.failed = None
             track.fetched = self._clock()
             if self._requests == requested:
                 track.due = track.fetched + self._interval(product)

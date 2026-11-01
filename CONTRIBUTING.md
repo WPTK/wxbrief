@@ -1,7 +1,7 @@
 # Contributing
 
-Thanks for helping with wxbrief. The architecture and the build schedule are in [docs/plan.md](docs/plan.md); read it
-before starting anything larger than a typo.
+Thanks for helping with wxbrief. For anything larger than a typo, open an issue first so the change can be agreed
+before you write it. The layout of the code is in [docs/development.md](docs/development.md).
 
 ## Setup
 
@@ -29,8 +29,7 @@ Changes that only touch Markdown, `docs/` or `LICENSE` skip CI.
 
 ## Branches and pull requests
 
-- Work on a branch cut from `main`. Milestone work is named `s<N>-<slug>` (for example `s3-data-layer`); other changes
-  can use a short descriptive name.
+- Work on a branch cut from `main`. Use a short descriptive name.
 - Open a PR to `main`. The description says what changed and why (the root cause, for a fix), and how you verified it.
   Link the issue with `Closes #N`.
 - PRs merge when CI is green after a review pass.

@@ -68,7 +68,7 @@ def test_every_demo_report_decodes_without_unexpected_warnings() -> None:
         assert station.metar.station == station.taf.station == station.icao
         assert station.metar.warnings == (), station.icao
         if station.icao == "NZSP":
-            # the real forecast ends with notes this decoder leaves as unknown words (see the S2b notes)
+            # the real forecast ends with notes this decoder leaves as unknown words
             assert {w.text for w in station.taf.warnings} == {"WND21008KT", "AFT", "3122", "ALL", "WINDS", "GRID"}
         else:
             assert station.taf.warnings == (), station.icao

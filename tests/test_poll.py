@@ -339,6 +339,18 @@ async def test_a_short_blur_does_not_leave_the_away_interval_in_force() -> None:
     assert scheduler.next_due_in() == 599
 
 
+async def test_a_failure_while_away_backs_off_from_the_normal_interval_once_back() -> None:
+    clock, client = FakeClock(), FakeClient()
+    client.errors.append(ServerError(500))
+    scheduler, _ = make(clock, client, ["KDEN"])
+    scheduler.away = True
+    await scheduler.run_cycle()  # fails while away: the delay is the 1800 s away interval doubled
+    assert scheduler._tracks[Product.METAR].due - clock.now == 1800
+    clock.now += 10
+    scheduler.return_from_away()
+    assert scheduler.next_due_in() == 590  # 600 s, the normal interval, since the failure
+
+
 async def test_returning_after_a_long_blur_polls_what_is_overdue() -> None:
     clock, client = FakeClock(), FakeClient()
     scheduler, _ = make(clock, client, ["KDEN"])
