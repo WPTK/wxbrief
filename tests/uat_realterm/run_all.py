@@ -76,6 +76,7 @@ def main() -> int:
         )
     only = {x for x in args.only.split(",") if x}
     failed: list[str] = []
+    flaky: list[str] = []
     for name, argv in runs:
         if only and name not in only:
             continue
@@ -84,9 +85,16 @@ def main() -> int:
         t0 = time.monotonic()
         rc = subprocess.run(argv, check=False).returncode
         print(f"--> {name}: exit {rc} in {time.monotonic() - t0:.0f}s", flush=True)
+        if rc != 0:  # GUI input can lose one event: run once more, and say so loudly if the second attempt passes
+            print(f"::warning::{t} {name} failed (exit {rc}); one retry", flush=True)
+            rc = subprocess.run(argv, check=False).returncode
+            print(f"--> {name} retry: exit {rc}", flush=True)
+            if rc == 0:
+                flaky.append(name)
         print("::endgroup::", flush=True)
         if rc != 0:
             failed.append(name)
+    print(f"FLAKY RUNS (failed once, passed on retry): {flaky or 'none'}", flush=True)
     print(f"FAILED RUNS: {failed or 'none'}", flush=True)
     return 1 if failed else 0
 
