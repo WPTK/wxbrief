@@ -13,3 +13,4 @@
 # Saved reports and API payloads are data; never rewrite them.
 tests/fixtures/**/*.json -text
 tests/fixtures/**/*.txt -text
+tests/uat/fixtures/**/*.json -text
