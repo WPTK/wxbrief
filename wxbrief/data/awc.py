@@ -5,7 +5,9 @@ from __future__ import annotations
 import asyncio
 import json
 import math
+from collections import OrderedDict
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from typing import Any, Self
@@ -30,6 +32,7 @@ MAX_IDS_PER_REQUEST = 400
 DEFAULT_RETRY_AFTER = 60.0
 MAX_RETRY_AFTER = 3600.0
 MAX_BODY_BYTES = 8 * 1024 * 1024  # a full 400-station METAR batch is well under 1 MB
+CACHED_REQUESTS = 8  # request results kept for revalidation; the oldest is dropped first
 
 
 class AwcError(Exception):
@@ -75,6 +78,15 @@ def _retry_after(response: httpx.Response) -> float:
     return min(MAX_RETRY_AFTER, max(0.0, seconds))
 
 
+@dataclass(slots=True)
+class _Stored:
+    """The last 200 for one request: its rows and the validators to send next time."""
+
+    rows: list[Any]
+    etag: str | None
+    last_modified: str | None
+
+
 async def _read_limited(response: httpx.Response) -> bytes:
     """The decoded body, or ``ClientError`` as soon as it passes ``MAX_BODY_BYTES`` (nothing more is read)."""
     declared = response.headers.get("Content-Length", "")
@@ -115,6 +127,7 @@ class AwcClient:
         deadline: float = DEADLINE_SECONDS,
     ) -> None:
         self._deadline = deadline
+        self._stored: OrderedDict[tuple[str, tuple[tuple[str, str], ...]], _Stored] = OrderedDict()
         self._owns_client = client is None
         self._base_url = base_url.rstrip("/")
         if client is None:
@@ -135,16 +148,34 @@ class AwcClient:
             await self._client.aclose()
 
     async def _get(self, endpoint: str, params: dict[str, str]) -> list[Any]:
+        """One request, always sent. A stored response for the same request is revalidated with ``If-None-Match`` /
+        ``If-Modified-Since``, and only a 304 from the server reuses its rows. ``Cache-Control: max-age`` is ignored on
+        purpose: reusing a response without asking would show a report older than a poll as the current one."""
+        key = (endpoint, tuple(sorted(params.items())))
+        stored = self._stored.get(key)
+        headers: dict[str, str] = {}
+        if stored is not None:
+            if stored.etag:
+                headers["If-None-Match"] = stored.etag
+            if stored.last_modified:
+                headers["If-Modified-Since"] = stored.last_modified
         try:
             async with asyncio.timeout(self._deadline):  # httpx's timeout restarts on every read
-                async with self._client.stream("GET", f"{self._base_url}/{endpoint}", params=params) as response:
+                async with self._client.stream(
+                    "GET", f"{self._base_url}/{endpoint}", params=params, headers=headers
+                ) as response:
                     status = response.status_code
                     content = await _read_limited(response) if status == 200 else b""
         except httpx.HTTPError as exc:
             raise TransportError(f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__) from exc
         except TimeoutError as exc:
             raise TransportError(f"no complete response within {self._deadline:g} s") from exc
+        if status == 304 and stored is not None:
+            stored.etag = response.headers.get("ETag") or stored.etag  # a 304 may carry fresh validators, nothing else
+            stored.last_modified = response.headers.get("Last-Modified") or stored.last_modified
+            return stored.rows
         if status == 204:
+            self._stored.pop(key, None)
             return []
         if status == 429:
             raise RateLimited(_retry_after(response))
@@ -158,6 +189,14 @@ class AwcClient:
             raise ClientError("response is not JSON") from exc
         if not isinstance(body, list):
             raise ClientError("response is not a list")
+        etag, modified = response.headers.get("ETag"), response.headers.get("Last-Modified")
+        if etag or modified:
+            self._stored[key] = _Stored(body, etag, modified)
+            self._stored.move_to_end(key)
+            while len(self._stored) > CACHED_REQUESTS:
+                self._stored.popitem(last=False)
+        else:
+            self._stored.pop(key, None)
         return body
 
     async def _fetch(self, endpoint: str, ids: Sequence[str], extra: dict[str, str]) -> list[Any]:

@@ -322,3 +322,10 @@ def test_discord_output_lists_the_warnings_of_unreadable_groups() -> None:
     result = run_module("decode", "--discord", "XYZZY PLUGH")
     assert result.returncode == 0  # like --plain: garbage is reported, not an error
     assert "Unrecognized group: XYZZY" in result.stdout and "2 warnings" in result.stdout
+
+
+def test_the_help_text_says_what_the_app_is_not(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        main(["--help"])
+    out = " ".join(capsys.readouterr().out.split())
+    assert "not a substitute for an official weather briefing" in out

@@ -61,6 +61,7 @@ class K:
     COMMON_LESS_THAN = "common.less_than"
     COMMON_MORE_THAN = "common.more_than"
     COMMON_NOT_REPORTED = "common.not_reported"
+    COMMON_NOTICE = "common.notice"
     COMMON_OR_MORE = "common.or_more"
 
     COMPASS_E = "compass.E"

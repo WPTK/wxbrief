@@ -204,3 +204,98 @@ async def test_a_dripping_body_hits_the_total_deadline() -> None:
     async with AwcClient(client=http, deadline=0.2) as client:
         with pytest.raises(TransportError):
             await client.metars(["KDEN"])
+
+
+@respx.mock
+async def test_a_repeat_request_is_revalidated_and_a_304_reuses_the_rows() -> None:
+    body = _payload("metar_kden_egll.json")
+    route = respx.get(METAR_URL).mock(
+        side_effect=[
+            httpx.Response(200, content=body, headers={"ETag": '"v1"', "Last-Modified": "Sat, 31 Oct 2026 12:00:00 GMT"}),
+            httpx.Response(304, headers={"ETag": '"v1b"'}),
+            httpx.Response(304),
+        ]
+    )
+    async with AwcClient() as client:
+        first = await client.metars(["KDEN", "EGLL"])
+        second = await client.metars(["KDEN", "EGLL"])
+        await client.metars(["KDEN", "EGLL"])
+    assert route.call_count == 3
+    assert "If-None-Match" not in route.calls[0].request.headers
+    sent = route.calls[1].request.headers
+    assert sent["If-None-Match"] == '"v1"' and sent["If-Modified-Since"] == "Sat, 31 Oct 2026 12:00:00 GMT"
+    assert [m.raw for m in second] == [m.raw for m in first] and first
+    # the 304 replaced the ETag and nothing else: the Last-Modified from the 200 is still sent
+    third = route.calls[2].request.headers
+    assert third["If-None-Match"] == '"v1b"' and third["If-Modified-Since"] == "Sat, 31 Oct 2026 12:00:00 GMT"
+
+
+@respx.mock
+@pytest.mark.parametrize("control", ["max-age=600", "public, max-age=3600", "max-age=1", "no-store", ""])
+async def test_max_age_never_skips_a_request(control: str) -> None:
+    """A max-age shorter or longer than the 10-minute poll must not make a poll show an old report as current."""
+    headers = {"ETag": '"v1"'} | ({"Cache-Control": control} if control else {})
+    route = respx.get(METAR_URL).mock(return_value=httpx.Response(200, content=b"[]", headers=headers))
+    async with AwcClient() as client:
+        await client.metars(["KDEN"])
+        await client.metars(["KDEN"])
+    assert route.call_count == 2
+
+
+@respx.mock
+async def test_a_changed_report_replaces_the_stored_rows_and_nothing_old_is_returned() -> None:
+    old, new = _payload("metar_kden_egll.json"), b"[]"
+    respx.get(METAR_URL).mock(
+        side_effect=[httpx.Response(200, content=old, headers={"ETag": '"a"'}), httpx.Response(200, content=new, headers={"ETag": '"b"'})]
+    )
+    async with AwcClient() as client:
+        assert await client.metars(["KDEN", "EGLL"])
+        assert await client.metars(["KDEN", "EGLL"]) == []
+
+
+@respx.mock
+async def test_errors_and_204_are_not_masked_by_the_stored_response() -> None:
+    route = respx.get(METAR_URL).mock(
+        side_effect=[
+            httpx.Response(200, content=_payload("metar_kden_egll.json"), headers={"ETag": '"a"'}),
+            httpx.Response(500),
+            httpx.ConnectError("offline"),
+            httpx.Response(204),
+            httpx.Response(200, content=b"[]"),
+        ]
+    )
+    async with AwcClient() as client:
+        await client.metars(["KDEN"])
+        with pytest.raises(ServerError):
+            await client.metars(["KDEN"])
+        with pytest.raises(TransportError):
+            await client.metars(["KDEN"])
+        assert await client.metars(["KDEN"]) == []
+        assert await client.metars(["KDEN"]) == []
+    assert "If-None-Match" not in route.calls[4].request.headers  # the 204 dropped the validators
+
+
+@respx.mock
+async def test_the_stored_requests_are_bounded() -> None:
+    from wxbrief.data.awc import CACHED_REQUESTS
+
+    respx.get(METAR_URL).mock(return_value=httpx.Response(200, content=b"[]", headers={"ETag": '"a"'}))
+    async with AwcClient() as client:
+        for index in range(CACHED_REQUESTS + 2):
+            await client.metars([f"K{index:03d}"])
+        assert len(client._stored) == CACHED_REQUESTS
+
+
+@respx.mock
+async def test_a_429_after_a_stored_response_still_raises_with_retry_after() -> None:
+    respx.get(METAR_URL).mock(
+        side_effect=[
+            httpx.Response(200, content=b"[]", headers={"ETag": '"a"'}),
+            httpx.Response(429, headers={"Retry-After": "90"}),
+        ]
+    )
+    async with AwcClient() as client:
+        await client.metars(["KDEN"])
+        with pytest.raises(RateLimited) as caught:
+            await client.metars(["KDEN"])
+    assert caught.value.retry_after == 90.0

@@ -25,6 +25,11 @@ Version 0.2.0. The project uses ZeroVer, so the version stays 0.x and anything m
 - Prints plain text or JSON from the `decode` and `get` commands.
 - Runs with no network at all in `--demo` mode, on ten bundled stations.
 
+## What wxbrief is not
+
+wxbrief is not a substitute for an official weather briefing, and not for flight planning alone. Get an official briefing
+before you fly. The same notice is in `wxbrief --help` and the in-app help (`?`).
+
 ![The TAF timeline with the cursor on the first period, in paper-chart](docs/img/forecast.png)
 
 ![The grid layout: one card per station with a small forecast strip](docs/img/grid.png)
@@ -101,6 +106,11 @@ once and takes the same output flags. `decode` and `get` never read the config f
 
 Reports come from the [Aviation Weather Center](https://aviationweather.gov/) data API. The demo reports are bundled
 with the program.
+
+The client follows the [API usage guidance](https://aviationweather.gov/data/api/): it identifies itself with a
+`User-Agent` naming wxbrief, its version and this repository, polls METARs every 10 minutes and TAFs every 30, stays
+under 100 requests a minute, honours `Retry-After` on a 429, and asks the server whether a report has changed when it
+sends `ETag` or `Last-Modified`, and reuses the stored one only on a 304. It never reuses a response on its own.
 
 The bundled station database (`wxbrief/data/stations.json.gz`) takes station positions from the AWC station list and
 assigns each station its IANA time zone with [timezonefinder](https://github.com/jannikmi/timezonefinder), which uses

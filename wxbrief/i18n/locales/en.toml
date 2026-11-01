@@ -48,6 +48,7 @@ worst_category = "Worst flight category"
 details = "Details"
 
 [common]
+notice = "wxbrief is not a substitute for an official weather briefing, and not for flight planning alone. Get an official briefing before you fly."
 not_reported = "Not reported"
 more_than = "more than {value}"
 less_than = "less than {value}"

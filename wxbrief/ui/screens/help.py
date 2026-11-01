@@ -70,6 +70,7 @@ class HelpScreen(ModalScreen[None]):
             yield Label(t.t(K.UI_HELP_TITLE), classes="dialog-title")
             yield Label(t.t(K.UI_HELP_HINT), classes="hint")
             yield HelpBody(t.t(K.UI_HELP_BODY))
+            yield Label(t.t(K.COMMON_NOTICE), classes="hint")
 
     def on_mount(self) -> None:
         localize(self)

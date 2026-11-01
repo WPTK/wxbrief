@@ -47,6 +47,7 @@ worst_category = "Peor categoría de vuelo"
 details = "Detalles"
 
 [common]
+notice = "wxbrief no sustituye una información meteorológica oficial ni sirve por sí solo para planificar un vuelo. Obtenga un briefing oficial antes de volar."
 not_reported = "No notificado"
 more_than = "más de {value}"
 less_than = "menos de {value}"
