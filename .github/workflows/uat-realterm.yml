@@ -18,7 +18,6 @@ jobs:
       PYTHONUTF8: "1"
       PYTHONUNBUFFERED: "1"
       OUT: ${{ github.workspace }}\realterm-out
-      TOOLS: ${{ runner.temp }}\realterm-tools
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -33,7 +32,7 @@ jobs:
         shell: pwsh
         run: |
           foreach ($t in 'wxbrief','wt','vscode') {
-            python tests/uat_realterm/fetch.py $t --dest "$env:TOOLS\$t" | Tee-Object -FilePath "$env:OUT\fetch-$t.json"
+            python tests/uat_realterm/fetch.py $t --dest "$env:RUNNER_TEMPealterm-tools\$t" | Tee-Object -FilePath "$env:OUT\fetch-$t.json"
             if ($LASTEXITCODE -ne 0) { throw "fetch $t failed" }
           }
       - name: Session and desktop facts
