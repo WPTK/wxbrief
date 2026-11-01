@@ -173,11 +173,11 @@ async def grid(run: Run) -> None:
     last = screen.selected
     assert last is not None and last != "KDEN"
     selected_card = next(c for c in cards if c.icao == last)
-    # the selected card has been marked and scrolled into the grid's viewport
+    # the selected card has been marked and scrolled into the grid's viewport (inside it, not merely clamped to it)
     await run.until(
         lambda: selected_card.has_class("-selected")
-        and view.region.contains_region(selected_card.region.intersection(view.region))
-        and selected_card.region.height > 0,
+        and selected_card.region.height > 0
+        and view.region.contains_region(selected_card.region),
         "the selected card marked and scrolled into view",
     )
     await run.shot("scrolled")
@@ -297,7 +297,6 @@ async def help_screen(run: Run) -> None:
     assert body[0].split()[0] in run.text()
     await run.shot("top")
     await run.press("end")
-    box.scroll_end(animate=False)
     await run.settle()
     assert box.scroll_y == box.max_scroll_y, "the help does not scroll to its end"
     assert body[-1].split()[-1] in run.text(), "the last help line is not on screen at the end"
