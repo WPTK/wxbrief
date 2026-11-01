@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from wxbrief.config import WATCHLIST_CAP
@@ -20,6 +20,7 @@ from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.taf import parse_taf
 
 CACHE_KEYS = {Product.METAR: "metars", Product.TAF: "tafs"}
+CACHE_MAX_AGE = timedelta(hours=48)  # a cached report of a station not in this run's list is dropped after this
 FETCHED_KEY = "wxbriefFetched"  # added to each cached row: when this row was fetched, which the file's save time is not
 
 
@@ -134,8 +135,9 @@ class AppState:
 
     def _set_taf(self, row: AwcTaf, updated: datetime, *, from_cache: bool) -> None:
         entry = self.entry(row.icao)
-        if entry.awc_taf is None or entry.awc_taf.raw != row.raw or entry.taf is None:
-            entry.taf = parse_taf(row.raw, row.issued or updated)
+        previous = entry.awc_taf
+        if previous is None or previous.raw != row.raw or previous.modifiers != row.modifiers or entry.taf is None:
+            entry.taf = parse_taf(row.raw, row.issued or updated, row.modifiers)
         entry.awc_taf = row
         entry.taf_updated = updated
         entry.taf_cached = from_cache
@@ -162,12 +164,18 @@ class AppState:
         self._write_cache(product, now)
 
     def _write_cache(self, product: Product, now: datetime) -> None:
-        """Write the cache file for ``product``: listed stations only, each row stamped with its own fetch time,
-        and no TAF that has expired."""
+        """Write the cache file for ``product``, each row stamped with its own fetch time.
+
+        The cache folder is shared by every run, whatever its station list, so the file keeps the rows of stations
+        outside this run's list too (those loaded from it, and any another run added since), dropping a row only
+        when it is older than ``CACHE_MAX_AGE`` or is a TAF that has expired.
+        """
         if self.cache is None:
             return
         payload: list[dict[str, Any]] = []
-        for icao in self.ids:
+        written: set[str] = set()
+        listed = set(self.ids)
+        for icao in [*self.ids, *(i for i in self.stations if i not in listed)]:
             entry = self.stations.get(icao)
             if entry is None:
                 continue
@@ -178,10 +186,33 @@ class AppState:
                 row, fetched = entry.awc_taf, entry.taf_updated
                 if entry.taf is not None and entry.taf.valid_to is not None and entry.taf.valid_to <= now:
                     continue
-            if row is not None and fetched is not None:
-                payload.append({**row.source, FETCHED_KEY: fetched.isoformat()})
+            if row is None or fetched is None:
+                continue
+            written.add(icao)
+            if icao not in listed and now - fetched > CACHE_MAX_AGE:
+                continue
+            payload.append({**row.source, FETCHED_KEY: fetched.isoformat()})
+        payload.extend(self._others_cached(product, now, written | listed))
         if not self.cache.write(CACHE_KEYS[product], payload):
             self.record_error(product, f"{product.value}: could not write the cache in {self.cache.directory}")
+
+    def _others_cached(self, product: Product, now: datetime, skip: set[str]) -> list[dict[str, Any]]:
+        """Unexpired rows in the cache file for stations this run knows nothing about (another run wrote them)."""
+        assert self.cache is not None
+        found = self.cache.read(CACHE_KEYS[product])
+        if found is None or not isinstance(found[1], list):
+            return []
+        saved_at, rows = found
+        kept: list[dict[str, Any]] = []
+        parse = parse_metars if product is Product.METAR else parse_tafs
+        for parsed in parse(rows):
+            if parsed.icao in skip:
+                continue
+            fetched = _fetched_at(parsed.source, saved_at)
+            expired = isinstance(parsed, AwcTaf) and parsed.valid_to is not None and parsed.valid_to <= now
+            if not expired and now - fetched <= CACHE_MAX_AGE:
+                kept.append({**parsed.source, FETCHED_KEY: fetched.isoformat()})
+        return kept
 
     def load_demo(self, stations: Iterable[DemoStation]) -> None:
         """Fill the state from the bundled demo reports. Nothing is cached or fetched."""
@@ -201,7 +232,7 @@ class AppState:
         if self.cache is None:
             return 0
         loaded = 0
-        self.cache.clean()
+        self.cache.clean(CACHE_KEYS.values())
         for product, key in CACHE_KEYS.items():
             found = self.cache.read(key)
             if found is None:

@@ -159,7 +159,7 @@
     "AUTOMATED",
     "MISSING_DATA"
   ],
-  "condition": "CLEAR",
+  "condition": null,
   "relative_humidity": 93.4,
   "warnings": []
 }
