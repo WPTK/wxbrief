@@ -202,3 +202,14 @@ def test_parse_any_of_nothing_is_empty(text: str) -> None:
 
 def test_parse_any_never_raises_on_garbage() -> None:
     assert len(parse_any("\x00 ☃ ???\n=\n/// ///", REF)) >= 1
+
+
+def test_a_paste_of_many_short_lines_splits_in_linear_time() -> None:
+    import time
+
+    text = "TAF KDEN 311120Z 0112/0218\n" + "X\n" * 20000
+    started = time.perf_counter()
+    reports = split_reports(text)
+    elapsed = time.perf_counter() - started
+    assert len(reports) == 1 and reports[0].count("\n") == 20000
+    assert elapsed < 2.0, f"{elapsed:.1f}s for 20000 lines"

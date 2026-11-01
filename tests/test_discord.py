@@ -370,3 +370,13 @@ def test_a_corrected_metar_is_flagged_beside_the_observation_time() -> None:
     first = block("METAR COR KJAX 312256Z 17005KT 10SM FEW030 24/20 A3003")
     assert "Obs: 22:56 UTC (312256Z)  — ⚠️ COR" in first.splitlines()
     assert "COR" not in block("METAR KJAX 312256Z 17005KT 10SM FEW030 24/20 A3003")
+
+
+def test_a_wind_with_no_direction_keeps_its_gust() -> None:
+    gusting = block("METAR KJAX 312256Z ///15G25KT 10SM FEW030 24/20 A3003")
+    assert "15 kt, gusting 25 kt" in gusting
+    for lang, word in (("de", "Böen"), ("es", "ráfagas"), ("fr", "rafales"), ("pt", "rajadas")):
+        text = discord_block(report("METAR KJAX 312256Z ///15G25KT 10SM FEW030 24/20 A3003"), Translator.load(lang), UnitsMode.US)
+        assert word in text
+    steady = block("METAR KJAX 312256Z ///15KT 10SM FEW030 24/20 A3003")
+    assert "gusting" not in steady

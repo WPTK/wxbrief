@@ -264,10 +264,12 @@ class WxBriefApp(App[None]):
             await client.aclose()
 
     def _on_result(self, product: Product, rows: list[object]) -> None:
-        self.state.apply(product, rows)
+        self.state.apply(product, rows, self.scheduler.requested if self.scheduler is not None else None)
         self.redraw_screens(paste=False)
 
     def _on_error(self, product: Product, error: AwcError) -> None:
+        if self.scheduler is not None and not set(self.scheduler.requested) & set(self.state.ids):
+            return  # the stations it was for are gone from the list: nothing will fetch again to clear this
         first = product not in self.state.errors
         self.state.record_error(
             product,
@@ -384,11 +386,17 @@ class WxBriefApp(App[None]):
                     self.notify(t.t(K.UI_TOAST_BACKUP_FAILED), severity="error")
                     return False
                 self.notify(t.t(K.UI_TOAST_BACKED_UP, path=backup), timeout=10)
-        merged = merge_session(loaded.config, self._saved_watchlist, watchlist, chosen)
+        merged, dropped = merge_session(loaded.config, self._saved_watchlist, watchlist, chosen)
         if not save_config(merged, path):  # nothing is remembered as saved, so the next change tries again
             self.notify(t.t(K.UI_TOAST_SAVE_FAILED, path=path), severity="error")
             return False
         options.config = merged
+        if dropped:  # the file was filled by another instance meanwhile: these stay for this session only
+            for code in dropped:
+                self.state.watchlist.remove(code)
+                self.state.session.append(code)
+            watchlist = [code for code in watchlist if code not in dropped]
+            self.notify(t.t(K.UI_TOAST_WATCHLIST_FULL, limit=WATCHLIST_CAP), severity="warning")
         self._saved_watchlist = watchlist
         return True
 

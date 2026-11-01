@@ -131,7 +131,8 @@ def _wind(t: Translator, wind: Wind, units: UnitsMode, variation: WindVariation 
         key = K.DISCORD_WIND_VARIABLE_GUST if gust else K.DISCORD_WIND_VARIABLE
         text = t.t(key, speed=speed, gust=gust)
     elif wind.direction is None:
-        text = t.t(K.DISCORD_WIND_NO_DIRECTION, speed=speed)
+        key = K.DISCORD_WIND_NO_DIRECTION_GUST if gust else K.DISCORD_WIND_NO_DIRECTION
+        text = t.t(key, speed=speed, gust=gust)
     else:
         compass = t.t(COMPASS_KEYS[compass_point(wind.direction)])
         key = K.DISCORD_WIND_STEADY_GUST if gust else K.DISCORD_WIND_STEADY

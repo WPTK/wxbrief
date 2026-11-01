@@ -132,6 +132,7 @@ class K:
     DISCORD_WEATHER = "discord.weather"
     DISCORD_WIND = "discord.wind"
     DISCORD_WIND_NO_DIRECTION = "discord.wind_no_direction"
+    DISCORD_WIND_NO_DIRECTION_GUST = "discord.wind_no_direction_gust"
     DISCORD_WIND_SHEAR = "discord.wind_shear"
     DISCORD_WIND_STEADY = "discord.wind_steady"
     DISCORD_WIND_STEADY_GUST = "discord.wind_steady_gust"
