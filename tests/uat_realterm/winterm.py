@@ -453,20 +453,32 @@ class UiaText:
         self._pattern: Any = None
 
     def _locate(self) -> tuple[Any, Any]:
+        """The element with a TextPattern that holds the most text (the terminal screen, not a title or a tab)."""
         auto = self.auto
         root = auto.ControlFromHandle(self.hwnd)
         queue = [(root, 0)]
+        best: tuple[int, Any, Any] | None = None
+        self.candidates: list[str] = []
         while queue:
             ctrl, depth = queue.pop(0)
             pattern = None
             with contextlib.suppress(Exception):
                 pattern = ctrl.GetPattern(auto.PatternId.TextPattern)
             if pattern is not None:
-                return ctrl, pattern
+                size = -1
+                with contextlib.suppress(Exception):
+                    size = len(pattern.DocumentRange.GetText(-1))
+                self.candidates.append(
+                    f"{ctrl.ControlTypeName} class={ctrl.ClassName!r} name={ctrl.Name[:30]!r} chars={size}"
+                )
+                if best is None or size > best[0]:
+                    best = (size, ctrl, pattern)
             if depth < self.max_depth:
                 with contextlib.suppress(Exception):
                     queue.extend((child, depth + 1) for child in ctrl.GetChildren())
-        raise LookupError(f"no UIA element with a TextPattern under hwnd {self.hwnd:#x}")
+        if best is None:
+            raise LookupError(f"no UIA element with a TextPattern under hwnd {self.hwnd:#x}")
+        return best[1], best[2]
 
     @property
     def control(self) -> Any:

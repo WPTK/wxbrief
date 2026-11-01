@@ -36,6 +36,7 @@ INITIAL_RE = r"\b1/10\b"
 TARGET_ROW = "UUEE"
 AFTER_CLICK = [r"\b4/10\b", r"UUEE\s+Moscow"]
 VK_BACKTICK = 0xC0
+VK_J, VK_K = ord("J"), ord("K")
 VK_A, VK_C, VK_X, VK_M = ord("A"), ord("C"), ord("X"), ord("M")
 
 
@@ -253,6 +254,8 @@ class VSCode(Term):
         {"key": "ctrl+alt+c", "command": "workbench.action.terminal.copySelection", "when": "terminalFocus"},
         {"key": "ctrl+alt+x", "command": "workbench.action.terminal.clearSelection", "when": "terminalFocus"},
         {"key": "ctrl+alt+m", "command": "workbench.action.toggleMaximizedPanel"},
+        {"key": "ctrl+alt+j", "command": "workbench.action.closeSidebar"},
+        {"key": "ctrl+alt+k", "command": "workbench.action.closeAuxiliaryBar"},
     ]
 
     def launch(self) -> None:
@@ -292,7 +295,10 @@ class VSCode(Term):
         self.shot("pre-terminal")
         w.chord(w.VK_CONTROL, VK_BACKTICK)  # Ctrl+` opens and focuses the integrated terminal
         time.sleep(4)
-        w.chord(w.VK_CONTROL, w.VK_MENU, VK_M)  # maximise the panel so the TUI has room (60x16 minimum)
+        # Close both side bars, then maximise the panel, so the TUI gets the whole window (it needs 60x16 at least).
+        w.chord(w.VK_CONTROL, w.VK_MENU, VK_J)
+        w.chord(w.VK_CONTROL, w.VK_MENU, VK_K)
+        w.chord(w.VK_CONTROL, w.VK_MENU, VK_M)
         time.sleep(2)
         self.shot("terminal-open")
         w.send_text(f'"{self.run_cmd}"\n', delay=0.02)
@@ -399,7 +405,25 @@ def diagnostics(out: Path) -> dict[str, Any]:
 def journey(t: Term, rep: Report) -> None:
     t.launch()
     t.prepare_window()
-    text = str(w.wait_for(lambda: (s := t.read()) and re.search(START_RE, s) and s, 90, "the wxbrief list screen"))
+    last = {"text": ""}
+
+    def drawn() -> str:
+        last["text"] = t.read()
+        ok = re.search(START_RE, last["text"]) and re.search(INITIAL_RE, last["text"])
+        return last["text"] if ok else ""
+
+    try:
+        text = str(w.wait_for(drawn, 90, "the wxbrief list screen"))
+    except TimeoutError:
+        t.save_text("00-last-read", last["text"])
+        t.shot("00-not-drawn", printwindow=True)
+        uia = getattr(t, "_uia", None)
+        if uia is not None:
+            with contextlib.suppress(Exception):
+                rep.note("uia candidates", " | ".join(getattr(uia, "candidates", [])) or "none")
+            with contextlib.suppress(Exception):
+                w.dump_uia_tree(t.hwnd, t.out / f"{t.name}-uia-tree.txt", max_depth=12, max_nodes=500)
+        raise
     t.save_text("01-start", text)
     t.shot("01-start", printwindow=True)
     rep.check("app drawn", True, f"{len(text.splitlines())} lines read", critical=True)
@@ -407,6 +431,7 @@ def journey(t: Term, rep: Report) -> None:
     uia = getattr(t, "_uia", None)
     if uia is not None:
         rep.note("uia text element", uia.describe())
+        rep.note("uia candidates", " | ".join(getattr(uia, "candidates", [])))
     with contextlib.suppress(Exception):
         n = w.dump_uia_tree(t.hwnd, t.out / f"{t.name}-uia-tree.txt", max_depth=12, max_nodes=500)
         rep.note("uia tree", f"{n} nodes")
