@@ -121,7 +121,9 @@ def _first_positional(argv: Sequence[str]) -> str | None:
 def build_tui_parser(t: Translator | None = None) -> argparse.ArgumentParser:
     """The parser for ``wxbrief [ICAO ...]``, which opens the TUI; its help is in the language ``t``."""
     t = t or Translator.load(DEFAULT_LANGUAGE)
-    parser = argparse.ArgumentParser(prog="wxbrief", description=t.t(K.CLI_DESCRIPTION), epilog=t.t(K.CLI_EPILOG))
+    parser = argparse.ArgumentParser(
+        prog="wxbrief", description=t.t(K.CLI_DESCRIPTION), epilog=t.t(K.CLI_EPILOG) + " " + t.t(K.COMMON_NOTICE)
+    )
     _add_global_flags(parser, t)
     parser.add_argument("stations", nargs="*", metavar="ICAO", help=t.t(K.CLI_HELP_STATIONS))
     return parser

@@ -15,6 +15,11 @@ translation (English complete; Spanish, French, German and Portuguese seeded).
 
 ![The grid layout, one card per station with a mini forecast strip](docs/img/grid.svg)
 
+## What wxbrief is not
+
+wxbrief is not a substitute for an official weather briefing, and not for flight planning alone. Get an official briefing
+before you fly. The same notice is in `wxbrief --help` and the in-app help (`?`).
+
 ## Status
 
 Version 0.1.0 is the first release.
@@ -83,6 +88,11 @@ The cache folder can be moved with the `WXBRIEF_CACHE_DIR` environment variable.
 ## Data and attribution
 
 Reports come from the [Aviation Weather Center](https://aviationweather.gov/) data API.
+
+The client follows the [API usage guidance](https://aviationweather.gov/data/api/): it identifies itself with a
+`User-Agent` naming wxbrief, its version and this repository, polls METARs every 10 minutes and TAFs every 30, stays
+under 100 requests a minute, honours `Retry-After` on a 429, and reuses a response when the server sends `ETag`,
+`Last-Modified` or `Cache-Control: max-age`.
 
 The bundled station database (`wxbrief/data/stations.json.gz`) takes station positions from the AWC station list and
 assigns each station its IANA time zone with [timezonefinder](https://github.com/jannikmi/timezonefinder), which uses

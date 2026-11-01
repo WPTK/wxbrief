@@ -60,6 +60,7 @@ class K:
     COMMON_AND_PAIR = "common.and_pair"
     COMMON_LESS_THAN = "common.less_than"
     COMMON_MORE_THAN = "common.more_than"
+    COMMON_NOTICE = "common.notice"
     COMMON_NOT_REPORTED = "common.not_reported"
     COMMON_OR_MORE = "common.or_more"
 

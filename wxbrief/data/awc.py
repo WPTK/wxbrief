@@ -5,7 +5,11 @@ from __future__ import annotations
 import asyncio
 import json
 import math
-from collections.abc import Sequence
+import re
+import time
+from collections import OrderedDict
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from typing import Any, Self
@@ -30,6 +34,8 @@ MAX_IDS_PER_REQUEST = 400
 DEFAULT_RETRY_AFTER = 60.0
 MAX_RETRY_AFTER = 3600.0
 MAX_BODY_BYTES = 8 * 1024 * 1024  # a full 400-station METAR batch is well under 1 MB
+MAX_AGE_CAP = 3600.0  # a Cache-Control max-age longer than this is not allowed to freeze a briefing
+CACHED_REQUESTS = 8  # request results kept for revalidation; the oldest is dropped first
 
 
 class AwcError(Exception):
@@ -75,6 +81,29 @@ def _retry_after(response: httpx.Response) -> float:
     return min(MAX_RETRY_AFTER, max(0.0, seconds))
 
 
+_MAX_AGE = re.compile(r"(?:^|,)\s*max-age\s*=\s*\"?(\d+)", re.IGNORECASE)
+_NO_REUSE = re.compile(r"(?:^|,)\s*(?:no-store|no-cache)\s*(?:,|$)", re.IGNORECASE)
+
+
+def _max_age(response: httpx.Response) -> float:
+    """Seconds the server says the response stays fresh (``Cache-Control: max-age``), 0 when it says nothing usable."""
+    control = response.headers.get("Cache-Control", "")
+    if _NO_REUSE.search(control):
+        return 0.0
+    found = _MAX_AGE.search(control)
+    return min(MAX_AGE_CAP, float(found.group(1))) if found else 0.0
+
+
+@dataclass(slots=True)
+class _Stored:
+    """The last 200 for one request: its rows, the validators to send next time and when it stops being fresh."""
+
+    rows: list[Any]
+    etag: str | None
+    last_modified: str | None
+    fresh_until: float
+
+
 async def _read_limited(response: httpx.Response) -> bytes:
     """The decoded body, or ``ClientError`` as soon as it passes ``MAX_BODY_BYTES`` (nothing more is read)."""
     declared = response.headers.get("Content-Length", "")
@@ -113,8 +142,11 @@ class AwcClient:
         client: httpx.AsyncClient | None = None,
         timeout: float = TIMEOUT_SECONDS,
         deadline: float = DEADLINE_SECONDS,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._deadline = deadline
+        self._clock = clock
+        self._stored: OrderedDict[tuple[str, tuple[tuple[str, str], ...]], _Stored] = OrderedDict()
         self._owns_client = client is None
         self._base_url = base_url.rstrip("/")
         if client is None:
@@ -135,16 +167,34 @@ class AwcClient:
             await self._client.aclose()
 
     async def _get(self, endpoint: str, params: dict[str, str]) -> list[Any]:
+        """One request. A response still fresh by ``Cache-Control: max-age`` is reused without a request; a stale one
+        is revalidated with ``If-None-Match`` / ``If-Modified-Since`` and a 304 reuses it."""
+        key = (endpoint, tuple(sorted(params.items())))
+        stored = self._stored.get(key)
+        headers: dict[str, str] = {}
+        if stored is not None:
+            if self._clock() < stored.fresh_until:
+                return stored.rows
+            if stored.etag:
+                headers["If-None-Match"] = stored.etag
+            if stored.last_modified:
+                headers["If-Modified-Since"] = stored.last_modified
         try:
             async with asyncio.timeout(self._deadline):  # httpx's timeout restarts on every read
-                async with self._client.stream("GET", f"{self._base_url}/{endpoint}", params=params) as response:
+                async with self._client.stream(
+                    "GET", f"{self._base_url}/{endpoint}", params=params, headers=headers
+                ) as response:
                     status = response.status_code
                     content = await _read_limited(response) if status == 200 else b""
         except httpx.HTTPError as exc:
             raise TransportError(f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__) from exc
         except TimeoutError as exc:
             raise TransportError(f"no complete response within {self._deadline:g} s") from exc
+        if status == 304 and stored is not None:
+            stored.fresh_until = self._clock() + _max_age(response)
+            return stored.rows
         if status == 204:
+            self._stored.pop(key, None)
             return []
         if status == 429:
             raise RateLimited(_retry_after(response))
@@ -158,6 +208,15 @@ class AwcClient:
             raise ClientError("response is not JSON") from exc
         if not isinstance(body, list):
             raise ClientError("response is not a list")
+        etag, modified = response.headers.get("ETag"), response.headers.get("Last-Modified")
+        age = _max_age(response)
+        if etag or modified or age:
+            self._stored[key] = _Stored(body, etag, modified, self._clock() + age)
+            self._stored.move_to_end(key)
+            while len(self._stored) > CACHED_REQUESTS:
+                self._stored.popitem(last=False)
+        else:
+            self._stored.pop(key, None)
         return body
 
     async def _fetch(self, endpoint: str, ids: Sequence[str], extra: dict[str, str]) -> list[Any]:

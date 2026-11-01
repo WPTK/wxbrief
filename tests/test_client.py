@@ -204,3 +204,88 @@ async def test_a_dripping_body_hits_the_total_deadline() -> None:
     async with AwcClient(client=http, deadline=0.2) as client:
         with pytest.raises(TransportError):
             await client.metars(["KDEN"])
+
+
+@respx.mock
+async def test_a_stale_response_is_revalidated_and_a_304_reuses_the_rows() -> None:
+    body = _payload("metar_kden_egll.json")
+    now = [0.0]
+    route = respx.get(METAR_URL).mock(
+        side_effect=[
+            httpx.Response(200, content=body, headers={"ETag": '"v1"', "Last-Modified": "Sat, 31 Oct 2026 12:00:00 GMT"}),
+            httpx.Response(304),
+        ]
+    )
+    async with AwcClient(clock=lambda: now[0]) as client:
+        first = await client.metars(["KDEN", "EGLL"])
+        second = await client.metars(["KDEN", "EGLL"])
+    assert route.call_count == 2
+    assert "If-None-Match" not in route.calls[0].request.headers
+    sent = route.calls[1].request.headers
+    assert sent["If-None-Match"] == '"v1"' and sent["If-Modified-Since"] == "Sat, 31 Oct 2026 12:00:00 GMT"
+    assert [m.raw for m in second] == [m.raw for m in first] and first
+
+
+@respx.mock
+async def test_cache_control_max_age_skips_the_request_until_it_runs_out() -> None:
+    body = _payload("metar_kden_egll.json")
+    now = [100.0]
+    route = respx.get(METAR_URL).mock(
+        return_value=httpx.Response(200, content=body, headers={"Cache-Control": "public, max-age=120"})
+    )
+    async with AwcClient(clock=lambda: now[0]) as client:
+        await client.metars(["KDEN"])
+        now[0] = 219.0
+        await client.metars(["KDEN"])
+        assert route.call_count == 1
+        now[0] = 221.0
+        await client.metars(["KDEN"])
+        assert route.call_count == 2
+        await client.metars(["EGLL"])  # another id list is another request
+        assert route.call_count == 3
+
+
+@respx.mock
+@pytest.mark.parametrize("control", ["no-store", "no-cache, max-age=600", "max-age=abc", ""])
+async def test_without_a_usable_max_age_every_call_goes_to_the_network(control: str) -> None:
+    route = respx.get(METAR_URL).mock(
+        return_value=httpx.Response(200, content=b"[]", headers={"Cache-Control": control} if control else {})
+    )
+    async with AwcClient() as client:
+        await client.metars(["KDEN"])
+        await client.metars(["KDEN"])
+    assert route.call_count == 2
+
+
+@respx.mock
+async def test_max_age_is_capped_and_the_stored_requests_are_bounded() -> None:
+    from wxbrief.data.awc import CACHED_REQUESTS, MAX_AGE_CAP
+
+    now = [0.0]
+    route = respx.get(METAR_URL).mock(
+        return_value=httpx.Response(200, content=b"[]", headers={"Cache-Control": "max-age=999999"})
+    )
+    async with AwcClient(clock=lambda: now[0]) as client:
+        await client.metars(["KDEN"])
+        now[0] = MAX_AGE_CAP + 1
+        await client.metars(["KDEN"])
+        assert route.call_count == 2
+        for index in range(CACHED_REQUESTS + 2):
+            await client.metars([f"K{index:03d}"])
+        assert len(client._stored) == CACHED_REQUESTS
+
+
+@respx.mock
+async def test_a_429_after_a_stored_response_still_raises_with_retry_after() -> None:
+    now = [0.0]
+    respx.get(METAR_URL).mock(
+        side_effect=[
+            httpx.Response(200, content=b"[]", headers={"ETag": '"a"'}),
+            httpx.Response(429, headers={"Retry-After": "90"}),
+        ]
+    )
+    async with AwcClient(clock=lambda: now[0]) as client:
+        await client.metars(["KDEN"])
+        with pytest.raises(RateLimited) as caught:
+            await client.metars(["KDEN"])
+    assert caught.value.retry_after == 90.0

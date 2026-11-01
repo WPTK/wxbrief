@@ -54,6 +54,7 @@ worst_category = "Ungünstigste Flugwetterkategorie"
 details = "Einzelheiten"
 
 [common]
+notice = "wxbrief ersetzt keine offizielle Wetterberatung und ist nicht allein für die Flugplanung gedacht. Holen Sie vor dem Flug eine offizielle Wetterberatung ein."
 not_reported = "Nicht gemeldet"
 more_than = "mehr als {value}"
 less_than = "weniger als {value}"
