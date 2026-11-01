@@ -313,6 +313,10 @@ BriefingScreen.-short FlagsRow,
 BriefingScreen.-short DetailPane .section {
     margin-top: 0;
 }
+/* The chips keep one blank row below them, or they sit against the Raw header. */
+BriefingScreen.-short FlagsRow {
+    margin-bottom: 1;
+}
 /* === end scrollbars === */
 
 /* The station count rides in the border title of the list and the grid (the list already has its top border). */
@@ -362,4 +366,13 @@ StationGrid #empty {
     margin: 2 2;
     color: $text-muted;
     height: auto;
+}
+
+/* Toasts are one row high and as wide as their text, so they sit on the status bar above the key bar and do not cover
+   cards or report text. */
+Toast {
+    width: auto;
+    max-width: 50%;
+    padding: 0 1;
+    margin-top: 0;
 }
