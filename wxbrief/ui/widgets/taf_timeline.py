@@ -160,14 +160,16 @@ class TafTimeline(Widget, can_focus=True):
 
     # --- cursor ----------------------------------------------------------------------------------------------------
 
-    def move_to(self, index: int) -> None:
+    def move_to(self, index: int, *, chosen: bool = True) -> None:
+        """Put the cursor on a cell. A hover only previews it (chosen=False): the cursor keeps following the clock."""
         if not self.cells:
             return
         index = max(0, min(index, len(self.cells) - 1))
         if index == self.cursor:
             return
         self.cursor = index
-        self._moved = True
+        if chosen:
+            self._moved = True
         self._cursor_hour = self.cells[index].hours[0]
         self._announce()
         self.refresh()
@@ -188,7 +190,7 @@ class TafTimeline(Widget, can_focus=True):
     def on_mouse_move(self, event: MouseMove) -> None:
         index = self._index_at(event.x)
         if index is not None:
-            self.move_to(index)
+            self.move_to(index, chosen=False)
 
     def on_click(self, event: Click) -> None:
         index = self._index_at(event.x)

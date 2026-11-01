@@ -167,6 +167,13 @@ async def test_no_stale_horizontal_scrollbar_after_resize(tmp_path: Path) -> Non
 async def test_text_is_not_hidden_under_the_scrollbar_at_60x16(tmp_path: Path) -> None:
     async def probe(run: Run) -> None:
         await run.press("2")
-        assert "11:53" in run.text(), "the observed time is covered by the scrollbar"
+        lines = [line for line in run.text().splitlines() if "11:53" in line]
+        assert lines, "the observed time is not on screen"
+        bars = [w for w in run.app.screen.query("*") if w.display and w.show_vertical_scrollbar]
+        assert bars, "the probe needs a scrollbar on screen to mean anything"
+        for line in lines:
+            end = line.index("11:53") + len("11:53")
+            for bar in bars:
+                assert end <= bar.region.right - bar.scrollbar_size_vertical, "the observed time runs under a scrollbar"
 
     await _check(probe, "60x16", tmp_path)

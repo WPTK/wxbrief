@@ -158,6 +158,8 @@ class DetailPane(VerticalScroll):
         bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW),
         bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED),
         bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF),
+        bind("left", "timeline(-1)", K.UI_BINDING_EARLIER, show=False),
+        bind("right", "timeline(1)", K.UI_BINDING_LATER, show=False),
         bind("c", "screen.copy_metar", K.UI_BINDING_COPY_METAR),
         bind("a", "screen.add_station", K.UI_BINDING_ADD_STATION),  # the list is hidden on a narrow terminal
     ]
@@ -203,6 +205,7 @@ class DetailPane(VerticalScroll):
         self.query_one("#placeholder", Static).update(t.t(K.UI_DETAIL_NO_STATIONS))
         if entry is None or entry.icao != previous:
             self.scroll_home(animate=False)  # another station starts at its own header, never mid-way down the last one
+            self._release_focus(self)  # a widget now below the fold must not keep the keyboard
         if entry is None:
             self._set_visible(False)
             return
@@ -295,10 +298,16 @@ class DetailPane(VerticalScroll):
             period.update("")
             self._release_focus(timeline)
 
+    def action_timeline(self, offset: int) -> None:
+        """Left/Right on the pane move the forecast cursor, as help says."""
+        timeline = self.query_one(TafTimeline)
+        if timeline.display:
+            timeline.action_move(offset)
+
     def _release_focus(self, hidden: Widget) -> None:
         """A widget about to be hidden must not keep the keyboard (Textual would drop it): hand it to the pane."""
         focused = self.screen.focused
-        if focused is not None and (focused is hidden or hidden in focused.ancestors):
+        if focused is not None and focused is not self and (focused is hidden or hidden in focused.ancestors):
             self.focus()
 
     def on_taf_timeline_moved(self, message: TafTimeline.Moved) -> None:
