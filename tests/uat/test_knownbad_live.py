@@ -170,18 +170,25 @@ def test_j13b_metar_ok_taf_fails_three_cycles_never_offline_beside_fresh(live: C
     assert "problem" not in last and "offline" not in last, last
 
 
-def test_j13b_one_blip_shows_nothing(live: Callable[..., Any]) -> None:
-    """A single dropped TAF connection, then ok: no offline, no problem text, no toast (#219/#223)."""
+@pytest.mark.uat_live
+@pytest.mark.J13b_single_reset
+def test_J13b_single_reset(live: Callable[..., Any]) -> None:
+    """J13b_single_reset (selectable with ``-m J13b_single_reset``; the uat-nightly live set uses it). The proxy drops
+    ONLY the TAF endpoint, once (connection reset); METAR answers every request. Sampled every 0.4 s from the press of
+    ``r`` to 5 s after: never offline beside fresh, nothing shown at all for one blip (#219/#223)."""
     fp, term = live()
     ctl(fp, "/rule", {"product": "taf", "behavior": "reset", "count": 1})
     forced_cycle(term, fp)
-    term.hold(1.0)
-    bars = watch(term, 4.0)
+    bars = watch(term, 5.0)
     assert bars
     shown = term.screen()
     for text in ("offline", "problem", "Could not fetch", "Can't reach"):
         assert not screen_has(shown, text), f"{text!r} shown after one blip:\n{shown.text}"
     assert all("offline" not in b and "problem" not in b for b in bars), bars
+    assert any("fresh" in b for b in bars), bars
+    assert {r["status"] for r in fp.requests("metar")} == {200}, "METAR was not fine"
+    taf = [r["status"] for r in fp.requests("taf")]
+    assert taf.count("reset") == 1, f"expected exactly one TAF reset: {taf}"
 
 
 @pytest.mark.parametrize("fault", ["5xx", "reset"])
