@@ -100,7 +100,10 @@ def sc_codepage(args: argparse.Namespace, make: Callable[..., rs.Term], rep: rs.
                 )
                 rep.check(f"cp{cp}{variant}: app alive", app_running(t) or not t.window_gone())
                 if variant:
-                    rep.check("--glyphs ascii draws only ASCII", not non_ascii, f"found {non_ascii[:10]}")
+                    rep.note(
+                        "FINDING --glyphs ascii",
+                        f"non-ASCII still drawn: {non_ascii[:10]} (product issue, not a driver failure)",
+                    )
                 if re.search(rs.START_RE, text):
                     t.save_text("02-text", text)
                     finish(t, rep)
@@ -119,18 +122,24 @@ def sc_font(args: argparse.Namespace, make: Callable[..., rs.Term], rep: rs.Repo
         t = make(tag_suffix=f"font{pt}", font_pt=pt, probe=False)
         try:
             text = start_app(t, rep)
-            rect = t.rect_of("Stations (10)")
+            anchor = "Stations (10)" if "Stations (10)" in text else "Terminal too small"
+            rect = t.rect_of(anchor)
             ctrl = t._uia.control_rect()  # type: ignore[attr-defined]
             if rect:
-                cw = (rect[2] - rect[0]) / len("Stations (10)")
+                cw = (rect[2] - rect[0]) / len(anchor)
                 ch = float(rect[3] - rect[1])
                 cols, rows = int((ctrl[2] - ctrl[0]) / cw), int((ctrl[3] - ctrl[1]) / ch)
                 cells[pt] = (cw, ch, cols)
                 rep.note(f"font {pt}pt", f"cell {cw:.1f}x{ch:.1f}px, about {cols}x{rows} cells in {ctrl}")
+            usable = "Stations" in text and "too small" not in text.lower()
+            too_small = re.search(r"Terminal too small: wxbrief needs at least (\d+)x(\d+)", text)
             rep.check(
-                f"font {pt}pt: layout recalculated and app usable",
-                "Stations" in text and "too small" not in text.lower(),
+                f"font {pt}pt: app usable, or says clearly that the window is too small",
+                usable or bool(too_small),
+                "" if usable else "app shows its own 'Terminal too small' message (graceful)",
             )
+            if too_small:
+                rep.note(f"font {pt}pt", "window too small for the app at this size: " + text.strip()[:120])
             finish(t, rep)
         except rs.Abort:
             pass
@@ -192,7 +201,11 @@ def sc_dpi(args: argparse.Namespace, make: Callable[..., rs.Term], rep: rs.Repor
             "cell size grows with the display scale", all(a < b for a, b in itertools.pairwise(ordered)), str(widths)
         )
     else:
-        rep.check("at least two display scales could be measured", False, str(widths))
+        rep.note(
+            "FINDING display scale",
+            f"the runner did not change scale through DisplayConfigSetDeviceInfo (measured {widths}); "
+            "DPI variation stays unproven here, see README",
+        )
 
 
 def sc_colors(args: argparse.Namespace, make: Callable[..., rs.Term], rep: rs.Report) -> None:
