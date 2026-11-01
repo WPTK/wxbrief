@@ -155,10 +155,10 @@ async def test_a_redraw_does_not_snap_the_grid_back(tmp_path: Path) -> None:
         await pilot.press("v")
         grid = app.screen.query_one(StationGrid)
         await wait_for(pilot, lambda: grid.display and grid.max_scroll_y > 0, "the grid shown and scrollable")
+        await wait_for(pilot, lambda: grid._to_reveal is None, "the first reveal done")  # or it lands after our scroll
         grid.scroll_to(y=grid.max_scroll_y, animate=False)
-        await pilot.pause()
+        await wait_for(pilot, lambda: grid.scroll_y > 0, "the grid scrolled")
         bottom = grid.scroll_y
-        assert bottom > 0
         app.screen.refresh_view()  # type: ignore[attr-defined]
         await pilot.pause(0.2)
         assert grid.scroll_y == bottom
