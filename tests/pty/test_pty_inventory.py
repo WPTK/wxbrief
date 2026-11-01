@@ -169,6 +169,7 @@ def test_t_changes_colours(start: Start) -> None:
 # (source file stem, kind) -> the test that clicks it, or a reason it is display only.
 CLICKABLES: dict[tuple[str, str], str] = {
     ("station_list", "OptionList"): "test_pty_journeys.py::test_click_on_third_row_selects_it_and_it_sticks",
+    ("station_list", "on_click"): "test_pty_journeys.py::test_click_keeps_focus_on_the_list",
     ("station_card", "on_click"): "test_pty_journeys.py::test_grid_click_selects_a_card_and_it_sticks",
     ("taf_timeline", "on_click"): "test_pty_inventory.py::test_click_timeline_hour",
     ("add_station", "OptionList"): "test_pty_inventory.py::test_click_add_station_result",
@@ -194,6 +195,7 @@ def test_click_add_station_result(start: Start) -> None:
     term = start()
     term.send_keys("a", "Gatwick")
     term.wait_for(lambda s: "EGKK" in s.text, 10, "a Gatwick result")
+    term.settle(0.5)
     term.click_text("EGKK")
     term.wait_for(lambda s: "Add station" not in s and "Stations (11)" in s, 10, "EGKK added by the click")
 

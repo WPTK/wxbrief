@@ -109,6 +109,7 @@ class Terminal:
         env_remove: tuple[str, ...] = (),
         cwd: Path | None = None,
         isolate: bool = True,
+        prepare: Callable[[Path], None] | None = None,
     ) -> None:
         reason = unavailable_reason()
         if reason:
@@ -120,6 +121,8 @@ class Terminal:
         self._pids: set[int] = set()
         self._loop = asyncio.new_event_loop()
         _LIVE.add(self)
+        if prepare:
+            prepare(self._dir)  # seed files (a cache, a config) before the program starts
         argv = [a.replace("{dir}", str(self._dir)) for a in argv]
         child_env = self._env(env or {}, env_remove, isolate)
         before = {p.pid for p in psutil.Process().children(recursive=True)}

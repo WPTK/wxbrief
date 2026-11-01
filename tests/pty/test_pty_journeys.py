@@ -222,12 +222,9 @@ def test_a_dead_network_does_not_matter_in_demo(start: Start) -> None:
     assert "offline" not in term.screen().text.lower().replace("no network", "")
 
 
-# -- defects reproduced from the released program (filed first, fixed on other branches) -------------------------------
+# -- regression tests for defects found in the 0.3.0 release (#221 #222 #225), fixed in #228 -------------------------------
 
 
-@pytest.mark.xfail(
-    strict=True, reason="#225: a click moves focus into the detail pane; the list footer and highlight go"
-)
 def test_click_keeps_focus_on_the_list(start: Start) -> None:
     term = start()
     term.click(*row_of(term.screen(), "ETHB"))
@@ -237,7 +234,6 @@ def test_click_keeps_focus_on_the_list(start: Start) -> None:
     assert "esc Back" not in footer(term.screen())
 
 
-@pytest.mark.xfail(strict=True, reason="#222: repeated r in demo stacks identical 'Polling is off' toasts")
 def test_repeated_refresh_in_demo_shows_one_toast(start: Start) -> None:
     term = start()
     for _ in range(3):
@@ -246,7 +242,6 @@ def test_repeated_refresh_in_demo_shows_one_toast(start: Start) -> None:
     assert sum(line.count("Polling is off") for line in screen.lines) <= 1, screen.text
 
 
-@pytest.mark.xfail(strict=True, reason="#221: --demo shows no lasting sign that the data is demo data")
 def test_demo_mode_is_visible_after_the_toast_has_gone(start: Start) -> None:
     term = start()
     term.hold(8.0)

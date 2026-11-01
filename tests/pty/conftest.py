@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sys
 from collections.abc import Callable, Iterator
+from pathlib import Path
 
 import pytest
 from uat_kit import Screen, Terminal, unavailable_reason  # tests/ is on sys.path (rootdir import mode)
@@ -27,7 +28,13 @@ EXE_ENV = "WXBRIEF_PTY_EXE"  # the built program, for the post-build run; unset 
 
 
 def launch(
-    cols: int, rows: int, args: list[str] | None = None, *, demo: bool = True, env: dict[str, str] | None = None
+    cols: int,
+    rows: int,
+    args: list[str] | None = None,
+    *,
+    demo: bool = True,
+    env: dict[str, str] | None = None,
+    prepare: Callable[[Path], None] | None = None,
 ) -> Terminal:
     exe = os.environ.get(EXE_ENV)
     argv = [exe] if exe else [sys.executable, "-m", "wxbrief"]
@@ -37,7 +44,7 @@ def launch(
     extra = {"WXBRIEF_CACHE_DIR": "{dir}/cache", **(env or {})}
     if os.environ.get(SRC_ENV):
         extra["PYTHONPATH"] = os.environ[SRC_ENV]
-    return Terminal(argv, cols, rows, env=extra, env_remove=("WXBRIEF_CONFIG",))
+    return Terminal(argv, cols, rows, env=extra, env_remove=("WXBRIEF_CONFIG",), prepare=prepare)
 
 
 @pytest.fixture
@@ -52,9 +59,10 @@ def start() -> Iterator[Callable[..., Terminal]]:
         *,
         demo: bool = True,
         env: dict[str, str] | None = None,
+        prepare: Callable[[Path], None] | None = None,
         ready: str = "Stations",
     ) -> Terminal:
-        term = launch(cols, rows, args, demo=demo, env=env)
+        term = launch(cols, rows, args, demo=demo, env=env, prepare=prepare)
         made.append(term)
         term.wait_for(lambda s: ready in s, 45, f"{ready!r} on screen")
         term.settle()
