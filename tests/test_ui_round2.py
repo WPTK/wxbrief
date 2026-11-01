@@ -8,6 +8,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from test_app_smoke import wait_for
 from test_layout import screen_lines
 from test_timeline_ui import demo_app, settle
 
@@ -75,10 +76,16 @@ async def test_a_resize_keeps_the_selected_card_in_view() -> None:
         await settle(pilot)
         for size in ((60, 16), (200, 50), (80, 24)):
             await pilot.resize_terminal(*size)
-            await settle(pilot)
-            await pilot.pause(0.2)
-            card = next(c for c in grid.query(StationCard) if c.icao == grid.selected)
-            assert grid.region.contains_region(card.region), f"{size}: the selected card is off-screen"
+
+            def settled() -> bool:  # laid out for this size, the reveal finished, and the card inside the grid
+                card = next(c for c in grid.query(StationCard) if c.icao == grid.selected)
+                return (
+                    grid._laid_out_columns == grid.columns
+                    and grid._to_reveal is None
+                    and grid.region.contains_region(card.region)
+                )
+
+            await wait_for(pilot, settled, f"{size}: the selected card in view")
 
 
 async def test_the_decoded_table_hands_back_focus_when_it_is_hidden() -> None:

@@ -7,6 +7,7 @@ from datetime import datetime
 from textual.app import ComposeResult
 from textual.containers import Container, VerticalScroll
 from textual.events import Resize
+from textual.geometry import Region
 from textual.message import Message
 from textual.widgets import Static
 
@@ -47,6 +48,8 @@ class StationGrid(VerticalScroll, can_focus=True):
         self.selected: str | None = None
         self._going: set[StationCard] = set()
         self._revealed: str | None = None  # the card last scrolled into view
+        self._to_reveal: str | None = None  # the card a pending reveal is for
+        self._seen: Region | None = None  # where that card was at the last look
         self._laid_out_columns = 0  # the column count the cards were last laid out with
 
     def compose(self) -> ComposeResult:
@@ -111,8 +114,30 @@ class StationGrid(VerticalScroll, can_focus=True):
             self._reveal(chosen)
 
     def _reveal(self, card: StationCard | None) -> None:
-        if card is not None:  # two refreshes: the first lays the cards out (after a resize), the second can scroll
-            self.call_after_refresh(self.call_after_refresh, card.scroll_visible, animate=False)
+        """Scroll ``card`` into view once the cards are laid out: asked on a new selection or a new column count."""
+        if card is not None:
+            self._to_reveal = card.icao
+            self._seen = None
+            self.call_after_refresh(self._settle_reveal, 8)
+
+    def _settle_reveal(self, tries: int) -> None:
+        """Scroll to the card to reveal, and look again after each refresh until its place has stopped changing and
+        is inside the viewport. A region read before the layout that holds the cards is done is stale, so a card
+        that merely looks in view is not enough: the answer counts once two looks in a row agree."""
+        card = self._card(self._to_reveal) if self._to_reveal else None
+        if card is None:
+            self._to_reveal = None
+            return
+        region = card.region
+        if region == self._seen and self.region.contains_region(region):
+            self._to_reveal = None
+            return
+        self._seen = region
+        card.scroll_visible(animate=False)
+        if tries > 1:
+            self.call_after_refresh(self._settle_reveal, tries - 1)
+        else:
+            self._to_reveal = None
 
     def _card(self, icao: str) -> StationCard | None:
         return next((card for card in self.query(StationCard) if card.icao == icao and card not in self._going), None)
