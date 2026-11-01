@@ -865,6 +865,8 @@ away = "im Hintergrund"
 next_poll = "nächste Abfrage {time}"
 requests = "Anfragen {used}/{limit}"
 polling_off = "Abfrage aus"
+unreachable = "aviationweather.gov nicht erreichbar, gespeicherte Daten werden angezeigt"
+feed_problem = "Problem mit aviationweather.gov, gespeicherte Daten werden angezeigt"
 
 [ui.list]
 title = "Stationen ({n})"
@@ -879,7 +881,8 @@ unknown_theme = "Unbekanntes Design {theme}; textual-dark wird verwendet"
 theme_title = "Design"
 stations_title = "Stationen"
 config_title = "Konfiguration"
-fetch_failed = "{product} konnte nicht abgerufen werden: {error}"
+fetch_failed = "{product} konnte nicht abgerufen werden; gespeicherte Daten werden angezeigt"
+unreachable = "aviationweather.gov nicht erreichbar; gespeicherte Daten werden angezeigt"
 polling_off = "Die regelmäßige Abfrage ist ausgeschaltet"
 refreshing = "Wird aktualisiert"
 rate_limited = "Anfragelimit erreicht; neuer Versuch in {seconds} s"
@@ -938,6 +941,7 @@ body = """\
 [b]Details[/b]
   1  2  3            zu Original, Dekodiert, Vorhersage springen
   Links/Rechts       den Zeitleistencursor bewegen (die Maus geht auch)
+  Esc                zurück zur Stationsliste
   c                  den METAR-Block für Discord kopieren
   C                  METAR und TAF für Discord kopieren
   y                  den Originaltext der Meldung kopieren

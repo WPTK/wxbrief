@@ -89,7 +89,7 @@ class StationCard(Static):
         hours = strip_for(taf)[1] if taf is not None else ()
         cells = mini_cells(hours, now)
         if cells:
-            lines.append(tick_labels(cells, CELL_WIDTH, ctx, entry.icao, every_cell=False))
+            lines.append(tick_labels(cells, CELL_WIDTH, ctx, entry.icao, every_cell=False, all_zones=False))
             lines.extend(strip_lines(cells, colors, ctx.translator))
         else:
             if taf is not None and taf.cancelled:

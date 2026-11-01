@@ -858,6 +858,8 @@ away = "en segundo plano"
 next_poll = "próxima consulta {time}"
 requests = "peticiones {used}/{limit}"
 polling_off = "consulta desactivada"
+unreachable = "no se puede conectar con aviationweather.gov, se muestran datos guardados"
+feed_problem = "problema con aviationweather.gov, se muestran datos guardados"
 
 [ui.list]
 title = "Estaciones ({n})"
@@ -872,7 +874,8 @@ unknown_theme = "Tema desconocido {theme}; se usa textual-dark"
 theme_title = "Tema"
 stations_title = "Estaciones"
 config_title = "Configuración"
-fetch_failed = "No se pudo obtener {product}: {error}"
+fetch_failed = "No se pudo obtener {product}; se muestran datos guardados"
+unreachable = "No se puede conectar con aviationweather.gov; se muestran datos guardados"
 polling_off = "La consulta periódica está desactivada"
 refreshing = "Actualizando"
 rate_limited = "Límite de peticiones; reintento en {seconds} s"
@@ -931,6 +934,7 @@ body = """\
 [b]Detalle[/b]
   1  2  3            ir al original, decodificado, pronóstico
   Izq./Der.          mover el cursor de la línea de tiempo (el ratón también sirve)
+  Esc                volver a la lista de estaciones
   c                  copiar el bloque de METAR para Discord
   C                  copiar METAR y TAF para Discord
   y                  copiar el texto original del informe

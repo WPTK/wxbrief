@@ -49,7 +49,7 @@ async def test_the_footer_follows_focus() -> None:
         assert isinstance(app.focused, StationList)
         assert await shown_is(app, pilot, ["a", "d", "v", "r", "question_mark", "p", "q", "t"]) == ["a", "d", "v", "r", "question_mark", "p", "q", "t"]
         await pilot.press("enter")  # into the detail pane
-        assert await shown_is(app, pilot, ["1", "2", "3", "c", "a", "r", "question_mark", "p", "q", "t"]) == ["1", "2", "3", "c", "a", "r", "question_mark", "p", "q", "t"]
+        assert await shown_is(app, pilot, ["1", "2", "3", "c", "a", "r", "question_mark", "p", "escape", "q", "t"]) == ["1", "2", "3", "c", "a", "r", "question_mark", "p", "escape", "q", "t"]
         await pilot.press("v")  # still works from the detail pane, though the footer does not list it
         assert isinstance(app.focused, StationGrid)
         assert await shown_is(app, pilot, ["a", "d", "v", "r", "question_mark", "p", "q", "t"]) == ["a", "d", "v", "r", "question_mark", "p", "q", "t"]
