@@ -6,6 +6,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from test_app_smoke import wait_for
 from test_timeline_ui import demo_app
 
 from wxbrief.data.cache import CACHE_DIR_ENV
@@ -95,12 +96,12 @@ async def test_the_station_screen_copies_and_jumps(monkeypatch: pytest.MonkeyPat
     async with app.run_test(size=(120, 40)) as pilot:
         await pilot.pause()
         await pilot.press("v", "enter")
-        await pilot.pause()
-        assert isinstance(app.screen, StationDetailScreen)
+        await wait_for(pilot, lambda: isinstance(app.screen, StationDetailScreen), "the station screen")
         keys = await shown_is(app, pilot, ["1", "2", "3", "c", "r", "question_mark", "escape", "q", "t"])
         assert keys == ["1", "2", "3", "c", "r", "question_mark", "escape", "q", "t"]  # no "a" on this screen
         await pilot.press("c")
-        assert len(copied) == 1 and "METAR" in copied[0]
+        await wait_for(pilot, lambda: len(copied) == 1, "the copy")
+        assert "METAR" in copied[0]
         await pilot.press("3", "2", "1", "a")  # none of these may raise; a is not offered on this screen
         await pilot.pause()
         assert isinstance(app.screen, StationDetailScreen)

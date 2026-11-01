@@ -17,6 +17,7 @@ carries on; every non-blank character of the input ends up in exactly one token.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 
@@ -445,14 +446,23 @@ def _failsafe(raw: str) -> Taf:
     return Taf(raw=raw, tokens=tokens, warnings=(ParseWarning(WARN_PARSER_ERROR, 0, len(raw), raw),))
 
 
-def parse_taf(raw: str, reference: datetime | None = None) -> Taf:
+def parse_taf(raw: str, reference: datetime | None = None, extra_modifiers: Iterable[Modifier] = ()) -> Taf:
     """Decode one TAF.
 
     ``reference`` resolves the day-of-month in the issue time (``DDHHMMZ``) to a real date: the receipt time of the
-    forecast, a date chosen by the user, or now when omitted. Never raises.
+    forecast, a date chosen by the user, or now when omitted. ``extra_modifiers`` are modifiers a feed reports
+    outside the text (AWC moves ``AMD`` and ``COR`` into a separate field); those the text lacks are added.
+    Never raises.
     """
     raw = strip_controls(raw)
     try:
-        return _parse(raw, reference)
+        taf = _parse(raw, reference)
     except Exception:
         return _failsafe(raw)
+    missing = [m for m in dict.fromkeys(extra_modifiers) if m not in taf.modifiers]
+    if not missing:
+        return taf
+    try:
+        return derive_taf(replace(taf, modifiers=(*taf.modifiers, *missing)))
+    except Exception:
+        return taf

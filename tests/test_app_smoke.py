@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -95,12 +96,16 @@ def screen_text(app: WxBriefApp) -> str:
     return "\n".join(str(line) for line in (app.export_screenshot(),))
 
 
-async def wait_for(pilot: object, condition: object, tries: int = 200) -> None:
-    for _ in range(tries):
-        if condition():  # type: ignore[operator]
-            return
-        await pilot.pause(0.05)  # type: ignore[attr-defined]
-    raise AssertionError("condition not met")
+async def wait_for(pilot: object, condition: object, what: str = "the condition", timeout: float = 5.0) -> None:
+    """Poll ``condition()`` until it is true, for at most ``timeout`` seconds; never a fixed sleep.
+
+    Use it after a key press whose effect (a screen change, a focus move, a layout settle) lands a frame or more later.
+    """
+    deadline = time.monotonic() + timeout
+    while not condition():  # type: ignore[operator]
+        if time.monotonic() > deadline:
+            raise AssertionError(f"timed out after {timeout:g} s waiting for: {what}")
+        await pilot.pause(0.02)  # type: ignore[attr-defined]
 
 
 async def test_live_data_fills_list_and_detail(tmp_path: Path) -> None:
