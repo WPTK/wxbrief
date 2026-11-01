@@ -88,7 +88,7 @@ def run_get(args: argparse.Namespace) -> int:
     for product, message in errors.items():
         sys.stderr.write(f"wxbrief get: {product}: {message}\n")
     empty = [icao for icao in ids if icao not in metars and icao not in tafs]
-    if empty and not errors:  # after a failed fetch the error above already says why they are empty
+    if empty and not errors and args.json:  # the text output names each empty station itself; JSON has only nulls
         sys.stderr.write(f"wxbrief get: no report for {', '.join(empty)}\n")
     status = 1 if not (metars or tafs) else 3 if errors or empty else 0
 
