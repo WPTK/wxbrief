@@ -24,3 +24,9 @@ snapshot_report.html
 Thumbs.db
 .DS_Store
 .claude/
+
+# Local notes for the maintainer
+CLAUDE.md
+
+# make_screenshots.py work folder
+.shots/
