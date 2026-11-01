@@ -232,8 +232,10 @@ class PollScheduler:
         sleeper = asyncio.ensure_future(self._sleep(seconds))
         waker = asyncio.ensure_future(self._wake.wait())
         try:
-            await asyncio.wait({sleeper, waker}, return_when=asyncio.FIRST_COMPLETED)
+            done, _ = await asyncio.wait({sleeper, waker}, return_when=asyncio.FIRST_COMPLETED)
         finally:
             sleeper.cancel()
             waker.cancel()
         self._wake.clear()
+        if sleeper in done:
+            sleeper.result()  # asyncio.wait never re-raises a child's error; without this a failed sleep spins run()
