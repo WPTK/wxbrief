@@ -27,6 +27,7 @@ METAR_INTERVAL = 600.0
 TAF_INTERVAL = 1800.0
 AWAY_INTERVAL = 1800.0
 BACKOFF_CAP = 3600.0
+RETRY_FIRST = 60.0  # the wait before the first retry of a failed fetch
 STALE_AFTER = timedelta(minutes=75)
 
 
@@ -98,8 +99,9 @@ class _Track:
 
 
 def backoff_delay(interval: float, failures: int) -> float:
-    """Delay after ``failures`` consecutive failures: the interval doubled each time, capped at an hour."""
-    return min(BACKOFF_CAP, interval * 2 ** max(0, failures))
+    """Delay after ``failures`` consecutive failures: ``RETRY_FIRST`` seconds (the interval when that is shorter),
+    doubled each time, capped at an hour. One dropped request retries within a minute; an outage escalates."""
+    return min(BACKOFF_CAP, min(interval, RETRY_FIRST) * 2 ** max(0, failures))
 
 
 class PollScheduler:

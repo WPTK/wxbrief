@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from wxbrief.data.awc import AwcError, ClientError, RateLimited, ServerError
+from wxbrief.data.awc import AwcError, ClientError, RateLimited, ServerError, TransportError
 from wxbrief.data.poll import (
     BACKOFF_CAP,
     Freshness,
@@ -108,9 +108,10 @@ async def test_failures_back_off_exponentially_and_cap() -> None:
         await scheduler.run_cycle()
         delays.append(scheduler._tracks[Product.METAR].due - clock.now)
         clock.now += delays[-1]
-    assert delays[:3] == [600, 1200, 2400]
-    assert delays[3] == BACKOFF_CAP
-    assert backoff_delay(1800, 5) == BACKOFF_CAP
+    assert delays[:4] == [60, 120, 240, 480]
+    assert delays[4] == 960
+    assert backoff_delay(600, 6) == BACKOFF_CAP
+    assert backoff_delay(1800, 6) == BACKOFF_CAP
     assert any(isinstance(item[1], ServerError) for item in seen)
 
 
@@ -125,7 +126,7 @@ async def test_success_resets_the_backoff() -> None:
     client.errors = [ServerError(500)]
     clock.now += 600
     await scheduler.run_cycle()  # a failure after a success starts the backoff over
-    assert scheduler._tracks[Product.METAR].due == clock.now + 600
+    assert scheduler._tracks[Product.METAR].due == clock.now + 60
 
 
 async def test_retry_after_is_honoured_when_longer_than_the_backoff() -> None:
@@ -339,16 +340,16 @@ async def test_a_short_blur_does_not_leave_the_away_interval_in_force() -> None:
     assert scheduler.next_due_in() == 599
 
 
-async def test_a_failure_while_away_backs_off_from_the_normal_interval_once_back() -> None:
+async def test_a_failure_while_away_still_retries_within_a_minute_once_back() -> None:
     clock, client = FakeClock(), FakeClient()
     client.errors.append(ServerError(500))
     scheduler, _ = make(clock, client, ["KDEN"])
     scheduler.away = True
-    await scheduler.run_cycle()  # fails while away: the delay is the 1800 s away interval doubled
-    assert scheduler._tracks[Product.METAR].due - clock.now == 1800
+    await scheduler.run_cycle()  # fails while away: the first retry is the short one, even while away
+    assert scheduler._tracks[Product.METAR].due - clock.now == 60
     clock.now += 10
     scheduler.return_from_away()
-    assert scheduler.next_due_in() == 590  # 600 s, the normal interval, since the failure
+    assert scheduler.next_due_in() == 50  # 60 s since the failure
 
 
 async def test_returning_after_a_long_blur_polls_what_is_overdue() -> None:
@@ -405,3 +406,20 @@ async def test_poll_now_during_a_failing_fetch_is_not_lost() -> None:
     assert client.calls == [("taf", ["KDEN", "EGLL"])]  # the TAF fetch sees the new station
     assert scheduler.next_due_in() == 0  # and the failed METAR is due at once, not after the backoff
     assert await scheduler.run_cycle() == [Product.METAR]
+
+
+async def test_the_first_failure_retries_within_a_minute_and_later_ones_grow_to_the_old_cap() -> None:
+    clock, client = FakeClock(), FakeClient()
+    client.errors = [TransportError("ReadTimeout")] * 12
+    client.metar_only = True
+    scheduler, _ = make(clock, client, taf_interval=99999)
+    await scheduler.run_cycle()
+    assert 0 < scheduler.next_due_in() <= 60
+    delays = []
+    for _ in range(9):
+        clock.now += scheduler.next_due_in()
+        await scheduler.run_cycle()
+        delays.append(scheduler._tracks[Product.METAR].due - clock.now)
+    assert delays == sorted(delays) and delays[0] > 60
+    assert delays[-1] == BACKOFF_CAP
+
