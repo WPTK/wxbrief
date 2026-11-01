@@ -27,6 +27,7 @@ from wxbrief.data.models import (
 BASE_URL = "https://aviationweather.gov/api/data"
 USER_AGENT = f"wxbrief/{__version__} (+https://github.com/WPTK/wxbrief)"
 TIMEOUT_SECONDS = 10.0  # httpx's limit on each connect, read and write
+RETRY_DELAY_SECONDS = 1.0  # the pause before the one retry of a request that failed in transit or with a 5xx
 DEADLINE_SECONDS = 30.0  # the limit on one whole request, however slowly the server drips its body
 MAX_IDS_PER_REQUEST = 400
 DEFAULT_RETRY_AFTER = 60.0
@@ -125,8 +126,10 @@ class AwcClient:
         client: httpx.AsyncClient | None = None,
         timeout: float = TIMEOUT_SECONDS,
         deadline: float = DEADLINE_SECONDS,
+        retry_delay: float | None = None,
     ) -> None:
         self._deadline = deadline
+        self._retry_delay = RETRY_DELAY_SECONDS if retry_delay is None else retry_delay
         self._stored: OrderedDict[tuple[str, tuple[tuple[str, str], ...]], _Stored] = OrderedDict()
         self._owns_client = client is None
         self._base_url = base_url.rstrip("/")
@@ -160,12 +163,23 @@ class AwcClient:
             if stored.last_modified:
                 headers["If-Modified-Since"] = stored.last_modified
         try:
-            async with asyncio.timeout(self._deadline):  # httpx's timeout restarts on every read
-                async with self._client.stream(
-                    "GET", f"{self._base_url}/{endpoint}", params=params, headers=headers
-                ) as response:
-                    status = response.status_code
-                    content = await _read_limited(response) if status == 200 else b""
+            async with asyncio.timeout(self._deadline):  # one limit for both tries; httpx's own restarts on every read
+                for attempt in (1, 2):
+                    # The second try asks the server to close the connection, so it cannot reuse one that went stale.
+                    attempt_headers = headers if attempt == 1 else {**headers, "Connection": "close"}
+                    try:
+                        async with self._client.stream(
+                            "GET", f"{self._base_url}/{endpoint}", params=params, headers=attempt_headers
+                        ) as response:
+                            status = response.status_code
+                            content = await _read_limited(response) if status == 200 else b""
+                    except httpx.TransportError:
+                        if attempt == 2:
+                            raise
+                    else:
+                        if status < 500 or attempt == 2:
+                            break
+                    await asyncio.sleep(self._retry_delay)
         except httpx.HTTPError as exc:
             raise TransportError(f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__) from exc
         except TimeoutError as exc:

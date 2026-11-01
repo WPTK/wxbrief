@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -10,6 +11,7 @@ import pytest
 import respx
 
 from wxbrief import __version__
+from wxbrief.data import awc
 from wxbrief.data.awc import (
     BASE_URL,
     USER_AGENT,
@@ -20,6 +22,12 @@ from wxbrief.data.awc import (
     TransportError,
 )
 from wxbrief.data.models import latest_by_station, parse_metars, parse_visibility
+
+
+@pytest.fixture(autouse=True)
+def _no_retry_pause(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(awc, "RETRY_DELAY_SECONDS", 0.0)
+
 
 FIXTURES = Path(__file__).parent / "fixtures" / "awc"
 METAR_URL = f"{BASE_URL}/metar"
@@ -259,7 +267,9 @@ async def test_errors_and_204_are_not_masked_by_the_stored_response() -> None:
         side_effect=[
             httpx.Response(200, content=_payload("metar_kden_egll.json"), headers={"ETag": '"a"'}),
             httpx.Response(500),
+            httpx.Response(500),  # the retry
             httpx.ConnectError("offline"),
+            httpx.ConnectError("offline"),  # the retry
             httpx.Response(204),
             httpx.Response(200, content=b"[]"),
         ]
@@ -272,7 +282,7 @@ async def test_errors_and_204_are_not_masked_by_the_stored_response() -> None:
             await client.metars(["KDEN"])
         assert await client.metars(["KDEN"]) == []
         assert await client.metars(["KDEN"]) == []
-    assert "If-None-Match" not in route.calls[4].request.headers  # the 204 dropped the validators
+    assert "If-None-Match" not in route.calls[6].request.headers  # the 204 dropped the validators
 
 
 @respx.mock
@@ -299,3 +309,105 @@ async def test_a_429_after_a_stored_response_still_raises_with_retry_after() -> 
         with pytest.raises(RateLimited) as caught:
             await client.metars(["KDEN"])
     assert caught.value.retry_after == 90.0
+
+
+@respx.mock
+@pytest.mark.parametrize("error", [httpx.ReadTimeout("slow"), httpx.ConnectError("refused")])
+async def test_one_transient_error_is_retried_once(error: httpx.TransportError) -> None:
+    route = respx.get(METAR_URL).mock(
+        side_effect=[error, httpx.Response(200, content=_payload("metar_kden_egll.json"))]
+    )
+    async with AwcClient() as client:
+        assert await client.metars(["KDEN", "EGLL"])
+    assert route.call_count == 2
+
+
+@respx.mock
+async def test_the_retry_asks_for_a_fresh_connection() -> None:
+    route = respx.get(METAR_URL).mock(
+        side_effect=[httpx.RemoteProtocolError("closed"), httpx.Response(200, content=b"[]")]
+    )
+    async with AwcClient() as client:
+        assert await client.metars(["KDEN"]) == []
+    first, second = (call.request for call in route.calls)
+    assert "Connection" not in first.headers or first.headers["Connection"] != "close"
+    assert second.headers["Connection"] == "close"
+
+
+@respx.mock
+async def test_two_transient_errors_raise_transport_error_after_two_calls() -> None:
+    route = respx.get(METAR_URL).mock(side_effect=httpx.ReadTimeout("slow"))
+    async with AwcClient() as client:
+        with pytest.raises(TransportError):
+            await asyncio.wait_for(client.metars(["KDEN"]), 5)
+    assert route.call_count == 2
+
+
+@respx.mock
+async def test_a_5xx_is_retried_once() -> None:
+    route = respx.get(METAR_URL).mock(side_effect=[httpx.Response(502), httpx.Response(200, content=b"[]")])
+    async with AwcClient() as client:
+        assert await client.metars(["KDEN"]) == []
+    assert route.call_count == 2
+
+
+@respx.mock
+async def test_a_429_is_not_retried() -> None:
+    route = respx.get(METAR_URL).mock(return_value=httpx.Response(429, headers={"Retry-After": "30"}))
+    async with AwcClient() as client:
+        with pytest.raises(RateLimited):
+            await client.metars(["KDEN"])
+    assert route.call_count == 1
+
+
+async def test_a_dripping_body_is_not_retried_past_the_deadline() -> None:
+    calls = 0
+
+    async def drip() -> object:
+        yield b"["
+        await asyncio.sleep(5)
+        yield b"]"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(200, content=drip())
+
+    http = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    loop = asyncio.get_running_loop()
+    start = loop.time()
+    async with AwcClient(client=http, deadline=0.3) as client:
+        with pytest.raises(TransportError):
+            await client.metars(["KDEN"])
+    assert loop.time() - start < 1.5
+    assert calls == 1
+
+
+async def test_a_second_request_survives_a_connection_the_server_closed() -> None:
+    """A server that closes the socket after each response (as an idle-timeout would) must not fail the next
+    request on the same client."""
+    served = 0
+
+    async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        nonlocal served
+        await reader.readuntil(b"\r\n\r\n")
+        served += 1
+        writer.write(b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 2\r\n\r\n[]")
+        await writer.drain()
+        writer.close()  # without a Connection: close header, so the client keeps the pooled connection
+
+    server = await asyncio.start_server(serve, "127.0.0.1", 0)
+    port = server.sockets[0].getsockname()[1]
+    http = httpx.AsyncClient(
+        limits=httpx.Limits(keepalive_expiry=60), timeout=5, headers={"User-Agent": USER_AGENT}
+    )
+    try:
+        async with AwcClient(base_url=f"http://127.0.0.1:{port}", client=http) as client:
+            assert await client.metars(["KDEN"]) == []
+            await asyncio.sleep(0.1)
+            assert await client.metars(["KDEN"]) == []
+    finally:
+        await http.aclose()
+        server.close()
+        await server.wait_closed()
+    assert served == 2
