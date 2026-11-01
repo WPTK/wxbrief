@@ -35,13 +35,13 @@ class BriefingScreen(StationScreen):
         # (StationList, StationGrid, DetailPane), so these copies are hidden.
         bind("a", "add_station", K.UI_BINDING_ADD_STATION, show=False),
         bind("d", "remove_station", K.UI_BINDING_REMOVE_STATION, show=False),
+        bind("v", "toggle_layout", K.UI_BINDING_TOGGLE_LAYOUT, show=False),  # before p: it outlasts it on a tight bar
         bind("p", "paste", K.UI_BINDING_PASTE),
-        bind("v", "toggle_layout", K.UI_BINDING_TOGGLE_LAYOUT, show=False),
         bind("c", "copy_metar", K.UI_BINDING_COPY_METAR, show=False),
         bind("C", "copy_both", K.UI_BINDING_COPY_BOTH, show=False),
         bind("y", "copy_raw", K.UI_BINDING_COPY_RAW, show=False),
         bind("S", "settings", K.UI_BINDING_SETTINGS, show=False),
-        # j and k show in the key bar only while the station list is hidden (see _hint_steps).
+        # j, k and v show in the key bar only while the station list is hidden (see _hint_steps).
         bind("j", "next_station", K.UI_BINDING_NEXT_STATION, show=False, key_display="j/k"),
         bind("k", "previous_station", K.UI_BINDING_PREVIOUS_STATION, show=False),
         bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW, show=False),
@@ -141,10 +141,10 @@ class BriefingScreen(StationScreen):
         self.call_after_refresh(self._fix_focus)
 
     def _hint_steps(self) -> None:
-        """Show ``j/k`` in the key bar while the list is hidden (narrow terminal): the only way to change station."""
+        """Show ``j/k`` and ``v`` in the key bar while the list (and its own key hints) is hidden: a narrow terminal."""
         hidden = self.layout_mode == "list" and self.has_class("-narrow")
         for key, bindings in self._bindings.key_to_bindings.items():
-            if key == "j":
+            if key in ("j", "v"):
                 bindings[:] = [replace(item, show=hidden) for item in bindings]
         self.refresh_bindings()
 

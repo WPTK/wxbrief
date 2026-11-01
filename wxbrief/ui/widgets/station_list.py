@@ -107,7 +107,7 @@ class StationList(OptionList):
             if conditions:
                 line.append(" " + conditions)
             elif entry.metar is None:
-                line.append(" " + ctx.translator.t(K.UI_LIST_NO_REPORT), style=palette.muted)
+                line.append(" " + ctx.translator.t(K.UI_DETAIL_NO_REPORT), style=palette.muted)
             station = ctx.station(entry.icao) if self._named else None
             if station is not None:
                 line.append(f"  {station.name}", style=palette.muted)

@@ -815,6 +815,7 @@ copy_discord = "Copier pour Discord"
 copy_discord_key = "Copier pour Discord (c)"
 earlier = "Plus tôt"
 later = "Plus tard"
+earlier_later = "Déplacer"
 first = "Premier"
 last = "Dernier"
 left = "Gauche"
@@ -833,7 +834,7 @@ groups = "Tous les groupes de prévision ({n})"
 [ui.detail]
 no_stations = "Aucune station pour l'instant. Appuyez sur [b]a[/b] pour en ajouter une."
 no_report = "Pas encore de message"
-no_metar = "Pas de METAR disponible"
+refresh_hint = "Appuyez sur r pour actualiser."
 observed_ago = "Observé {time}, il y a {age}"
 cached_ago = "(en cache depuis {age})"
 
@@ -852,7 +853,6 @@ stale = "périmé"
 [ui.status]
 offline = "hors ligne"
 cached = "(en cache)"
-no_data = "pas de données"
 away = "en arrière-plan"
 next_poll = "prochaine interrogation {time}"
 requests = "requêtes {used}/{limit}"
@@ -860,7 +860,6 @@ polling_off = "interrogation désactivée"
 
 [ui.list]
 title = "Stations ({n})"
-no_report = "pas de message"
 
 [ui.layout]
 list = "Affichage en liste"
@@ -892,7 +891,6 @@ nothing_decoded = "Rien n'est encore décodé"
 type_a_station = "Saisissez un code de station ou une partie de nom"
 
 [ui.clipboard]
-title = "Presse-papiers"
 copied = "Copié : {what}"
 copied_terminal = "Copié : {what} (presse-papiers du terminal)"
 failed = "Impossible de copier {what} : {error}"
@@ -905,18 +903,18 @@ parts = "{what} en {count} parties : collez chacune comme message séparé"
 [ui.add]
 title = "Ajouter une station : code OACI ou IATA, ou partie du nom"
 placeholder = "KDEN, DEN, heathrow ..."
-hint = "Entrée ajoute la première correspondance   Bas en choisit une autre   Échap annule"
+hint = "Entrée ajoute, Bas choisit, Échap annule"
 listed = "(dans la liste)"
 
 [ui.paste]
 reference = "Date de référence (AAAA-MM-JJ) :"
-prompt = "Collez un METAR ou un TAF ci-dessus. Vous pouvez coller plusieurs messages à la fois."
+prompt = "Collez un METAR ou un TAF ici. Vous pouvez coller plusieurs messages à la fois."
 bad_date = "Date de référence incomprise; la date du jour est utilisée."
 truncated = "Seuls les {limit} premiers caractères ont été décodés ; le reste est ignoré."
 
 [ui.themes]
 title = "Thème"
-hint = "Haut/Bas prévisualise, Entrée conserve, Échap annule"
+hint = "Entrée conserve, Échap annule"
 
 [ui.help]
 title = "Touches de wxbrief"
@@ -950,19 +948,11 @@ body = """\
 
 [ui.settings]
 title = "Réglages"
-hint = "Haut/Bas se déplace, Entrée change la valeur, Échap ferme. Les intervalles et les chemins se fixent dans config.toml."
-theme = "Thème"
+hint = "Entrée change la valeur, Échap ferme"
 glyphs = "Symboles"
-layout = "Affichage"
 units = "Unités"
 time = "Heure"
 language = "Langue"
-poll = "Interrogation (s)"
-poll_value = "METAR {metar}, TAF {taf}, en arrière-plan {away}"
-config_file = "Fichier de configuration"
-cache_folder = "Dossier de cache"
-off = "désactivée"
-off_no_config = "désactivé (--no-config)"
 
 [ui.option.units]
 us = "États-Unis (kt, SM, inHg)"
@@ -980,6 +970,3 @@ unicode = "Unicode"
 emoji = "Émoji"
 nerd = "Nerd Font"
 
-[ui.option.layout]
-list = "Liste"
-grid = "Grille"

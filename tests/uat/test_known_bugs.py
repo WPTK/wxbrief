@@ -78,7 +78,7 @@ async def test_theme_picker_hint_is_whole_at_120x30(tmp_path: Path) -> None:
     async def probe(run: Run) -> None:
         await run.press("T")
         text = run.text()
-        assert "Up/Down previews, Enter keeps" in text, "the picker hint is cut at the dialog edge"
+        assert "Enter keeps, Esc cancels" in text, "the picker hint is cut at the dialog edge"
 
     await _check(probe, "120x30", tmp_path)
 
@@ -109,7 +109,7 @@ async def test_footer_shows_help_and_quit(size: str, tmp_path: Path) -> None:
     """A tiny terminal still tells the user how to get help and how to leave."""
 
     async def probe(run: Run) -> None:
-        await run.until(lambda: "Raw" in footer_text(run.app), "the detail keys in the footer")
+        await run.until(lambda: "Add" in footer_text(run.app), "the detail keys in the footer")
         text = footer_text(run.app)
         assert "Quit" in text and "Help" in text, f"footer: {text!r}"
 
@@ -119,9 +119,9 @@ async def test_footer_shows_help_and_quit(size: str, tmp_path: Path) -> None:
 @pytest.mark.parametrize("size", ["60x16", "60x20"])
 async def test_footer_does_not_cut_a_label_in_half(size: str, tmp_path: Path) -> None:
     async def probe(run: Run) -> None:
-        await run.until(lambda: "Raw" in footer_text(run.app), "the detail keys in the footer")
+        await run.until(lambda: "Add" in footer_text(run.app), "the detail keys in the footer")
         text = footer_text(run.app).rstrip()
-        known_labels = ("Raw", "Decoded", "TAF", "Copy METAR", "Add", "Paste", "Refresh", "Help", "Quit", "Theme")
+        known_labels = ("Raw", "Decoded", "TAF", "Copy METAR", "Add", "Paste", "Refresh", "Help", "Quit", "Theme", "List/grid", "Next")
         last = text.split()[-1]
         assert last in known_labels, f"footer ends mid-word: {text!r}"
 

@@ -816,6 +816,7 @@ copy_discord = "Copiar para Discord"
 copy_discord_key = "Copiar para Discord (c)"
 earlier = "Antes"
 later = "Después"
+earlier_later = "Mover"
 first = "Primero"
 last = "Último"
 left = "Izquierda"
@@ -834,7 +835,7 @@ groups = "Todos los grupos del pronóstico ({n})"
 [ui.detail]
 no_stations = "Aún no hay estaciones. Pulse [b]a[/b] para añadir una."
 no_report = "Aún no hay informe"
-no_metar = "Sin METAR disponible"
+refresh_hint = "Pulse r para actualizar."
 observed_ago = "Observado {time}, hace {age}"
 cached_ago = "(en caché desde hace {age})"
 
@@ -853,7 +854,6 @@ stale = "caducado"
 [ui.status]
 offline = "sin conexión"
 cached = "(en caché)"
-no_data = "sin datos"
 away = "en segundo plano"
 next_poll = "próxima consulta {time}"
 requests = "peticiones {used}/{limit}"
@@ -861,7 +861,6 @@ polling_off = "consulta desactivada"
 
 [ui.list]
 title = "Estaciones ({n})"
-no_report = "sin informe"
 
 [ui.layout]
 list = "Disposición en lista"
@@ -893,7 +892,6 @@ nothing_decoded = "Aún no se ha decodificado nada"
 type_a_station = "Escriba un código de estación o parte de un nombre"
 
 [ui.clipboard]
-title = "Portapapeles"
 copied = "Copiado: {what}"
 copied_terminal = "Copiado: {what} (portapapeles del terminal)"
 failed = "No se pudo copiar {what}: {error}"
@@ -906,18 +904,18 @@ parts = "{what} en {count} partes: pegue cada una como mensaje aparte"
 [ui.add]
 title = "Añadir estación: código OACI o IATA, o parte del nombre"
 placeholder = "KDEN, DEN, heathrow ..."
-hint = "Intro añade la primera coincidencia   Abajo elige otra   Esc cancela"
+hint = "Intro añade, Abajo elige otra, Esc cancela"
 listed = "(en la lista)"
 
 [ui.paste]
 reference = "Fecha de referencia (AAAA-MM-DD):"
-prompt = "Pegue un METAR o TAF arriba. Puede pegar varios informes a la vez."
+prompt = "Pegue aquí un METAR o TAF. Puede pegar varios informes a la vez."
 bad_date = "No se entiende la fecha de referencia; se usa la actual."
 truncated = "Solo se decodificaron los primeros {limit} caracteres; el resto se dejó fuera."
 
 [ui.themes]
 title = "Tema"
-hint = "Arriba/Abajo previsualiza, Intro conserva, Esc cancela"
+hint = "Intro conserva, Esc cancela"
 
 [ui.help]
 title = "Teclas de wxbrief"
@@ -951,19 +949,11 @@ body = """\
 
 [ui.settings]
 title = "Ajustes"
-hint = "Arriba/Abajo se mueve, Intro cambia el valor, Esc cierra. Los intervalos y las rutas se fijan en config.toml."
-theme = "Tema"
+hint = "Intro cambia el valor, Esc cierra"
 glyphs = "Símbolos"
-layout = "Disposición"
 units = "Unidades"
 time = "Hora"
 language = "Idioma"
-poll = "Consulta (s)"
-poll_value = "METAR {metar}, TAF {taf}, en segundo plano {away}"
-config_file = "Archivo de configuración"
-cache_folder = "Carpeta de caché"
-off = "desactivada"
-off_no_config = "desactivado (--no-config)"
 
 [ui.option.units]
 us = "EE. UU. (kt, SM, inHg)"
@@ -981,6 +971,3 @@ unicode = "Unicode"
 emoji = "Emoji"
 nerd = "Nerd Font"
 
-[ui.option.layout]
-list = "Lista"
-grid = "Cuadrícula"

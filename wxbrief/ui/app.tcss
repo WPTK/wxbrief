@@ -6,6 +6,7 @@ BriefingScreen #main {
 
 /* The list's width is set in StationList.DEFAULT_CSS; its rows add the station name when there is room. */
 StationList {
+    height: 100%;  /* the box runs the height of the column, not just to its last row */
     border-right: tall $primary-background-lighten-2;
     background: $surface;
 }
@@ -335,13 +336,16 @@ StationGrid:focus {
 }
 
 /* Short terminals (under 24 rows): a dialog gives up its title and spacing so the list and the hint keep their rows. */
-.-short .dialog {
+.-short #theme-box {
     height: 100%;
     max-height: 100%;
 }
 
-.-short #theme-list,
-.-short #add-box #results {
+.-short .dialog-title {
+    margin-bottom: 0;
+}
+
+.-short #theme-list {
     height: 1fr;
     max-height: 100%;
 }

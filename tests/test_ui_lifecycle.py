@@ -117,13 +117,14 @@ async def test_the_header_does_not_claim_a_two_hour_gap_it_never_checked() -> No
         app.briefing.select("KXXX")
         await settle(pilot)
         header = text_of(app.screen.query_one(StationHeader))
-        assert "No METAR available" in header and "2 hours" not in header
+        assert "No report yet" in header and "2 hours" not in header
+        assert "r to refresh" in header
         entry = app.state.stations["KDEN"]
         assert entry.awc_metar is not None
         entry.awc_metar = replace(entry.awc_metar, observed=None)  # a row without a time still has its report
         app.briefing.select("KDEN")
         await settle(pilot)
-        assert "No METAR" not in text_of(app.screen.query_one(StationHeader))
+        assert "No report yet" not in text_of(app.screen.query_one(StationHeader))
 
 
 # --- scrolling -------------------------------------------------------------------------------------------------------

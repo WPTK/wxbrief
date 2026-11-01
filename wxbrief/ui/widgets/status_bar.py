@@ -51,7 +51,7 @@ class StatusBar(Static):
             if selected.from_cache and selected.updated is not None:
                 text.append(f" {t.t(K.UI_STATUS_CACHED)}", style=palette.muted)
         elif selected is not None:
-            text.append(f"{glyphs.missing} {t.t(K.UI_STATUS_NO_DATA)}", style=palette.muted)
+            text.append(f"{glyphs.missing} {t.t(K.UI_DETAIL_NO_REPORT)}", style=palette.muted)
         if scheduler is not None:
             wait = (
                 t.t(K.UI_STATUS_AWAY)
