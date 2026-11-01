@@ -21,8 +21,10 @@ RSS_POLL_SECONDS = 0.25
 # Backstops for what the time limit (pytest-timeout's thread) and the watcher cannot stop. Both are Python threads, so
 # neither runs while a test holds the GIL inside C code: a regex that backtracks for ever, one allocation of many GiB.
 # faulthandler's timer runs on a thread of its own that needs no GIL. On Windows a job object makes the kernel refuse
-# memory past the limit, so the test gets a MemoryError. 0 turns either off.
+# memory past the limit, so the test gets a MemoryError. 0 turns either off. Collection (importing the test modules)
+# runs before any test, so it has a hard timeout of its own.
 HARD_TIMEOUT_SECONDS = float(os.environ.get("WXBRIEF_TEST_HARD_TIMEOUT", "300"))
+COLLECT_TIMEOUT_SECONDS = float(os.environ.get("WXBRIEF_TEST_COLLECT_TIMEOUT", "300"))
 COMMIT_LIMIT_MB = int(os.environ.get("WXBRIEF_TEST_COMMIT_MB", "4096"))
 
 _stderr_fd = pytest.StashKey[int]()
@@ -53,20 +55,7 @@ def _watch_rss(config: pytest.Config, limit_bytes: int) -> None:
         time.sleep(RSS_POLL_SECONDS)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def _memory_limit(pytestconfig: pytest.Config) -> None:
-    threading.Thread(
-        target=_watch_rss,
-        args=(
-            pytestconfig,
-            RSS_LIMIT_MB * 2**20,
-        ),
-        daemon=True,
-        name="rss-watch",
-    ).start()
-
-
-def _limit_commit(limit_bytes: int) -> None:
+def _limit_commit(limit_bytes: int, *, warn: bool) -> None:
     """Make Windows refuse this process, and any it starts, memory past ``limit_bytes``.
 
     Windows has no overcommit: a process that commits all it can makes every other program's allocations fail instead of
@@ -110,11 +99,12 @@ def _limit_commit(limit_bytes: int) -> None:
     limits.Basic.LimitFlags = 0x100  # JOB_OBJECT_LIMIT_PROCESS_MEMORY
     limits.ProcessMemoryLimit = limit_bytes
     job = kernel32.CreateJobObjectW(None, None)  # never closed: the limit lasts as long as this process
-    if not (
+    applied = (
         job
         and kernel32.SetInformationJobObject(job, 9, ctypes.byref(limits), ctypes.sizeof(limits))  # 9: extended limits
         and kernel32.AssignProcessToJobObject(job, kernel32.GetCurrentProcess())
-    ):
+    )
+    if not applied and warn:
         warnings.warn(f"the commit limit was not applied (job object error {ctypes.get_last_error()})", stacklevel=2)
 
 
@@ -125,7 +115,21 @@ def pytest_configure(config: pytest.Config) -> None:
     config.add_cleanup(lambda: os.close(fd))
     config.stash[_stderr_fd] = fd
     if COMMIT_LIMIT_MB > 0:
-        _limit_commit(COMMIT_LIMIT_MB * 2**20)
+        # Every xdist worker applies the limit; only the controller says when it could not, not once per worker.
+        _limit_commit(COMMIT_LIMIT_MB * 2**20, warn=not hasattr(config, "workerinput"))
+    # Started here, not in a fixture, so that collection is inside the memory limit too.
+    threading.Thread(target=_watch_rss, args=(config, RSS_LIMIT_MB * 2**20), daemon=True, name="rss-watch").start()
+
+
+@pytest.hookimpl(wrapper=True)
+def pytest_collection(session: pytest.Session) -> Generator[None, object, object]:
+    if COLLECT_TIMEOUT_SECONDS <= 0:
+        return (yield)
+    faulthandler.dump_traceback_later(COLLECT_TIMEOUT_SECONDS, exit=True, file=session.config.stash[_stderr_fd])
+    try:
+        return (yield)
+    finally:
+        faulthandler.cancel_dump_traceback_later()  # the per-test timer is armed after this, by pytest_runtest_protocol
 
 
 @pytest.hookimpl(wrapper=True, trylast=True)  # pytest's faulthandler_timeout arms the same timer; the later call wins

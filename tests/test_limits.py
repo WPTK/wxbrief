@@ -62,6 +62,22 @@ def test_a_test_stuck_in_c_code_is_ended_by_the_backstop(tmp_path: Path) -> None
     assert "in test_stuck" in result.stderr
 
 
+def test_a_module_stuck_in_c_code_while_importing_is_ended_by_the_collection_limit(tmp_path: Path) -> None:
+    # No test runs: the hang is at import, which only the collection limit covers.
+    result = _run_inner(
+        tmp_path, "import re\n\nre.match(r'(a+)+$', 'a' * 64 + 'b')\n", WXBRIEF_TEST_COLLECT_TIMEOUT="3"
+    )
+    assert result.returncode != 0
+    assert "Timeout (0:00:03)" in result.stderr
+    assert "test_inner.py" in result.stderr
+
+
+def test_the_collection_limit_is_cancelled_when_collection_finishes(tmp_path: Path) -> None:
+    source = "import time\n\ndef test_slower_than_the_collection_limit():\n    time.sleep(4)\n"
+    result = _run_inner(tmp_path, source, WXBRIEF_TEST_COLLECT_TIMEOUT="2")
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_pytests_faulthandler_timeout_does_not_disarm_the_backstop(tmp_path: Path) -> None:
     result = _run_inner(tmp_path, STUCK_IN_C, "-o", "faulthandler_timeout=600", WXBRIEF_TEST_HARD_TIMEOUT="3")
     assert result.returncode != 0

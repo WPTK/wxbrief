@@ -51,8 +51,10 @@ Changes that only touch Markdown, `docs/` or `LICENSE` skip CI.
   resident memory. Both are Python threads, so neither runs while a test holds the GIL inside C code (a regex that
   backtracks for ever, one allocation of many GiB). Two backstops do not depend on Python code running: a `faulthandler`
   timer exits the process with a stack dump after `WXBRIEF_TEST_HARD_TIMEOUT` seconds (300), and on Windows a job object
-  makes the kernel refuse a process more than `WXBRIEF_TEST_COMMIT_MB` (4096), so the test gets a `MemoryError`. Under
-  `-n`, xdist reports the crashed worker's test. `0` turns a backstop off, for a debugger session.
+  makes the kernel refuse a process more than `WXBRIEF_TEST_COMMIT_MB` (4096) of memory, so the test gets a
+  `MemoryError`. Importing the test modules (collection) has its own `faulthandler` timer, `WXBRIEF_TEST_COLLECT_TIMEOUT`
+  (300 s), and the memory watcher starts at configure time, so collection is inside the memory limits too. Under `-n`,
+  xdist reports the crashed worker's test. `0` turns a time or commit backstop off, for a debugger session.
   `tests/test_limits.py` checks each limit.
 
 ## UAT suite
