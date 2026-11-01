@@ -240,3 +240,64 @@ async def test_a_long_error_cuts_the_message_not_the_freshness() -> None:
         text = rendered.plain if isinstance(rendered, Text) else str(rendered)
         assert text.index("fresh") < text.index("(")
         assert text.index("(") > text.index("|")
+
+
+# --- the grid, help and paste ----------------------------------------------------------------------------------------
+
+
+async def test_an_empty_grid_says_how_to_add_a_station() -> None:
+    app = demo_app("--layout", "grid")
+    async with app.run_test(size=(140, 40)) as pilot:
+        await settle(pilot)
+        empty = app.screen.query_one("#empty")
+        assert not empty.display
+        app.state.watchlist.clear()
+        app.state.session.clear()
+        app.briefing.refresh_view()
+        await settle(pilot)
+        assert empty.display and "No stations yet" in text_of(empty)
+
+
+async def test_down_goes_to_the_last_card_when_the_row_below_is_shorter() -> None:
+    app = demo_app("--layout", "grid")
+    async with app.run_test(size=(140, 40)) as pilot:  # three columns: rows of 3, 3, 3 and 1 of the ten demo stations
+        await settle(pilot)
+        briefing = app.screen
+        assert isinstance(briefing, BriefingScreen)
+        await pilot.press("right", "down", "down")  # index 1 -> 4 -> 7
+        await settle(pilot)
+        assert briefing.selected == app.state.ids[7]
+        await pilot.press("down")  # 10 does not exist, but the last row does
+        await settle(pilot)
+        assert briefing.selected == app.state.ids[-1]
+        await pilot.press("down")
+        await settle(pilot)
+        assert briefing.selected == app.state.ids[-1]
+
+
+def test_the_help_says_what_enter_and_the_arrows_do_in_the_grid() -> None:
+    from wxbrief.i18n import Translator
+    from wxbrief.i18n.keys import K
+
+    body = Translator.load("en").t(K.UI_HELP_BODY)
+    assert "the grid: open the station" in body and "the grid: arrows over the cards" in body
+
+
+async def test_a_paste_past_the_limit_says_so(monkeypatch: pytest.MonkeyPatch) -> None:
+    from wxbrief.ui.screens import paste
+
+    monkeypatch.setattr(paste, "MAX_PASTE_CHARS", 80)
+    app = demo_app()
+    async with app.run_test(size=(120, 40)) as pilot:
+        await settle(pilot)
+        await pilot.press("p")
+        await settle(pilot)
+        screen = app.screen
+        assert isinstance(screen, PasteDecodeScreen)
+        report = "METAR KDEN 131453Z 06007KT 3/4SM BR OVC003 09/08 A3001"
+        screen.query_one(TextArea).text = report
+        screen.decode_now()
+        assert "characters were decoded" not in text_of(screen.query_one("#paste-result"))
+        screen.query_one(TextArea).text = (report + "\n") * 5
+        screen.decode_now()
+        assert "first 80 characters" in screen.query_one("#paste-result").content.renderables[0].plain  # type: ignore[attr-defined]

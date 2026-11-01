@@ -908,6 +908,7 @@ listed = "(dans la liste)"
 reference = "Date de référence (AAAA-MM-JJ) :"
 prompt = "Collez un METAR ou un TAF ci-dessus. Vous pouvez coller plusieurs messages à la fois."
 bad_date = "Date de référence incomprise; la date du jour est utilisée."
+truncated = "Seuls les {limit} premiers caractères ont été décodés ; le reste est ignoré."
 
 [ui.themes]
 title = "Thème"
@@ -918,8 +919,8 @@ title = "Touches de wxbrief"
 hint = "Échap ferme"
 body = """\
 [b]Stations[/b]
-  Haut/Bas  j/k      choisir une station
-  Entrée             entrer dans le panneau de détail
+  Haut/Bas  j/k      choisir une station (grille : flèches sur les cartes ; j/k aussi sans liste)
+  Entrée             entrer dans le panneau de détail (grille : ouvrir la station)
   a                  ajouter une station (code ou nom)
   d                  retirer la station choisie
   r                  actualiser maintenant

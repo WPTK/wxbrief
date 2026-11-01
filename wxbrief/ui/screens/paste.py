@@ -93,7 +93,8 @@ class PasteDecodeScreen(Screen[None]):
 
     def decode_now(self) -> None:
         """Decode what is in the box now (the timer calls this 200 ms after the last change)."""
-        text = self.query_one(TextArea).text[:MAX_PASTE_CHARS]
+        full = self.query_one(TextArea).text
+        text = full[:MAX_PASTE_CHARS]
         reference, valid = parse_reference(self.query_one("#reference", Input).value, self._now())
         self.decoded = parse_any(text, reference) if text.strip() else []
         ctx = self._ctx
@@ -102,6 +103,9 @@ class PasteDecodeScreen(Screen[None]):
         parts: list[RenderableType] = []
         if not valid:
             parts.append(Text(ctx.translator.t(K.UI_PASTE_BAD_DATE), style=ctx.palette.style("wx.warning")))
+        if len(full) > MAX_PASTE_CHARS:
+            note = ctx.translator.t(K.UI_PASTE_TRUNCATED, limit=f"{MAX_PASTE_CHARS:,}")
+            parts.append(Text(note, style=ctx.palette.style("wx.warning")))
         if not self.decoded:
             parts.append(Text(ctx.translator.t(K.UI_PASTE_PROMPT)))
         for index, report in enumerate(self.decoded):

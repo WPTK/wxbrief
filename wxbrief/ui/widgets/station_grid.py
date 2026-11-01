@@ -8,6 +8,7 @@ from textual.app import ComposeResult
 from textual.containers import Container, VerticalScroll
 from textual.events import Resize
 from textual.message import Message
+from textual.widgets import Static
 
 from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
@@ -48,6 +49,7 @@ class StationGrid(VerticalScroll, can_focus=True):
         self._revealed: str | None = None  # the card last scrolled into view
 
     def compose(self) -> ComposeResult:
+        yield Static(id="empty")  # the text is set in set_stations, in the language in use
         yield Container(id="cards")
 
     def on_mount(self) -> None:
@@ -66,6 +68,9 @@ class StationGrid(VerticalScroll, can_focus=True):
         """Draw one card per station; cards are reused (and keep their place) while the list is unchanged."""
         cards = self.query_one("#cards", Container)
         ids = [entry.icao for entry in reports]
+        empty = self.query_one("#empty", Static)
+        empty.update(ctx.translator.t(K.UI_DETAIL_NO_STATIONS))
+        empty.display = not ids
         if ids != self.ids:
             self.ids = ids
             # Keep the cards that stay, remove the ones that went, mount the new ones, then put them in order. Cards
@@ -109,7 +114,10 @@ class StationGrid(VerticalScroll, can_focus=True):
             return
         index = self.ids.index(self.selected) if self.selected in self.ids else 0
         target = index + dx + dy * self.columns
-        if 0 <= target < len(self.ids):
+        last = len(self.ids) - 1
+        if dy > 0 and target > last and index // self.columns < last // self.columns:
+            target = last  # the row below is shorter: go to its last card
+        if 0 <= target <= last:
             self.post_message(self.Selected(self.ids[target]))
 
     def action_open(self) -> None:

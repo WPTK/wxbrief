@@ -908,6 +908,7 @@ listed = "(na lista)"
 reference = "Data de referência (AAAA-MM-DD):"
 prompt = "Cole um METAR ou TAF acima. Você pode colar várias mensagens de uma vez."
 bad_date = "Não entendi a data de referência; usando a data de hoje."
+truncated = "Apenas os primeiros {limit} caracteres foram decodificados; o resto ficou de fora."
 
 [ui.themes]
 title = "Tema"
@@ -918,8 +919,8 @@ title = "Teclas do wxbrief"
 hint = "Esc fecha"
 body = """\
 [b]Estações[/b]
-  Acima/Abaixo  j/k  escolher uma estação
-  Enter              entrar no painel de detalhes
+  Acima/Abaixo  j/k  escolher uma estação (grade: setas sobre os cartões; j/k também sem lista)
+  Enter              entrar no painel de detalhes (grade: abrir a estação)
   a                  adicionar uma estação (código ou nome)
   d                  remover a estação escolhida
   r                  atualizar agora
