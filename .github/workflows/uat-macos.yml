@@ -1,0 +1,70 @@
+name: UAT macOS (real terminals)
+
+# Manual only. Drives wxbrief demo mode in a real Terminal.app and iTerm2 window with real keys and clicks.
+# See tests/uat_macos/README.md for how it works and what it does not prove.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  uat:
+    name: ${{ matrix.os }} / ${{ matrix.app }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-26, macos-15, macos-15-intel]
+        app: [Terminal, iTerm2]
+    env:
+      WXBRIEF_UAT_MACOS: ${{ matrix.app }}
+      WXBRIEF_UAT_MACOS_OUT: ${{ github.workspace }}/out
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.12'
+      - name: Install
+        run: |
+          python -m venv "$HOME/uatvenv"
+          "$HOME/uatvenv/bin/pip" install -q -e ".[dev]" pyobjc-framework-Quartz pyobjc-framework-ApplicationServices iterm2
+          brew install cliclick
+          mkdir -p out
+      - name: Install iTerm2
+        if: matrix.app == 'iTerm2'
+        run: |
+          brew install --cask iterm2
+          sudo xattr -dr com.apple.quarantine /Applications/iTerm.app
+          defaults write com.googlecode.iterm2 EnableAPIServer -bool true
+          defaults write com.googlecode.iterm2 SUEnableAutomaticChecks -bool false
+          defaults write com.googlecode.iterm2 SUHasLaunchedBefore -bool true
+          defaults write com.googlecode.iterm2 SUSendProfileInfo -bool false
+          defaults write com.googlecode.iterm2 NoSyncTipsDisabled -bool true
+          defaults write com.googlecode.iterm2 NoSyncNeverRemindPrefsChangesLostForFile -bool true
+          defaults write com.googlecode.iterm2 NoSyncDoNotWarnBeforeMultilinePaste -bool true
+      - name: Grant permissions
+        run: |
+          for i in 1 2 3; do
+            bash tests/uat_macos/scripts/grant_tcc.sh "$HOME/uatvenv/bin/python" > "out/grant$i.txt" 2>&1 && break
+            echo "preflight failed on try $i"
+          done
+          tail -3 out/grant*.txt
+      - name: Real-terminal journey
+        run: |
+          "$HOME/uatvenv/bin/python" -m pytest tests/uat_macos -v -p no:cacheprovider -o addopts= \
+            --junitxml=out/junit.xml 2>&1 | tee out/pytest.txt
+      - name: Final screen and logs
+        if: always()
+        run: |
+          screencapture -x out/final_screen.png || true
+          log show --last 10m --predicate 'subsystem == "com.apple.TCC"' --style compact > out/tcc_log.txt 2>&1 || true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: uat-macos-${{ matrix.os }}-${{ matrix.app }}
+          path: out/
+          if-no-files-found: warn
