@@ -87,10 +87,11 @@ async def test_an_offline_error_reads_in_plain_words_on_the_status_bar_and_the_t
     app = demo_app()
     async with app.run_test(size=(120, 30)) as pilot:
         await settle(pilot)
-        app._on_error(Product.METAR, TransportError("ConnectError: All connection attempts failed"))
+        for _ in range(2):
+            app._on_error(Product.METAR, TransportError("ConnectError: All connection attempts failed"))
         await settle(pilot)
         status = text_of(app.screen.query_one(StatusBar))
-        assert "can't reach aviationweather.gov" in status
+        assert "offline, showing saved data from" in status and "fresh" not in status
         assert "ConnectError" not in status
         toasts = [n.message for n in app._notifications]
         assert any("Can't reach aviationweather.gov" in m for m in toasts)
@@ -113,7 +114,8 @@ async def test_the_offline_message_fits_a_small_terminal() -> None:
     app = demo_app()
     async with app.run_test(size=(60, 16)) as pilot:
         await settle(pilot)
-        app._on_error(Product.METAR, TransportError("ConnectError: x"))
+        for _ in range(2):
+            app._on_error(Product.METAR, TransportError("ConnectError: x"))
         await settle(pilot)
         bar = app.screen.query_one(StatusBar)
         assert len(text_of(bar).splitlines()) == 1 and "offline" in text_of(bar)
