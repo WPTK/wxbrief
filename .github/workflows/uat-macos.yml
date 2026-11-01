@@ -4,6 +4,8 @@ name: UAT macOS (real terminals)
 # See tests/uat_macos/README.md for how it works and what it does not prove.
 on:
   workflow_dispatch:
+  push:
+    branches: [uat-macos]  # TEMPORARY: dispatch is not offered until the file is on main; removed before merge
 
 permissions:
   contents: read
