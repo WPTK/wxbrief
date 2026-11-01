@@ -77,6 +77,15 @@ issue. When a fix lands the test XPASSes and fails the run: remove its `xfail` m
 Playwright with Chromium; `--no-png` and `--png-only` split the two steps). The folder is for looking at, so pass one
 outside the checkout.
 
+## Real-terminal kit
+
+`tests/uat_kit/` drives any terminal program through a real pseudo-terminal (ConPTY via `pywinpty` on Windows, the
+stdlib `pty` elsewhere) and reads the screen back through `pyte`. It imports nothing from wxbrief, so other projects can
+copy the folder. `Terminal(argv, cols, rows, env=...)` gives `send_keys`, `click(col, row)` (SGR pointer motion, press,
+release), `resize`, `wait_for(predicate)` (fails with a screen dump), `settle`, `screen_text` and `wait_exit`; the child
+and its process tree are killed by PID on close and at interpreter exit, and its config, cache and working directory
+are a scratch directory with a dead proxy. `tests/uat_kit/test_kit.py` tests the kit against a tiny echo program.
+
 ## Snapshots
 
 `tests/test_snapshots.py` compares screenshots of the briefing screen in three themes
