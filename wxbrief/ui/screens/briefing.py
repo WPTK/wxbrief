@@ -52,6 +52,7 @@ class BriefingScreen(StationScreen):
     def __init__(self) -> None:
         super().__init__()
         self.selected: str | None = None
+        self._ids: list[str] = []  # the stations as last drawn: where a removed selection sat
         self.layout_mode = "list"  # "list" (station list and detail) or "grid" (cards)
         self._ready = False
 
@@ -99,7 +100,10 @@ class BriefingScreen(StationScreen):
         title = wx.ctx.translator.t(K.UI_LIST_TITLE, n=len(ids))
         self.query_one(StationList).border_title = self.query_one(StationGrid).border_title = title
         if self.selected not in ids:
-            self.selected = ids[0] if ids else None
+            # the selected station went: take the one now at its place, so a second d removes the next row
+            gone = self._ids.index(self.selected) if self.selected in self._ids else 0
+            self.selected = ids[min(gone, len(ids) - 1)] if ids else None
+        self._ids = ids
         if self.layout_mode == "grid":
             self.query_one(StationGrid).set_stations(reports, wx.ctx, wx.now(), self.selected)
         else:

@@ -92,7 +92,9 @@ class StationCard(Static):
             lines.append(tick_labels(cells, CELL_WIDTH, ctx, entry.icao, every_cell=False))
             lines.extend(strip_lines(cells, colors, ctx.translator))
         else:
-            if is_expired(hours, now):
+            if taf is not None and taf.cancelled:
+                key = K.TIMELINE_CANCELLED
+            elif is_expired(hours, now):
                 key = K.TIMELINE_EXPIRED
             else:  # no forecast at all, or one whose valid period cannot be read: not "no TAF" when there is a TAF
                 key = K.TIMELINE_NO_TAF if taf is None else K.TIMELINE_NONE

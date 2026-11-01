@@ -156,13 +156,13 @@ class AppState:
         """
         now = self.now()
         asked = set(self.ids if requested is None else requested)
-        if product is Product.TAF and not rows and any(self._holds_taf(icao) for icao in asked):
-            # An empty answer for stations whose forecasts we hold (a 204, an empty list, or rows that did not parse)
-            # is the feed having nothing to say, not every forecast having been withdrawn: no information. The held
-            # forecasts and the cache stay, and an earlier failure is not reported as cleared.
-            return
-        self.errors.pop(product, None)
+        self.errors.pop(product, None)  # any successful answer, even an empty one, means the network works
         self.offline.discard(product)
+        if product is Product.TAF and not rows and any(self._holds_taf(icao, now) for icao in asked):
+            # An empty answer (a 204, an empty list, or rows that did not parse) while a forecast we hold is still
+            # in its validity window is the feed having nothing to say, not every forecast having been withdrawn:
+            # the held forecasts and the cache stay. Once they have expired the answer is believed and they go.
+            return
         if product is Product.METAR:
             for row in latest_by_station(rows).values():
                 self._set_metar(row, now, from_cache=False)
@@ -179,9 +179,12 @@ class AppState:
                 self._set_taf(row, now, from_cache=False)
         self._write_cache(product, now)
 
-    def _holds_taf(self, icao: str) -> bool:
+    def _holds_taf(self, icao: str, now: datetime) -> bool:
+        """True when a forecast is held for the station and has not yet expired."""
         entry = self.stations.get(icao)
-        return entry is not None and entry.awc_taf is not None
+        if entry is None or entry.awc_taf is None:
+            return False
+        return entry.taf is None or entry.taf.valid_to is None or entry.taf.valid_to > now
 
     def _write_cache(self, product: Product, now: datetime) -> None:
         """Write the cache file for ``product``, each row stamped with its own fetch time.

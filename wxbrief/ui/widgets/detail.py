@@ -293,7 +293,8 @@ class DetailPane(VerticalScroll):
         drawn = drawn and not expired
         timeline.display = period.display = drawn
         note.display = not drawn
-        note.update(Text(t.t(K.TIMELINE_EXPIRED if expired else K.TIMELINE_NONE), style=ctx.palette.muted))
+        key = K.TIMELINE_CANCELLED if taf.cancelled else K.TIMELINE_EXPIRED if expired else K.TIMELINE_NONE
+        note.update(Text(t.t(key), style=ctx.palette.muted))
         if not drawn:
             period.update("")
             self._release_focus(timeline)
@@ -302,6 +303,7 @@ class DetailPane(VerticalScroll):
         """Left/Right on the pane move the forecast cursor, as help says."""
         timeline = self.query_one(TafTimeline)
         if timeline.display:
+            timeline.scroll_visible(animate=False)  # the key must show what it moved, not pin an off-screen cursor
             timeline.action_move(offset)
 
     def _release_focus(self, hidden: Widget) -> None:

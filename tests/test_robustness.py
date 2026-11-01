@@ -486,9 +486,32 @@ def test_an_empty_taf_answer_keeps_held_forecasts_and_the_cache(tmp_path: Path) 
     state.record_error(Product.TAF, "taf: server error 503")
     state.apply(Product.TAF, [])  # a 204 or an empty list: the feed said nothing
     assert state.stations["KDEN"].taf is not None and state.stations["EGLL"].taf is not None
-    assert Product.TAF in state.errors  # not reported as recovered
+    assert Product.TAF not in state.errors  # the fetch worked, so the failure is over; the forecasts are kept
     found = cache.read("tafs")
     assert found is not None and {row["icaoId"] for row in found[1]} == {"KDEN", "EGLL"}
+
+
+def test_an_empty_taf_answer_clears_an_offline_mark_and_an_error() -> None:
+    state = AppState(["KDEN"], now=lambda: NOW)
+    state.apply(Product.TAF, taf_rows("KDEN"))
+    state.record_error(Product.TAF, "taf: cannot connect")
+    state.offline.add(Product.TAF)
+    state.apply(Product.TAF, [])  # the network is back; the feed has no TAF to give
+    assert Product.TAF not in state.errors and Product.TAF not in state.offline
+    assert state.stations["KDEN"].taf is not None  # still within its valid period
+
+
+def test_an_empty_taf_answer_clears_forecasts_that_have_expired() -> None:
+    later = [NOW]
+    state = AppState(["KDEN"], now=lambda: later[0])
+    state.apply(Product.TAF, taf_rows("KDEN"))
+    taf = state.stations["KDEN"].taf
+    assert taf is not None and taf.valid_to is not None
+    later[0] = taf.valid_to + timedelta(minutes=1)
+    state.record_error(Product.TAF, "taf: cannot connect")
+    state.apply(Product.TAF, [])  # every later empty answer used to hit the same early return
+    assert state.stations["KDEN"].taf is None and state.stations["KDEN"].awc_taf is None
+    assert Product.TAF not in state.errors
 
 
 def test_an_empty_taf_answer_for_stations_with_no_forecast_is_an_ordinary_success() -> None:
