@@ -1,0 +1,119 @@
+name: UAT real terminals
+
+# Manual only. Drives the pinned wxbrief 0.3.0 release exe inside Windows Terminal (portable zip), legacy conhost and
+# VS Code's integrated terminal (portable zip) on the interactive Windows runners with SendInput + UI Automation, reads
+# the screen back and uploads PNGs and text. The runner user is an administrator and elevated, so the checks that matter
+# start the driver and the terminals at Medium integrity (restricted token, see tests/uat_realterm/medium.py) and prove
+# it with the token's integrity level. Test-only: no secrets, read-only token, artifacts only.
+on:
+  workflow_dispatch:
+    inputs:
+      terminals:
+        description: "Comma separated: conhost,wt,vscode"
+        default: "conhost,wt,vscode"
+      arm:
+        description: "Also run the windows-11-arm cells"
+        type: boolean
+        default: true
+      runs:
+        description: "Only these run names (see run_all.py); empty = all"
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    name: Plan
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+    steps:
+      - id: m
+        shell: python
+        env:
+          TERMINALS: ${{ inputs.terminals || 'conhost,wt,vscode' }}
+          ARM: ${{ inputs.arm }}
+        run: |
+          import json, os
+          terms = [t for t in os.environ["TERMINALS"].split(",") if t]
+          cells = [{"terminal": t, "os": "windows-2025", "arch": "x64", "experimental": False} for t in terms]
+          if os.environ.get("ARM", "true") != "false":
+              cells += [{"terminal": t, "os": "windows-11-arm", "arch": "arm64", "experimental": True} for t in terms]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write("matrix=" + json.dumps({"include": cells}) + chr(10))
+
+  realterm:
+    name: ${{ matrix.terminal }} (${{ matrix.os }})
+    needs: plan
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      PYTHONUTF8: "1"
+      PYTHONUNBUFFERED: "1"
+      OUT: ${{ github.workspace }}\realterm-out
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          architecture: ${{ matrix.arch }}
+      - name: Install driver dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check -r tests/uat_realterm/requirements.txt
+          New-Item -ItemType Directory -Force $env:OUT | Out-Null
+      - name: Fetch and verify pinned tools
+        shell: pwsh
+        run: |
+          python tests/uat_realterm/fetch.py wxbrief --dest "$env:RUNNER_TEMP\realterm-tools\wxbrief" | Tee-Object -FilePath "$env:OUT\fetch-wxbrief.json"
+          if ($LASTEXITCODE -ne 0) { throw "fetch wxbrief failed" }
+          if ('${{ matrix.terminal }}' -ne 'conhost') {
+            $tool = '${{ matrix.terminal }}'
+            python tests/uat_realterm/fetch.py $tool --arch ${{ matrix.arch }} --dest "$env:RUNNER_TEMP\realterm-tools\$tool" | Tee-Object -FilePath "$env:OUT\fetch-$tool.json"
+            if ($LASTEXITCODE -ne 0) { throw "fetch $tool failed" }
+          }
+      - name: Session and desktop facts
+        shell: pwsh
+        run: |
+          [Environment]::OSVersion | Out-String
+          "UserInteractive: $([Environment]::UserInteractive)  User: $env:USERNAME  Arch: $env:PROCESSOR_ARCHITECTURE"
+          whoami /groups | Select-String 'Mandatory|Administrators'
+          reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System /v EnableLUA
+          Add-Type -AssemblyName System.Windows.Forms
+          [System.Windows.Forms.Screen]::AllScreens | ForEach-Object { "$($_.DeviceName) $($_.Bounds)" }
+      - name: Real-terminal checks
+        shell: pwsh
+        run: |
+          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
+          $argsList = @('tests/uat_realterm/run_all.py', '${{ matrix.terminal }}', '--wxbrief', $w.exe, '--out', $env:OUT)
+          if ('${{ matrix.terminal }}' -ne 'conhost') {
+            $t = Get-Content "$env:OUT\fetch-${{ matrix.terminal }}.json" | ConvertFrom-Json
+            $argsList += @('--tool-exe', $t.exe)
+          }
+          if ('${{ inputs.runs }}') { $argsList += @('--only', '${{ inputs.runs }}') }
+          python @argsList 2>&1 | Tee-Object -FilePath "$env:OUT\run-all.log"
+          exit $LASTEXITCODE
+      - name: Summary
+        if: always()
+        shell: pwsh
+        run: |
+          "## ${{ matrix.terminal }} on ${{ matrix.os }}" | Add-Content $env:GITHUB_STEP_SUMMARY
+          if (Test-Path "$env:OUT\medium-probe.txt") { '```' | Add-Content $env:GITHUB_STEP_SUMMARY; (Get-Content "$env:OUT\medium-probe.txt" -TotalCount 6) | Add-Content $env:GITHUB_STEP_SUMMARY; '```' | Add-Content $env:GITHUB_STEP_SUMMARY }
+          foreach ($f in Get-ChildItem "$env:OUT\result-*.json") {
+            $r = Get-Content $f | ConvertFrom-Json
+            "### $($r.terminal): passed=$($r.passed) in $($r.runtime_s)s (window $($r.info.integrity_window), driver $($r.info.integrity_driver))" | Add-Content $env:GITHUB_STEP_SUMMARY
+            foreach ($s in $r.steps) { if ($null -ne $s.ok) { "- $(if ($s.ok) {'PASS'} else {'FAIL'}) $($s.step) $($s.detail)" | Add-Content $env:GITHUB_STEP_SUMMARY } }
+          }
+          Get-Process | Where-Object { $_.ProcessName -match 'WindowsTerminal|OpenConsole|conhost|Code|wxbrief' } | Select-Object Id, ProcessName | Format-Table | Out-String
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: realterm-out-${{ matrix.terminal }}-${{ matrix.os }}
+          path: realterm-out
+          if-no-files-found: warn
+          retention-days: 14
