@@ -67,6 +67,49 @@ jobs:
           $t = Get-Content "$env:OUT\fetch-vscode.json" | ConvertFrom-Json
           python tests/uat_realterm/run_spike.py vscode --wxbrief $w.exe --tool-exe $t.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-vscode.log"
           exit $LASTEXITCODE
+      - name: Windows Terminal, filtered token (experiment)
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
+          $t = Get-Content "$env:OUT\fetch-wt.json" | ConvertFrom-Json
+          python tests/uat_realterm/run_spike.py wt --limited --wxbrief $w.exe --tool-exe $t.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-wt-limited.log"
+          exit $LASTEXITCODE
+      - name: conhost, filtered token (experiment)
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
+          python tests/uat_realterm/run_spike.py conhost --limited --wxbrief $w.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-conhost-limited.log"
+          exit $LASTEXITCODE
+      - name: conhost, light profile
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
+          python tests/uat_realterm/run_spike.py conhost --scheme light --wxbrief $w.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-conhost-light.log"
+          exit $LASTEXITCODE
+      - name: wt, light profile
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
+          $t = Get-Content "$env:OUT\fetch-wt.json" | ConvertFrom-Json
+          python tests/uat_realterm/run_spike.py wt --scheme light --wxbrief $w.exe --tool-exe $t.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-wt-light.log"
+          exit $LASTEXITCODE
+      - name: vscode, light profile
+        if: always()
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $w = Get-Content "$env:OUT\fetch-wxbrief.json" | ConvertFrom-Json
+          $t = Get-Content "$env:OUT\fetch-vscode.json" | ConvertFrom-Json
+          python tests/uat_realterm/run_spike.py vscode --scheme light --wxbrief $w.exe --tool-exe $t.exe --out "$env:OUT" 2>&1 | Tee-Object -FilePath "$env:OUT\run-vscode-light.log"
+          exit $LASTEXITCODE
       - name: Summary
         if: always()
         shell: pwsh

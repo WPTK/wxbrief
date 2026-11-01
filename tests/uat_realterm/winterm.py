@@ -591,3 +591,40 @@ def survivors(pids: set[int], image_dirs: tuple[str, ...] = ()) -> list[str]:
 
 def lines_matching(text: str, pattern: str) -> list[str]:
     return [line for line in text.split("\n") if re.search(pattern, line)]
+
+
+advapi32 = ctypes.WinDLL("advapi32", use_last_error=True)
+kernel32.OpenProcess.restype = wt.HANDLE
+kernel32.OpenProcess.argtypes = (wt.DWORD, wt.BOOL, wt.DWORD)
+kernel32.CloseHandle.argtypes = (wt.HANDLE,)
+advapi32.OpenProcessToken.argtypes = (wt.HANDLE, wt.DWORD, ctypes.POINTER(wt.HANDLE))
+advapi32.GetTokenInformation.argtypes = (wt.HANDLE, ctypes.c_int, ctypes.c_void_p, wt.DWORD, ctypes.POINTER(wt.DWORD))
+advapi32.GetSidSubAuthorityCount.argtypes = (ctypes.c_void_p,)
+advapi32.GetSidSubAuthorityCount.restype = ctypes.POINTER(ctypes.c_ubyte)
+advapi32.GetSidSubAuthority.argtypes = (ctypes.c_void_p, wt.DWORD)
+advapi32.GetSidSubAuthority.restype = ctypes.POINTER(wt.DWORD)
+
+
+def integrity_of(pid: int) -> str:
+    """Mandatory integrity level of a process token: Low / Medium / High / System, or an error string."""
+    h = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not h:
+        return f"open failed ({ctypes.get_last_error()})"
+    tok = wt.HANDLE()
+    try:
+        if not advapi32.OpenProcessToken(h, 0x0008, ctypes.byref(tok)):  # TOKEN_QUERY
+            return f"token failed ({ctypes.get_last_error()})"
+        need = wt.DWORD()
+        advapi32.GetTokenInformation(tok, 25, None, 0, ctypes.byref(need))  # TokenIntegrityLevel
+        buf = ctypes.create_string_buffer(need.value)
+        if not advapi32.GetTokenInformation(tok, 25, buf, need, ctypes.byref(need)):
+            return f"info failed ({ctypes.get_last_error()})"
+        sid = ctypes.c_void_p.from_buffer(buf).value
+        count = advapi32.GetSidSubAuthorityCount(sid).contents.value
+        rid = advapi32.GetSidSubAuthority(sid, count - 1).contents.value
+        names = {0x1000: "Low", 0x2000: "Medium", 0x2100: "MediumPlus", 0x3000: "High", 0x4000: "System"}
+        return f"{names.get(rid, 'unknown')} ({rid:#x})"
+    finally:
+        if tok:
+            kernel32.CloseHandle(tok)
+        kernel32.CloseHandle(h)

@@ -88,13 +88,17 @@ class Term:
 
     name = "?"
 
-    def __init__(self, rep: Report, wxbrief: Path, out: Path, tool_exe: Path | None) -> None:
-        self.rep, self.wxbrief, self.out, self.tool_exe = rep, wxbrief, out, tool_exe
+    def __init__(
+        self, rep: Report, wxbrief: Path, out: Path, tool_exe: Path | None, limited: bool = False, scheme: str = "dark"
+    ) -> None:
+        self.rep, self.wxbrief, self.out, self.tool_exe, self.limited = rep, wxbrief, out, tool_exe, limited
+        self.scheme = scheme
+        self.tag = self.name + ("-limited" if limited else "") + ("-light" if scheme == "light" else "")
         self.proc: subprocess.Popen[bytes] | None = None
         self.hwnd = 0
         self.pids: set[int] = set()
         self.image_dirs: tuple[str, ...] = ()
-        self.work = out / f"work-{self.name}"
+        self.work = out / f"work-{self.tag}"
         self.work.mkdir(parents=True, exist_ok=True)
         self.run_cmd = self.work / "run-wxbrief.cmd"
         self.env = dict(os.environ, WXBRIEF_CACHE_DIR=str(self.work / "cache"))
@@ -102,7 +106,24 @@ class Term:
 
     def write_run_cmd(self, prefix: str = "") -> None:
         self.run_cmd.write_text(
-            f'@echo off\r\n{prefix}"{self.wxbrief}" --demo --no-config\r\nexit /b %errorlevel%\r\n', encoding="ascii"
+            f'@echo off\r\nset "WXBRIEF_CACHE_DIR={self.work / "cache"}"\r\n{prefix}"{self.wxbrief}" --demo --no-config\r\n'
+            "exit /b %errorlevel%\r\n",
+            encoding="ascii",
+        )
+
+    def spawn(self, argv: list[str]) -> subprocess.Popen[bytes]:
+        """Start the terminal. Limited: through ``runas /trustlevel:0x20000`` so it runs with a filtered (non-admin) token."""
+        if self.limited:
+            cmd = subprocess.list2cmdline(["runas", "/trustlevel:0x20000", subprocess.list2cmdline(argv)])
+            self.rep.note("spawn", cmd)
+            return subprocess.Popen(cmd, env=self.env)
+        return subprocess.Popen(argv, env=self.env)
+
+    def note_integrity(self) -> None:
+        owner = w.window_info(self.hwnd).pid
+        self.rep.note(
+            "integrity",
+            f"window owner pid {owner}: {w.integrity_of(owner)}; runner python: {w.integrity_of(os.getpid())}",
         )
 
     def launch(self) -> None:
@@ -142,7 +163,7 @@ class Term:
         self.baseline = w.all_windows()
 
     def shot(self, tag: str, *, printwindow: bool = False) -> None:
-        base = self.out / f"{self.name}-{tag}"
+        base = self.out / f"{self.tag}-{tag}"
         sw, sh = w.screen_size()
         if self.hwnd and w.is_window(self.hwnd):
             left, top, right, bottom = w.window_info(self.hwnd).rect
@@ -155,7 +176,7 @@ class Term:
         w.screenshot_screen(base.with_name(base.name + "-desktop.png"))
 
     def save_text(self, tag: str, text: str) -> None:
-        (self.out / f"{self.name}-{tag}.txt").write_text(text, encoding="utf-8")
+        (self.out / f"{self.tag}-{tag}.txt").write_text(text, encoding="utf-8")
 
     def prepare_window(self) -> None:
         sw, sh = w.screen_size()
@@ -193,14 +214,29 @@ class Term:
 
 class Conhost(Term):
     name = "conhost"
+    CONSOLE_KEY = "HKCU\\Console\\C:_Windows_System32_conhost.exe"
+
+    def teardown(self) -> None:
+        super().teardown()
+        if self.scheme == "light":
+            subprocess.run(["reg", "delete", self.CONSOLE_KEY, "/f"], check=False, capture_output=True)
 
     def launch(self) -> None:
         self.write_run_cmd("mode con: cols=120 lines=30\r\n")
+        if self.scheme == "light":  # conhost keeps per-window-title defaults here; 0xf0 = black text on a white screen
+            for name in ("ScreenColors", "PopupColors"):
+                subprocess.run(
+                    ["reg", "add", self.CONSOLE_KEY, "/v", name, "/t", "REG_DWORD", "/d", "0xf0", "/f"],
+                    check=False,
+                    capture_output=True,
+                )
+            self.rep.note("light profile", f"conhost ScreenColors=0xf0 under {self.CONSOLE_KEY}")
         self.snapshot_baseline()
         conhost = Path(os.environ.get("SYSTEMROOT", r"C:\Windows")) / "System32" / "conhost.exe"
-        self.proc = subprocess.Popen([str(conhost), "cmd.exe", "/c", str(self.run_cmd)], env=self.env)
+        self.proc = self.spawn([str(conhost), "cmd.exe", "/c", str(self.run_cmd)])
         self.hwnd = self.find_window("ConsoleWindowClass")
         self.rep.note("window", str(w.window_info(self.hwnd)))
+        self.note_integrity()
         self._uia = w.UiaText(self.hwnd)
 
     def read(self) -> str:
@@ -217,11 +253,19 @@ class WindowsTerminal(Term):
         assert self.tool_exe
         (self.tool_exe.parent / ".portable").write_text("", encoding="ascii")  # portable mode: settings beside the exe
         self.image_dirs = (str(self.tool_exe.parent),)
+        if self.scheme == "light":
+            cfg = self.tool_exe.parent / "settings"
+            cfg.mkdir(exist_ok=True)
+            (cfg / "settings.json").write_text(
+                json.dumps({"profiles": {"defaults": {"colorScheme": "One Half Light"}}}), encoding="utf-8"
+            )
+            self.rep.note("light profile", "WT settings.json: profiles.defaults.colorScheme = One Half Light")
         self.write_run_cmd()
         self.snapshot_baseline()
-        self.proc = subprocess.Popen([str(self.tool_exe), "cmd.exe", "/c", str(self.run_cmd)], env=self.env)
+        self.proc = self.spawn([str(self.tool_exe), "cmd.exe", "/c", str(self.run_cmd)])
         self.hwnd = self.find_window("CASCADIA_HOSTING_WINDOW_CLASS")
         self.rep.note("window", str(w.window_info(self.hwnd)))
+        self.note_integrity()
         self._uia = w.UiaText(self.hwnd)
 
     def read(self) -> str:
@@ -265,7 +309,11 @@ class VSCode(Term):
         root = self.tool_exe.parent
         user = root / "data" / "user-data" / "User"
         user.mkdir(parents=True, exist_ok=True)
-        (user / "settings.json").write_text(json.dumps(self.SETTINGS, indent=2), encoding="utf-8")
+        settings = dict(self.SETTINGS)
+        if self.scheme == "light":
+            settings["workbench.colorTheme"] = "Default Light Modern"
+            self.rep.note("light profile", "VS Code settings.json: workbench.colorTheme = Default Light Modern")
+        (user / "settings.json").write_text(json.dumps(settings, indent=2), encoding="utf-8")
         (user / "keybindings.json").write_text(json.dumps(self.KEYBINDINGS, indent=2), encoding="utf-8")
         self.image_dirs = (str(root),)
         self.write_run_cmd()
@@ -287,6 +335,7 @@ class VSCode(Term):
         )
         self.hwnd = self.find_window("Chrome_WidgetWin_1", timeout=90)
         self.rep.note("window", str(w.window_info(self.hwnd)))
+        self.note_integrity()
         self._uia: w.UiaText | None = None
 
     def prepare_window(self) -> None:
@@ -495,7 +544,7 @@ def journey(t: Term, rep: Report) -> None:
             with contextlib.suppress(Exception):
                 rep.note("uia candidates", " | ".join(getattr(uia, "candidates", [])) or "none")
             with contextlib.suppress(Exception):
-                w.dump_uia_tree(t.hwnd, t.out / f"{t.name}-uia-tree.txt", max_depth=12, max_nodes=500)
+                w.dump_uia_tree(t.hwnd, t.out / f"{t.tag}-uia-tree.txt", max_depth=12, max_nodes=500)
         raise
     t.save_text("01-start", text)
     t.shot("01-start", printwindow=True)
@@ -506,7 +555,7 @@ def journey(t: Term, rep: Report) -> None:
         rep.note("uia text element", uia.describe())
         rep.note("uia candidates", " | ".join(getattr(uia, "candidates", [])))
     with contextlib.suppress(Exception):
-        n = w.dump_uia_tree(t.hwnd, t.out / f"{t.name}-uia-tree.txt", max_depth=12, max_nodes=500)
+        n = w.dump_uia_tree(t.hwnd, t.out / f"{t.tag}-uia-tree.txt", max_depth=12, max_nodes=500)
         rep.note("uia tree", f"{n} nodes")
 
     def keys(label: str) -> str:
@@ -576,13 +625,22 @@ def main() -> int:
     ap.add_argument("--wxbrief", required=True, type=Path)
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--tool-exe", type=Path)
+    ap.add_argument("--scheme", choices=["dark", "light"], default="dark")
+    ap.add_argument("--limited", action="store_true", help="start the terminal with a filtered (non-elevated) token")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    rep = Report(args.terminal, args.out)
+    rep = Report(
+        args.terminal + ("-limited" if args.limited else "") + ("-light" if args.scheme == "light" else ""), args.out
+    )
     rep.info = diagnostics(args.out)
     w.log(f"diagnostics: {json.dumps(rep.info)}")
     term = TERMS[args.terminal](
-        rep, args.wxbrief.resolve(), args.out, args.tool_exe.resolve() if args.tool_exe else None
+        rep,
+        args.wxbrief.resolve(),
+        args.out,
+        args.tool_exe.resolve() if args.tool_exe else None,
+        args.limited,
+        args.scheme,
     )
     try:
         journey(term, rep)
