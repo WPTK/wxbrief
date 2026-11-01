@@ -715,6 +715,9 @@ def journey(t: Term, rep: Report) -> None:
     t.shot("03-after-v")
     rep.check("v switches to the grid (cards show the station name)", bool(re.search(GRID_RE, after_v)))
     back = keys("v")
+    if not re.search(LIST_RE, back) or re.search(GRID_RE, back):  # the clipboard read can lag one frame: read once more
+        time.sleep(2)
+        back = t.read()
     rep.check("v again returns to the list", bool(re.search(LIST_RE, back)) and not re.search(GRID_RE, back))
 
     w.focus(t.hwnd)
