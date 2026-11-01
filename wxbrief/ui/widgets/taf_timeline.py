@@ -109,11 +109,13 @@ class TafTimeline(Widget, can_focus=True):
         self._ctx: ViewContext | None = None
         self._icao = ""
         self._key: tuple[str, str] | None = None
+        self._moved = False  # the user moved the cursor: until then it follows the clock
 
     # --- data ------------------------------------------------------------------------------------------------------
 
     def set_taf(self, taf: Taf | None, ctx: ViewContext, icao: str, now: datetime) -> bool:
-        """Show ``taf``; returns whether there is anything to draw. The cursor stays put for an unchanged TAF."""
+        """Show ``taf``; returns whether there is anything to draw. For an unchanged TAF the cursor stays where the user
+        put it, and until they move it, it follows the current hour."""
         self._ctx = ctx
         self._icao = icao
         key = (icao, taf.raw) if taf is not None else None
@@ -126,6 +128,8 @@ class TafTimeline(Widget, can_focus=True):
             self.timeline, self.hours = strip_for(taf)
         self._rebuild()
         if fresh:
+            self._moved = False
+        if fresh or not self._moved:
             at = next((i for i, hour in enumerate(self.hours) if hour.start <= now < hour.end), 0)
             self._cursor_hour = at
             self.cursor = self._cell_of_hour(at)
@@ -163,6 +167,7 @@ class TafTimeline(Widget, can_focus=True):
         if index == self.cursor:
             return
         self.cursor = index
+        self._moved = True
         self._cursor_hour = self.cells[index].hours[0]
         self._announce()
         self.refresh()

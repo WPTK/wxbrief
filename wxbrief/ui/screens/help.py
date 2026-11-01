@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, cast
 
+from rich.console import Console
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import VerticalScroll
@@ -44,7 +45,8 @@ class HelpBody(Static):
         for line in self._body.splitlines():
             found = DESCRIPTION.match(line)
             if found is None:  # a heading
-                lines.append(Text.from_markup(line))
+                heading = Text.from_markup(line)  # wrapped here too, so the height counts the rows it fills
+                lines.append(Text("\n").join(heading.wrap(Console(width=width), width)))
                 continue
             keys = found.group(1)
             if len(keys) > width // 2:  # no room beside the keys: the description goes under them, indented

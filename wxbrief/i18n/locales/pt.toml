@@ -919,7 +919,7 @@ title = "Teclas do wxbrief"
 hint = "Esc fecha"
 body = """\
 [b]Estações[/b]
-  Acima/Abaixo  j/k  escolher uma estação (grade: setas sobre os cartões; j/k também sem lista)
+  Acima/Abaixo   j/k   escolher uma estação (grade: setas sobre os cartões; j/k também sem lista)
   Enter              entrar no painel de detalhes (grade: abrir a estação)
   a                  adicionar uma estação (código ou nome)
   d                  remover a estação escolhida

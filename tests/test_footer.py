@@ -97,7 +97,7 @@ async def test_the_station_screen_copies_and_jumps(monkeypatch: pytest.MonkeyPat
         await pilot.press("v", "enter")
         await pilot.pause()
         assert isinstance(app.screen, StationDetailScreen)
-        keys = await shown_is(app, pilot, ["1", "2", "3", "c", "escape", "q", "t"])
+        keys = await shown_is(app, pilot, ["1", "2", "3", "c", "escape", "r", "q", "t", "question_mark"])
         assert "a" not in keys and keys[:4] == ["1", "2", "3", "c"]
         await pilot.press("c")
         assert len(copied) == 1 and "METAR" in copied[0]

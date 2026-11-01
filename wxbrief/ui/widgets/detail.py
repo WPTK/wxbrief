@@ -223,8 +223,11 @@ class DetailPane(VerticalScroll):
         labels = max((len(r.label) for r in (*decoded, *taf_rows, *(r for b in blocks for r in b.rows))), default=0)
         self.query_one(PeriodDetail).labels = labels
         self.query_one(DecodedTable).set_rows(decoded, ctx, labels)
+        table = self.query_one(DecodedTable)
+        if metar is None:
+            self._release_focus(table)
         self.query_one("#decoded-title").display = metar is not None
-        self.query_one(DecodedTable).display = metar is not None
+        table.display = metar is not None
         remarks = [r for r in rows if r.label in remark_labels]
         box = self.query_one("#remarks-box", Collapsible)
         if not remarks:
