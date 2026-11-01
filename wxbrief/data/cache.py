@@ -6,6 +6,7 @@ import json
 import os
 import tempfile
 import time
+from collections.abc import Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -70,9 +71,10 @@ class DiskCache:
             return False
         return True
 
-    def clean(self) -> None:
-        """Remove temp files left by a process killed mid-write."""
-        sweep_temp_files(self.directory, ".")
+    def clean(self, keys: Iterable[str]) -> None:
+        """Remove temp files left by a process killed mid-write while writing ``keys`` (the folder may be shared)."""
+        for key in keys:
+            sweep_temp_files(self.directory, f".{key}.")
 
     def read(self, key: str) -> tuple[datetime, Any] | None:
         """The stored payload and when it was saved (always timezone-aware), or ``None``; a naive time is damaged."""

@@ -12,7 +12,7 @@ from corpus import awc_rows
 
 from wxbrief.decode.flightcat import classify, flight_category, lowest_ceiling, visibility_sm
 from wxbrief.decode.metar import parse_metar
-from wxbrief.decode.model import CloudLayer, FlightCategory, Metar, SkyCondition, Visibility, VisPrefix
+from wxbrief.decode.model import CeilingStatus, CloudLayer, FlightCategory, Metar, SkyCondition, Visibility, VisPrefix
 from wxbrief.decode.units import Distance, DistanceUnit
 
 VFR, MVFR, IFR, LIFR = FlightCategory.VFR, FlightCategory.MVFR, FlightCategory.IFR, FlightCategory.LIFR
@@ -55,9 +55,9 @@ def test_thresholds(ceiling: float, vis: float, expected: FlightCategory) -> Non
 def test_a_missing_component_is_never_assumed_clear() -> None:
     # the known component alone forces IFR or LIFR
     assert classify(None, 2) is IFR
-    assert classify(None, 0.25) is LIFR
+    assert classify(None, 0.25) is FlightCategory.LIFR
     assert classify(800, None) is IFR
-    assert classify(300, None) is LIFR
+    assert classify(300, None) is FlightCategory.LIFR
     # otherwise nothing is known well enough for a category
     assert classify(None, 10) is None
     assert classify(None, 4) is None
@@ -84,7 +84,7 @@ def test_ceiling_is_the_lowest_broken_overcast_or_vertical_visibility_layer() ->
 
 def test_vertical_visibility_is_a_ceiling() -> None:
     sky = [CloudLayer(SkyCondition.VV, Distance(200, DistanceUnit.FT))]
-    assert flight_category(Visibility(Distance(10, DistanceUnit.SM)), sky) is LIFR
+    assert flight_category(Visibility(Distance(10, DistanceUnit.SM)), sky) is FlightCategory.LIFR
 
 
 def test_few_and_scattered_are_not_a_ceiling() -> None:
@@ -96,7 +96,7 @@ def test_few_and_scattered_are_not_a_ceiling() -> None:
 def test_unknown_ceiling_height_is_ignored() -> None:
     sky = [CloudLayer(SkyCondition.VV, None)]
     assert lowest_ceiling(sky) is None
-    assert flight_category(Visibility(Distance(150, DistanceUnit.M)), sky) is LIFR
+    assert flight_category(Visibility(Distance(150, DistanceUnit.M)), sky) is FlightCategory.LIFR
     assert flight_category(Visibility(Distance(10, DistanceUnit.SM)), sky) is None
 
 
@@ -106,13 +106,13 @@ def test_unknown_sky_gives_no_category_unless_visibility_forces_one() -> None:
     assert flight_category(ten, [CloudLayer(SkyCondition.UNKNOWN)]) is None
     assert flight_category(ten, [CloudLayer(SkyCondition.BKN, None)]) is None
     assert flight_category(ten, [CloudLayer(SkyCondition.UNKNOWN, Distance(800, DistanceUnit.FT))]) is None
-    assert flight_category(Visibility(Distance(0.25, DistanceUnit.SM)), []) is LIFR
+    assert flight_category(Visibility(Distance(0.25, DistanceUnit.SM)), []) is FlightCategory.LIFR
 
 
 def test_unknown_visibility_gives_no_category_even_with_a_clear_sky() -> None:
     assert flight_category(None, [CloudLayer(SkyCondition.CLR)]) is None
     assert flight_category(Visibility(not_reported=True), [CloudLayer(SkyCondition.NCD)]) is None
-    assert flight_category(None, [CloudLayer(SkyCondition.OVC, Distance(300, DistanceUnit.FT))]) is LIFR
+    assert flight_category(None, [CloudLayer(SkyCondition.OVC, Distance(300, DistanceUnit.FT))]) is FlightCategory.LIFR
     assert flight_category(None, []) is None
 
 
@@ -279,4 +279,28 @@ def test_reports_with_unknown_data_get_no_category_and_no_colour_state(raw: str)
 
 def test_a_known_low_component_still_forces_its_category_when_the_other_is_unknown() -> None:
     metar = parse_metar("KXXX 311200Z 24005KT 1/4SM BKN/// 10/09 A2992", datetime(2026, 10, 31, 12, 0))
-    assert metar.flight_category is LIFR
+    assert metar.flight_category is FlightCategory.LIFR
+
+
+@pytest.mark.parametrize(
+    "sky",
+    ["FEW040 ///008", "BKN/// OVC080", "SCT030 //////CB", "OVC050 ///008", "BKN020 //////CB"],
+)
+def test_a_known_layer_does_not_hide_an_unknown_one(sky: str) -> None:
+    metar = parse_metar(f"EXXX 311200Z AUTO 24005KT 9999 {sky} 10/09 Q1020 BLU", datetime(2026, 10, 31, 12, 0))
+    assert metar.flight_category is None
+    assert metar.computed_color_state is None
+    assert metar.ceiling is None
+    assert metar.ceiling_status is CeilingStatus.UNKNOWN
+
+
+def test_a_low_known_ceiling_still_forces_its_category_beside_an_unknown_layer() -> None:
+    metar = parse_metar("EXXX 311200Z AUTO 24005KT 9999 OVC004 //////CB 10/09 Q1020", datetime(2026, 10, 31, 12, 0))
+    assert metar.flight_category is FlightCategory.LIFR
+    assert metar.ceiling is not None
+
+
+def test_an_unknown_layer_above_the_known_ceiling_changes_nothing() -> None:
+    metar = parse_metar("EXXX 311200Z AUTO 24005KT 9999 BKN020 ///080 10/09 Q1020", datetime(2026, 10, 31, 12, 0))
+    assert metar.ceiling is not None
+    assert metar.flight_category is FlightCategory.MVFR

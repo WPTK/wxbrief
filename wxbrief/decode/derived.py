@@ -61,6 +61,7 @@ _OBSCURATION_PHENOMENA = frozenset(
     }
 )
 _FREEZING_PRECIP_PHENOMENA = frozenset({Phenomenon.RA, Phenomenon.DZ, Phenomenon.UP})
+_CLEAR_SKY_COVERS = frozenset({SkyCondition.SKC, SkyCondition.CLR, SkyCondition.NSC, SkyCondition.NCD})
 _CORRECTION_MODIFIERS = frozenset({Modifier.COR, Modifier.CCA, Modifier.CCB, Modifier.CCC})
 
 # Deposits that make a runway contaminated for the flag: anything but clear, damp or wet.
@@ -109,9 +110,9 @@ def compute_condition(metar: Metar) -> Condition | None:
         return Condition.BROKEN
     if covers & {SkyCondition.FEW, SkyCondition.SCT}:
         return Condition.PARTLY_CLOUDY
-    if covers or metar.cavok:
+    if metar.cavok or covers & _CLEAR_SKY_COVERS:
         return Condition.CLEAR
-    return None
+    return None  # no sky, or only unknown ("///") layers: the sensor reported nothing usable
 
 
 def refine_clear(condition: Condition | None, daylight: bool) -> Condition | None:
@@ -226,7 +227,9 @@ def _ceiling_status(metar: Metar, ceiling: Distance | None) -> CeilingStatus | N
 def derive(metar: Metar) -> Metar:
     """Fill in the derived fields of a parsed ``Metar``."""
     layer = lowest_ceiling(metar.sky)
-    ceiling: Distance | None = layer.base if layer is not None else None
+    # A known layer is no ceiling while an unknown one may sit below it.
+    known = ceiling_for_classification(metar.sky, metar.cavok) is not None
+    ceiling: Distance | None = layer.base if layer is not None and known else None
     staged = replace(metar, ceiling=ceiling, ceiling_status=_ceiling_status(metar, ceiling))
     return replace(
         staged,

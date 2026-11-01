@@ -304,3 +304,8 @@ def test_the_station_prefix_is_not_a_signal() -> None:
 def test_a_metar_two_weeks_before_the_reference_is_dated_in_the_same_month() -> None:
     m = parse_metar("METAR KDEN 141153Z 06007KT 10SM CLR 09/08 A3001", datetime(2026, 10, 31, 12, 0, tzinfo=UTC))
     assert m.observed == datetime(2026, 10, 14, 11, 53, tzinfo=UTC)
+
+
+@pytest.mark.parametrize("sky", ["//////", "///008", "//////CB", "// //////"])
+def test_a_sky_of_unknown_layers_is_not_clear(sky: str) -> None:
+    assert condition_of(f"06007KT 1000 {sky} 08/07 Q1033") is None
