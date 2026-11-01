@@ -19,7 +19,7 @@ from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
 from wxbrief.ui.screens.briefing import BriefingScreen
 from wxbrief.ui.screens.station_detail import StationDetailScreen
-from wxbrief.ui.widgets.detail import DetailPane
+from wxbrief.ui.widgets.detail import DecodedTable, DetailPane
 from wxbrief.ui.widgets.period_detail import PeriodDetail
 from wxbrief.ui.widgets.station_card import StationCard
 from wxbrief.ui.widgets.station_grid import StationGrid
@@ -379,10 +379,13 @@ async def test_detail_screen_redraws_on_theme_change() -> None:
         await wait_for(pilot, lambda: isinstance(app.screen, StationDetailScreen), "the station screen")
         screen = app.screen
         assert isinstance(screen, StationDetailScreen)
-        calls: list[int] = []
-        monkey = screen.redraw
-        screen.redraw = lambda: (calls.append(1), monkey())[1]  # type: ignore[method-assign]
+        table = screen.query_one(DecodedTable)
+
+        def label_styles() -> list[str]:
+            return [str(table.get_row_at(i)[0].style) for i in range(table.row_count)]
+
+        before = label_styles()
+        assert before
         app.theme = "nord" if app.theme != "nord" else "textual-dark"
         await settle(pilot)
-        await pilot.pause(0.5)
-        assert calls
+        await wait_for(pilot, lambda: label_styles() != before, "the station screen to redraw in the new theme")

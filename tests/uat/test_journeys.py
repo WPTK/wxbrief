@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from rich.text import Text
+from test_app_smoke import assert_jump_keys_scroll
 from test_timeline_ui import demo_app
 from textual.widgets import Footer
 
@@ -84,13 +85,14 @@ async def test_change_the_view_with_g_u_z_and_see_it_in_the_report() -> None:
 
 async def test_grid_open_a_station_and_come_back() -> None:
     app = demo_app("--layout", "grid")
-    async with app.run_test(size=(140, 40)) as pilot:
+    async with app.run_test(size=(140, 30)) as pilot:
         await pilot.pause(0.3)
         await pilot.press("right", "enter")
         await pilot.pause(0.2)
         assert isinstance(app.screen, StationDetailScreen)
         pane = app.screen.query_one(DetailPane)
         assert pane.scroll_y == 0  # opens on the station header
+        await assert_jump_keys_scroll(pilot, pane)
         await pilot.press("3")
         await pilot.press("escape")
         assert isinstance(app.screen, BriefingScreen)
@@ -115,21 +117,24 @@ async def test_a_60x20_terminal_stays_usable() -> None:
         assert app.screen.size.width == 60
 
 
-async def test_timeline_markers_differ_without_colour_or_unicode_glyphs() -> None:
-    """With NO_COLOR and the ascii glyph set, a becoming cell and a temporary mark are still different characters."""
+async def test_timeline_markers_differ_without_colour() -> None:
+    """With NO_COLOR a becoming cell and a temporary mark are drawn on their own rows with different characters."""
     import os
 
     os.environ["NO_COLOR"] = "1"
     try:
-        app = demo_app("--glyphs", "ascii")
+        app = demo_app()
         async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause(0.2)
+            await pilot.press("j")  # EGLL: its forecast has a becoming change and a temporary one
             await pilot.pause(0.2)
             await pilot.press("3")
             await pilot.pause(0.2)
             timeline = app.screen.query_one(TafTimeline)
-            text = plain(timeline)
+            _ticks, body, overlay, _cursor, legend = plain(timeline).split("\n")
             assert HATCH != OVERLAY_MARK
-            assert HATCH in text and OVERLAY_MARK in text  # both in the legend, and each on its own row
-            assert f"{HATCH} " in text and f"{OVERLAY_MARK} " in text
+            assert HATCH in body and OVERLAY_MARK not in body  # the becoming cells, on the category row
+            assert OVERLAY_MARK in overlay and HATCH not in overlay  # the temporary marks, on their own row
+            assert HATCH in legend and OVERLAY_MARK in legend  # and the legend names both
     finally:
         os.environ.pop("NO_COLOR", None)
