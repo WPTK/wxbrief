@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 
 from rich.text import Text
-from textual.events import Resize
+from textual.events import Click, Resize
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
 
@@ -71,6 +71,19 @@ class StationList(OptionList):
             reports, ctx, now, _ = self._last
             option = self.highlighted_option
             self.set_stations(reports, ctx, now, option.id if option else None)
+
+    def on_click(self, event: Click) -> None:
+        """A click looks at a station and leaves the keyboard in the list; Enter or a double click opens its detail.
+
+        OptionList would also select the row, and the briefing treats selecting as Enter: the focus jumped to the
+        detail pane and the key bar changed under the pointer."""
+        event.prevent_default()
+        index = event.style.meta.get("option")
+        if index is None or self.options[index].disabled:
+            return
+        self.highlighted = index
+        if event.chain > 1:
+            self.action_select()
 
     def _reveal_highlight(self, tries: int) -> None:
         """Scroll the highlight into view once the resize is laid out; look again while it is still outside."""
