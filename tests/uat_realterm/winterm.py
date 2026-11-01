@@ -735,37 +735,47 @@ def analyze_png(path: Path, *, margin: float = 0.1) -> dict[str, Any]:
 
 
 def dismiss_blockers(own_hwnd: int) -> list[str]:
-    """Close a full-screen system window that sits above the terminal (a first-run or sign-in prompt on some images).
+    """Get a system flyout or full-screen prompt out of the way of the terminal (seen on the arm64 image).
 
-    Only windows of class ``Windows.UI.Core.CoreWindow`` that cover the whole screen are touched: WM_CLOSE first, then the
-    owning process is killed by PID. Returns what was done, for the log.
+    Looks at the foreground window and at full-screen top-level windows of class ``Windows.UI.Core.CoreWindow`` (a sign-in
+    prompt, the Search flyout). Escape first, then WM_CLOSE, then the owning process is killed by PID. Returns what was
+    done, for the log.
     """
     done: list[str] = []
     sw, sh = screen_size()
-    seen: set[int] = set()
-    # The foreground window first: some of these are not returned by EnumWindows, but GetForegroundWindow names them.
-    candidates = [window_info(foreground())] if foreground() else []
-    candidates += all_windows()
-    for win in candidates:
-        left, top, right, bottom = win.rect
-        if win.hwnd in seen or win.hwnd == own_hwnd or not win.visible or win.cls != "Windows.UI.Core.CoreWindow":
-            continue
-        seen.add(win.hwnd)
-        if right - left < sw - 4 or bottom - top < sh - 4:
-            continue
-        try:
-            name = psutil.Process(win.pid).name()
-        except psutil.Error:
-            name = "?"
-        close_window(win.hwnd)
-        time.sleep(1.0)
-        if is_window(win.hwnd) and window_info(win.hwnd).visible:
-            with contextlib.suppress(psutil.Error):
-                psutil.Process(win.pid).kill()
+    for _ in range(3):
+        fg = window_info(foreground()) if foreground() else None
+        wins = [fg] if fg else []
+        wins += [
+            x
+            for x in all_windows()
+            if x.visible and x.rect[2] - x.rect[0] >= sw - 4 and x.rect[3] - x.rect[1] >= sh - 4
+        ]
+        acted = False
+        for win in wins:
+            if win.hwnd == own_hwnd or not win.visible or win.cls != "Windows.UI.Core.CoreWindow":
+                continue
+            try:
+                name = psutil.Process(win.pid).name()
+            except psutil.Error:
+                name = "?"
+            tap(VK_ESCAPE)
+            time.sleep(0.6)
+            if not (is_window(win.hwnd) and window_info(win.hwnd).visible):
+                done.append(f"escaped {win.title!r} owner {name} pid {win.pid}")
+                acted = True
+                break
+            close_window(win.hwnd)
             time.sleep(1.0)
-            done.append(
-                f"killed full-screen {win.title!r} owner {name} pid {win.pid}; still there: {is_window(win.hwnd)}"
-            )
-        else:
-            done.append(f"closed full-screen {win.title!r} owner {name} pid {win.pid}")
+            if is_window(win.hwnd) and window_info(win.hwnd).visible:
+                with contextlib.suppress(psutil.Error):
+                    psutil.Process(win.pid).kill()
+                time.sleep(1.0)
+                done.append(f"killed {win.title!r} owner {name} pid {win.pid}; still there: {is_window(win.hwnd)}")
+            else:
+                done.append(f"closed {win.title!r} owner {name} pid {win.pid}")
+            acted = True
+            break
+        if not acted:
+            break
     return done

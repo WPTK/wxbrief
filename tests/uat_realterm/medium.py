@@ -266,7 +266,7 @@ def main() -> int:
         cmd = os.environ.get("COMSPEC", "cmd.exe")
         inner = f'whoami /groups > "{out}.groups.txt" & whoami /priv > "{out}.priv.txt" & ping -n 6 127.0.0.1 > nul'
         try:
-            proc = spawn_medium([cmd, "/c", inner], hidden_console=True)
+            proc = spawn_medium(f'"{cmd}" /c "{inner}"', hidden_console=True)
         except OSError as exc:
             lines.append(f"spawn_medium FAILED: {exc}")
             out.write_text("\n".join(lines) + "\n", encoding="utf-8")
