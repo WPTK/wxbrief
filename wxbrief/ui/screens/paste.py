@@ -62,12 +62,17 @@ class PasteDecodeScreen(Screen[None]):
 
     def compose(self) -> ComposeResult:
         with Vertical(id="paste-layout"):
+            yield TextArea(
+                id="paste-input",
+                tab_behavior="focus",
+                show_line_numbers=False,
+                placeholder=self._ctx.translator.t(K.UI_PASTE_PROMPT),  # the instruction sits in the empty box
+            )
             with Horizontal(id="paste-reference"):
                 yield Label(self._ctx.translator.t(K.UI_PASTE_REFERENCE))
                 yield Input(value=self._now().strftime("%Y-%m-%d"), id="reference", compact=True)
-            yield TextArea(id="paste-input", tab_behavior="focus", show_line_numbers=False)
             with VerticalScroll(id="paste-output"):
-                yield Static(self._ctx.translator.t(K.UI_PASTE_PROMPT), id="paste-result")
+                yield Static(id="paste-result")
         yield KeyBar()
 
     def on_mount(self) -> None:
@@ -106,8 +111,6 @@ class PasteDecodeScreen(Screen[None]):
         if len(full) > MAX_PASTE_CHARS:
             note = ctx.translator.t(K.UI_PASTE_TRUNCATED, limit=f"{MAX_PASTE_CHARS:,}")
             parts.append(Text(note, style=ctx.palette.style("wx.warning")))
-        if not self.decoded:
-            parts.append(Text(ctx.translator.t(K.UI_PASTE_PROMPT)))
         for index, report in enumerate(self.decoded):
             if index:
                 parts.append(Text(""))

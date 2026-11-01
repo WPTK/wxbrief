@@ -28,7 +28,7 @@ from wxbrief.config import (
     save_config,
 )
 from wxbrief.data.awc import AwcClient, AwcError, TransportError
-from wxbrief.data.cache import DiskCache, default_cache_dir
+from wxbrief.data.cache import DiskCache
 from wxbrief.data.demo import load_demo
 from wxbrief.data.poll import PollScheduler, Product
 from wxbrief.data.stations import bundled
@@ -452,23 +452,3 @@ class WxBriefApp(App[None]):
         self._chosen_view[name] = value
         self.redraw_screens()
         self._save()
-
-    def settings_extra_lines(self) -> list[tuple[str, str]]:
-        """The settings the dialog only shows: theme, layout, poll times and the file locations."""
-        t = self.ctx.translator
-        options = self.options
-        poll = options.config.poll
-        cache = self.state.cache.directory if self.state.cache else t.t(K.UI_SETTINGS_OFF)
-        off_config = t.t(K.UI_SETTINGS_OFF_NO_CONFIG)
-        config = (options.config_path or default_config_path()) if options.use_config else off_config
-        layout = t.t(f"ui.option.layout.{self.briefing.layout_mode}")
-        poll_text = t.t(
-            K.UI_SETTINGS_POLL_VALUE, metar=poll.metar_interval, taf=poll.taf_interval, away=poll.away_interval
-        )
-        return [
-            (t.t(K.UI_SETTINGS_THEME), self.theme),
-            (t.t(K.UI_SETTINGS_LAYOUT), layout),
-            (t.t(K.UI_SETTINGS_POLL), poll_text),
-            (t.t(K.UI_SETTINGS_CONFIG_FILE), str(config)),
-            (t.t(K.UI_SETTINGS_CACHE_FOLDER), str(cache or default_cache_dir())),
-        ]

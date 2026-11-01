@@ -74,7 +74,7 @@ class TafTimeline(Widget, can_focus=True):
     """Hourly flight-category cells for one TAF."""
 
     BINDINGS = [
-        bind("left", "move(-1)", K.UI_BINDING_EARLIER, show=False),
+        bind("left", "move(-1)", K.UI_BINDING_EARLIER_LATER, key_display="←/→"),  # one footer entry for both keys
         bind("right", "move(1)", K.UI_BINDING_LATER, show=False),
         bind("home", "to_start", K.UI_BINDING_FIRST, show=False),
         bind("end", "to_end", K.UI_BINDING_LAST, show=False),

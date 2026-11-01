@@ -49,7 +49,6 @@ def test_every_setting_value_has_a_label_in_every_language() -> None:
         "units": ("us", "metric", "mixed"),
         "time": ("station", "local", "zulu"),
         "glyphs": ("ascii", "unicode", "emoji", "nerd"),
-        "layout": ("list", "grid"),
     }
     for lang in LANGUAGES:
         t = Translator.load(lang)

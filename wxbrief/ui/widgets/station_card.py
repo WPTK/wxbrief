@@ -83,7 +83,7 @@ class StationCard(Static):
             head.append(f" {glyphs.differs}{theirs}", style=palette.stale)
         if name:
             head.append(f" {name}", style=palette.muted)
-        conditions = short_conditions(metar) or (ctx.translator.t(K.UI_LIST_NO_REPORT) if metar is None else "")
+        conditions = short_conditions(metar) or (ctx.translator.t(K.UI_DETAIL_NO_REPORT) if metar is None else "")
         lines = [head, Text(conditions, style=palette.muted)]
         taf = entry.taf if isinstance(entry.taf, Taf) else None
         hours = strip_for(taf)[1] if taf is not None else ()

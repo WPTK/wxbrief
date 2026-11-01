@@ -73,7 +73,9 @@ class StationHeader(Static):
                 line.append(f"  {cached}", style=ctx.palette.muted)
             lines.append(line)
         elif metar is None:  # nothing held: not fetched yet, the fetch failed, or the station has none
-            lines.append(Text(ctx.translator.t(K.UI_DETAIL_NO_METAR), style=ctx.palette.stale))
+            t = ctx.translator
+            missing = f"{t.t(K.UI_DETAIL_NO_REPORT)}. {t.t(K.UI_DETAIL_REFRESH_HINT)}"
+            lines.append(Text(missing, style=ctx.palette.stale))
         self.update(Text("\n").join(lines))
 
 
@@ -100,8 +102,8 @@ class RawReport(Static):
             parts.append(ctx.palette.raw_text(entry.metar))
         if entry.taf is not None:
             parts.append(ctx.palette.raw_text(entry.taf))
-        empty = Text(ctx.translator.t(K.UI_DETAIL_NO_REPORT), style=ctx.palette.muted)
-        self.update(Text("\n\n").join(parts) if parts else empty)
+        self.update(Text("\n\n").join(parts))
+        self.display = bool(parts)  # nothing held: the header says so, and there is no raw section to show
 
 
 class DecodedTable(DataTable[Text]):

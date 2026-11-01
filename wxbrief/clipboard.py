@@ -39,19 +39,18 @@ def copy_text(app: App[Any], text: str, what: str, t: Translator) -> bool:
     Over SSH pyperclip would fill the remote machine's clipboard without an error, so the terminal route (OSC 52,
     which reaches the user's own clipboard) goes first there.
     """
-    title = t.t(K.UI_CLIPBOARD_TITLE)
     if not _over_ssh():
         try:
             _pyperclip_copy(text)
         except Exception:  # pyperclip raises its own exception type when no clipboard tool exists
             pass
         else:
-            app.notify(t.t(K.UI_CLIPBOARD_COPIED, what=what), title=title)
+            app.notify(t.t(K.UI_CLIPBOARD_COPIED, what=what))
             return True
     try:
         app.copy_to_clipboard(text)  # OSC 52: the terminal may ignore it, and we cannot tell
     except Exception as exc:
-        app.notify(t.t(K.UI_CLIPBOARD_FAILED, what=what, error=exc), severity="error", title=title)
+        app.notify(t.t(K.UI_CLIPBOARD_FAILED, what=what, error=exc), severity="error")
         return False
-    app.notify(t.t(K.UI_CLIPBOARD_COPIED_TERMINAL, what=what), title=title)
+    app.notify(t.t(K.UI_CLIPBOARD_COPIED_TERMINAL, what=what))
     return True

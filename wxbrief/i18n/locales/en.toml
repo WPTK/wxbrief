@@ -811,6 +811,7 @@ copy_discord = "Copy Discord"
 copy_discord_key = "Copy Discord (c)"
 earlier = "Earlier"
 later = "Later"
+earlier_later = "Move"
 first = "First"
 last = "Last"
 left = "Left"
@@ -829,7 +830,7 @@ groups = "All forecast groups ({n})"
 [ui.detail]
 no_stations = "No stations yet. Press [b]a[/b] to add one."
 no_report = "No report yet"
-no_metar = "No METAR available"
+refresh_hint = "Press r to refresh."
 observed_ago = "Observed {time}, {age} ago"
 cached_ago = "(cached {age} ago)"
 
@@ -848,7 +849,6 @@ stale = "stale"
 [ui.status]
 offline = "offline"
 cached = "(cached)"
-no_data = "no data"
 away = "away"
 next_poll = "next poll {time}"
 requests = "req {used}/{limit}"
@@ -856,7 +856,6 @@ polling_off = "polling off"
 
 [ui.list]
 title = "Stations ({n})"
-no_report = "no report"
 
 [ui.layout]
 list = "List layout"
@@ -887,7 +886,6 @@ nothing_decoded = "Nothing decoded yet"
 type_a_station = "Type a station code or part of a name"
 
 [ui.clipboard]
-title = "Clipboard"
 copied = "Copied {what}"
 copied_terminal = "Copied {what} (terminal clipboard)"
 failed = "Could not copy {what}: {error}"
@@ -900,18 +898,18 @@ parts = "{what} in {count} parts: paste each as its own message"
 [ui.add]
 title = "Add station: ICAO or IATA code, or part of the name"
 placeholder = "KDEN, DEN, heathrow ..."
-hint = "Enter adds the first match   Down picks another   Esc cancels"
+hint = "Enter adds, Down picks another, Esc cancels"
 listed = "(listed)"
 
 [ui.paste]
 reference = "Reference date (YYYY-MM-DD):"
-prompt = "Paste a METAR or TAF above. Several reports at once are fine."
+prompt = "Paste a METAR or TAF here. Several reports at once are fine."
 bad_date = "Reference date not understood; using now."
 truncated = "Only the first {limit} characters were decoded; the rest was left out."
 
 [ui.themes]
 title = "Theme"
-hint = "Up/Down previews, Enter keeps, Esc cancels"
+hint = "Enter keeps, Esc cancels"
 
 [ui.help]
 title = "wxbrief keys"
@@ -945,19 +943,11 @@ body = """\
 
 [ui.settings]
 title = "Settings"
-hint = "Up/Down moves, Enter changes the value, Esc closes. Poll times and paths are set in config.toml."
-theme = "Theme"
+hint = "Enter changes the value, Esc closes"
 glyphs = "Glyphs"
-layout = "Layout"
 units = "Units"
 time = "Time"
 language = "Language"
-poll = "Poll (s)"
-poll_value = "METAR {metar}, TAF {taf}, away {away}"
-config_file = "Config file"
-cache_folder = "Cache folder"
-off = "off"
-off_no_config = "off (--no-config)"
 
 [ui.option.units]
 us = "US (kt, SM, inHg)"
@@ -974,10 +964,6 @@ ascii = "ASCII"
 unicode = "Unicode"
 emoji = "Emoji"
 nerd = "Nerd Font"
-
-[ui.option.layout]
-list = "List"
-grid = "Grid"
 
 [timeline.letter]
 VFR = "V"

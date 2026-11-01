@@ -823,6 +823,7 @@ copy_discord = "Für Discord kopieren"
 copy_discord_key = "Für Discord kopieren (c)"
 earlier = "Früher"
 later = "Später"
+earlier_later = "Bewegen"
 first = "Erste"
 last = "Letzte"
 left = "Links"
@@ -841,7 +842,7 @@ groups = "Alle Vorhersagegruppen ({n})"
 [ui.detail]
 no_stations = "Noch keine Stationen. Drücken Sie [b]a[/b], um eine hinzuzufügen."
 no_report = "Noch keine Meldung"
-no_metar = "Kein METAR verfügbar"
+refresh_hint = "Mit r aktualisieren."
 observed_ago = "Beobachtet {time}, vor {age}"
 cached_ago = "(zwischengespeichert vor {age})"
 
@@ -860,7 +861,6 @@ stale = "veraltet"
 [ui.status]
 offline = "offline"
 cached = "(zwischengespeichert)"
-no_data = "keine Daten"
 away = "im Hintergrund"
 next_poll = "nächste Abfrage {time}"
 requests = "Anfragen {used}/{limit}"
@@ -868,7 +868,6 @@ polling_off = "Abfrage aus"
 
 [ui.list]
 title = "Stationen ({n})"
-no_report = "keine Meldung"
 
 [ui.layout]
 list = "Listenansicht"
@@ -899,7 +898,6 @@ nothing_decoded = "Noch nichts dekodiert"
 type_a_station = "Geben Sie einen Stationscode oder einen Teil des Namens ein"
 
 [ui.clipboard]
-title = "Zwischenablage"
 copied = "Kopiert: {what}"
 copied_terminal = "Kopiert: {what} (Zwischenablage des Terminals)"
 failed = "{what} konnte nicht kopiert werden: {error}"
@@ -912,18 +910,18 @@ parts = "{what} in {count} Teilen: jeden als eigene Nachricht einfügen"
 [ui.add]
 title = "Station hinzufügen: ICAO- oder IATA-Code oder Teil des Namens"
 placeholder = "KDEN, DEN, heathrow ..."
-hint = "Enter fügt den ersten Treffer hinzu   Runter wählt einen anderen   Esc bricht ab"
+hint = "Enter fügt hinzu, Runter wählt, Esc bricht ab"
 listed = "(in der Liste)"
 
 [ui.paste]
 reference = "Bezugsdatum (JJJJ-MM-TT):"
-prompt = "Fügen Sie oben ein METAR oder TAF ein. Mehrere Meldungen auf einmal sind möglich."
+prompt = "Fügen Sie hier ein METAR oder TAF ein. Mehrere Meldungen auf einmal sind möglich."
 bad_date = "Das Bezugsdatum wurde nicht verstanden; das heutige Datum wird verwendet."
 truncated = "Nur die ersten {limit} Zeichen wurden dekodiert; der Rest blieb unberücksichtigt."
 
 [ui.themes]
 title = "Design"
-hint = "Hoch/Runter zeigt eine Vorschau, Enter behält, Esc bricht ab"
+hint = "Enter behält, Esc bricht ab"
 
 [ui.help]
 title = "wxbrief-Tasten"
@@ -957,19 +955,11 @@ body = """\
 
 [ui.settings]
 title = "Einstellungen"
-hint = "Hoch/Runter bewegt, Enter ändert den Wert, Esc schließt. Intervalle und Pfade stehen in config.toml."
-theme = "Design"
+hint = "Enter ändert den Wert, Esc schließt"
 glyphs = "Symbole"
-layout = "Ansicht"
 units = "Einheiten"
 time = "Zeit"
 language = "Sprache"
-poll = "Abfrage (s)"
-poll_value = "METAR {metar}, TAF {taf}, im Hintergrund {away}"
-config_file = "Konfigurationsdatei"
-cache_folder = "Cache-Ordner"
-off = "aus"
-off_no_config = "aus (--no-config)"
 
 [ui.option.units]
 us = "USA (kt, SM, inHg)"
@@ -987,6 +977,3 @@ unicode = "Unicode"
 emoji = "Emoji"
 nerd = "Nerd Font"
 
-[ui.option.layout]
-list = "Liste"
-grid = "Raster"

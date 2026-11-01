@@ -11,6 +11,8 @@ from textual.widgets._footer import FooterKey
 
 ALWAYS = ("help", "quit", "close")  # never dropped: a small-terminal user must see how to get help, go back and leave
 STEPPING = "next_station"  # j/k, shown only while the station list is hidden: the next to last to go
+# Section, cursor and copy keys go first, so a, v and r stay on a tight bar.
+SOFT = ("jump", "move", "screen.copy")
 COMPACT_BELOW = 100  # columns: tighter keys
 # The command palette hint shows from the first width the app calls -normal (WxBriefApp.HORIZONTAL_BREAKPOINTS).
 PALETTE_WIDTH = 14  # what the docked palette key takes at the right
@@ -41,8 +43,10 @@ class KeyBar(Footer):
         budget = self._fitted - (PALETTE_WIDTH if self.show_command_palette else 0)
         used = sum(key_width(k) for k in keys)
         dropped: set[Widget] = set()
-        # right to left, then the stepping keys, so the rest of the bar goes before them
-        order = [k for k in reversed(keys) if k.action != STEPPING] + [k for k in keys if k.action == STEPPING]
+        # the soft keys, then right to left, then the stepping keys, so the rest of the bar goes before them
+        soft = [k for k in reversed(keys) if k.action.startswith(SOFT)]
+        order = soft + [k for k in reversed(keys) if k not in soft and k.action != STEPPING]
+        order += [k for k in keys if k.action == STEPPING]
         for key in order:
             if budget <= 0 or used <= budget:
                 break
