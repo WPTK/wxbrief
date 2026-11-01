@@ -14,12 +14,14 @@ from datetime import UTC, datetime
 from typing import Any
 
 from wxbrief.decode.model import Modifier
+from wxbrief.decode.tokens import strip_controls
 
 _TAF_REMARK_MODIFIERS = {m.value: m for m in (Modifier.AMD, Modifier.COR, Modifier.CNL)}
 
 
 def _str(value: object) -> str | None:
-    return value.strip() or None if isinstance(value, str) else None
+    """A feed string, without control characters (an ESC in a station name would act on the terminal it is shown in)."""
+    return strip_controls(value).strip() or None if isinstance(value, str) else None
 
 
 def _num(value: object) -> float | None:

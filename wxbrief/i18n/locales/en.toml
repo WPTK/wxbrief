@@ -882,6 +882,7 @@ backed_up = "The config had problems; the original is kept as {path}"
 save_failed = "Could not save {path}"
 no_metar_to_copy = "No METAR to copy"
 nothing_to_copy = "Nothing to copy"
+taf_expired_not_copied = "TAF expired, not copied"
 nothing_decoded = "Nothing decoded yet"
 type_a_station = "Type a station code or part of a name"
 

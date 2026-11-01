@@ -149,6 +149,23 @@ def _has_missing_data(metar: Metar) -> bool:
     )
 
 
+def _weather_flags(groups: Sequence[WeatherGroup]) -> set[Flag]:
+    """The flags the present-weather groups of a METAR or of one TAF period set: the one place both sides share."""
+    found: set[Flag] = set()
+    for group in groups:
+        if group.descriptor is Descriptor.FZ and set(group.phenomena) & _FREEZING_PRECIP_PHENOMENA:
+            found.add(Flag.FREEZING_PRECIP)
+        if group.descriptor is Descriptor.TS:
+            found.add(Flag.THUNDERSTORM)
+        if group.vicinity or group.nsw or group.not_observed:
+            continue
+        if Phenomenon.FC in group.phenomena:
+            found.add(Flag.TORNADO if group.intensity is Intensity.HEAVY else Flag.FUNNEL_CLOUD)
+        if Phenomenon.SQ in group.phenomena:
+            found.add(Flag.SQUALL)
+    return found
+
+
 def compute_flags(metar: Metar) -> tuple[Flag, ...]:
     """Operationally significant conditions, in the order of the ``Flag`` enum."""
     found: set[Flag] = set()
@@ -164,17 +181,7 @@ def compute_flags(metar: Metar) -> tuple[Flag, ...]:
         found.add(Flag.LOW_VISIBILITY)
     if metar.wind is not None and metar.wind.gust is not None:
         found.add(Flag.GUSTS)
-    for group in metar.weather:
-        if group.descriptor is Descriptor.FZ and set(group.phenomena) & _FREEZING_PRECIP_PHENOMENA:
-            found.add(Flag.FREEZING_PRECIP)
-        if group.descriptor is Descriptor.TS:
-            found.add(Flag.THUNDERSTORM)
-        if group.vicinity or group.nsw or group.not_observed:
-            continue
-        if Phenomenon.FC in group.phenomena:
-            found.add(Flag.TORNADO if group.intensity is Intensity.HEAVY else Flag.FUNNEL_CLOUD)
-        if Phenomenon.SQ in group.phenomena:
-            found.add(Flag.SQUALL)
+    found |= _weather_flags(metar.weather)
     if _CORRECTION_MODIFIERS & set(metar.modifiers):
         found.add(Flag.CORRECTED)
     if Modifier.AUTO in metar.modifiers:
@@ -267,13 +274,9 @@ def compute_taf_flags(taf: Taf) -> tuple[Flag, ...]:
             found.add(Flag.GUSTS)
         if elements.wind_shear is not None:
             found.add(Flag.WIND_SHEAR)
-        for group in elements.weather:
-            if group.descriptor is Descriptor.FZ and set(group.phenomena) & _FREEZING_PRECIP_PHENOMENA:
-                found.add(Flag.FREEZING_PRECIP)
-            if group.descriptor is Descriptor.TS:
-                found.add(Flag.THUNDERSTORM)
-            if Phenomenon.VA in group.phenomena:
-                found.add(Flag.VOLCANIC_ASH)
+        found |= _weather_flags(elements.weather)
+        if any(Phenomenon.VA in group.phenomena for group in elements.weather):
+            found.add(Flag.VOLCANIC_ASH)
         if is_below_green(elements.color_state):
             found.add(Flag.COLOR_BELOW_GRN)
         if any(item.intensity is not IcingIntensity.NONE for item in elements.icing):

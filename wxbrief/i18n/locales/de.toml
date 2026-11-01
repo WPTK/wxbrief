@@ -894,6 +894,7 @@ backed_up = "Die Konfiguration hatte Probleme; das Original wurde als {path} ges
 save_failed = "{path} konnte nicht gespeichert werden"
 no_metar_to_copy = "Kein METAR zum Kopieren"
 nothing_to_copy = "Nichts zu kopieren"
+taf_expired_not_copied = "TAF abgelaufen, nicht kopiert"
 nothing_decoded = "Noch nichts dekodiert"
 type_a_station = "Geben Sie einen Stationscode oder einen Teil des Namens ein"
 

@@ -725,6 +725,7 @@ class K:
     UI_TOAST_REMOVED = "ui.toast.removed"
     UI_TOAST_SAVE_FAILED = "ui.toast.save_failed"
     UI_TOAST_STATIONS_TITLE = "ui.toast.stations_title"
+    UI_TOAST_TAF_EXPIRED_NOT_COPIED = "ui.toast.taf_expired_not_copied"
     UI_TOAST_THEME_TITLE = "ui.toast.theme_title"
     UI_TOAST_TYPE_A_STATION = "ui.toast.type_a_station"
     UI_TOAST_UNKNOWN_STATION = "ui.toast.unknown_station"
