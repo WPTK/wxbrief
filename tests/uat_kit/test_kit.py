@@ -44,6 +44,7 @@ def test_keys_mouse_resize_exit_and_kill() -> None:
         term.resize(60, 16)
         assert len(term.screen().lines) == 16
         pid = term.pid
+        assert pid is not None
         term.send_keys("q")
         assert term.wait_exit(10) == 3
     import psutil

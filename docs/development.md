@@ -79,12 +79,13 @@ outside the checkout.
 
 ## Real-terminal kit
 
-`tests/uat_kit/` drives any terminal program through a real pseudo-terminal (ConPTY via `pywinpty` on Windows, the
-stdlib `pty` elsewhere) and reads the screen back through `pyte`. It imports nothing from wxbrief, so other projects can
-copy the folder. `Terminal(argv, cols, rows, env=...)` gives `send_keys`, `click(col, row)` (SGR pointer motion, press,
-release), `resize`, `wait_for(predicate)` (fails with a screen dump), `settle`, `screen_text` and `wait_exit`; the child
-and its process tree are killed by PID on close and at interpreter exit, and its config, cache and working directory
-are a scratch directory with a dead proxy. `tests/uat_kit/test_kit.py` tests the kit against a tiny echo program.
+`tests/uat_kit/` drives any terminal program through a real pseudo-terminal using Microsoft's `tui-test` (ConPTY on
+Windows, a pty elsewhere; pinned in the dev extra). It imports nothing from wxbrief, so other projects can copy the
+folder. `Terminal(argv, cols, rows, env=...)` gives blocking `send_keys`, `click(col, row)` (SGR pointer motion, press,
+release), `click_text`, `resize`, `wait_for(predicate)` (fails with a screen dump), `settle`, `screen_text` and
+`wait_exit`; the program and its children are killed by PID on close and at interpreter exit, and its config, cache and
+working directory are a scratch directory with a dead proxy. `tests/uat_kit/test_kit.py` tests the kit against a tiny
+echo program. Set `PYTHONUTF8=1` on Windows when printing screen text.
 
 ## Snapshots
 

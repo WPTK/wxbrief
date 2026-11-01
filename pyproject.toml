@@ -45,8 +45,7 @@ dev = [
     "vulture>=2.14",
     "mypy>=1.13",
     "types-pyperclip",
-    "pyte>=0.8.2",
-    "pywinpty>=2.0; sys_platform == 'win32'",
+    "tui-test==0.1.1",
 ]
 # Installed only when building a standalone binary, so every binary carries its own zone files.
 binary = ["tzdata>=2024.1"]
