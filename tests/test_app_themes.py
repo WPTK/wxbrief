@@ -158,9 +158,9 @@ async def test_the_flag_theme_is_never_written_back(tmp_path: Path) -> None:
         await pilot.press("t")
         await pilot.pause()
         assert app.theme != "phosphor-green"
-        await pilot.press("a")  # a save for another reason still leaves the theme alone
-        await pilot.press("escape")
-    assert saved_theme(config_path) is None
+        app.add_station("KDEN")  # a save for another reason still leaves the theme alone
+        await pilot.pause()
+    assert saved_theme(config_path) != "phosphor-green"  # the save happened, and the flag theme stayed out of it
 
 
 async def test_a_change_made_while_the_config_is_unreadable_is_not_saved(tmp_path: Path) -> None:
@@ -205,8 +205,9 @@ async def test_a_saved_unknown_theme_falls_back_with_a_notice_and_is_kept(tmp_pa
         await pilot.pause()
         assert app.theme == "textual-dark"
         assert any("no-such-theme" in n.message for n in app._notifications)
-        await pilot.press("a")
-        await pilot.press("escape")
+        app.add_station("KDEN")  # a real save: the unknown theme is written back as it was
+        await pilot.pause()
+    assert config_path.read_text(encoding="utf-8").count("KDEN") == 1
     assert saved_theme(config_path) == "no-such-theme"
 
 

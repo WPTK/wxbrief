@@ -18,7 +18,7 @@ from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.fcat import CategoryColors, category_colors
-from wxbrief.ui.strip import MINI_STRIP_HOURS, StripCell, mini_cells, strip_for
+from wxbrief.ui.strip import MINI_STRIP_HOURS, StripCell, is_expired, mini_cells, strip_for
 from wxbrief.ui.widgets.station_list import short_conditions
 from wxbrief.ui.widgets.taf_timeline import HATCH, OVERLAY_MARK, category_letter, tick_labels
 
@@ -92,7 +92,9 @@ class StationCard(Static):
             lines.append(tick_labels(cells, CELL_WIDTH, ctx, entry.icao, every_cell=False))
             lines.extend(strip_lines(cells, colors, ctx.translator))
         else:
-            expired = bool(hours) and now >= hours[-1].end
-            key = K.TIMELINE_EXPIRED if expired else K.TIMELINE_NO_TAF
+            if is_expired(hours, now):
+                key = K.TIMELINE_EXPIRED
+            else:  # no forecast at all, or one whose valid period cannot be read: not "no TAF" when there is a TAF
+                key = K.TIMELINE_NO_TAF if taf is None else K.TIMELINE_NONE
             lines.append(Text(ctx.translator.t(key), style=palette.muted))
         self.update(Text("\n").join(lines))

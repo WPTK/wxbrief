@@ -52,6 +52,7 @@ RawReport {
 
 DecodedTable {
     height: auto;
+    max-height: 9999;  /* no cap (DataTable caps at its parent): the pane is the only scroller */
     background: $surface;
 }
 
@@ -355,4 +356,10 @@ StationGrid:focus {
 BriefingScreen.-roomy StationCard {
     height: 9;
     padding: 1 1;
+}
+
+StationGrid #empty {
+    margin: 2 2;
+    color: $text-muted;
+    height: auto;
 }

@@ -7,7 +7,7 @@ from datetime import datetime
 from rich.text import Text
 from textual.widgets import Static
 
-from wxbrief.data.poll import Freshness, PollScheduler
+from wxbrief.data.poll import Freshness, PollScheduler, Product
 from wxbrief.i18n.keys import K
 from wxbrief.state import AppState, StationReports
 from wxbrief.ui.context import ViewContext
@@ -37,13 +37,12 @@ class StatusBar(Static):
         text = Text()
         if position is not None:  # which station of how many: the list may be out of sight
             text.append(f"{position[0]}/{position[1]} ", style=palette.muted)
+        failed: Product | None = None
         if state.errors:
             # The label and the message come from the same error: the first network failure, else the first error.
-            product = next((p for p in state.errors if p in state.offline), next(iter(state.errors)))
-            message = state.errors[product]
-            label = f" {t.t(K.UI_STATUS_OFFLINE)}" if product in state.offline else ""
-            text.append(f"{glyphs.error}{label}", style=palette.offline)
-            text.append(f" ({message})  ", style=palette.muted)
+            failed = next((p for p in state.errors if p in state.offline), next(iter(state.errors)))
+            label = f" {t.t(K.UI_STATUS_OFFLINE)}" if failed in state.offline else ""
+            text.append(f"{glyphs.error}{label}  ", style=palette.offline)
         if selected is not None and selected.metar is not None:
             if selected.freshness(now) is Freshness.FRESH:
                 text.append(f"{glyphs.fresh} {t.t(K.UI_STATE_FRESH)}", style=palette.fresh)
@@ -63,4 +62,6 @@ class StatusBar(Static):
             text.append(f" | {wait} | {used}", style=palette.muted)
         else:
             text.append(f" | {t.t(K.UI_STATUS_POLLING_OFF)}", style=palette.muted)
+        if failed is not None:  # the message can be long: last, so a narrow bar cuts it and not the freshness
+            text.append(f" ({state.errors[failed]})", style=palette.muted)
         self.update(text)

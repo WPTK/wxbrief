@@ -77,13 +77,18 @@ def cell_at(cells: Sequence[StripCell], moment: datetime) -> int | None:
     return None
 
 
+def is_expired(hours: Sequence[TimelineHour], now: datetime) -> bool:
+    """Whether the forecast has run out: it has hours, and ``now`` is past the last one."""
+    return bool(hours) and now >= hours[-1].end
+
+
 def mini_cells(hours: Sequence[TimelineHour], now: datetime, count: int = MINI_STRIP_HOURS) -> tuple[StripCell, ...]:
     """The next ``count`` hourly cells from the hour containing ``now``.
 
     Before the valid period it starts at the first hour; when the forecast runs out sooner than ``count`` hours it is
     shorter (the card pads it); a forecast that is already over gives no cells.
     """
-    if not hours or now >= hours[-1].end:
+    if not hours or is_expired(hours, now):
         return ()
     floor = now.replace(minute=0, second=0, microsecond=0)
     first = next((i for i, hour in enumerate(hours) if hour.end > floor), 0)

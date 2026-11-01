@@ -838,7 +838,7 @@ groups = "Alle Vorhersagegruppen ({n})"
 [ui.detail]
 no_stations = "Noch keine Stationen. Drücken Sie [b]a[/b], um eine hinzuzufügen."
 no_report = "Noch keine Meldung"
-no_metar = "Kein METAR in den letzten 2 Stunden"
+no_metar = "Kein METAR verfügbar"
 observed_ago = "Beobachtet {time}, vor {age}"
 cached_ago = "(zwischengespeichert vor {age})"
 
@@ -916,6 +916,7 @@ listed = "(in der Liste)"
 reference = "Bezugsdatum (JJJJ-MM-TT):"
 prompt = "Fügen Sie oben ein METAR oder TAF ein. Mehrere Meldungen auf einmal sind möglich."
 bad_date = "Das Bezugsdatum wurde nicht verstanden; das heutige Datum wird verwendet."
+truncated = "Nur die ersten {limit} Zeichen wurden dekodiert; der Rest blieb unberücksichtigt."
 
 [ui.themes]
 title = "Design"
@@ -926,8 +927,8 @@ title = "wxbrief-Tasten"
 hint = "Esc schließt"
 body = """\
 [b]Stationen[/b]
-  Hoch/Runter  j/k   eine Station wählen
-  Enter              ins Detailfenster wechseln
+  Hoch/Runter  j/k   eine Station wählen (Raster: Pfeile über die Karten; j/k auch ohne Liste)
+  Enter              ins Detailfenster wechseln (Raster: die Station öffnen)
   a                  eine Station hinzufügen (Code oder Name)
   d                  die gewählte Station entfernen
   r                  jetzt aktualisieren

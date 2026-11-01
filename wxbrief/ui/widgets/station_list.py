@@ -97,8 +97,15 @@ class StationList(OptionList):
             if station is not None:
                 line.append(f"  {station.name}", style=palette.muted)
             options.append(Option(line, id=entry.icao))
-        self.clear_options()
-        self.add_options(options)
         ids = [entry.icao for entry in reports]
+        if ids == [option.id for option in self.options]:
+            # Same rows: change the text in place. Rebuilding would throw the scroll position away on every tick.
+            for index, option in enumerate(options):
+                self.replace_option_prompt_at_index(index, option.prompt)
+        else:
+            self.clear_options()
+            self.add_options(options)
         if ids:
-            self.highlighted = ids.index(selected) if selected in ids else 0
+            target = ids.index(selected) if selected in ids else 0
+            if self.highlighted != target:  # moving it scrolls it into view; else keep the scroll
+                self.highlighted = target

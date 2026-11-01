@@ -826,7 +826,7 @@ groups = "All forecast groups ({n})"
 [ui.detail]
 no_stations = "No stations yet. Press [b]a[/b] to add one."
 no_report = "No report yet"
-no_metar = "No METAR in the last 2 hours"
+no_metar = "No METAR available"
 observed_ago = "Observed {time}, {age} ago"
 cached_ago = "(cached {age} ago)"
 
@@ -904,6 +904,7 @@ listed = "(listed)"
 reference = "Reference date (YYYY-MM-DD):"
 prompt = "Paste a METAR or TAF above. Several reports at once are fine."
 bad_date = "Reference date not understood; using now."
+truncated = "Only the first {limit} characters were decoded; the rest was left out."
 
 [ui.themes]
 title = "Theme"
@@ -914,8 +915,8 @@ title = "wxbrief keys"
 hint = "Esc closes"
 body = """\
 [b]Stations[/b]
-  Up/Down  j/k       select a station
-  Enter              move into the detail pane
+  Up/Down  j/k       select a station (the grid: arrows over the cards; j/k also work with no list)
+  Enter              move into the detail pane (the grid: open the station)
   a                  add a station (code or name)
   d                  remove the selected station
   r                  refresh now

@@ -831,7 +831,7 @@ groups = "Todos los grupos del pronóstico ({n})"
 [ui.detail]
 no_stations = "Aún no hay estaciones. Pulse [b]a[/b] para añadir una."
 no_report = "Aún no hay informe"
-no_metar = "Sin METAR en las últimas 2 horas"
+no_metar = "Sin METAR disponible"
 observed_ago = "Observado {time}, hace {age}"
 cached_ago = "(en caché desde hace {age})"
 
@@ -909,6 +909,7 @@ listed = "(en la lista)"
 reference = "Fecha de referencia (AAAA-MM-DD):"
 prompt = "Pegue un METAR o TAF arriba. Puede pegar varios informes a la vez."
 bad_date = "No se entiende la fecha de referencia; se usa la actual."
+truncated = "Solo se decodificaron los primeros {limit} caracteres; el resto se dejó fuera."
 
 [ui.themes]
 title = "Tema"
@@ -919,8 +920,8 @@ title = "Teclas de wxbrief"
 hint = "Esc cierra"
 body = """\
 [b]Estaciones[/b]
-  Arriba/Abajo  j/k  elegir una estación
-  Intro              entrar en el panel de detalle
+  Arriba/Abajo  j/k  elegir una estación (cuadrícula: flechas sobre las tarjetas; j/k también sin lista)
+  Intro              entrar en el panel de detalle (cuadrícula: abrir la estación)
   a                  añadir una estación (código o nombre)
   d                  quitar la estación elegida
   r                  actualizar ahora

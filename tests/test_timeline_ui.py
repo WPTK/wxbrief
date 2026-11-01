@@ -336,6 +336,7 @@ async def test_timeline_focus_is_released_when_the_taf_goes_away() -> None:
         briefing.refresh_view()
         await settle(pilot)
         assert not timeline.display and not timeline.has_focus
+        assert briefing.query_one(DetailPane).has_focus  # the keyboard went to the pane, not nowhere
 
 
 async def test_a_stale_cursor_message_is_dropped() -> None:

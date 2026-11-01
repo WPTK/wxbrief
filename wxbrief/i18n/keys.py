@@ -685,6 +685,7 @@ class K:
     UI_PASTE_BAD_DATE = "ui.paste.bad_date"
     UI_PASTE_PROMPT = "ui.paste.prompt"
     UI_PASTE_REFERENCE = "ui.paste.reference"
+    UI_PASTE_TRUNCATED = "ui.paste.truncated"
     UI_SECTION_DECODED = "ui.section.decoded"
     UI_SECTION_FORECAST = "ui.section.forecast"
     UI_SECTION_GROUPS = "ui.section.groups"

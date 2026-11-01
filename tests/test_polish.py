@@ -173,7 +173,9 @@ async def test_enter_in_the_grid_does_not_focus_the_hidden_detail_pane(tmp_path:
         screen = app.screen
         assert isinstance(screen, BriefingScreen)
         screen.action_focus_detail()
+        await pilot.pause()  # Widget.focus only schedules the change
         assert not screen.query_one(DetailPane).has_focus
+        assert screen.query_one(StationGrid).has_focus
 
 
 async def test_period_detail_uses_one_time_base(tmp_path: Path) -> None:
