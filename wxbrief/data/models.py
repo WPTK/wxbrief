@@ -13,6 +13,10 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from wxbrief.decode.model import Modifier
+
+_TAF_REMARK_MODIFIERS = {m.value: m for m in (Modifier.AMD, Modifier.COR, Modifier.CNL)}
+
 
 def _str(value: object) -> str | None:
     return value.strip() or None if isinstance(value, str) else None
@@ -102,7 +106,14 @@ class AwcTaf:
     valid_from: datetime | None = None
     valid_to: datetime | None = None
     name: str | None = None
+    remarks: str | None = None  # AWC's own field: where it puts AMD, COR and CNL instead of rawTAF
     source: Mapping[str, Any] = field(default_factory=dict, compare=False, repr=False)
+
+    @property
+    def modifiers(self) -> tuple[Modifier, ...]:
+        """The ``AMD``, ``COR`` and ``CNL`` words of ``remarks``, in order."""
+        found = (_TAF_REMARK_MODIFIERS.get(word) for word in (self.remarks or "").upper().split())
+        return tuple(dict.fromkeys(m for m in found if m is not None))
 
 
 @dataclass(frozen=True, slots=True)
@@ -165,6 +176,7 @@ def parse_taf(item: object) -> AwcTaf | None:
         valid_from=_epoch(item.get("validTimeFrom")),
         valid_to=_epoch(item.get("validTimeTo")),
         name=_str(item.get("name")),
+        remarks=_str(item.get("remarks")),
         source=dict(item),
     )
 

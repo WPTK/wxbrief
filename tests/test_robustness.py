@@ -73,18 +73,19 @@ def test_the_cached_label_is_tracked_per_product(tmp_path: Path) -> None:
     assert not entry.from_cache  # the label describes the report shown first
 
 
-def test_rows_for_unlisted_stations_and_expired_tafs_are_not_written(tmp_path: Path) -> None:
+def test_rows_for_unlisted_stations_are_kept_until_they_age_out_and_expired_tafs_are_not_written(tmp_path: Path) -> None:
     cache = DiskCache(tmp_path)
     state = AppState(["KDEN", "EGLL"], cache=cache, now=lambda: NOW)
     state.apply(Product.METAR, metar_rows("KDEN", "EGLL"))
     state.apply(Product.TAF, taf_rows("KDEN", "EGLL"))
     state.remove("EGLL")
     state.apply(Product.METAR, metar_rows("KDEN"))
-    assert [row["icaoId"] for row in cache.read("metars")[1]] == ["KDEN"]  # type: ignore[index]
+    assert [row["icaoId"] for row in cache.read("metars")[1]] == ["KDEN", "EGLL"]  # type: ignore[index]
     state.now = lambda: NOW + timedelta(days=3)  # long past every forecast in the batch
     state.apply(Product.METAR, [])
     state.apply(Product.TAF, taf_rows("KDEN"))
     assert cache.read("tafs")[1] == []  # type: ignore[index]
+    assert [row["icaoId"] for row in cache.read("metars")[1]] == ["KDEN"]  # type: ignore[index]  # EGLL aged out
 
 
 def test_a_cached_row_keeps_its_own_fetch_time(tmp_path: Path) -> None:

@@ -68,3 +68,12 @@ usable rows, or its usable-row count differs from the bundled `stations.json.gz`
 opens an issue titled "Station database source check failed" (labelled `data`) or comments on the open one. To resolve a
 drift report, run `python scripts/build_stations.py`, review the change and commit it. The workflow needs no secrets and
 changes nothing in the repository.
+
+## The feed check
+
+`feed-check.yml` runs daily (07:43 UTC) and on demand, never in pull request CI. It runs `scripts/check_feeds.py`, which
+makes one request each to the AWC `metar`, `taf` and `stationinfo` endpoints for five large airports and passes the
+answers through the app's own client, row parsers and decoders. A format change (a body that is not a JSON list, rows
+the parsers drop, a report the decoder fails on) opens an issue titled "Live feed check failed" (labelled `data`) at
+once, or comments on the open one. A feed that is down, rate limited or empty fails the run with its own `DOWN:` line
+but raises an issue only when the two runs before it failed too.
