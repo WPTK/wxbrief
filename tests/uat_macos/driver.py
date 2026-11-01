@@ -165,19 +165,36 @@ class MacTerminal:
             script = f'tell application "Terminal"\nactivate\ndo script "{inner}"\nset bounds of front window to {bounds}\nend tell'
         else:
             # iTerm2 opens a window on launch; reuse it (closing it first sends input to a new empty window).
-            _sh(["open", "-a", "iTerm"])
-            time.sleep(8)
-            _sh([sys.executable, str(HERE / "scripts" / "dismiss_dialogs.py"), "1"], timeout=120)
             script = (
                 f"tell {self._spec['scripting']}\nactivate\n"
                 "if (count of windows) is 0 then create window with default profile\n"
                 f'tell current session of current window to write text "exec /bin/bash {inner}"\n'
                 f"set bounds of current window to {bounds}\nend tell"
             )
-        rc, out = _osa(script, 40)
-        if rc != 0:
-            self.close()
-            raise RuntimeError(f"could not start {app} (osascript rc={rc}): {out}")
+        # The window sometimes never appears (macos-26 Terminal.app, seen twice): start again once, and keep the error.
+        for attempt in (1, 2):
+            if app == "iTerm2":
+                _sh(["open", "-a", "iTerm"])
+                time.sleep(8)
+                _sh([sys.executable, str(HERE / "scripts" / "dismiss_dialogs.py"), "1"], timeout=120)
+            rc, out = _osa(script, 40)
+            if rc == 0:
+                try:
+                    self._wait_size(30)
+                    self._window(10)
+                    break
+                except AssertionError as err:
+                    out = str(err)
+            else:
+                out = f"osascript rc={rc}: {out}"
+            with (self.out_dir / "launch.log").open("a") as f:
+                print(f"attempt {attempt} failed: {out}", file=f)
+            if attempt == 2:
+                self.close()
+                raise RuntimeError(f"could not start {app} twice: {out}")
+            _sh(["pkill", "-x", self._spec["process"]])
+            time.sleep(2)
+            (self.dir / "size").unlink(missing_ok=True)
         try:
             self._wait_size()
             self._fit(cols, rows)
@@ -333,14 +350,10 @@ class MacTerminal:
                 rc, out = _osa('tell application "System Events" to keystroke "c" using control down')
             elif low in KEY_CODES:  # System Events, not cliclick: cliclick's escape never reached the terminal
                 rc, out = _osa(f'tell application "System Events" to key code {KEY_CODES[low]}')
-            else:
-                rc, out = _osa(
-                    'tell application "System Events" to keystroke "'
-                    + key.replace("\\", "\\\\").replace('"', '\\"')
-                    + '"'
-                )
+            else:  # literal text: cliclick types it where System Events keystroke was lost in iTerm2
+                rc, out = _sh(["cliclick", f"t:{key}"])
             if rc != 0:
-                raise AssertionError(f"System Events failed for key {key!r}: {out}")
+                raise AssertionError(f"key failed for {key!r}: {out}")
             time.sleep(0.15)
 
     def click(self, col: int, row: int) -> None:
