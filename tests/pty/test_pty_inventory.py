@@ -10,6 +10,7 @@ nothing fails its scenario.
 from __future__ import annotations
 
 import re
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -146,8 +147,14 @@ def test_key(start: Start, scn: Key) -> None:
     before = term.screen()
     cells_before = repr(term._run(term._t.cells(0, 0, term.cols, term.rows)))
     term.send_keys(scn.key)
-    term.settle(0.5)
-    after = term.screen()
+    after = term.settle(0.5)
+    if scn.check is not style_only:
+        # A copy key can take a second to toast (the clipboard tool is tried first; on Linux without one it fails
+        # and the terminal route follows), longer than the screen stays still. Give the effect time to arrive.
+        deadline = time.monotonic() + 4
+        while not scn.check(before, after) and time.monotonic() < deadline:
+            time.sleep(0.1)
+            after = term.screen()
     if scn.check is style_only:
         assert repr(term._run(term._t.cells(0, 0, term.cols, term.rows))) != cells_before, f"{scn.id}: no style change"
         return

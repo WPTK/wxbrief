@@ -45,6 +45,7 @@ except ImportError:  # pragma: no cover - reported as a skip reason
 IS_WINDOWS = sys.platform == "win32"
 ESC = "\x1b"
 DEFAULT_TIMEOUT = 20.0
+CALL_LIMIT = 30.0  # no single call into tui-test (spawn, write, read the screen, resize) takes this long
 
 KEYS = {
     "enter": "\r",
@@ -135,12 +136,20 @@ class Terminal:
             raise
         self._pids = {p.pid for p in psutil.Process().children(recursive=True)} - before
 
-    def _run(self, coro: Any) -> Any:
-        return self._loop.run_until_complete(coro)
+    def _run(self, coro: Any, limit: float = CALL_LIMIT) -> Any:
+        """Run one tui-test call to the end, or fail in ``limit`` seconds instead of blocking the suite."""
+        try:
+            return self._loop.run_until_complete(asyncio.wait_for(coro, limit))
+        except TimeoutError:
+            raise AssertionError(f"a tui-test call did not return within {limit:g} s (the terminal layer hung)") from None
 
     def _env(self, extra: dict[str, str], remove: tuple[str, ...], isolate: bool) -> dict[str, str]:
         env = {k: v for k, v in os.environ.items() if not k.upper().startswith("PYTEST") and k not in remove}
         env.update(TERM="xterm-256color", COLORTERM="truecolor", PYTHONUNBUFFERED="1", PYTHONUTF8="1")
+        # Under pytest on Linux the native layer hands the child COLUMNS=80 LINES=24 from the parent's C environment
+        # (os.environ does not show them), and the app then lays out for 80x24 in a 120x30 terminal. An empty value
+        # overrides that and is ignored by Rich and Textual, so the size comes from the pseudo-terminal alone.
+        env.update(COLUMNS="", LINES="")
         if isolate:
             dead = "http://127.0.0.1:9"  # nothing listens on the discard port: a request fails at once
             for name in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
@@ -174,7 +183,7 @@ class Terminal:
     def wait_exit(self, timeout: float = DEFAULT_TIMEOUT) -> int | None:
         """Wait for the program to end on its own; its exit code, or None on timeout."""
         try:
-            self._run(self._t.wait_exit(timeout=int(timeout * 1000)))
+            self._run(self._t.wait_exit(timeout=int(timeout * 1000)), timeout + 10)
         except Exception:
             return None
         return self.exit_code()

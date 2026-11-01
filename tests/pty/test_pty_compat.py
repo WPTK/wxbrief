@@ -6,6 +6,7 @@ Windows Terminal rendering specifics, sixel and real tmux/SSH sessions are not c
 from __future__ import annotations
 
 import re
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
@@ -61,7 +62,9 @@ def test_too_small_terminal_says_so_and_recovers(start: Start) -> None:
     term.wait_for(lambda s: "Stations" in s, 10, "the app again after growing the window")
 
 
-@pytest.mark.xfail(strict=True, reason="#235: exit leaves focus reporting on")
+@pytest.mark.xfail(
+    sys.platform == "win32", strict=True, reason="#235: exit leaves focus reporting on (seen on Windows only; clean on Linux and macOS)"
+)
 def test_exit_leaves_the_terminal_clean(start: Start) -> None:
     term = start()
     term.send_keys("q")

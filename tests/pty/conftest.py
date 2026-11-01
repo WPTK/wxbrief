@@ -18,7 +18,7 @@ def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     for item in items:
         if str(item.path).startswith(here):
             item.add_marker(pytest.mark.pty)
-            item.add_marker(pytest.mark.timeout(120))
+            item.add_marker(pytest.mark.timeout(90))
             if REASON:
                 item.add_marker(pytest.mark.skip(reason=f"real-terminal layer unavailable: {REASON}"))
 
