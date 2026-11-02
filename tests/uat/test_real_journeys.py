@@ -52,9 +52,14 @@ def test_J1_first_run_add_denver_read_forecast_quit_and_the_station_is_back(sess
     term.wait_for(lambda s: "Add station" in s, 10, "the add dialog")
     term.send_keys("Denver")
     term.wait_for(lambda s: "KDEN Denver Intl" in s, 10, "the Denver results")
+    term.settle()  # the result rows reorder while the search finishes; clicking early added KAPA instead (seen in CI)
     term.click_text("KDEN Denver Intl")
-    term.wait_for(lambda s: stations_listed(s) == 1 and "Add station" not in s, 10, "KDEN added by the click")
-    assert detail_station(term.screen()) == "KDEN"
+    # The list gains the row before the detail pane selects it, so wait for the selection (a race seen in CI).
+    term.wait_for(
+        lambda s: stations_listed(s) == 1 and "Add station" not in s and detail_station(s) == "KDEN",
+        10,
+        "KDEN added by the click and selected",
+    )
     term.send_keys("3")
     assert "No report yet" in bottom(calm(term)), "key 3 with nothing to show gave no message"
     quit_cleanly(term)

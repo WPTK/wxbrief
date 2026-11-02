@@ -8,8 +8,6 @@ name: Post-release
 # runs when the Release workflow finishes (`workflow_run`). A manual run takes the tag as input.
 
 on:
-  push:  # TEMPORARY: exercise the workflow from this branch (dispatch needs the file on main); removed before merge
-    branches: [ci-gates]
   release:
     types: [published]
   workflow_run:
@@ -45,7 +43,7 @@ jobs:
           RUN_TAG: ${{ github.event.workflow_run.head_branch }}
           INPUT_TAG: ${{ inputs.tag }}
         run: |
-          tag="${RELEASE_TAG:-${RUN_TAG:-${INPUT_TAG:-v0.3.0}}}"
+          tag="${RELEASE_TAG:-${RUN_TAG:-$INPUT_TAG}}"
           if ! printf '%s' "$tag" | grep -Eq '^v0\.[0-9]+\.[0-9]+$'; then
             echo "::error::'$tag' is not a v0.MINOR.PATCH release tag"; exit 1
           fi
