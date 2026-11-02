@@ -192,10 +192,14 @@ def test_J5_remove_the_last_one_a_middle_one_then_all_of_them(session: Session) 
     for _ in range(8):
         term.send_keys("d")
         term.settle(0.3)
-    screen = term.wait_for(lambda s: stations_listed(s) == 0, 10, "all stations removed")
+    # The footer position redraws a frame after the list empties (a race seen in CI): read inside the wait, so a
+    # stale detail pane or position that never clears still fails with the screen dump.
+    screen = term.wait_for(
+        lambda s: stations_listed(s) == 0 and detail_station(s) is None and position(s) is None,
+        10,
+        "all stations removed, with no stale detail pane or position",
+    )
     assert EMPTY in screen
-    assert detail_station(screen) is None, f"a stale detail pane stays after the last removal:\n{screen.text}"
-    assert position(screen) is None
     term.send_keys("d", "j", "enter", "3", "1")  # nothing to act on: inert, not a crash
     calm(term)
     assert term.alive() and EMPTY in term.screen()
