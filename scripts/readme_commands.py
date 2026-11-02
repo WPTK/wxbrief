@@ -117,6 +117,7 @@ def run_demo(cwd: Path, env: dict[str, str]) -> tuple[bool, str]:
     seen = b""
     end = time.monotonic() + DEMO_TIMEOUT
     sent = False
+    resend = 0.0
     status = None
     while time.monotonic() < end:
         r, _, _ = select.select([fd], [], [], 0.5)
@@ -132,13 +133,24 @@ def run_demo(cwd: Path, env: dict[str, str]) -> tuple[bool, str]:
             time.sleep(1)
             os.write(fd, b"q")
             sent = True
+            resend = time.monotonic() + 5
+        elif sent and time.monotonic() > resend:  # the first q can land before the app reads keys
+            os.write(fd, b"q")
+            resend = time.monotonic() + 5
         done, st = os.waitpid(pid, os.WNOHANG)
         if done:
             status = st
             break
+    while status is None and sent and time.monotonic() < end:  # the pty closed (EOF): collect the exit status
+        done, st = os.waitpid(pid, os.WNOHANG)
+        if done:
+            status = st
+        else:
+            time.sleep(0.2)
     if status is None:
         os.kill(pid, 9)
         os.waitpid(pid, 0)
+        print(seen[-1500:].decode("utf-8", "replace"))
         return False, "did not quit after q" if sent else "never drew the demo stations"
     code = os.waitstatus_to_exitcode(status)
     return (sent and code == 0), f"exit {code}"

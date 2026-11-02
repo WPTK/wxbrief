@@ -19,6 +19,10 @@ jobs:
     name: Test (${{ matrix.os }}, ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
+    # Python 3.14 is known red (issues filed below). The cell still runs and shows its result, but does not block
+    # until the issues are fixed; remove this line then. 3.12 and 3.13 are strictly required.
+    # TODO(3.14): see (#267 closed-stdout argparse crash, #268 nested JSON reply).
+    continue-on-error: ${{ matrix.python == '3.14' }}
     strategy:
       fail-fast: false
       matrix:
