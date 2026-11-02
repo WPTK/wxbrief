@@ -1,0 +1,136 @@
+name: Post-release
+
+# Downloads the files that were PUBLISHED on the GitHub release (not build output), verifies them and runs the
+# executable the way a user would. A failure here means the release is broken for users: it fails loudly.
+#
+# Triggers: `release: published` fires for releases made by a person or a token of one. The Release workflow creates
+# its release with GITHUB_TOKEN, and GitHub does not start workflows from events made by that token, so the check also
+# runs when the Release workflow finishes (`workflow_run`). A manual run takes the tag as input.
+
+on:
+  release:
+    types: [published]
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to check, for example v0.3.0
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: post-release-${{ github.event.release.tag_name || github.event.workflow_run.head_branch || inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Resolve the tag
+    # A workflow_run for a failed Release run published nothing, so there is nothing to check.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tag: ${{ steps.t.outputs.tag }}
+      version: ${{ steps.t.outputs.version }}
+    steps:
+      - id: t
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RUN_TAG: ${{ github.event.workflow_run.head_branch }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          tag="${RELEASE_TAG:-${RUN_TAG:-$INPUT_TAG}}"
+          if ! printf '%s' "$tag" | grep -Eq '^v0\.[0-9]+\.[0-9]+$'; then
+            echo "::error::'$tag' is not a v0.MINOR.PATCH release tag"; exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+  assets:
+    name: Published files and checksums
+    needs: tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TAG: ${{ needs.tag.outputs.tag }}
+      VERSION: ${{ needs.tag.outputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Download every published file from its public URL
+        run: |
+          mkdir dl && cd dl
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG"
+          curl -fsSL --retry 3 -O "$base/SHA256SUMS"
+          expected=$(awk '{print $2}' SHA256SUMS | sed 's/^\*//')
+          [ -n "$expected" ] || { echo "::error::SHA256SUMS lists no files"; exit 1; }
+          for f in $expected; do curl -fsSL --retry 3 -O "$base/$f" || { echo "::error::cannot download $f from $base"; exit 1; }; done
+          # Everything the release holds is listed in SHA256SUMS, and the other way round.
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -vx SHA256SUMS | sort > ../published.txt
+          printf '%s\n' $expected | sort > ../listed.txt
+          diff ../published.txt ../listed.txt || { echo "::error::SHA256SUMS and the published files differ"; exit 1; }
+      - name: Verify SHA256SUMS
+        run: cd dl && sha256sum -c SHA256SUMS
+      - name: Verify the build provenance attestation of each file
+        run: |
+          cd dl
+          for f in $(awk '{print $2}' SHA256SUMS | sed 's/^\*//'); do
+            gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" || { echo "::error::no valid attestation for $f"; exit 1; }
+          done
+      - name: Check the wheel and sdist are for this version
+        run: |
+          cd dl
+          ls "wxbrief-$VERSION-py3-none-any.whl" "wxbrief-$VERSION.tar.gz"
+
+  run:
+    name: Run the published executable (${{ matrix.os }})
+    needs: tag
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            asset: linux-x86_64.tar.gz
+          - os: windows-latest
+            asset: windows-x86_64.exe
+    env:
+      TAG: ${{ needs.tag.outputs.tag }}
+      VERSION: ${{ needs.tag.outputs.version }}
+      PYTHONUTF8: "1"
+    defaults:
+      run:
+        shell: bash
+    steps:
+      # The checkout supplies only the pseudo-terminal driver (tests/uat_kit) and this script; the executable is the
+      # downloaded one.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install "tui-test==0.1.1" psutil
+      - name: Download the published file and verify its checksum
+        run: |
+          mkdir bin && cd bin
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG"
+          name="wxbrief-$VERSION-${{ matrix.asset }}"
+          curl -fsSL --retry 3 -O "$base/SHA256SUMS"
+          curl -fsSL --retry 3 -O "$base/$name" || { echo "::error::cannot download $name"; exit 1; }
+          grep -F " $name" SHA256SUMS > one.sum || { echo "::error::$name is not listed in SHA256SUMS"; exit 1; }
+          sha256sum -c one.sum
+          case "$name" in
+            *.tar.gz) tar -xzf "$name"; exe=./wxbrief ;;
+            *.exe) cp "$name" wxbrief.exe; exe=./wxbrief.exe ;;
+          esac
+          chmod +x "$exe"
+          echo "EXE=$PWD/${exe#./}" >> "$GITHUB_ENV"
+      - name: Run it
+        run: |
+          # No Python of ours on PATH is needed by the executable; the driver below uses the runner's Python.
+          python scripts/post_release_check.py "$EXE" "$VERSION"

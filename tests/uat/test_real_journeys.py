@@ -52,9 +52,14 @@ def test_J1_first_run_add_denver_read_forecast_quit_and_the_station_is_back(sess
     term.wait_for(lambda s: "Add station" in s, 10, "the add dialog")
     term.send_keys("Denver")
     term.wait_for(lambda s: "KDEN Denver Intl" in s, 10, "the Denver results")
+    term.settle()  # the result rows reorder while the search finishes; clicking early added KAPA instead (seen in CI)
     term.click_text("KDEN Denver Intl")
-    term.wait_for(lambda s: stations_listed(s) == 1 and "Add station" not in s, 10, "KDEN added by the click")
-    assert detail_station(term.screen()) == "KDEN"
+    # The list gains the row before the detail pane selects it, so wait for the selection (a race seen in CI).
+    term.wait_for(
+        lambda s: stations_listed(s) == 1 and "Add station" not in s and detail_station(s) == "KDEN",
+        10,
+        "KDEN added by the click and selected",
+    )
     term.send_keys("3")
     assert "No report yet" in bottom(calm(term)), "key 3 with nothing to show gave no message"
     quit_cleanly(term)
@@ -187,10 +192,14 @@ def test_J5_remove_the_last_one_a_middle_one_then_all_of_them(session: Session) 
     for _ in range(8):
         term.send_keys("d")
         term.settle(0.3)
-    screen = term.wait_for(lambda s: stations_listed(s) == 0, 10, "all stations removed")
+    # The footer position redraws a frame after the list empties (a race seen in CI): read inside the wait, so a
+    # stale detail pane or position that never clears still fails with the screen dump.
+    screen = term.wait_for(
+        lambda s: stations_listed(s) == 0 and detail_station(s) is None and position(s) is None,
+        10,
+        "all stations removed, with no stale detail pane or position",
+    )
     assert EMPTY in screen
-    assert detail_station(screen) is None, f"a stale detail pane stays after the last removal:\n{screen.text}"
-    assert position(screen) is None
     term.send_keys("d", "j", "enter", "3", "1")  # nothing to act on: inert, not a crash
     calm(term)
     assert term.alive() and EMPTY in term.screen()

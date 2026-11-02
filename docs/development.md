@@ -23,7 +23,26 @@ CI runs these on Windows, Linux and macOS. Run them before pushing.
 .venv\Scripts\python -m pytest -n auto
 ```
 
-Changes that only touch Markdown, `docs/` or `LICENSE` skip CI.
+Changes that only touch `CHANGELOG.md`, `CONTRIBUTING.md`, `docs/` or `LICENSE` skip CI. `README.md` does not: its
+commands are executed (see below).
+
+## CI gates beyond the test matrix
+
+`ci.yml` has these jobs next to `Test (os, python)`, which runs on Python 3.12, 3.13 and 3.14 (every version
+`requires-python` allows); all of them are required.
+
+| Job | Proves |
+| --- | --- |
+| `Build (wheel and sdist)` | `python -m build` works and `twine check --strict` passes on both files |
+| `Install wheel/sdist (os)` | the built file installs into a clean venv outside the checkout; `scripts/ci_check_install.py` runs `wxbrief --version`, `--help`, `decode`, `--selftest`, `python -m wxbrief`, and reads the locales, `app.tcss`, the station database, the demo reports and the theme modules from the installed copy through `importlib.resources` |
+| `README commands (os)` | `scripts/readme_commands.py` runs every command in the README's fenced blocks and the `pip install` line of the release table in an empty directory. Each command needs a rule in the script (run, run with a stated substitution, or skip with a reason); a README command without a rule, a rule that matches nothing, or a README version that differs from `__version__` fails. Only the GitHub-release download is replaced, by the wheel built in the job |
+| `Dependency audit` | `pip-audit` on the resolved runtime dependencies (not the dev tools) finds no known vulnerability. Fix it by raising the bound, or file an issue; do not add an ignore without one |
+
+`post-release.yml` runs after a release is published (and by hand: Actions, Post-release, tag input). It downloads the
+published files from their public URLs, checks `SHA256SUMS` and the build attestations, runs the Linux and Windows
+executables (`--version`, `--help`, `--selftest`, `decode`, then `--demo` in a pseudo-terminal and `q`) and fails
+loudly. It also runs when the Release workflow completes, because a release made with `GITHUB_TOKEN` does not start
+workflows on the `release` event.
 
 ## Layout
 
