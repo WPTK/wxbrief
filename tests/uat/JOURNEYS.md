@@ -36,3 +36,15 @@ Tests that take minutes carry `uat_live` and skip unless `WXBRIEF_UAT_LIVE=1`.
 
 Observed, not filed: searching "Denver" ranks Denver/Centennial (KAPA) above Denver Intl (KDEN). No journey fails on it
 (J1 picks KDEN by id).
+
+## Extra checks (L1 to L7)
+
+| L | Test | Open defect |
+| --- | --- | --- |
+| L1 | test_real_extras_net.py::test_L1_L2_a_failing_source_reaches_a_stated_state_with_a_way_to_retry (METAR and TAF x 5xx, bad JSON, empty list, dropped connection; `r` asks again). Slow answers are L3. The station database is bundled, so it has no remote failure to inject. | #262 (drop, empty list: 4 cases) |
+| L2 | same test (no Error, Exception, Traceback or URL on screen), plus test_real_extras.py::test_L2_get_with_the_network_blocked_shows_no_internals | #254 |
+| L3 | test_real_extras_net.py::test_L3_slow_data_updates_the_view_without_a_keypress (5 s; 20 s is `uat_live`) | |
+| L4 | test_docs_flags.py (flags in README, `--help`, `decode --help`, `get --help`, each accepted). Keys are covered by tests/pty/test_pty_inventory.py and test_pty_compat.py::test_help_lists_every_readme_key. | #263 |
+| L5 | test_contrast.py::test_L5_every_text_style_is_legible_in_every_theme (computed, 18 themes) | #260 (8 themes) |
+| L6 | test_real_extras.py::test_L6_every_screen_at_every_size_holds_together and ::test_L6_the_empty_state_at_every_size at 80x24, 100x30, 120x40, 300x60 | 300x60: #261 |
+| L7 | test_real_extras.py::test_L7_the_first_inputs_on_a_fresh_profile_each_change_the_screen (passes: all ten inputs change the screen) | |
