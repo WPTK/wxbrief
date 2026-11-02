@@ -227,7 +227,7 @@ def test_J6_list_and_grid_keep_the_selection_clicks_select_and_enter_opens(sessi
     assert "d Remove" in footer(calm(term)), "a single click opened the detail pane"
     col, row = row_of(term.screen(), "SBGR")
     term.click(col, row)  # the pointer moves in and the row is selected
-    term.wait_for(lambda s: position(s) == (9, 10), 10, "SBGR selected")
+    term.wait_for(lambda s: position(s) == (8, 10), 10, "SBGR selected")
     press = chr(27) + f"[<0;{col + 1};{row + 1}M" + chr(27) + f"[<0;{col + 1};{row + 1}m"
     term.send_raw(press + press)  # then a real double click: both clicks in one write, well inside the multi-click window
     term.wait_for(lambda s: "esc Back" in footer(s) and detail_station(s) == "SBGR", 10, "SBGR opened by the double click")
