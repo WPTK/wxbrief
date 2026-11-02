@@ -1,0 +1,22 @@
+[stations]
+watchlist = [
+    "KLGA",
+    "KPIT",
+]
+
+[poll]
+metar_interval = 600
+taf_interval = 1800
+away_interval = 1800
+
+[view]
+theme = "textual-dark"
+glyph_set = "nerd"
+layout = "list"
+units = "us"
+time = "local"
+lang = "en"
+show_computed_color = true
+
+[decode]
+show_awc_crosscheck = true
