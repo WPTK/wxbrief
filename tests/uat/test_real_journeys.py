@@ -225,8 +225,11 @@ def test_J6_list_and_grid_keep_the_selection_clicks_select_and_enter_opens(sessi
     term.click(*row_of(term.screen(), "VIDP"))
     term.wait_for(lambda s: position(s) == (7, 10), 10, "VIDP selected by a click in the list")
     assert "d Remove" in footer(calm(term)), "a single click opened the detail pane"
-    term.click(*row_of(term.screen(), "SBGR"))
-    term.click(*row_of(term.screen(), "SBGR"))  # a second click on the same row opens it
+    col, row = row_of(term.screen(), "SBGR")
+    term.click(col, row)  # the pointer moves in and the row is selected
+    term.wait_for(lambda s: position(s) == (9, 10), 10, "SBGR selected")
+    press = chr(27) + f"[<0;{col + 1};{row + 1}M" + chr(27) + f"[<0;{col + 1};{row + 1}m"
+    term.send_raw(press + press)  # then a real double click: both clicks in one write, well inside the multi-click window
     term.wait_for(lambda s: "esc Back" in footer(s) and detail_station(s) == "SBGR", 10, "SBGR opened by the double click")
     term.send_keys("escape")
     term.wait_for(lambda s: "d Remove" in footer(s), 10, "the list footer after Esc")
@@ -460,6 +463,7 @@ def test_J18_ctrl_c_hint_is_plain_text(session: Session) -> None:
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX signals")
+@pytest.mark.xfail(strict=True, reason="#265: SIGTERM and SIGHUP leave mouse tracking, bracketed paste and the alternate screen on")
 @pytest.mark.parametrize("sig", ["SIGTERM", "SIGHUP"])
 def test_J18_signals_end_the_program_and_restore_the_terminal(session: Session, sig: str) -> None:
     import os

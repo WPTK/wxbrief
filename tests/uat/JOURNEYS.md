@@ -26,7 +26,7 @@ Tests that take minutes carry `uat_live` and skip unless `WXBRIEF_UAT_LIVE=1`.
 | J15 | MISSING | test_J15_a_twelve_minute_session_keeps_polling_politely_and_stays_steady (`uat_live`) | |
 | J16 | tests/pty/test_pty_journeys.py::test_resize_keeps_the_selection, tests/pty/test_pty_compat.py::test_too_small_terminal_says_so_and_recovers | test_J16_resize_storm_keeps_the_selection_and_the_key_bar[list, grid] | list: #255; grid: #259 (non-strict, intermittent) |
 | J17 | MISSING | test_J17_get_prints_both_reports_and_exits_zero, ::get_retries_once_when_the_first_request_fails, ::get_with_the_network_down_gives_a_plain_message | down: #254 |
-| J18 | tests/pty/test_pty_compat.py::test_exit_leaves_the_terminal_clean (q only) | test_J18_ctrl_q_quits_and_ctrl_c_says_how, ::ctrl_c_hint_is_plain_text, ::signals_end_the_program_and_restore_the_terminal, ::kill_9_then_relaunch_recovers_the_config_and_the_cache | hint: #258 |
+| J18 | tests/pty/test_pty_compat.py::test_exit_leaves_the_terminal_clean (q only) | test_J18_ctrl_q_quits_and_ctrl_c_says_how, ::ctrl_c_hint_is_plain_text, ::signals_end_the_program_and_restore_the_terminal, ::kill_9_then_relaunch_recovers_the_config_and_the_cache | hint: #258; SIGTERM and SIGHUP: #265 (POSIX only) |
 | J19 | tests/pty/test_pty_compat.py::test_help_lists_every_readme_key, tests/pty/test_pty_inventory.py (key and click inventories) | test_J19_every_key_bar_label_works_with_the_mouse_alone, ::clicking_quit_in_the_key_bar_quits | |
 | J20 | MISSING | test_J20_a_config_and_cache_written_by_0_3_0_are_honoured (fixtures made by the 0.3.0 source) | |
 | J21 | MISSING | test_J21_nothing_is_left_behind_outside_the_two_folders_and_removing_them_resets_the_app | |
