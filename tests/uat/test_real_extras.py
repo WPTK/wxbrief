@@ -145,9 +145,10 @@ def test_L7_the_first_inputs_on_a_fresh_profile_each_change_the_screen(session: 
         before = styled_rows(term)
         text_before = term.screen().text
         act()
-        calm(term)
-        if not changed_rows(before, styled_rows(term)) and term.screen().text == text_before:
+        # a slow runner answers late, not never
+        if not term.wait_changed(lambda b=before, t=text_before: bool(changed_rows(b, styled_rows(term))) or term.screen().text != t):
             silent.append(label)
+        calm(term)
     assert term.alive()
     quit_cleanly(term)
     assert not silent, f"inputs that changed nothing on screen, not even a message: {silent}"

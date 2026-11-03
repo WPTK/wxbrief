@@ -180,7 +180,8 @@ def test_J5_remove_the_last_one_a_middle_one_then_all_of_them(session: Session) 
     term.send_keys("end")
     term.wait_for(lambda s: position(s) == (10, 10), 10, "the last station selected")
     term.send_keys("d")  # the last one: the one before it is selected
-    screen = term.wait_for(lambda s: stations_listed(s) == 9, 10, "NZSP removed")
+    # the count drops a frame before the selection and the detail follow: wait for all three, not just the count
+    screen = term.wait_for(lambda s: stations_listed(s) == 9 and position(s) == (9, 9), 10, "NZSP removed, CYYZ selected")
     assert position(screen) == (9, 9) and detail_station(screen) == "CYYZ", screen.text
     assert "NZSP" not in chr(10).join(screen.lines[:-3]), "NZSP is still listed"  # the toast below names it
 

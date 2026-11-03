@@ -299,6 +299,16 @@ class Terminal:
                 break
         return last
 
+    def wait_changed(self, changed: Callable[[], bool], timeout: float = 5.0) -> bool:
+        """Poll until ``changed()`` is true or ``timeout`` passes; True if it changed. For "did this key do anything":
+        a fixed pause then a look fails on a slow runner, so wait for the change and only then settle."""
+        deadline = time.monotonic() + timeout
+        while not changed():
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.05)
+        return True
+
     def hold(self, seconds: float) -> None:
         """Let real time pass (for a stability check, where the point is that time passes)."""
         time.sleep(seconds)
