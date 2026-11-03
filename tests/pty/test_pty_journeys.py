@@ -203,7 +203,8 @@ def test_resize_keeps_the_selection(start: Start, layout: str) -> None:
     term.wait_for(lambda s: position(s) == (3, 10), 10, "ETHB selected")
     for cols, rows in ((60, 16), (120, 30)):
         term.resize(cols, rows)
-        term.wait_for(lambda s, r=rows: len(s.lines) == r and position(s) is not None, 10, f"{cols}x{rows} drawn")
+        # the pty is resized at once, so the row count alone is true before the app has redrawn: wait for the selection
+        term.wait_for(lambda s, r=rows: len(s.lines) == r and position(s) == (3, 10), 20, f"{cols}x{rows} redrawn")
         term.settle()
         assert position(term.screen()) == (3, 10), term.screen_text()
     assert_stable(term, 1.0)
