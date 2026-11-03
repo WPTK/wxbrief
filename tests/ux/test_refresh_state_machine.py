@@ -24,8 +24,26 @@ from wxbrief.ui.widgets.station_list import StationList
 from wxbrief.ui.widgets.taf_timeline import TafTimeline
 
 KEYS = [
-    "up", "down", "pageup", "pagedown", "home", "end", "enter", "escape", "tab", "shift+tab",
-    "j", "k", "1", "2", "3", "left", "right", "v", "r", "question_mark",
+    "up",
+    "down",
+    "pageup",
+    "pagedown",
+    "home",
+    "end",
+    "enter",
+    "escape",
+    "tab",
+    "shift+tab",
+    "j",
+    "k",
+    "1",
+    "2",
+    "3",
+    "left",
+    "right",
+    "v",
+    "r",
+    "question_mark",
 ]
 SIZES = [(80, 24), (100, 30), (120, 40), (200, 60)]
 

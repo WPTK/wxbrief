@@ -1,0 +1,7 @@
+# Dev-only, NOT project dependencies. Install into a scratch venv outside the repo, then run
+#   PYTHONPATH=<repo> <venv>/Scripts/python -m pytest tests/fuzz/test_rt_differential.py -p no:cacheprovider
+# (the repo's own conftest needs psutil and pytest-timeout too, so install the dev extras or pass -p no:... as needed).
+avwx-engine==1.9.10
+metar-taf-parser-mivek==1.13.1
+hypothesis>=6
+pytest>=8

@@ -11,10 +11,12 @@ from typing import Any
 
 import pytest
 from test_app_smoke import _no_network  # noqa: F401
+from textual.widgets._footer import FooterKey
 from ux_kit import load, make_app, rows, screen_lines, station_ids
 
 from wxbrief.data.poll import Product
 from wxbrief.ui.widgets.detail import RawReport, StationHeader
+from wxbrief.ui.widgets.key_bar import KeyBar
 from wxbrief.ui.widgets.station_list import StationList
 
 SIZES = [(80, 24), (120, 40), (200, 60)]
@@ -43,7 +45,12 @@ def build(state: str, tmp_path: Path) -> tuple[Any, Any]:
     if state == "long":
         icao, metars = longest_metar_rows()
         app = make_app(tmp_path, [icao])
-        taf = [r for name in ("taf_world_20261031", "taf_europe_20261031", "taf_us_20261031") for r in rows(name) if r["icaoId"] == icao]
+        taf = [
+            r
+            for name in ("taf_world_20261031", "taf_europe_20261031", "taf_us_20261031")
+            for r in rows(name)
+            if r["icaoId"] == icao
+        ]
         data = (metars, taf)
     elif state == "many":
         ids = station_ids("taf_us_20261031", 40)
@@ -104,20 +111,42 @@ async def test_many_stations_highlight_stays_inside_the_list(tmp_path: Path, siz
             assert f"{n}/{n}" in " ".join(screen_lines(app))
             return
         line = option_list._index_to_line[option_list.highlighted]
-        assert option_list.scroll_offset.y <= line < option_list.scroll_offset.y + option_list.scrollable_content_region.height
+        assert (
+            option_list.scroll_offset.y
+            <= line
+            < option_list.scroll_offset.y + option_list.scrollable_content_region.height
+        )
+
+
+async def _settled_keys(app: Any, pilot: Any) -> list[str]:
+    """The actions the key bar offers, once its first compose and any width-driven recompose have finished."""
+    bar = app.screen.query_one(KeyBar)
+    last: list[str] = []
+    for _ in range(50):
+        await pilot.pause()
+        keys = [k.action for k in bar.query(FooterKey)]
+        if keys and keys == last:
+            return keys
+        last = keys
+    raise AssertionError(f"key bar never settled: {last}")
 
 
 @pytest.mark.parametrize("state", ["error", "empty"])
 async def test_no_orphan_section_heading_when_nothing_is_held(tmp_path: Path, state: str) -> None:
-    """With no report the pane shows a 'Raw' heading over nothing (error state) and Add/Remove hints on an empty list."""
+    """With no report the pane shows a 'Raw' heading over nothing (error state) and Add/Remove hints on an empty list.
+
+    Asserts on widget state (the heading's display flag, the key bar's keys), not on rendered text, so it does not
+    depend on when the footer last recomposed or on its width-driven key dropping.
+    """
     app, before = build(state, tmp_path)
     async with app.run_test(size=(120, 40)) as pilot:
         await before(pilot)
-        lines = [line.rstrip() for line in screen_lines(app)]
-        pane = "\n".join(line[36:] for line in lines)
-        assert not re.search(r"^\W*Raw\s*$", pane, re.M), pane
+        keys = await _settled_keys(app, pilot)
+        entry = app.state.stations.get(app.screen.selected) if app.screen.selected else None
+        assert entry is None or entry.metar is None
+        assert state == "empty" or app.screen.query_one("#raw-title").display is False
         if state == "empty":
-            assert " d Remove" not in lines[-1], lines[-1]
+            assert "screen.remove_station" not in keys, keys
         assert app.screen.query_one(StationHeader) is not None
 
 
@@ -146,12 +175,10 @@ async def test_removing_the_last_station_hides_remove_from_the_key_bar(tmp_path:
     app = make_app(tmp_path, ["KDEN"])
     async with app.run_test(size=(120, 40)) as pilot:
         load(app, rows("metar_kden_egll"), rows("taf_kden_egll"))
-        await pilot.pause()
-        assert " d Remove" in screen_lines(app)[-1], screen_lines(app)[-1]
+        assert "screen.remove_station" in await _settled_keys(app, pilot)
         await pilot.press("d")
-        await pilot.pause()
         assert not app.state.ids
-        assert " d Remove" not in screen_lines(app)[-1], screen_lines(app)[-1]
+        assert "screen.remove_station" not in await _settled_keys(app, pilot)
 
 
 async def test_decoded_values_start_in_one_column(tmp_path: Path) -> None:
