@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- Revalidate stored AWC responses with `hishel` (RFC 9111, always asking the server, never reusing on `max-age`) and retry failed requests up to three times with `stamina`'s jittered backoff (#314)
+
 ### Fixed
 
 - Warn when a TAF is valid for more than 30 hours or starts a day or more after it was issued, which also catches a 29 February that does not exist (#284)
