@@ -18,36 +18,49 @@ _UNITS = {"KT": SpeedUnit.KT, "MPS": SpeedUnit.MPS, "KMH": SpeedUnit.KMH}
 
 def wind_from_text(text: str) -> Wind | None:
     """Decode one wind group from its text (``27015G25KT``); ``None`` if it is not one."""
+    return _decode(text)[0]
+
+
+def _decode(text: str) -> tuple[Wind | None, bool]:
+    """The wind in ``text``, and whether its gust was dropped for not being above the mean wind."""
     match = _WIND.match(text)
     if match is None:
-        return None
+        return None, False
     direction: int | None = None
     variable = match.group("dir") == "VRB"
     if match.group("dir").isdigit():
         direction = int(match.group("dir"))
         if direction > 360:
-            return None
+            return None, False
     unit = _UNITS[match.group("unit")]
     speed = None if match.group("spd") == "//" else Speed(int(match.group("spd")), unit)
     gust = Speed(int(match.group("gst")), unit) if match.group("gst") else None
-    return Wind(
+    ignored = (
+        speed is not None
+        and gust is not None
+        and not (match.group("above") or match.group("gabove"))
+        and gust.value <= speed.value
+    )
+    wind = Wind(
         direction,
         speed,
-        gust,
+        None if ignored else gust,
         variable=variable,
         speed_above=bool(match.group("above")),
         gust_above=bool(match.group("gabove")),
     )
+    return wind, ignored
 
 
 def parse_wind(cur: Cursor) -> Wind | None:
     token = cur.peek()
     if token is None:
         return None
-    wind = wind_from_text(token.text)
+    wind, gust_ignored = _decode(token.text)
     if wind is None:
         return None
-    cur.take(SemanticKind.WIND)
+    # A gust is a peak above the mean wind: keep the wind, drop the gust, and leave the group tagged for a warning.
+    cur.take(SemanticKind.UNKNOWN if gust_ignored else SemanticKind.WIND)
     return wind
 
 

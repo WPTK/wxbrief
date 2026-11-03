@@ -269,6 +269,7 @@ parser_error = "Não foi possível ler: {text}"
 legacy_format = "Grupo de hora antigo, lido como escrito: {text}"
 missing_time = "Nenhuma hora indicada para {text}"
 outside_period = "O grupo de mudança começa fora do período de validade e não aparece na linha do tempo: {text}"
+change_out_of_order = "O grupo de mudança está fora de ordem cronológica ou termina depois do período de validade: {text}"
 
 [trend]
 nosig = "Nenhuma mudança significativa esperada nas próximas 2 horas"
