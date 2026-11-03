@@ -48,7 +48,13 @@ from wxbrief.decode.model import (
 )
 from wxbrief.decode.tables import MODIFIER_CODES
 from wxbrief.decode.timeline import categorize_periods
-from wxbrief.decode.times import WARN_INVALID_TIME, next_clock_time, resolve_day_time, resolve_day_time_after, resolve_report_time
+from wxbrief.decode.times import (
+    WARN_INVALID_TIME,
+    next_clock_time,
+    resolve_day_time,
+    resolve_day_time_after,
+    resolve_report_time,
+)
 from wxbrief.decode.tokens import Cursor, Token, strip_controls, tokenize
 
 WARN_UNKNOWN_TOKEN = "unknown_token"

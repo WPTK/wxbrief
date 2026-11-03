@@ -11,6 +11,7 @@ import random
 import re
 import shutil
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -366,10 +367,13 @@ def test_J9_look_and_feel_changes_persist_and_survive_a_relaunch(session: Sessio
     again.send_keys("S")
     again.wait_for(lambda s: "ASCII" in s, 10, "the saved glyph set in the settings screen")
     for _ in range(6):  # restored by S: step the language round to English again
-        if saved_config(config)["view"]["lang"] == "en":
+        before = saved_config(config)["view"]["lang"]
+        if before == "en":
             break
         again.send_keys("enter")
-        calm(again, 0.4)
+        deadline = time.monotonic() + 10  # a slow runner saves the step late; wait for it, don't guess a pause
+        while saved_config(config)["view"]["lang"] == before and time.monotonic() < deadline:
+            again.hold(0.2)
     assert saved_config(config)["view"]["lang"] == "en"
 
 
