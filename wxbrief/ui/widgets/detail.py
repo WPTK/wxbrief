@@ -247,7 +247,7 @@ class DecodedTable(DataTable[Text]):
                 self.remove_row(key)
         for key, label, value in wanted:
             if key in self._cells:
-                if self._cells[key] != (label, value):
+                if any(a != b or a.style != b.style for a, b in zip(self._cells[key], (label, value))):  # == ignores the base style
                     self.update_cell(key, "Field", label, update_width=False)
                     self.update_cell(key, "Value", value, update_width=False)
             else:
