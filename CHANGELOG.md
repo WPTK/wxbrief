@@ -1,10 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 ### Changed
 
 - Revalidate stored AWC responses with `hishel` (RFC 9111, always asking the server, never reusing on `max-age`) and retry failed requests up to three times with `stamina`'s jittered backoff (#314)
+- Use colour-blind-safe IFR and LIFR fills, show the Raw title only when a report is held, offer `d Remove` only with a station selected, and align the list's conditions and the category badge (#275, #276, #277, #278)
+- Update the decoded table in place so a refresh keeps the cursor and scroll position (#326)
+
+### Added
+
+- Add the token-by-token view, with each raw token beside its decoded meaning, selectable from the keyboard (#319)
+- Add a worst-case row per hour to the TAF timeline, with a raised mark that does not rely on colour (#320)
+- Add the Ctrl+P route switcher: type `KDEN KORD KJFK` to add stations and select the first (#321)
+- Add `wxbrief.calc`: airport lookup, density altitude, dew point spread and runway wind (#313)
 
 ### Fixed
 
@@ -13,6 +22,7 @@
 - Read `Retry-After` as whole seconds or an HTTP date only (#281)
 - Warn about `FM` groups out of time order and, with a separate message, a `BECMG` that ends after the valid period (#282)
 - Drop pasted Markdown code fences, split two keywordless reports on one line, and read only `PROB30` and `PROB40` as probabilities, so `PROB10`, `PROB20`, `PROB50` and the rest now warn (#286, #287, #289)
+- Warn when a remark wind drops its gust, and split the TAF change-order warnings (#318)
 
 ## 0.3.0 - 2026-10-31
 
