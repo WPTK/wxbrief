@@ -76,6 +76,19 @@ def test_briefing_snapshot(snap_compare: Any, tmp_path: Path, state: str, size: 
 
 
 @pytest.mark.parametrize("size", SIZES, ids=lambda s: f"{s[0]}x{s[1]}")
+def test_token_view_snapshot(snap_compare: Any, tmp_path: Path, size: tuple[int, int]) -> None:
+    """The token-by-token view with its first rows selected: stacked at 80 columns, side by side from 100."""
+    app, before = build("long", tmp_path)
+
+    async def select(pilot: Any) -> None:
+        await before(pilot)
+        await pilot.press("4", "down", "down")
+        await pilot.pause()
+
+    assert snap_compare(app, terminal_size=size, run_before=select)
+
+
+@pytest.mark.parametrize("size", SIZES, ids=lambda s: f"{s[0]}x{s[1]}")
 async def test_long_metar_keeps_every_raw_group_visible(tmp_path: Path, size: tuple[int, int]) -> None:
     app, before = build("long", tmp_path)
     async with app.run_test(size=size) as pilot:
