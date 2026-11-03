@@ -6,9 +6,11 @@ from datetime import datetime
 from typing import Any
 
 from rich.text import Text
+from textual import events
 from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.events import Resize
+from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Collapsible, DataTable, Label, Static
 
@@ -16,6 +18,7 @@ from wxbrief.data.poll import Freshness
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.i18n.keys import K
 from wxbrief.render import phrases
+from wxbrief.render.pairs import TokenPair, token_pairs
 from wxbrief.render.plain import DecodeBlock, DecodeRow, decode_rows, taf_blocks, taf_header_rows, warning_lines
 from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
@@ -83,14 +86,120 @@ class FlagsRow(Static):
 class RawReport(Static):
     """The raw METAR and TAF text, each token coloured by its group."""
 
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._parts: list[Text] = []
+        self._selected: tuple[int, int] | None = None
+
     def show(self, entry: StationReports, ctx: ViewContext) -> None:
         parts: list[Text] = []
         if entry.metar is not None:
             parts.append(ctx.palette.raw_text(entry.metar))
         if entry.taf is not None:
             parts.append(ctx.palette.raw_text(entry.taf))
-        self.update(Text("\n\n").join(parts))
+        self._parts = parts
+        self._selected = None
+        self._draw()
         self.display = bool(parts)  # nothing held: the header says so, and there is no raw section to show
+
+    def select(self, span: tuple[int, int] | None) -> None:
+        """Mark ``raw[start:end]`` of the METAR (the first report) as the selected token; ``None`` clears it."""
+        if span != self._selected:
+            self._selected = span
+            self._draw()
+
+    def _draw(self) -> None:
+        parts = self._parts
+        if self._selected is not None and parts:
+            first = parts[0].copy()
+            first.stylize("reverse bold", *self._selected)
+            parts = [first, *parts[1:]]
+        self.update(Text("\n\n").join(parts))
+
+
+class TokenTable(DataTable[Text]):
+    """Every raw token of the METAR beside its meaning; the row cursor selects the token in the raw line.
+
+    From ``SIDE_BY_SIDE`` terminal columns the token, its group and its meaning are columns; narrower, each token
+    stands on a line of its own with its meaning indented below it.
+    """
+
+    SIDE_BY_SIDE = 100
+
+    class Picked(Message):
+        """The token under the cursor (``None`` when the table has lost the keyboard)."""
+
+        def __init__(self, pair: TokenPair | None) -> None:
+            super().__init__()
+            self.pair = pair
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(show_header=False, cursor_type="row", zebra_stripes=False, **kwargs)
+        self._pairs: list[TokenPair] = []
+        self._ctx: ViewContext | None = None
+
+    @property
+    def selected(self) -> TokenPair | None:
+        row = self.cursor_row
+        return self._pairs[row] if 0 <= row < len(self._pairs) else None
+
+    def set_pairs(self, pairs: list[TokenPair], ctx: ViewContext) -> None:
+        self._pairs = pairs
+        self._ctx = ctx
+        self._fill()
+
+    def _fill(self) -> None:
+        ctx = self._ctx
+        row = self.cursor_row
+        self.clear(columns=True)
+        if ctx is None or not self._pairs:
+            return
+        palette = ctx.palette
+        side_by_side = self.app.size.width >= self.SIDE_BY_SIDE
+        inner = max(20, self.size.width - 6)
+        token_width = min(max(len(p.text) for p in self._pairs), 18)
+        label_width = max(len(p.label) for p in self._pairs)
+        meaning_width = max(12, inner - token_width - label_width - 2)
+        if side_by_side:
+            self.add_column("Token", width=token_width)
+            self.add_column("Group", width=label_width)
+            self.add_column("Meaning", width=meaning_width)
+        else:
+            self.add_column("Token", width=inner)
+        for pair in self._pairs:
+            style = palette.style("wx.warning") if pair.unknown else palette.style(pair.style)
+            meaning = pair.meaning or "-"
+            kept = style if pair.unknown else ""
+            if side_by_side:
+                self.add_row(
+                    Text("\n".join(wrap(pair.text, token_width)), style=style),
+                    Text(pair.label, style=palette.muted),
+                    Text("\n".join(wrap(meaning, meaning_width)), style=kept),
+                    height=None,
+                )
+            else:
+                head = Text(pair.text, style=style)
+                if pair.label:
+                    head.append(f"  {pair.label}", style=palette.muted)
+                body = Text("\n".join(f"  {line}" for line in wrap(meaning, inner - 2)), style=kept)
+                self.add_row(Text("\n").join([head, body]), height=None)
+        if self.row_count:
+            self.move_cursor(row=min(max(row, 0), self.row_count - 1), animate=False)
+
+    def on_resize(self, event: Resize) -> None:
+        if self._pairs:
+            self._fill()
+
+    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        event.stop()
+        if self.has_focus:
+            self.post_message(self.Picked(self.selected))
+
+    def on_focus(self, event: events.Focus) -> None:
+        self.post_message(self.Picked(self.selected))
+
+    def on_blur(self, event: events.Blur) -> None:
+        self.post_message(self.Picked(None))
 
 
 class DecodedTable(DataTable[Text]):
@@ -101,6 +210,9 @@ class DecodedTable(DataTable[Text]):
         self._rows: list[DecodeRow] = []
         self._ctx: ViewContext | None = None
         self._labels = 0  # the longest label in the pane (see rows_text)
+        self._keys: list[str] = []  # row keys now in the table: the label and its Nth occurrence
+        self._cells: dict[str, tuple[Text, Text]] = {}
+        self._widths: tuple[int, int] | None = None  # the column widths now in the table
 
     def set_rows(self, rows: list[DecodeRow], ctx: ViewContext, labels: int = 0) -> None:
         self._rows = rows
@@ -109,30 +221,69 @@ class DecodedTable(DataTable[Text]):
         self._fill()
 
     def _fill(self) -> None:
+        """Bring the table up to date in place; a refresh that changes no row leaves the cursor and scroll alone."""
         ctx = self._ctx
-        self.clear(columns=True)  # column widths are set from the pane width below, never left over from an earlier one
         if ctx is None or not self._rows:
+            self._keys, self._cells, self._widths = [], {}, None
+            self.clear(columns=True)
             return
         palette = ctx.palette
         label_width = max(self._labels, max(len(row.label) for row in self._rows)) + 1
         width = max(8, self.size.width - label_width - 6)  # each column has a cell padding of 1 on both sides
-        self.add_column("Field", width=label_width)
-        self.add_column("Value", width=width)
+        wanted: list[tuple[str, Text, Text]] = []
+        seen: dict[str, int] = {}
         for row in self._rows:
-            if row.category is not None:
-                code = row.category.value
-                badge = palette.badge(row.category)
-                indent = len(badge.plain) + 1
-                text = row.value.removeprefix(code).strip()
-                if width - indent < 12:  # too narrow for a hanging indent: the badge gets its own line
-                    value = Text.assemble(badge, "\n", "\n".join(wrap(text, width)))
-                else:
-                    lines = wrap(text, width - indent)
-                    value = Text.assemble(badge, " ", ("\n" + " " * indent).join(lines))
+            n = seen[row.label] = seen.get(row.label, 0) + 1
+            label = Text(row.label, style=palette.style("wx.label"))
+            wanted.append((f"{row.label}#{n}", label, self._value(row, width, ctx)))
+        keys = [key for key, _, _ in wanted]
+        # Column widths come from the pane width, never left over from an earlier one: a new width starts again.
+        # So does a row that is new anywhere but at the end, since the table only appends.
+        kept = [key for key in self._keys if key in keys]
+        if self._widths != (label_width, width) or keys[: len(kept)] != kept:
+            self._rebuild(wanted, label_width, width)
+            return
+        for key in self._keys:
+            if key not in keys:
+                self.remove_row(key)
+        for key, label, value in wanted:
+            if key in self._cells:
+                # == ignores the base style
+                if any(a != b or a.style != b.style for a, b in zip(self._cells[key], (label, value), strict=True)):
+                    self.update_cell(key, "Field", label, update_width=False)
+                    self.update_cell(key, "Value", value, update_width=False)
             else:
-                wrapped = "\n".join(wrap(row.value, width))
-                value = Text(wrapped, style=palette.style(row.style))
-            self.add_row(Text(row.label, style=palette.style("wx.label")), value, height=None)
+                self.add_row(label, value, height=None, key=key)
+        self._keys = keys
+        self._cells = {key: (label, value) for key, label, value in wanted}
+
+    def _rebuild(self, wanted: list[tuple[str, Text, Text]], label_width: int, width: int) -> None:
+        cursor, scroll = self.cursor_coordinate, self.scroll_y
+        self.clear(columns=True)
+        self.add_column("Field", width=label_width, key="Field")
+        self.add_column("Value", width=width, key="Value")
+        for key, label, value in wanted:
+            self.add_row(label, value, height=None, key=key)
+        self._widths = (label_width, width)
+        self._keys = [key for key, _, _ in wanted]
+        self._cells = {key: (label, value) for key, label, value in wanted}
+        if self.row_count:
+            self.move_cursor(row=min(cursor.row, self.row_count - 1), column=cursor.column, animate=False)
+            self.call_after_refresh(self.scroll_to, y=scroll, animate=False, immediate=True)
+
+    @staticmethod
+    def _value(row: DecodeRow, width: int, ctx: ViewContext) -> Text:
+        palette = ctx.palette
+        if row.category is not None:
+            code = row.category.value
+            badge = palette.badge(row.category)[1:]  # without its left padding, which would shift the value right
+            indent = len(badge.plain) + 1
+            text = row.value.removeprefix(code).strip()
+            if width - indent < 12:  # too narrow for a hanging indent: the badge gets its own line
+                return Text.assemble(badge, "\n", "\n".join(wrap(text, width)))
+            lines = wrap(text, width - indent)
+            return Text.assemble(badge, " ", ("\n" + " " * indent).join(lines))
+        return Text("\n".join(wrap(row.value, width)), style=palette.style(row.style))
 
     def on_resize(self, event: Resize) -> None:
         if self._rows:
@@ -147,6 +298,7 @@ class DetailPane(VerticalScroll):
         bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW),
         bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED),
         bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF),
+        bind("4", "jump('tokens')", K.UI_BINDING_JUMP_TOKENS, show=False),
         bind("left", "timeline(-1)", K.UI_BINDING_EARLIER, show=False),
         bind("right", "timeline(1)", K.UI_BINDING_LATER, show=False),
         bind("c", "screen.copy_metar", K.UI_BINDING_COPY_METAR),
@@ -166,6 +318,8 @@ class DetailPane(VerticalScroll):
         yield RawReport(id="raw")
         yield Label(classes="section", id="decoded-title")
         yield DecodedTable(id="decoded")
+        yield Label(classes="section", id="tokens-title")
+        yield TokenTable(id="tokens")
         with Collapsible(id="remarks-box", collapsed=True):
             yield Static(id="remarks")
         yield Label(classes="section", id="taf-title")
@@ -199,9 +353,12 @@ class DetailPane(VerticalScroll):
             self._set_visible(False)
             return
         self._set_visible(True)
-        self.query_one("#raw-title", Label).update(t.t(K.UI_SECTION_RAW))
+        raw_title = self.query_one("#raw-title", Label)
+        raw_title.update(t.t(K.UI_SECTION_RAW))
+        raw_title.display = entry.metar is not None or entry.taf is not None  # RawReport hides itself on the same test
         self.query_one("#decoded-title", Label).update(t.t(K.UI_SECTION_DECODED))
         self.query_one("#taf-title", Label).update(t.t(K.UI_SECTION_FORECAST))
+        self.query_one("#tokens-title", Label).update(t.t(K.UI_SECTION_TOKENS))
         metar = entry.metar
         self.query_one(StationHeader).show(entry, ctx, now)
         self.query_one(FlagsRow).show(metar, ctx)
@@ -220,6 +377,11 @@ class DetailPane(VerticalScroll):
             self._release_focus(table)
         self.query_one("#decoded-title").display = metar is not None
         table.display = metar is not None
+        tokens = self.query_one(TokenTable)
+        if metar is None:
+            self._release_focus(tokens)
+        tokens.set_pairs(token_pairs(metar, t, ctx.units) if metar else [], ctx)
+        self.query_one("#tokens-title").display = tokens.display = metar is not None
         remarks = [r for r in rows if r.label in remark_labels]
         box = self.query_one("#remarks-box", Collapsible)
         if not remarks:
@@ -305,6 +467,12 @@ class DetailPane(VerticalScroll):
         if focused is not None and focused is not self and (focused is hidden or hidden in focused.ancestors):
             self.focus()
 
+    def on_token_table_picked(self, message: TokenTable.Picked) -> None:
+        """Mark the selected token in the raw line."""
+        message.stop()
+        pair = message.pair
+        self.query_one(RawReport).select((pair.start, pair.end) if pair is not None else None)
+
     def on_taf_timeline_moved(self, message: TafTimeline.Moved) -> None:
         """Show the forecast for the cell the cursor is on."""
         message.stop()
@@ -321,7 +489,8 @@ class DetailPane(VerticalScroll):
 
     def jump(self, section: str) -> None:
         """Scroll to ``raw``, ``decoded`` or ``taf``; the forecast also takes the keyboard focus (cursor keys)."""
-        target = {"raw": "#raw-title", "decoded": "#decoded-title", "taf": "#taf-title"}[section]
+        titles = {"raw": "#raw-title", "decoded": "#decoded-title", "tokens": "#tokens-title", "taf": "#taf-title"}
+        target = titles[section]
         widget = self.query_one(target)
         entry, ctx = self._entry, self._ctx
         empty = entry is not None and entry.metar is None and entry.taf is None
@@ -332,5 +501,7 @@ class DetailPane(VerticalScroll):
             self.app.notify(ctx.translator.t(key), severity="warning")
             return
         self.scroll_to_widget(widget, top=True, animate=False)
+        if section == "tokens" and self.query_one(TokenTable).display:
+            self.query_one(TokenTable).focus(scroll_visible=False)
         if section == "taf" and self.query_one(TafTimeline).display:
             self.query_one(TafTimeline).focus(scroll_visible=False)  # the jump has placed the section

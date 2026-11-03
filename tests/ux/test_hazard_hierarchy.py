@@ -59,13 +59,10 @@ def _simulate(hex6: str, kind: str) -> tuple[float, float, float]:
     return _lab(tuple(sum(m[row][col] * rgb[col] for col in range(3)) for row in range(3)))  # type: ignore[arg-type]
 
 
-KNOWN_CLOSE = {("textual-dark", "deutan"), ("textual-dark", "protan")}
-
-
 @pytest.mark.parametrize(
     ("theme", "kind"),
     [
-        pytest.param(t, k, marks=pytest.mark.xfail(strict=True, reason="UX-07")) if (t, k) in KNOWN_CLOSE else (t, k)
+        (t, k)
         for t in ("textual-dark", "textual-light")
         for k in sorted(CVD)
     ],

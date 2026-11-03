@@ -183,6 +183,16 @@
       }
     }
   ],
+  "remark_spans": [
+    [
+      11,
+      12
+    ],
+    [
+      12,
+      13
+    ]
+  ],
   "flavor": "ICAO",
   "military": false,
   "ceiling": null,

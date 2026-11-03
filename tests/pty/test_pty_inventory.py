@@ -99,6 +99,7 @@ KEY_SCENARIOS: list[Key] = [
     Key("1-raw", [("briefing", "1"), ("detail", "1")], ["3"], "1", shows("Raw")),
     Key("2-decoded", [("briefing", "2"), ("detail", "2")], ["3"], "2", shows("Decoded")),
     Key("3-taf", [("briefing", "3"), ("detail", "3")], [], "3", shows("Forecast (TAF)")),
+    Key("4-tokens", [("briefing", "4"), ("detail", "4")], ["3"], "4", shows("Token by token")),
     Key("escape-back", [("briefing", "escape")], ["enter"], "escape", list_footer),
     Key("enter-open", [("station_grid", "enter")], ["v"], "enter", has("esc Back")),
     Key("detail-c", [("detail", "c")], ["enter"], "c", toast_changed),

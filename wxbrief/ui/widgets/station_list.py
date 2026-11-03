@@ -111,7 +111,7 @@ class StationList(OptionList):
         self._named = self.size.width >= NAME_FROM
         palette = ctx.palette
         glyphs = ctx.glyphs
-        options: list[Option] = []
+        rows: list[tuple[StationReports, Text, Text]] = []
         for entry in reports:
             if entry.metar is None:
                 mark, mark_style = glyphs.missing, palette.muted
@@ -124,16 +124,23 @@ class StationList(OptionList):
             theirs = ctx.awc_differs(entry)
             if theirs:
                 line.append(f" {glyphs.differs}{theirs}", style=palette.stale)
+            tail = Text()  # marks first: a narrow list clips the end of the row, and these must survive
             marks = report_marks(entry.metar)
-            if marks:  # before the conditions: a narrow list clips the end of the row, and these must survive
-                line.append(f" {marks}", style=palette.stale)
+            if marks:
+                tail.append(f" {marks}", style=palette.stale)
             conditions = short_conditions(entry.metar)
             if conditions:
-                line.append(" " + conditions)
+                tail.append(" " + conditions)
             elif entry.metar is None:
-                line.append(" " + ctx.translator.t(K.UI_DETAIL_NO_REPORT), style=palette.muted)
+                tail.append(" " + ctx.translator.t(K.UI_DETAIL_NO_REPORT), style=palette.muted)
+            rows.append((entry, line, tail))
+        width = max((tail.cell_len for _, _, tail in rows), default=0)  # the names start in one column
+        options: list[Option] = []
+        for entry, line, tail in rows:
+            line.append_text(tail)
             station = ctx.station(entry.icao) if self._named else None
             if station is not None:
+                line.append(" " * (width - tail.cell_len))
                 line.append(f"  {station.name}", style=palette.muted)
             options.append(Option(line, id=entry.icao))
         ids = [entry.icao for entry in reports]

@@ -354,6 +354,28 @@ class WxBriefApp(App[None]):
         self.briefing.select(code)
         self.briefing.refresh_view()
 
+    def show_route(self, icaos: Iterable[str]) -> None:
+        """Add the stations of a typed route that are not listed yet and select the first one.
+
+        All or nothing: when the stations that are missing do not fit in the watchlist, none is added and the usual
+        "watchlist full" warning says so. The file is written and the feeds polled once for the whole route.
+        """
+        route = list(icaos)
+        missing = [code for code in route if code not in self.state.ids]
+        persist = self.options.use_config
+        if persist and len(self.state.watchlist) + len(missing) > WATCHLIST_CAP:
+            self.notify(self.ctx.translator.t(K.UI_TOAST_WATCHLIST_FULL, limit=WATCHLIST_CAP), severity="warning")
+            return
+        if missing:
+            for code in missing:
+                self.state.add(code, persist=persist)
+            self._save()
+            if self.scheduler is not None:
+                self.scheduler.poll_now()
+        if route:
+            self.briefing.select(route[0])
+            self.briefing.refresh_view()
+
     def remove_station(self, icao: str) -> None:
         if self.state.remove(icao):
             self._save()

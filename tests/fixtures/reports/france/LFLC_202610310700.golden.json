@@ -194,6 +194,7 @@
   "wind_shear": [],
   "sea_state": null,
   "remarks": [],
+  "remark_spans": [],
   "flavor": "ICAO",
   "military": false,
   "ceiling": {

@@ -83,6 +83,19 @@ def test_briefing_snapshot(snap_compare: Any, tmp_path: Path, state: str, size: 
 
 
 @pytest.mark.parametrize("size", SIZES, ids=lambda s: f"{s[0]}x{s[1]}")
+def test_token_view_snapshot(snap_compare: Any, tmp_path: Path, size: tuple[int, int]) -> None:
+    """The token-by-token view with its first rows selected: stacked at 80 columns, side by side from 100."""
+    app, before = build("long", tmp_path)
+
+    async def select(pilot: Any) -> None:
+        await before(pilot)
+        await pilot.press("4", "down", "down")
+        await pilot.pause()
+
+    assert snap_compare(app, terminal_size=size, run_before=select)
+
+
+@pytest.mark.parametrize("size", SIZES, ids=lambda s: f"{s[0]}x{s[1]}")
 async def test_long_metar_keeps_every_raw_group_visible(tmp_path: Path, size: tuple[int, int]) -> None:
     app, before = build("long", tmp_path)
     async with app.run_test(size=size) as pilot:
@@ -131,7 +144,6 @@ async def _settled_keys(app: Any, pilot: Any) -> list[str]:
     raise AssertionError(f"key bar never settled: {last}")
 
 
-@pytest.mark.xfail(strict=True, reason="UX-08")
 @pytest.mark.parametrize("state", ["error", "empty"])
 async def test_no_orphan_section_heading_when_nothing_is_held(tmp_path: Path, state: str) -> None:
     """With no report the pane shows a 'Raw' heading over nothing (error state) and Add/Remove hints on an empty list.
@@ -151,11 +163,12 @@ async def test_no_orphan_section_heading_when_nothing_is_held(tmp_path: Path, st
         assert app.screen.query_one(StationHeader) is not None
 
 
-@pytest.mark.xfail(strict=True, reason="UX-09")
-async def test_station_list_name_column_is_aligned(tmp_path: Path) -> None:
-    """At 200 columns each row's name starts where its wind/visibility text ends, so the names zig-zag."""
+@pytest.mark.parametrize("width", [120, 200])
+async def test_station_list_name_column_is_aligned(tmp_path: Path, width: int) -> None:
+    """The names start in one column however long each row's conditions are (at 120 columns the list is too narrow
+    for names: the rows must still all end alike, with none or one start column)."""
     app, before = build("many", tmp_path)
-    async with app.run_test(size=(200, 60)) as pilot:
+    async with app.run_test(size=(width, 60)) as pilot:
         await before(pilot)
         option_list = app.screen.query_one(StationList)
         starts = set()
@@ -163,15 +176,26 @@ async def test_station_list_name_column_is_aligned(tmp_path: Path) -> None:
             plain = option_list.get_option_at_index(index).prompt.plain
             if "No report" in plain:
                 continue
-            match = re.search(r"\d{2}SM {2}(\S)", plain)
-            assert match, plain
+            match = re.search(r"\d{2}SM(?: \$| SPECI)* +(\S)", plain)
+            if match is None:
+                assert width < 160, plain  # a list this narrow shows no names
+                continue
             starts.add(match.start(1))
-        assert len(starts) == 1, sorted(starts)
+        assert len(starts) == (1 if width >= 160 else 0), sorted(starts)
 
 
-@pytest.mark.xfail(strict=True, reason="UX-10")
+async def test_removing_the_last_station_hides_remove_from_the_key_bar(tmp_path: Path) -> None:
+    app = make_app(tmp_path, ["KDEN"])
+    async with app.run_test(size=(120, 40)) as pilot:
+        load(app, rows("metar_kden_egll"), rows("taf_kden_egll"))
+        assert "screen.remove_station" in await _settled_keys(app, pilot)
+        await pilot.press("d")
+        assert not app.state.ids
+        assert "screen.remove_station" not in await _settled_keys(app, pilot)
+
+
 async def test_decoded_values_start_in_one_column(tmp_path: Path) -> None:
-    """The flight-category row's badge is padded, so its value starts one column right of every other row."""
+    """``Station``, ``Wind`` and the badge of ``Flight category`` start their values in the same column."""
     app, before = build("many", tmp_path)
     async with app.run_test(size=(120, 40)) as pilot:
         await before(pilot)
@@ -184,3 +208,58 @@ async def test_decoded_values_start_in_one_column(tmp_path: Path) -> None:
                 starts[match.group(1)] = match.start(2)
         assert set(starts) == {"Station", "Wind", "Flight category"}, starts
         assert len(set(starts.values())) == 1, starts
+
+
+async def _demo_timeline(app: Any, pilot: Any) -> Any:
+    """Open EGLL's TAF section (its forecast has a BECMG and a TEMPO) and return the focused timeline."""
+    from wxbrief.ui.widgets.taf_timeline import TafTimeline
+
+    await pilot.pause(0.2)
+    await pilot.press("j")
+    await pilot.press("3")
+    await pilot.pause(0.2)
+    timeline = app.screen.query_one(TafTimeline)
+    assert timeline.has_focus
+    return timeline
+
+
+@pytest.mark.parametrize("size", SIZES, ids=lambda s: f"{s[0]}x{s[1]}")
+async def test_timeline_worst_case_row_is_readable(size: tuple[int, int]) -> None:
+    """The worst-case row sits under the prevailing row and above the cursor, shows a letter where a run starts and
+    ``+`` exactly on the raised hours, and every one of the six rows is on screen."""
+    from test_timeline_ui import demo_app
+
+    from wxbrief.ui.widgets.taf_timeline import RAISED_MARK
+
+    app = demo_app()
+    async with app.run_test(size=size) as pilot:
+        timeline = await _demo_timeline(app, pilot)
+        plain = timeline.render().plain.split(chr(10))
+        assert len(plain) == 6
+        assert "▲" in plain[4] and RAISED_MARK not in plain[4]  # the cursor row follows the worst-case row
+        width = 2 if timeline.step == 1 else 4
+        raised = [c.worst_category != c.category for c in timeline.cells]
+        assert any(raised)
+        for cell, flag in zip(timeline.cells, raised, strict=True):
+            at = timeline.cells.index(cell) * width
+            assert (plain[2][at : at + width].find(RAISED_MARK) >= 0) == flag
+        assert plain[2][:width].strip()
+        region = timeline.region
+        assert region.bottom <= app.screen.size.height  # the sixth row is not pushed off the screen
+        shown = screen_lines(app)[region.y : region.y + 6]
+        assert plain[2].rstrip() in shown[2]  # drawn on screen, not cropped
+
+
+@pytest.mark.parametrize("lang", ["en", "de", "pt"])
+async def test_timeline_legend_explains_the_raised_mark_at_80x24(lang: str) -> None:
+    """At 80x24 the legend row still ends with the translated text for ``+`` (de and pt are the longest)."""
+    from test_timeline_ui import demo_app
+
+    from wxbrief.i18n.keys import K
+
+    app = demo_app("--lang", lang)
+    async with app.run_test(size=(80, 24)) as pilot:
+        timeline = await _demo_timeline(app, pilot)
+        text = timeline._ctx.translator.t(K.TIMELINE_LEGEND_WORST)
+        legend = screen_lines(app)[timeline.region.y + 5]
+        assert legend.rstrip().endswith(text), (legend, text)

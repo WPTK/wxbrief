@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from wxbrief.decode.groups.colorstate import parse_color_state_group
-from wxbrief.decode.groups.wind import wind_from_text
+from wxbrief.decode.groups.wind import decode_wind, wind_kind
 from wxbrief.decode.model import (
     AltimeterSetting,
     AutomatedStationType,
@@ -760,19 +760,20 @@ def _runway_wind(cur: Cursor, _ctx: Context) -> Remark | None:
     word = _RUNWAY_WORD.match(token.text)
     following = cur.peek(1)
     if slash is not None:
-        wind = wind_from_text(slash.group("wind"))
+        wind, ignored = decode_wind(slash.group("wind"))
         runway = slash.group("rwy")
         used = 1
     elif word is not None and following is not None:
-        wind = wind_from_text(following.text)
+        wind, ignored = decode_wind(following.text)
         runway = word.group("rwy")
         used = 2
     else:
         return None
     if wind is None:
         return None
-    for _ in range(used):
+    for _ in range(used - 1):
         cur.take(SemanticKind.WIND)
+    cur.take(wind_kind(ignored))
     variation = None
     extra = cur.peek()
     match = _VARIATION.match(extra.text) if extra is not None else None
@@ -791,11 +792,12 @@ def _wind_at_height(cur: Cursor, _ctx: Context) -> Remark | None:
     if first is None or second is None or third is None or first.text != "WIND":
         return None
     height = _HEIGHT.match(second.text)
-    wind = wind_from_text(third.text)
+    wind, ignored = decode_wind(third.text)
     if height is None or wind is None:
         return None
-    for _ in range(3):
+    for _ in range(2):
         cur.take(SemanticKind.WIND)
+    cur.take(wind_kind(ignored))
     return WindAtHeight(Distance(int(height.group("ft")), DistanceUnit.FT), wind)
 
 
@@ -843,18 +845,23 @@ _PARSERS: tuple[Parser, ...] = (
 )
 
 
-def parse_remarks(cur: Cursor, ctx: Context) -> list[Remark]:
+def parse_remarks(cur: Cursor, ctx: Context, spans: list[tuple[int, int]] | None = None) -> list[Remark]:
     """Decode every remark from the cursor to the end of the tokens, tagging them.
+
+    When ``spans`` is given, each remark appends the ``(first, end)`` token indices it covers, in step with the result.
 
     A token the known patterns do not claim becomes part of a ``FreeText`` remark and is tagged ``REMARK``; the
     report terminator is tagged ``TERMINATOR``. Never raises: a parser that fails is skipped for that position.
     """
     remarks: list[Remark] = []
     pending: list[Token] = []
+    first = 0  # the cursor position of the first pending free-text token
 
     def flush() -> None:
         if pending:
             remarks.append(FreeText(" ".join(token.text for token in pending)))
+            if spans is not None:
+                spans.append((first, first + len(pending)))
             pending.clear()
 
     while (token := cur.peek()) is not None:
@@ -874,7 +881,11 @@ def parse_remarks(cur: Cursor, ctx: Context) -> list[Remark]:
         if decoded is not None:
             flush()
             remarks.append(decoded)
+            if spans is not None:
+                spans.append((mark, cur.pos))
         else:
+            if not pending:
+                first = cur.pos
             pending.append(cur.take(SemanticKind.REMARK))
     flush()
     return remarks

@@ -251,6 +251,12 @@
       }
     }
   ],
+  "remark_spans": [
+    [
+      13,
+      16
+    ]
+  ],
   "flavor": "ICAO",
   "military": true,
   "ceiling": {

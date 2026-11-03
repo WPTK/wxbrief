@@ -188,7 +188,10 @@ def test_J5_remove_the_last_one_a_middle_one_then_all_of_them(session: Session) 
     term.send_keys("home", "j", "j")  # a middle one: its neighbour takes the selection
     term.wait_for(lambda s: detail_station(s) == "ETHB", 10, "ETHB selected")
     term.send_keys("d")
-    screen = term.wait_for(lambda s: stations_listed(s) == 8, 10, "ETHB removed")
+    # the footer position redraws a frame after the list count, as above: wait for both
+    screen = term.wait_for(
+        lambda s: stations_listed(s) == 8 and position(s) == (3, 8) and detail_station(s) == "UUEE", 10, "ETHB removed"
+    )
     assert position(screen) == (3, 8) and detail_station(screen) == "UUEE", screen.text
 
     for _ in range(8):

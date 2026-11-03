@@ -179,6 +179,24 @@
       "variant": "MaintenanceIndicator"
     }
   ],
+  "remark_spans": [
+    [
+      10,
+      11
+    ],
+    [
+      11,
+      12
+    ],
+    [
+      12,
+      13
+    ],
+    [
+      13,
+      14
+    ]
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

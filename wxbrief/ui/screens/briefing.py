@@ -47,6 +47,7 @@ class BriefingScreen(StationScreen):
         bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW, show=False),
         bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED, show=False),
         bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF, show=False),
+        bind("4", "jump('tokens')", K.UI_BINDING_JUMP_TOKENS, show=False),
         bind("escape", "back_to_list", K.UI_BINDING_BACK),  # only while the focus is in the detail pane (check_action)
     ]
 
@@ -105,6 +106,7 @@ class BriefingScreen(StationScreen):
             gone = self._ids.index(self.selected) if self.selected in self._ids else 0
             self.selected = ids[min(gone, len(ids) - 1)] if ids else None
         self._ids = ids
+        self.refresh_bindings()  # check_action depends on the selection: the key bar must follow it
         if self.layout_mode == "grid":
             self.query_one(StationGrid).set_stations(reports, wx.ctx, wx.now(), self.selected)
         else:
@@ -223,8 +225,10 @@ class BriefingScreen(StationScreen):
         )
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        """Esc is offered, and answered, only from the detail pane: elsewhere it has nothing to go back to."""
+        """Esc is offered, and answered, only from the detail pane; remove only with a station selected."""
         del parameters
+        if action == "remove_station":  # nothing to remove from an empty list
+            return self.selected is not None
         return self._detail_has_focus() if action == "back_to_list" else True
 
     def action_back_to_list(self) -> None:

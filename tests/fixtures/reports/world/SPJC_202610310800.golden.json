@@ -183,6 +183,12 @@
       "text": "PP000"
     }
   ],
+  "remark_spans": [
+    [
+      12,
+      13
+    ]
+  ],
   "flavor": "ICAO",
   "military": false,
   "ceiling": {

@@ -15,6 +15,9 @@ keywords = ["metar", "taf", "aviation", "weather", "tui", "terminal", "textual"]
 dependencies = [
     "textual>=8.2,<9",
     "httpx>=0.28,<1",
+    "hishel[async]>=1.4,<2",
+    "anysqlite>=0.0.5,<1",
+    "stamina>=26,<27",
     "platformdirs>=4,<5",
     "tomli-w>=1,<2",
     "pyperclip>=1.9,<2",
@@ -103,7 +106,7 @@ check_untyped_defs = true
 # The decoder and the translation layer are typed end to end: the per-module flags that make up `--strict`.
 # (`strict = true` inside an override is applied to every module by mypy, so the flags are spelled out.)
 [[tool.mypy.overrides]]
-module = ["wxbrief.decode.*", "wxbrief.i18n.*"]
+module = ["wxbrief.decode.*", "wxbrief.i18n.*", "wxbrief.calc.*"]
 disallow_any_generics = true
 disallow_subclassing_any = true
 disallow_untyped_calls = true
