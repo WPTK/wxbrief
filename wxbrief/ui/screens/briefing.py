@@ -105,6 +105,7 @@ class BriefingScreen(StationScreen):
             gone = self._ids.index(self.selected) if self.selected in self._ids else 0
             self.selected = ids[min(gone, len(ids) - 1)] if ids else None
         self._ids = ids
+        self.refresh_bindings()  # check_action depends on the selection: the key bar must follow it
         if self.layout_mode == "grid":
             self.query_one(StationGrid).set_stations(reports, wx.ctx, wx.now(), self.selected)
         else:

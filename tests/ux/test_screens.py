@@ -121,10 +121,12 @@ async def test_no_orphan_section_heading_when_nothing_is_held(tmp_path: Path, st
         assert app.screen.query_one(StationHeader) is not None
 
 
-async def test_station_list_name_column_is_aligned(tmp_path: Path) -> None:
-    """At 200 columns each row's name starts where its wind/visibility text ends, so the names zig-zag."""
+@pytest.mark.parametrize("width", [120, 200])
+async def test_station_list_name_column_is_aligned(tmp_path: Path, width: int) -> None:
+    """The names start in one column however long each row's conditions are (at 120 columns the list is too narrow
+    for names: the rows must still all end alike, with none or one start column)."""
     app, before = build("many", tmp_path)
-    async with app.run_test(size=(200, 60)) as pilot:
+    async with app.run_test(size=(width, 60)) as pilot:
         await before(pilot)
         option_list = app.screen.query_one(StationList)
         starts = set()
@@ -133,13 +135,27 @@ async def test_station_list_name_column_is_aligned(tmp_path: Path) -> None:
             if "No report" in plain:
                 continue
             match = re.search(r"\d{2}SM(?: \$| SPECI)* +(\S)", plain)
-            assert match, plain
+            if match is None:
+                assert width < 160, plain  # a list this narrow shows no names
+                continue
             starts.add(match.start(1))
-        assert len(starts) == 1, sorted(starts)
+        assert len(starts) == (1 if width >= 160 else 0), sorted(starts)
+
+
+async def test_removing_the_last_station_hides_remove_from_the_key_bar(tmp_path: Path) -> None:
+    app = make_app(tmp_path, ["KDEN"])
+    async with app.run_test(size=(120, 40)) as pilot:
+        load(app, rows("metar_kden_egll"), rows("taf_kden_egll"))
+        await pilot.pause()
+        assert " d Remove" in screen_lines(app)[-1], screen_lines(app)[-1]
+        await pilot.press("d")
+        await pilot.pause()
+        assert not app.state.ids
+        assert " d Remove" not in screen_lines(app)[-1], screen_lines(app)[-1]
 
 
 async def test_decoded_values_start_in_one_column(tmp_path: Path) -> None:
-    """The flight-category row's badge is padded, so its value starts one column right of every other row."""
+    """``Station``, ``Wind`` and the badge of ``Flight category`` start their values in the same column."""
     app, before = build("many", tmp_path)
     async with app.run_test(size=(120, 40)) as pilot:
         await before(pilot)
