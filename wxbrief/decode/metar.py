@@ -100,6 +100,7 @@ class _Draft:
     wind_shear: list[WindShearRunway] = field(default_factory=list)
     sea_state: SeaState | None = None
     remarks: list[Remark] = field(default_factory=list)
+    remark_spans: list[tuple[int, int]] = field(default_factory=list)
 
     def warn(self, code: str, token: Token) -> None:
         self.warnings.append(ParseWarning(code, token.start, token.end, token.text))
@@ -297,9 +298,10 @@ def _has_coded_color(group: ColorStateGroup | None) -> bool:
 def _decode_remarks(cur: Cursor, draft: _Draft, rmk: Token) -> None:
     """Decode everything after ``RMK``; if that fails, the rest stays plain ``REMARK`` tokens and a warning."""
     try:
-        draft.remarks = parse_remarks(cur, Context(draft.observed))
+        draft.remarks = parse_remarks(cur, Context(draft.observed), draft.remark_spans)
     except Exception:
         draft.remarks = []
+        draft.remark_spans = []
         draft.warn(WARN_PARSER_ERROR, rmk)
     while (rest := cur.peek()) is not None:
         cur.take(SemanticKind.TERMINATOR if rest.kind is SemanticKind.TERMINATOR else SemanticKind.REMARK)
@@ -378,6 +380,7 @@ def _parse(raw: str, reference: datetime | None) -> Metar:
         wind_shear=tuple(draft.wind_shear),
         sea_state=draft.sea_state,
         remarks=tuple(draft.remarks),
+        remark_spans=tuple(draft.remark_spans),
         flavor=detection.flavor,
         military=detection.military or _has_coded_color(draft.color_state),
         warnings=tuple(draft.warnings),

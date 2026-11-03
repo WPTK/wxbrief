@@ -47,6 +47,7 @@ class BriefingScreen(StationScreen):
         bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW, show=False),
         bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED, show=False),
         bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF, show=False),
+        bind("4", "jump('tokens')", K.UI_BINDING_JUMP_TOKENS, show=False),
         bind("escape", "back_to_list", K.UI_BINDING_BACK),  # only while the focus is in the detail pane (check_action)
     ]
 
