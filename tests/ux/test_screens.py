@@ -170,21 +170,56 @@ async def test_decoded_values_start_in_one_column(tmp_path: Path) -> None:
         assert len(set(starts.values())) == 1, starts
 
 
-@pytest.mark.parametrize("size", SIZES, ids=lambda s: f"{s[0]}x{s[1]}")
-async def test_timeline_worst_case_row_is_readable(tmp_path: Path, size: tuple[int, int]) -> None:
-    """The timeline draws a worst-case row under the prevailing one: a category letter on every hour of a run, and
-    ``+`` marks the hours where it is worse than what prevails, all inside the pane and above the cursor row."""
-    from wxbrief.ui.widgets.taf_timeline import RAISED_MARK, TafTimeline
+async def _demo_timeline(app: Any, pilot: Any) -> Any:
+    """Open EGLL's TAF section (its forecast has a BECMG and a TEMPO) and return the focused timeline."""
+    from wxbrief.ui.widgets.taf_timeline import TafTimeline
 
-    app, before = build("long", tmp_path)
+    await pilot.pause(0.2)
+    await pilot.press("j")
+    await pilot.press("3")
+    await pilot.pause(0.2)
+    timeline = app.screen.query_one(TafTimeline)
+    assert timeline.has_focus
+    return timeline
+
+
+@pytest.mark.parametrize("size", SIZES, ids=lambda s: f"{s[0]}x{s[1]}")
+async def test_timeline_worst_case_row_is_readable(size: tuple[int, int]) -> None:
+    """The worst-case row sits under the prevailing row and above the cursor, shows a letter where a run starts and
+    ``+`` exactly on the raised hours, and every one of the six rows is on screen."""
+    from test_timeline_ui import demo_app
+
+    from wxbrief.ui.widgets.taf_timeline import RAISED_MARK
+
+    app = demo_app()
     async with app.run_test(size=size) as pilot:
-        await before(pilot)
-        timeline = app.screen.query_one(TafTimeline)
-        assert timeline.display and timeline.cells
-        plain = timeline.render().plain.split("\n")
-        assert len(plain) == 6 and timeline.size.height >= 6
+        timeline = await _demo_timeline(app, pilot)
+        plain = timeline.render().plain.split(chr(10))
+        assert len(plain) == 6
+        assert "▲" in plain[4] and RAISED_MARK not in plain[4]  # the cursor row follows the worst-case row
         width = 2 if timeline.step == 1 else 4
-        assert plain[2].strip() and len(plain[2].rstrip()) <= len(timeline.cells) * width
         raised = [c.worst_category != c.category for c in timeline.cells]
-        assert (RAISED_MARK in plain[2]) == any(raised)
-        assert plain[2][:width].strip()  # the first cell always names its category
+        assert any(raised)
+        for cell, flag in zip(timeline.cells, raised, strict=True):
+            at = timeline.cells.index(cell) * width
+            assert (plain[2][at : at + width].find(RAISED_MARK) >= 0) == flag
+        assert plain[2][:width].strip()
+        region = timeline.region
+        assert region.bottom <= app.screen.size.height  # the sixth row is not pushed off the screen
+        shown = screen_lines(app)[region.y : region.y + 6]
+        assert plain[2].rstrip() in shown[2]  # drawn on screen, not cropped
+
+
+@pytest.mark.parametrize("lang", ["en", "de", "pt"])
+async def test_timeline_legend_explains_the_raised_mark_at_80x24(lang: str) -> None:
+    """At 80x24 the legend row still ends with the translated text for ``+`` (de and pt are the longest)."""
+    from test_timeline_ui import demo_app
+
+    from wxbrief.i18n.keys import K
+
+    app = demo_app("--lang", lang)
+    async with app.run_test(size=(80, 24)) as pilot:
+        timeline = await _demo_timeline(app, pilot)
+        text = timeline._ctx.translator.t(K.TIMELINE_LEGEND_WORST)
+        legend = screen_lines(app)[timeline.region.y + 5]
+        assert legend.rstrip().endswith(text), (legend, text)

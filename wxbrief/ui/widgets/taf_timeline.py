@@ -274,9 +274,10 @@ class TafTimeline(Widget, can_focus=True):
                 mark = letter if cell.category != previous or index == 0 else " "
                 body.append(mark.ljust(width), style=colors.style(cell.category))
             previous = cell.category
-            mark = (cell.worst_category, cell.worst_category != cell.category)
-            worst_row.append_text(worst_segment(ctx.translator, colors, cell, width, starts=mark != previous_worst))
-            previous_worst = mark
+            worst_key = (cell.worst_category, cell.worst_category != cell.category)
+            starts = worst_key != previous_worst
+            worst_row.append_text(worst_segment(ctx.translator, colors, cell, width, starts=starts))
+            previous_worst = worst_key
             if cell.overlay:
                 starts = previous_overlay is None or cell.overlay_category != previous_overlay
                 overlay.append_text(
