@@ -226,7 +226,8 @@ async def test_grid_layout_columns(width: int, columns: int) -> None:
             and not briefing.query_one(StationList).display
             and not briefing.query_one(DetailPane).display
             and grid.columns == columns
-            and len(briefing.query(StationCard)) == 10,
+            and len(briefing.query(StationCard)) == 10
+            and len({card.region.x for card in list(briefing.query(StationCard))[:columns]}) == columns,  # placed, not just counted
             "the grid laid out",
         )
         cards = list(briefing.query(StationCard))
