@@ -4,12 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import random
 from pathlib import Path
 
 import httpx
 import pytest
 import respx
+import stamina.instrumentation
 
 from wxbrief import __version__
 from wxbrief.data import awc
@@ -513,13 +515,17 @@ async def test_concurrent_first_requests_share_one_cache() -> None:
 
 
 @respx.mock
-async def test_a_retry_writes_nothing_to_stderr(monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]) -> None:
+async def test_a_retry_is_not_logged_or_printed(
+    monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str], caplog: pytest.LogCaptureFixture
+) -> None:
     async def instant(delay: float) -> None:
         return None
 
     monkeypatch.setattr(asyncio, "sleep", instant)
+    assert stamina.instrumentation.get_on_retry_hooks() == ()
     respx.get(METAR_URL).mock(side_effect=[httpx.Response(503), httpx.Response(200, content=b"[]")])
-    async with AwcClient(retry_delay=1.0) as client:
-        assert await client.metars(["KDEN"]) == []
+    with caplog.at_level(logging.DEBUG):
+        async with AwcClient(retry_delay=1.0) as client:
+            assert await client.metars(["KDEN"]) == []
     captured = capfd.readouterr()
-    assert captured.err == "" and captured.out == ""
+    assert captured.err == "" and captured.out == "" and not [r for r in caplog.records if "stamina" in r.name]

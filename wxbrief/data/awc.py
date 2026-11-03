@@ -40,7 +40,9 @@ MAX_BODY_BYTES = 8 * 1024 * 1024  # a full 400-station METAR batch is well under
 CACHE_TTL_SECONDS = 3600.0  # a stored response nobody asked for in this long is dropped (it is never served unasked)
 
 
-stamina.instrumentation.set_on_retry_hooks([])  # its default hook logs each retry to stderr, which would garble the screen
+# Replaces stamina's retry hooks process-wide on purpose: the default one logs every retry, and a TUI must not print
+# retry notices over its screen.
+stamina.instrumentation.set_on_retry_hooks([])
 
 
 class AwcError(Exception):
