@@ -164,6 +164,8 @@ def _resolve_valid(draft: _Draft, token: Token, start: tuple[int, int], end: tup
         draft.warn(warning, token)
         return
     draft.valid_to = finish
+    if finish is None:
+        return
     late = draft.issue_time is not None and moment - draft.issue_time > MAX_VALID_LEAD  # not against the caller's clock
     if finish - moment > MAX_VALID_PERIOD or late:
         draft.warn(WARN_INVALID_TIME, token)  # keep the dates, but they are not a period a forecaster issues
