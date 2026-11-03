@@ -86,7 +86,12 @@ async def test_status_bar_reports_feed_age_when_polls_stop_succeeding(tmp_path) 
     async with app.run_test(size=(120, 40)) as pilot:
         load(app, rows("metar_kden_egll"), rows("taf_kden_egll"))
         sched = PollScheduler(
-            online_client(), lambda: ["KDEN"], lambda *a: None, clock=lambda: clock[0], metar_interval=3600, taf_interval=3600
+            online_client(),
+            lambda: ["KDEN"],
+            lambda *a: None,
+            clock=lambda: clock[0],
+            metar_interval=3600,
+            taf_interval=3600,
         )
         await sched.run_cycle()
         app.scheduler = sched
