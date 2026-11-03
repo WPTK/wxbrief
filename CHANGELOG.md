@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Warn when a TAF is valid for more than 30 hours or starts a day or more after it was issued, which also catches a 29 February that does not exist (#284)
+
 ## 0.3.0 - 2026-10-31
 
 ### Changed

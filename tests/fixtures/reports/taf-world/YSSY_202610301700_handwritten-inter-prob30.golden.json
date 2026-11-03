@@ -1,9 +1,9 @@
 {
-  "raw": "TAF YSSY 301700Z 3018/0124 14010KT 9999 SCT030 FM310300 18012KT 9999 -SHRA BKN025 INTER 3106/3110 4000 SHRA SCT015 PROB30 TEMPO 3112/3118 VRB30G45KT 1000 TSRAGR BKN010 SCT040CB",
+  "raw": "TAF YSSY 301700Z 3018/3124 14010KT 9999 SCT030 FM310300 18012KT 9999 -SHRA BKN025 INTER 3106/3110 4000 SHRA SCT015 PROB30 TEMPO 3112/3118 VRB30G45KT 1000 TSRAGR BKN010 SCT040CB",
   "station": "YSSY",
   "issue_time": "2026-10-30T17:00:00+00:00",
   "valid_from": "2026-10-30T18:00:00+00:00",
-  "valid_to": "2026-11-02T00:00:00+00:00",
+  "valid_to": "2026-11-01T00:00:00+00:00",
   "modifiers": [],
   "base": {
     "change": "BASE",
@@ -59,7 +59,7 @@
       "change": "FM",
       "probability": null,
       "start": "2026-10-31T03:00:00+00:00",
-      "end": "2026-11-02T00:00:00+00:00",
+      "end": "2026-11-01T00:00:00+00:00",
       "elements": {
         "wind": {
           "direction": 180,
@@ -260,7 +260,7 @@
       "kind": "TIME"
     },
     {
-      "text": "3018/0124",
+      "text": "3018/3124",
       "start": 17,
       "end": 26,
       "kind": "TIME"

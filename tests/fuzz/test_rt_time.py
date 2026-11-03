@@ -112,7 +112,6 @@ def test_taf_valid_period_across_year_end_and_leap_day(raw, ref, valid_from, val
     assert (t.valid_from, t.valid_to) == (valid_from, valid_to) and t.warnings == ()
 
 
-@pytest.mark.xfail(strict=True, reason="RT-05")
 @pytest.mark.parametrize(
     "raw",
     [
