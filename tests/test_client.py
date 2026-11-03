@@ -441,14 +441,15 @@ async def test_a_retry_waits_a_doubling_jittered_time_that_a_seed_makes_repeatab
         waits.append(delay)
 
     monkeypatch.setattr(asyncio, "sleep", record)
-    random.seed(1234)
-    reference = random.Random(1234)
+    jitter = iter([0.25, 0.5])  # stamina draws one ``random.uniform`` per wait
+    monkeypatch.setattr(random, "uniform", lambda low, high: next(jitter))
     route = respx.get(METAR_URL).mock(side_effect=[failure, failure, httpx.Response(200, content=b"[]")])
     async with AwcClient(retry_delay=1.0) as client:
         assert await client.metars(["KDEN"]) == []
     assert route.call_count == 3 == RETRY_ATTEMPTS
-    assert waits == pytest.approx([1.0 + reference.uniform(0, 1.0), 2.0 + reference.uniform(0, 1.0)])
+    assert waits == pytest.approx([1.25, 2.5])
     assert route.calls[0].request.headers["Connection"] != "close"
+    assert all("Cache-Control" not in call.request.headers for call in route.calls)  # that was for our own cache
     assert route.calls[1].request.headers["Connection"] == route.calls[2].request.headers["Connection"] == "close"
 
 
@@ -463,3 +464,62 @@ async def test_a_persistent_5xx_gives_up_with_server_error_after_the_attempt_cap
         with pytest.raises(ServerError) as caught:
             await client.metars(["KDEN"])
     assert caught.value.status == 503 and route.call_count == RETRY_ATTEMPTS
+
+
+@respx.mock
+async def test_a_304_with_a_different_etag_is_not_trusted_and_the_request_is_repeated_unconditionally() -> None:
+    """hishel (unlike the old store) does not adopt a new ETag from a 304: the mismatch means a changed resource."""
+    last_modified = "Sat, 31 Oct 2026 12:00:00 GMT"
+    route = respx.get(METAR_URL).mock(
+        side_effect=[
+            httpx.Response(200, content=b"[1]", headers={"ETag": '"v1"', "Last-Modified": last_modified}),
+            httpx.Response(304, headers={"ETag": '"v1b"'}),
+            httpx.Response(200, content=b"[2]", headers={"ETag": '"v1b"'}),
+        ]
+    )
+    async with AwcClient() as client:
+        assert await client._get("metar", {"ids": "KDEN"}) == [1]
+        assert await client._get("metar", {"ids": "KDEN"}) == [2]
+    assert route.call_count == 3
+    assert route.calls[1].request.headers["If-None-Match"] == '"v1"'
+    assert "If-None-Match" not in route.calls[2].request.headers
+
+
+@respx.mock
+async def test_a_204_leaves_the_stored_validators_so_the_next_request_is_still_conditional() -> None:
+    """The old store dropped them; hishel keeps the entry, which is right if the server then says 304 for that ETag."""
+    route = respx.get(METAR_URL).mock(
+        side_effect=[
+            httpx.Response(200, content=b"[1]", headers={"ETag": '"a"'}),
+            httpx.Response(204),
+            httpx.Response(200, content=b"[]"),
+        ]
+    )
+    async with AwcClient() as client:
+        await client.metars(["KDEN"])
+        assert await client.metars(["KDEN"]) == []
+        assert await client.metars(["KDEN"]) == []
+    assert route.calls[1].request.headers["If-None-Match"] == '"a"'
+    assert route.calls[2].request.headers["If-None-Match"] == '"a"'
+
+
+async def test_concurrent_first_requests_share_one_cache() -> None:
+    client = AwcClient(client=httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=[]))))
+    caches = await asyncio.gather(*(client._proxy() for _ in range(8)))
+    assert all(cache is caches[0] for cache in caches)
+    await asyncio.gather(*(client._get("metar", {"ids": f"K{i}"}) for i in range(4)))
+    await client.aclose()
+    assert client._cache is None
+
+
+@respx.mock
+async def test_a_retry_writes_nothing_to_stderr(monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]) -> None:
+    async def instant(delay: float) -> None:
+        return None
+
+    monkeypatch.setattr(asyncio, "sleep", instant)
+    respx.get(METAR_URL).mock(side_effect=[httpx.Response(503), httpx.Response(200, content=b"[]")])
+    async with AwcClient(retry_delay=1.0) as client:
+        assert await client.metars(["KDEN"]) == []
+    captured = capfd.readouterr()
+    assert captured.err == "" and captured.out == ""

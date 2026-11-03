@@ -16,6 +16,7 @@ dependencies = [
     "textual>=8.2,<9",
     "httpx>=0.28,<1",
     "hishel[async]>=1.4,<2",
+    "anysqlite>=0.0.5,<1",
     "stamina>=26,<27",
     "platformdirs>=4,<5",
     "tomli-w>=1,<2",

@@ -14,6 +14,7 @@ import anysqlite
 import hishel
 import httpx
 import stamina
+import stamina.instrumentation
 
 from wxbrief import __version__
 from wxbrief.data.models import (
@@ -37,6 +38,9 @@ DEFAULT_RETRY_AFTER = 60.0
 MAX_RETRY_AFTER = 3600.0
 MAX_BODY_BYTES = 8 * 1024 * 1024  # a full 400-station METAR batch is well under 1 MB
 CACHE_TTL_SECONDS = 3600.0  # a stored response nobody asked for in this long is dropped (it is never served unasked)
+
+
+stamina.instrumentation.set_on_retry_hooks([])  # its default hook logs each retry to stderr, which would garble the screen
 
 
 class AwcError(Exception):
@@ -132,6 +136,7 @@ class AwcClient:
         self._deadline = deadline
         self._retry_delay = RETRY_DELAY_SECONDS if retry_delay is None else retry_delay
         self._cache: hishel.AsyncCacheProxy | None = None  # made on the first request: it needs the running loop
+        self._cache_lock = asyncio.Lock()
         self._owns_client = client is None
         self._base_url = base_url.rstrip("/")
         if client is None:
@@ -155,13 +160,15 @@ class AwcClient:
             await self._client.aclose()
 
     async def _proxy(self) -> hishel.AsyncCacheProxy:
-        """The RFC 9111 cache. It lives in memory only: nothing is written to disk and nothing outlives the process."""
-        if self._cache is None:
-            storage = hishel.AsyncSqliteStorage(
-                connection=await anysqlite.connect(":memory:"), default_ttl=CACHE_TTL_SECONDS
-            )
-            self._cache = hishel.AsyncCacheProxy(self._send, storage)
-        return self._cache
+        """The RFC 9111 cache. It lives in memory only: nothing is written to disk and nothing outlives the process. Its size is bounded by
+        ``CACHE_TTL_SECONDS`` alone (hishel has no entry limit)."""
+        async with self._cache_lock:  # two first requests at once must not each open a database
+            if self._cache is None:
+                storage = hishel.AsyncSqliteStorage(
+                    connection=await anysqlite.connect(":memory:"), default_ttl=CACHE_TTL_SECONDS
+                )
+                self._cache = hishel.AsyncCacheProxy(self._send, storage)
+            return self._cache
 
     async def _send(self, request: hishel.Request) -> hishel.Response:
         """One real HTTP request for the cache, tried up to ``RETRY_ATTEMPTS`` times with jittered backoff when it fails
@@ -176,7 +183,8 @@ class AwcClient:
             wait_jitter=self._retry_delay,
         ):
             with attempt:
-                headers = dict(request.headers)
+                # ``no-cache`` was for our own cache; a CDN in front of the server is not told to skip its cache
+                headers = {k: v for k, v in request.headers.items() if k.lower() != "cache-control"}
                 if attempt.num > 1:
                     headers["Connection"] = "close"
                 async with self._client.stream(request.method, request.url, headers=headers) as response:
