@@ -223,8 +223,10 @@ class BriefingScreen(StationScreen):
         )
 
     def check_action(self, action: str, parameters: tuple[object, ...]) -> bool | None:
-        """Esc is offered, and answered, only from the detail pane: elsewhere it has nothing to go back to."""
+        """Esc is offered, and answered, only from the detail pane; remove only with a station selected."""
         del parameters
+        if action == "remove_station":  # nothing to remove from an empty list
+            return self.selected is not None
         return self._detail_has_focus() if action == "back_to_list" else True
 
     def action_back_to_list(self) -> None:

@@ -107,7 +107,6 @@ async def test_many_stations_highlight_stays_inside_the_list(tmp_path: Path, siz
         assert option_list.scroll_offset.y <= line < option_list.scroll_offset.y + option_list.scrollable_content_region.height
 
 
-@pytest.mark.xfail(strict=True, reason="UX-08")
 @pytest.mark.parametrize("state", ["error", "empty"])
 async def test_no_orphan_section_heading_when_nothing_is_held(tmp_path: Path, state: str) -> None:
     """With no report the pane shows a 'Raw' heading over nothing (error state) and Add/Remove hints on an empty list."""
@@ -122,7 +121,6 @@ async def test_no_orphan_section_heading_when_nothing_is_held(tmp_path: Path, st
         assert app.screen.query_one(StationHeader) is not None
 
 
-@pytest.mark.xfail(strict=True, reason="UX-09")
 async def test_station_list_name_column_is_aligned(tmp_path: Path) -> None:
     """At 200 columns each row's name starts where its wind/visibility text ends, so the names zig-zag."""
     app, before = build("many", tmp_path)
@@ -134,13 +132,12 @@ async def test_station_list_name_column_is_aligned(tmp_path: Path) -> None:
             plain = option_list.get_option_at_index(index).prompt.plain
             if "No report" in plain:
                 continue
-            match = re.search(r"\d{2}SM {2}(\S)", plain)
+            match = re.search(r"\d{2}SM(?: \$| SPECI)* +(\S)", plain)
             assert match, plain
             starts.add(match.start(1))
         assert len(starts) == 1, sorted(starts)
 
 
-@pytest.mark.xfail(strict=True, reason="UX-10")
 async def test_decoded_values_start_in_one_column(tmp_path: Path) -> None:
     """The flight-category row's badge is padded, so its value starts one column right of every other row."""
     app, before = build("many", tmp_path)

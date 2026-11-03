@@ -121,7 +121,7 @@ class DecodedTable(DataTable[Text]):
         for row in self._rows:
             if row.category is not None:
                 code = row.category.value
-                badge = palette.badge(row.category)
+                badge = palette.badge(row.category)[1:]  # without its left padding, which would shift the value right
                 indent = len(badge.plain) + 1
                 text = row.value.removeprefix(code).strip()
                 if width - indent < 12:  # too narrow for a hanging indent: the badge gets its own line
@@ -199,7 +199,9 @@ class DetailPane(VerticalScroll):
             self._set_visible(False)
             return
         self._set_visible(True)
-        self.query_one("#raw-title", Label).update(t.t(K.UI_SECTION_RAW))
+        raw_title = self.query_one("#raw-title", Label)
+        raw_title.update(t.t(K.UI_SECTION_RAW))
+        raw_title.display = entry.metar is not None or entry.taf is not None  # RawReport hides itself on the same test
         self.query_one("#decoded-title", Label).update(t.t(K.UI_SECTION_DECODED))
         self.query_one("#taf-title", Label).update(t.t(K.UI_SECTION_FORECAST))
         metar = entry.metar
