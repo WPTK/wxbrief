@@ -210,6 +210,9 @@ class DecodedTable(DataTable[Text]):
         self._rows: list[DecodeRow] = []
         self._ctx: ViewContext | None = None
         self._labels = 0  # the longest label in the pane (see rows_text)
+        self._keys: list[str] = []  # row keys now in the table: the label and its Nth occurrence
+        self._cells: dict[str, tuple[Text, Text]] = {}
+        self._widths: tuple[int, int] | None = None  # the column widths now in the table
 
     def set_rows(self, rows: list[DecodeRow], ctx: ViewContext, labels: int = 0) -> None:
         self._rows = rows
@@ -218,30 +221,67 @@ class DecodedTable(DataTable[Text]):
         self._fill()
 
     def _fill(self) -> None:
+        """Bring the table up to date in place; a refresh that changes no row leaves the cursor and scroll alone."""
         ctx = self._ctx
-        self.clear(columns=True)  # column widths are set from the pane width below, never left over from an earlier one
         if ctx is None or not self._rows:
+            self._keys, self._cells, self._widths = [], {}, None
+            self.clear(columns=True)
             return
         palette = ctx.palette
         label_width = max(self._labels, max(len(row.label) for row in self._rows)) + 1
         width = max(8, self.size.width - label_width - 6)  # each column has a cell padding of 1 on both sides
-        self.add_column("Field", width=label_width)
-        self.add_column("Value", width=width)
+        wanted: list[tuple[str, Text, Text]] = []
+        seen: dict[str, int] = {}
         for row in self._rows:
-            if row.category is not None:
-                code = row.category.value
-                badge = palette.badge(row.category)[1:]  # without its left padding, which would shift the value right
-                indent = len(badge.plain) + 1
-                text = row.value.removeprefix(code).strip()
-                if width - indent < 12:  # too narrow for a hanging indent: the badge gets its own line
-                    value = Text.assemble(badge, "\n", "\n".join(wrap(text, width)))
-                else:
-                    lines = wrap(text, width - indent)
-                    value = Text.assemble(badge, " ", ("\n" + " " * indent).join(lines))
+            n = seen[row.label] = seen.get(row.label, 0) + 1
+            wanted.append((f"{row.label}#{n}", Text(row.label, style=palette.style("wx.label")), self._value(row, width, ctx)))
+        keys = [key for key, _, _ in wanted]
+        # Column widths come from the pane width, never left over from an earlier one: a new width starts again.
+        # So does a row that is new anywhere but at the end, since the table only appends.
+        kept = [key for key in self._keys if key in keys]
+        if self._widths != (label_width, width) or keys[: len(kept)] != kept:
+            self._rebuild(wanted, label_width, width)
+            return
+        for key in self._keys:
+            if key not in keys:
+                self.remove_row(key)
+        for key, label, value in wanted:
+            if key in self._cells:
+                if self._cells[key] != (label, value):
+                    self.update_cell(key, "Field", label, update_width=False)
+                    self.update_cell(key, "Value", value, update_width=False)
             else:
-                wrapped = "\n".join(wrap(row.value, width))
-                value = Text(wrapped, style=palette.style(row.style))
-            self.add_row(Text(row.label, style=palette.style("wx.label")), value, height=None)
+                self.add_row(label, value, height=None, key=key)
+        self._keys = keys
+        self._cells = {key: (label, value) for key, label, value in wanted}
+
+    def _rebuild(self, wanted: list[tuple[str, Text, Text]], label_width: int, width: int) -> None:
+        cursor, scroll = self.cursor_coordinate, self.scroll_y
+        self.clear(columns=True)
+        self.add_column("Field", width=label_width, key="Field")
+        self.add_column("Value", width=width, key="Value")
+        for key, label, value in wanted:
+            self.add_row(label, value, height=None, key=key)
+        self._widths = (label_width, width)
+        self._keys = [key for key, _, _ in wanted]
+        self._cells = {key: (label, value) for key, label, value in wanted}
+        if self.row_count:
+            self.move_cursor(row=min(cursor.row, self.row_count - 1), column=cursor.column, animate=False)
+            self.call_after_refresh(self.scroll_to, y=scroll, animate=False, immediate=True)
+
+    @staticmethod
+    def _value(row: DecodeRow, width: int, ctx: ViewContext) -> Text:
+        palette = ctx.palette
+        if row.category is not None:
+            code = row.category.value
+            badge = palette.badge(row.category)[1:]  # without its left padding, which would shift the value right
+            indent = len(badge.plain) + 1
+            text = row.value.removeprefix(code).strip()
+            if width - indent < 12:  # too narrow for a hanging indent: the badge gets its own line
+                return Text.assemble(badge, "\n", "\n".join(wrap(text, width)))
+            lines = wrap(text, width - indent)
+            return Text.assemble(badge, " ", ("\n" + " " * indent).join(lines))
+        return Text("\n".join(wrap(row.value, width)), style=palette.style(row.style))
 
     def on_resize(self, event: Resize) -> None:
         if self._rows:
