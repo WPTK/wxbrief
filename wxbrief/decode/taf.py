@@ -48,7 +48,7 @@ from wxbrief.decode.model import (
 )
 from wxbrief.decode.tables import MODIFIER_CODES
 from wxbrief.decode.timeline import categorize_periods
-from wxbrief.decode.times import next_clock_time, resolve_day_time, resolve_day_time_after, resolve_report_time
+from wxbrief.decode.times import WARN_INVALID_TIME, next_clock_time, resolve_day_time, resolve_day_time_after, resolve_report_time
 from wxbrief.decode.tokens import Cursor, Token, strip_controls, tokenize
 
 WARN_UNKNOWN_TOKEN = "unknown_token"
@@ -56,6 +56,8 @@ WARN_PARSER_ERROR = "parser_error"
 WARN_LEGACY_FORMAT = "legacy_format"
 WARN_MISSING_TIME = "missing_time"
 WARN_OUTSIDE_PERIOD = "outside_period"
+MAX_VALID_PERIOD = timedelta(hours=30)  # ICAO Annex 3: no TAF is valid for longer
+MAX_VALID_LEAD = timedelta(hours=24)  # a period starts at or soon after its issue, never a day or more later
 
 _STATION = re.compile(r"^[A-Z][A-Z0-9]{3}$")
 _ISSUE = re.compile(r"^(\d{2})(\d{2})(\d{2})Z$")
@@ -156,6 +158,9 @@ def _resolve_valid(draft: _Draft, token: Token, start: tuple[int, int], end: tup
         draft.warn(warning, token)
         return
     draft.valid_to = finish
+    anchor = draft.issue_time or draft.reference
+    if finish - moment > MAX_VALID_PERIOD or moment - anchor > MAX_VALID_LEAD:
+        draft.warn(WARN_INVALID_TIME, token)  # keep the dates, but they are not a period a forecaster issues
 
 
 def _resolve_legacy_valid(draft: _Draft, token: Token, day: int, from_hour: int, to_hour: int) -> None:
