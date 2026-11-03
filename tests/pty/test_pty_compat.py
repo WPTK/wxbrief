@@ -85,6 +85,8 @@ def test_help_lists_every_readme_key(start: Start) -> None:
     keys = {k for row in table.splitlines()[2:] for k in re.findall(r"`([^`]+)`", row.split("|")[1])}
     term = start(120, 50)
     term.send_keys("?")
-    help_text = term.wait_for_text("wxbrief keys", 10).text
+    term.wait_for_text("wxbrief keys", 10)
+    # the title is drawn before the body is laid out: read only once the last help line is on screen
+    help_text = term.wait_for_text("copy the Discord block", 10).text
     missing = [k for k in sorted(keys) if not re.search(rf"(?<![\w]){re.escape(k)}(?![\w])", help_text)]
     assert not missing, f"README keys the help screen does not list: {missing}"

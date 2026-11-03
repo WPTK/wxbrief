@@ -322,8 +322,8 @@ async def help_screen(run: Run) -> None:
     assert body[0].split()[0] in run.text()
     await run.shot("top")
     await run.press("end")
-    await run.settle()
-    assert box.scroll_y == box.max_scroll_y, "the help does not scroll to its end"
+    # the scroll animates and the body's height settles after layout, so wait for the state, not one pause
+    await run.until(lambda: box.scroll_y == box.max_scroll_y, "the help to scroll to its end")
     assert body[-1].split()[-1] in run.text(), "the last help line is not on screen at the end"
     await run.shot("end")
     await run.press("escape")
