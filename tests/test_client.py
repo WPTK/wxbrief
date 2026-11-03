@@ -4,16 +4,20 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
+import random
 from pathlib import Path
 
 import httpx
 import pytest
 import respx
+import stamina.instrumentation
 
 from wxbrief import __version__
 from wxbrief.data import awc
 from wxbrief.data.awc import (
     BASE_URL,
+    RETRY_ATTEMPTS,
     USER_AGENT,
     AwcClient,
     ClientError,
@@ -220,7 +224,7 @@ async def test_a_repeat_request_is_revalidated_and_a_304_reuses_the_rows() -> No
     route = respx.get(METAR_URL).mock(
         side_effect=[
             httpx.Response(200, content=body, headers={"ETag": '"v1"', "Last-Modified": "Sat, 31 Oct 2026 12:00:00 GMT"}),
-            httpx.Response(304, headers={"ETag": '"v1b"'}),
+            httpx.Response(304, headers={"ETag": '"v1"'}),
             httpx.Response(304),
         ]
     )
@@ -233,9 +237,8 @@ async def test_a_repeat_request_is_revalidated_and_a_304_reuses_the_rows() -> No
     sent = route.calls[1].request.headers
     assert sent["If-None-Match"] == '"v1"' and sent["If-Modified-Since"] == "Sat, 31 Oct 2026 12:00:00 GMT"
     assert [m.raw for m in second] == [m.raw for m in first] and first
-    # the 304 replaced the ETag and nothing else: the Last-Modified from the 200 is still sent
     third = route.calls[2].request.headers
-    assert third["If-None-Match"] == '"v1b"' and third["If-Modified-Since"] == "Sat, 31 Oct 2026 12:00:00 GMT"
+    assert third["If-None-Match"] == '"v1"' and third["If-Modified-Since"] == "Sat, 31 Oct 2026 12:00:00 GMT"
 
 
 @respx.mock
@@ -266,10 +269,8 @@ async def test_errors_and_204_are_not_masked_by_the_stored_response() -> None:
     route = respx.get(METAR_URL).mock(
         side_effect=[
             httpx.Response(200, content=_payload("metar_kden_egll.json"), headers={"ETag": '"a"'}),
-            httpx.Response(500),
-            httpx.Response(500),  # the retry
-            httpx.ConnectError("offline"),
-            httpx.ConnectError("offline"),  # the retry
+            *[httpx.Response(500)] * RETRY_ATTEMPTS,
+            *[httpx.ConnectError("offline")] * RETRY_ATTEMPTS,
             httpx.Response(204),
             httpx.Response(200, content=b"[]"),
         ]
@@ -282,18 +283,7 @@ async def test_errors_and_204_are_not_masked_by_the_stored_response() -> None:
             await client.metars(["KDEN"])
         assert await client.metars(["KDEN"]) == []
         assert await client.metars(["KDEN"]) == []
-    assert "If-None-Match" not in route.calls[6].request.headers  # the 204 dropped the validators
-
-
-@respx.mock
-async def test_the_stored_requests_are_bounded() -> None:
-    from wxbrief.data.awc import CACHED_REQUESTS
-
-    respx.get(METAR_URL).mock(return_value=httpx.Response(200, content=b"[]", headers={"ETag": '"a"'}))
-    async with AwcClient() as client:
-        for index in range(CACHED_REQUESTS + 2):
-            await client.metars([f"K{index:03d}"])
-        assert len(client._stored) == CACHED_REQUESTS
+    assert route.call_count == 1 + 2 * RETRY_ATTEMPTS + 2
 
 
 @respx.mock
@@ -335,16 +325,16 @@ async def test_the_retry_asks_for_a_fresh_connection() -> None:
 
 
 @respx.mock
-async def test_two_transient_errors_raise_transport_error_after_two_calls() -> None:
+async def test_persistent_transient_errors_raise_transport_error_after_all_attempts() -> None:
     route = respx.get(METAR_URL).mock(side_effect=httpx.ReadTimeout("slow"))
     async with AwcClient() as client:
         with pytest.raises(TransportError):
             await asyncio.wait_for(client.metars(["KDEN"]), 5)
-    assert route.call_count == 2
+    assert route.call_count == RETRY_ATTEMPTS
 
 
 @respx.mock
-async def test_a_5xx_is_retried_once() -> None:
+async def test_a_5xx_is_retried() -> None:
     route = respx.get(METAR_URL).mock(side_effect=[httpx.Response(502), httpx.Response(200, content=b"[]")])
     async with AwcClient() as client:
         assert await client.metars(["KDEN"]) == []
@@ -411,3 +401,131 @@ async def test_a_second_request_survives_a_connection_the_server_closed() -> Non
         server.close()
         await server.wait_closed()
     assert served == 2
+
+
+@respx.mock
+async def test_a_stored_response_within_its_max_age_is_still_revalidated_and_a_304_serves_it() -> None:
+    """RFC 9111 would serve this without a request for an hour; the client must ask every time (#146)."""
+    body = _payload("metar_kden_egll.json")
+    headers = {"ETag": '"v1"', "Cache-Control": "public, max-age=3600"}
+    route = respx.get(METAR_URL).mock(
+        side_effect=[httpx.Response(200, content=body, headers=headers), httpx.Response(304, headers=headers)]
+    )
+    async with AwcClient() as client:
+        first = await client.metars(["KDEN", "EGLL"])
+        second = await client.metars(["KDEN", "EGLL"])
+    assert route.call_count == 2
+    assert route.calls[1].request.headers["If-None-Match"] == '"v1"'
+    assert [m.raw for m in second] == [m.raw for m in first] and first
+
+
+@respx.mock
+async def test_the_cache_is_in_memory_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    respx.get(METAR_URL).mock(return_value=httpx.Response(200, content=b"[]", headers={"ETag": '"v1"'}))
+    async with AwcClient() as client:
+        await client.metars(["KDEN"])
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [httpx.Response(503), httpx.RemoteProtocolError("connection dropped"), httpx.ConnectError("reset")],
+    ids=["5xx", "dropped", "reset"],
+)
+@respx.mock
+async def test_a_retry_waits_a_doubling_jittered_time_that_a_seed_makes_repeatable(
+    failure: httpx.Response | Exception, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    waits: list[float] = []
+
+    async def record(delay: float) -> None:
+        waits.append(delay)
+
+    monkeypatch.setattr(asyncio, "sleep", record)
+    jitter = iter([0.25, 0.5])  # stamina draws one ``random.uniform`` per wait
+    monkeypatch.setattr(random, "uniform", lambda low, high: next(jitter))
+    route = respx.get(METAR_URL).mock(side_effect=[failure, failure, httpx.Response(200, content=b"[]")])
+    async with AwcClient(retry_delay=1.0) as client:
+        assert await client.metars(["KDEN"]) == []
+    assert route.call_count == 3 == RETRY_ATTEMPTS
+    assert waits == pytest.approx([1.25, 2.5])
+    assert route.calls[0].request.headers["Connection"] != "close"
+    assert all("Cache-Control" not in call.request.headers for call in route.calls)  # that was for our own cache
+    assert route.calls[1].request.headers["Connection"] == route.calls[2].request.headers["Connection"] == "close"
+
+
+@respx.mock
+async def test_a_persistent_5xx_gives_up_with_server_error_after_the_attempt_cap(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def instant(delay: float) -> None:
+        return None
+
+    monkeypatch.setattr(asyncio, "sleep", instant)
+    route = respx.get(METAR_URL).mock(return_value=httpx.Response(503))
+    async with AwcClient(retry_delay=1.0) as client:
+        with pytest.raises(ServerError) as caught:
+            await client.metars(["KDEN"])
+    assert caught.value.status == 503 and route.call_count == RETRY_ATTEMPTS
+
+
+@respx.mock
+async def test_a_304_with_a_different_etag_is_not_trusted_and_the_request_is_repeated_unconditionally() -> None:
+    """hishel (unlike the old store) does not adopt a new ETag from a 304: the mismatch means a changed resource."""
+    last_modified = "Sat, 31 Oct 2026 12:00:00 GMT"
+    route = respx.get(METAR_URL).mock(
+        side_effect=[
+            httpx.Response(200, content=b"[1]", headers={"ETag": '"v1"', "Last-Modified": last_modified}),
+            httpx.Response(304, headers={"ETag": '"v1b"'}),
+            httpx.Response(200, content=b"[2]", headers={"ETag": '"v1b"'}),
+        ]
+    )
+    async with AwcClient() as client:
+        assert await client._get("metar", {"ids": "KDEN"}) == [1]
+        assert await client._get("metar", {"ids": "KDEN"}) == [2]
+    assert route.call_count == 3
+    assert route.calls[1].request.headers["If-None-Match"] == '"v1"'
+    assert "If-None-Match" not in route.calls[2].request.headers
+
+
+@respx.mock
+async def test_a_204_leaves_the_stored_validators_so_the_next_request_is_still_conditional() -> None:
+    """The old store dropped them; hishel keeps the entry, which is right if the server then says 304 for that ETag."""
+    route = respx.get(METAR_URL).mock(
+        side_effect=[
+            httpx.Response(200, content=b"[1]", headers={"ETag": '"a"'}),
+            httpx.Response(204),
+            httpx.Response(200, content=b"[]"),
+        ]
+    )
+    async with AwcClient() as client:
+        await client.metars(["KDEN"])
+        assert await client.metars(["KDEN"]) == []
+        assert await client.metars(["KDEN"]) == []
+    assert route.calls[1].request.headers["If-None-Match"] == '"a"'
+    assert route.calls[2].request.headers["If-None-Match"] == '"a"'
+
+
+async def test_concurrent_first_requests_share_one_cache() -> None:
+    client = AwcClient(client=httpx.AsyncClient(transport=httpx.MockTransport(lambda r: httpx.Response(200, json=[]))))
+    caches = await asyncio.gather(*(client._proxy() for _ in range(8)))
+    assert all(cache is caches[0] for cache in caches)
+    await asyncio.gather(*(client._get("metar", {"ids": f"K{i}"}) for i in range(4)))
+    await client.aclose()
+    assert client._cache is None
+
+
+@respx.mock
+async def test_a_retry_is_not_logged_or_printed(
+    monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str], caplog: pytest.LogCaptureFixture
+) -> None:
+    async def instant(delay: float) -> None:
+        return None
+
+    monkeypatch.setattr(asyncio, "sleep", instant)
+    assert stamina.instrumentation.get_on_retry_hooks() == ()
+    respx.get(METAR_URL).mock(side_effect=[httpx.Response(503), httpx.Response(200, content=b"[]")])
+    with caplog.at_level(logging.DEBUG):
+        async with AwcClient(retry_delay=1.0) as client:
+            assert await client.metars(["KDEN"]) == []
+    captured = capfd.readouterr()
+    assert captured.err == "" and captured.out == "" and not [r for r in caplog.records if "stamina" in r.name]

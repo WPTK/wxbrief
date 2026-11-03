@@ -114,7 +114,8 @@ with the program.
 The client follows the [API usage guidance](https://aviationweather.gov/data/api/): it identifies itself with a
 `User-Agent` naming wxbrief, its version and this repository, polls METARs every 10 minutes and TAFs every 30, stays
 under 100 requests a minute, honours `Retry-After` on a 429, and asks the server whether a report has changed when it
-sends `ETag` or `Last-Modified`, and reuses the stored one only on a 304. It never reuses a response on its own.
+sends `ETag` or `Last-Modified`, and reuses the stored one only on a 304. It never reuses a response on its own. A request that fails in transit or with a 5xx is tried up to three
+times, waiting a doubling, randomly jittered time between tries.
 
 The bundled station database (`wxbrief/data/stations.json.gz`) takes station positions from the AWC station list and
 assigns each station its IANA time zone with [timezonefinder](https://github.com/jannikmi/timezonefinder), which uses

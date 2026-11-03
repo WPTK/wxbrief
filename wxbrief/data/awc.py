@@ -5,14 +5,16 @@ from __future__ import annotations
 import asyncio
 import json
 import math
-from collections import OrderedDict
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import AsyncIterator, Sequence
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from typing import Any, Self
 
+import anysqlite
+import hishel
 import httpx
+import stamina
+import stamina.instrumentation
 
 from wxbrief import __version__
 from wxbrief.data.models import (
@@ -27,13 +29,20 @@ from wxbrief.data.models import (
 BASE_URL = "https://aviationweather.gov/api/data"
 USER_AGENT = f"wxbrief/{__version__} (+https://github.com/WPTK/wxbrief)"
 TIMEOUT_SECONDS = 10.0  # httpx's limit on each connect, read and write
-RETRY_DELAY_SECONDS = 1.0  # the pause before the one retry of a request that failed in transit or with a 5xx
+RETRY_DELAY_SECONDS = 1.0  # first backoff before a retry; it doubles each time, plus jitter of up to this much
+RETRY_ATTEMPTS = 3  # tries of one request that fails in transit or with a 5xx; the poller's own backoff sits above this
+MAX_RETRY_WAIT = 5.0  # the longest single backoff
 DEADLINE_SECONDS = 30.0  # the limit on one whole request, however slowly the server drips its body
 MAX_IDS_PER_REQUEST = 400
 DEFAULT_RETRY_AFTER = 60.0
 MAX_RETRY_AFTER = 3600.0
 MAX_BODY_BYTES = 8 * 1024 * 1024  # a full 400-station METAR batch is well under 1 MB
-CACHED_REQUESTS = 8  # request results kept for revalidation; the oldest is dropped first
+CACHE_TTL_SECONDS = 3600.0  # a stored response nobody asked for in this long is dropped (it is never served unasked)
+
+
+# Replaces stamina's retry hooks process-wide on purpose: the default one logs every retry, and a TUI must not print
+# retry notices over its screen.
+stamina.instrumentation.set_on_retry_hooks([])
 
 
 class AwcError(Exception):
@@ -79,15 +88,6 @@ def _retry_after(response: httpx.Response) -> float:
     return min(MAX_RETRY_AFTER, max(0.0, seconds))
 
 
-@dataclass(slots=True)
-class _Stored:
-    """The last 200 for one request: its rows and the validators to send next time."""
-
-    rows: list[Any]
-    etag: str | None
-    last_modified: str | None
-
-
 async def _read_limited(response: httpx.Response) -> bytes:
     """The decoded body, or ``ClientError`` as soon as it passes ``MAX_BODY_BYTES`` (nothing more is read)."""
     declared = response.headers.get("Content-Length", "")
@@ -101,6 +101,13 @@ async def _read_limited(response: httpx.Response) -> bytes:
             raise ClientError(f"response is larger than {MAX_BODY_BYTES // (1024 * 1024)} MB")
         parts.append(part)
     return b"".join(parts)
+
+
+_RECOMPUTED = frozenset({"content-encoding", "content-length", "transfer-encoding"})  # httpx already decoded the body
+
+
+async def _one_chunk(content: bytes) -> AsyncIterator[bytes]:
+    yield content
 
 
 def _chunks(ids: Sequence[str], size: int) -> list[list[str]]:
@@ -130,7 +137,8 @@ class AwcClient:
     ) -> None:
         self._deadline = deadline
         self._retry_delay = RETRY_DELAY_SECONDS if retry_delay is None else retry_delay
-        self._stored: OrderedDict[tuple[str, tuple[tuple[str, str], ...]], _Stored] = OrderedDict()
+        self._cache: hishel.AsyncCacheProxy | None = None  # made on the first request: it needs the running loop
+        self._cache_lock = asyncio.Lock()
         self._owns_client = client is None
         self._base_url = base_url.rstrip("/")
         if client is None:
@@ -147,52 +155,73 @@ class AwcClient:
         await self.aclose()
 
     async def aclose(self) -> None:
+        if self._cache is not None:
+            await self._cache.storage.close()
+            self._cache = None
         if self._owns_client:
             await self._client.aclose()
 
+    async def _proxy(self) -> hishel.AsyncCacheProxy:
+        """The RFC 9111 cache. It lives in memory only: nothing is written to disk and nothing outlives the process.
+        Its size is bounded by ``CACHE_TTL_SECONDS`` alone (hishel has no entry limit)."""
+        async with self._cache_lock:  # two first requests at once must not each open a database
+            if self._cache is None:
+                storage = hishel.AsyncSqliteStorage(
+                    connection=await anysqlite.connect(":memory:"), default_ttl=CACHE_TTL_SECONDS
+                )
+                self._cache = hishel.AsyncCacheProxy(self._send, storage)
+            return self._cache
+
+    async def _send(self, request: hishel.Request) -> hishel.Response:
+        """One real HTTP request for the cache, tried up to ``RETRY_ATTEMPTS`` times with jittered backoff when it fails
+        in transit or with a 5xx. Every retry asks the server to close the connection, so it cannot reuse one that
+        went stale. The body is read here, with its size limit, before the cache stores it."""
+        async for attempt in stamina.retry_context(
+            on=(httpx.TransportError, ServerError),
+            attempts=RETRY_ATTEMPTS,
+            timeout=None,  # the deadline in ``_get`` is the one limit; httpx's own restarts on every read
+            wait_initial=self._retry_delay,
+            wait_max=MAX_RETRY_WAIT,
+            wait_jitter=self._retry_delay,
+        ):
+            with attempt:
+                # ``no-cache`` was for our own cache; a CDN in front of the server is not told to skip its cache
+                headers = {k: v for k, v in request.headers.items() if k.lower() != "cache-control"}
+                if attempt.num > 1:
+                    headers["Connection"] = "close"
+                async with self._client.stream(request.method, request.url, headers=headers) as response:
+                    status = response.status_code
+                    if status >= 500:
+                        raise ServerError(status)
+                    content = await _read_limited(response) if status == 200 else b""
+                    kept = {k: v for k, v in response.headers.items() if k.lower() not in _RECOMPUTED}
+                    kept["content-length"] = str(len(content))
+                    return hishel.Response(status, hishel.Headers(kept), _one_chunk(content))
+        raise AssertionError("unreachable")  # pragma: no cover
+
     async def _get(self, endpoint: str, params: dict[str, str]) -> list[Any]:
-        """One request, always sent. A stored response for the same request is revalidated with ``If-None-Match`` /
-        ``If-Modified-Since``, and only a 304 from the server reuses its rows. ``Cache-Control: max-age`` is ignored on
-        purpose: reusing a response without asking would show a report older than a poll as the current one."""
-        key = (endpoint, tuple(sorted(params.items())))
-        stored = self._stored.get(key)
-        headers: dict[str, str] = {}
-        if stored is not None:
-            if stored.etag:
-                headers["If-None-Match"] = stored.etag
-            if stored.last_modified:
-                headers["If-Modified-Since"] = stored.last_modified
+        """One request through the cache, always revalidated: ``Cache-Control: no-cache`` makes hishel send
+        ``If-None-Match`` / ``If-Modified-Since`` for a stored response and reuse its body only on a 304 from the
+        server.
+        Freshness (``max-age``) is never used: reusing a response without asking would show a report older than a poll
+        as the current one."""
+        url = str(self._client.build_request("GET", f"{self._base_url}/{endpoint}", params=params).url)
         try:
-            async with asyncio.timeout(self._deadline):  # one limit for both tries; httpx's own restarts on every read
-                for attempt in (1, 2):
-                    # The second try asks the server to close the connection, so it cannot reuse one that went stale.
-                    attempt_headers = headers if attempt == 1 else {**headers, "Connection": "close"}
-                    try:
-                        async with self._client.stream(
-                            "GET", f"{self._base_url}/{endpoint}", params=params, headers=attempt_headers
-                        ) as response:
-                            status = response.status_code
-                            content = await _read_limited(response) if status == 200 else b""
-                    except httpx.TransportError:
-                        if attempt == 2:
-                            raise
-                    else:
-                        if status < 500 or attempt == 2:
-                            break
-                    await asyncio.sleep(self._retry_delay)
+            cache = await self._proxy()
+            async with asyncio.timeout(self._deadline):  # one limit for every try; httpx's own restarts on every read
+                response = await cache.handle_request(
+                    hishel.Request("GET", url, hishel.Headers({"Cache-Control": "no-cache"}), _one_chunk(b""))
+                )
+                content = await response.aread()
         except httpx.HTTPError as exc:
             raise TransportError(f"{type(exc).__name__}: {exc}" if str(exc) else type(exc).__name__) from exc
         except TimeoutError as exc:
             raise TransportError(f"no complete response within {self._deadline:g} s") from exc
-        if status == 304 and stored is not None:
-            stored.etag = response.headers.get("ETag") or stored.etag  # a 304 may carry fresh validators, nothing else
-            stored.last_modified = response.headers.get("Last-Modified") or stored.last_modified
-            return stored.rows
+        status = response.status_code
         if status == 204:
-            self._stored.pop(key, None)
             return []
         if status == 429:
-            raise RateLimited(_retry_after(response))
+            raise RateLimited(_retry_after(httpx.Response(429, headers=dict(response.headers))))
         if status >= 500:
             raise ServerError(status)
         if status != 200:
@@ -203,14 +232,6 @@ class AwcClient:
             raise ClientError("response is not JSON") from exc
         if not isinstance(body, list) or any(isinstance(row, list) for row in body):  # rows are objects; a list nests
             raise ClientError("response is not a list of objects")
-        etag, modified = response.headers.get("ETag"), response.headers.get("Last-Modified")
-        if etag or modified:
-            self._stored[key] = _Stored(body, etag, modified)
-            self._stored.move_to_end(key)
-            while len(self._stored) > CACHED_REQUESTS:
-                self._stored.popitem(last=False)
-        else:
-            self._stored.pop(key, None)
         return body
 
     async def _fetch(self, endpoint: str, ids: Sequence[str], extra: dict[str, str]) -> list[Any]:
