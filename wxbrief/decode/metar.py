@@ -153,10 +153,13 @@ def _run_modifier(cur: Cursor, draft: _Draft) -> bool:
 
 
 def _run_wind(cur: Cursor, draft: _Draft) -> bool:
+    start = cur.pos
     result = parse_wind(cur)
     if result is None:
         return False
     draft.wind = result
+    if cur.kind_at(start) is SemanticKind.UNKNOWN:  # the gust was dropped
+        draft.warn(WARN_UNKNOWN_TOKEN, cur.token_at(start))
     return True
 
 

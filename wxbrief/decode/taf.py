@@ -56,6 +56,7 @@ WARN_PARSER_ERROR = "parser_error"
 WARN_LEGACY_FORMAT = "legacy_format"
 WARN_MISSING_TIME = "missing_time"
 WARN_OUTSIDE_PERIOD = "outside_period"
+WARN_CHANGE_OUT_OF_ORDER = "change_out_of_order"
 MAX_VALID_PERIOD = timedelta(hours=30)  # ICAO Annex 3: no TAF is valid for longer
 MAX_VALID_LEAD = timedelta(hours=24)  # a period starts at or soon after its issue, never a day or more later
 
@@ -301,14 +302,20 @@ def _check_inside_period(cur: Cursor, draft: _Draft, group: _Group) -> None:
         return
     before = draft.valid_from is not None and group.start < draft.valid_from
     after = draft.valid_to is not None and group.start >= draft.valid_to
+    if before or after:
+        draft.warn(WARN_OUTSIDE_PERIOD, cur.token_at(group.first))
+        return
     runs_past = (
-        group.change is ChangeType.BECMG and draft.valid_to is not None and group.end is not None and group.end > draft.valid_to
+        group.change is ChangeType.BECMG
+        and draft.valid_to is not None
+        and group.end is not None
+        and group.end > draft.valid_to
     )
     earlier = group.change is ChangeType.FM and any(
         p.change is ChangeType.FM and p.start is not None and p.start > group.start for p in draft.groups
     )
-    if before or after or runs_past or earlier:
-        draft.warn(WARN_OUTSIDE_PERIOD, cur.token_at(group.first))
+    if runs_past or earlier:
+        draft.warn(WARN_CHANGE_OUT_OF_ORDER, cur.token_at(group.first))
 
 
 def _read_group(cur: Cursor, draft: _Draft, *, base: bool) -> _Group:
