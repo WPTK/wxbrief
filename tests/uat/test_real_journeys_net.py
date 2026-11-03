@@ -83,7 +83,8 @@ def test_J12_offline_with_a_warm_cache_shows_the_saved_data_and_recovers(session
     for _ in range(3):
         forced_cycle(term, fp)
         watch(term, 3.0)
-    bar = bar_of(term)
+    # the retries (#314) stretch a cycle, so the toast can still cover the bar when the cycles end: wait for it to go
+    bar = status_bar(term.wait_for(lambda s: status_bar(s) is not None, 15, "the status bar, not a toast")) or ""
     assert "offline" in bar.lower() and "saved" in bar.lower(), f"outage not stated with what is shown: {bar!r}"
     assert not re.search(r"\bfresh\b", bar.lower()) and not broken_rules(bar), bar
     assert "METAR KLGA" in term.screen().text, "the saved data went away when the network did"
