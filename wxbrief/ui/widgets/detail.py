@@ -234,7 +234,8 @@ class DecodedTable(DataTable[Text]):
         seen: dict[str, int] = {}
         for row in self._rows:
             n = seen[row.label] = seen.get(row.label, 0) + 1
-            wanted.append((f"{row.label}#{n}", Text(row.label, style=palette.style("wx.label")), self._value(row, width, ctx)))
+            label = Text(row.label, style=palette.style("wx.label"))
+            wanted.append((f"{row.label}#{n}", label, self._value(row, width, ctx)))
         keys = [key for key, _, _ in wanted]
         # Column widths come from the pane width, never left over from an earlier one: a new width starts again.
         # So does a row that is new anywhere but at the end, since the table only appends.
@@ -247,7 +248,8 @@ class DecodedTable(DataTable[Text]):
                 self.remove_row(key)
         for key, label, value in wanted:
             if key in self._cells:
-                if any(a != b or a.style != b.style for a, b in zip(self._cells[key], (label, value))):  # == ignores the base style
+                # == ignores the base style
+                if any(a != b or a.style != b.style for a, b in zip(self._cells[key], (label, value), strict=True)):
                     self.update_cell(key, "Field", label, update_width=False)
                     self.update_cell(key, "Value", value, update_width=False)
             else:

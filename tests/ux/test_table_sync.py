@@ -24,7 +24,7 @@ async def test_refresh_with_a_changed_value_keeps_cursor_scroll_and_untouched_ro
         table.move_cursor(row=4, animate=False)
         pane.scroll_to(y=6, animate=False)
         await pilot.pause()
-        before_keys = [k for k in table.rows]
+        before_keys = list(table.rows)
         cursor, scroll = table.cursor_coordinate, pane.scroll_y
         assert cursor.row == 4 and scroll > 0
 
