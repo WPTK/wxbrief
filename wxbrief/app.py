@@ -5,16 +5,17 @@ from __future__ import annotations
 import logging
 import shutil
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from copy import deepcopy
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 
 from textual import events, work
-from textual.app import App
+from textual.app import App, SystemCommand
 from textual.geometry import Size
 from textual.notifications import SeverityLevel
+from textual.screen import Screen
 from textual.theme import Theme
 
 from wxbrief.config import (
@@ -40,6 +41,7 @@ from wxbrief.i18n.keys import K
 from wxbrief.render.palette import Palette
 from wxbrief.state import AppState
 from wxbrief.ui.bindings import bind, localize, relabel_tree
+from wxbrief.ui.commands import HIDDEN, StationProvider, app_commands
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.glyphs import GLYPH_SETS, glyphs_for
 from wxbrief.ui.screens.briefing import BriefingScreen
@@ -79,6 +81,7 @@ class WxBriefApp(App[None]):
     TITLE = "wxbrief"
     HORIZONTAL_BREAKPOINTS = [(0, "-narrow"), (90, "-normal"), (140, "-wide")]
     VERTICAL_BREAKPOINTS = [(0, "-short"), (24, "-tall"), (40, "-roomy")]
+    COMMANDS = App.COMMANDS | {StationProvider}
     BINDINGS = [
         bind("q", "quit", K.UI_BINDING_QUIT),
         bind("t", "cycle_theme", K.UI_BINDING_CYCLE_THEME),
@@ -132,6 +135,10 @@ class WxBriefApp(App[None]):
         self.briefing = BriefingScreen()
         self._saved_watchlist = list(self.options.config.stations.watchlist)  # the file's list as last read or written
         self._warned_unusable = False
+
+    def get_system_commands(self, screen: Screen[object]) -> Iterable[SystemCommand]:
+        yield from app_commands(self, screen, self.ctx.translator)
+        yield from (command for command in super().get_system_commands(screen) if command.title not in HIDDEN)
 
     def now(self) -> datetime:
         return self.options.now()

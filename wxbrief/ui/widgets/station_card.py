@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 from datetime import datetime
 
-from rich.style import Style
 from rich.text import Text
 from textual.events import Click
 from textual.message import Message
@@ -19,8 +18,8 @@ from wxbrief.state import StationReports
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.fcat import CategoryColors, category_colors
 from wxbrief.ui.strip import MINI_STRIP_HOURS, StripCell, is_expired, mini_cells, strip_for
-from wxbrief.ui.widgets.station_list import short_conditions
-from wxbrief.ui.widgets.taf_timeline import HATCH, OVERLAY_MARK, category_letter, tick_labels
+from wxbrief.ui.widgets.station_list import report_marks, short_conditions
+from wxbrief.ui.widgets.taf_timeline import HATCH, category_letter, overlay_segment, tick_labels
 
 CELL_WIDTH = 2
 STRIP_WIDTH = MINI_STRIP_HOURS * CELL_WIDTH
@@ -30,6 +29,7 @@ def strip_lines(cells: Sequence[StripCell], colors: CategoryColors, t: Translato
     """The cells row and the thin temporary-group row under it, each padded to ``STRIP_WIDTH`` columns."""
     body, overlay = Text(no_wrap=True), Text(no_wrap=True)
     previous = None
+    previous_overlay = None
     for index, cell in enumerate(cells):
         if cell.becoming:
             worst = cell.worst_category
@@ -41,9 +41,11 @@ def strip_lines(cells: Sequence[StripCell], colors: CategoryColors, t: Translato
             body.append(mark.ljust(CELL_WIDTH), style=colors.style(cell.category))
         previous = cell.category
         if cell.overlay:
-            overlay.append(OVERLAY_MARK * CELL_WIDTH, style=Style(color=colors.fill_of(cell.overlay_category)))
+            starts = previous_overlay is None or cell.overlay_category != previous_overlay
+            overlay.append_text(overlay_segment(t, colors, cell.overlay_category, CELL_WIDTH, starts=starts))
         else:
             overlay.append(" " * CELL_WIDTH)
+        previous_overlay = cell.overlay_category if cell.overlay else None
     return body, overlay
 
 
@@ -84,7 +86,12 @@ class StationCard(Static):
         if name:
             head.append(f" {name}", style=palette.muted)
         conditions = short_conditions(metar) or (ctx.translator.t(K.UI_DETAIL_NO_REPORT) if metar is None else "")
-        lines = [head, Text(conditions, style=palette.muted)]
+        detail = Text()
+        marks = report_marks(metar)
+        if marks:  # first: the end of a long line is what a narrow card clips
+            detail.append(f"{marks} ", style=palette.stale)
+        detail.append(conditions, style=palette.muted)
+        lines = [head, detail]
         taf = entry.taf if isinstance(entry.taf, Taf) else None
         hours = strip_for(taf)[1] if taf is not None else ()
         cells = mini_cells(hours, now)

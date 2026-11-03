@@ -850,11 +850,17 @@ days = "{days} d {hours} h"
 fresh = "recente"
 stale = "desatualizado"
 
+[ui.palette]
+add_station = "Adicionar estação"
+go_to = "Ir para {station}"
+
 [ui.status]
 offline = "off-line"
 cached = "(em cache)"
 away = "em segundo plano"
 next_poll = "próxima consulta {time}"
+live = "ao vivo"
+feed_stale = "sem dados {age}"
 requests = "requisições {used}/{limit}"
 polling_off = "consulta desativada"
 demo = "dados de demonstração, não ao vivo"

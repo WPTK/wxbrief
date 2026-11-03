@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from ux_kit import briefing, load, make_app, rows
 
 from wxbrief.ui.screens.help import HelpScreen
@@ -105,7 +104,6 @@ async def test_command_palette_opens_and_closes_with_focus_restored(tmp_path) ->
         assert app.focused is before
 
 
-@pytest.mark.xfail(strict=True, reason="UX-06")
 async def test_command_palette_offers_the_apps_own_commands(tmp_path) -> None:  # type: ignore[no-untyped-def]
     """Today the palette lists only Textual's defaults: Theme, Quit, Keys, Maximize, Screenshot."""
     app = make_app(tmp_path, ["KDEN", "EGLL"])
@@ -114,3 +112,18 @@ async def test_command_palette_offers_the_apps_own_commands(tmp_path) -> None:  
         titles = " | ".join(c.title.lower() for c in app.get_system_commands(app.screen))
         missing = [w for w in ("add station", "refresh", "settings", "paste", "help") if w not in titles]
         assert not missing, (missing, titles)
+
+
+async def test_station_switch_is_offered_only_on_the_briefing_screen(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Over Help the selection would change out of sight, so the palette lists no stations there."""
+    from wxbrief.ui.commands import StationProvider
+
+    app = make_app(tmp_path, ["KDEN", "EGLL"])
+    async with app.run_test(size=(120, 40)) as pilot:
+        await _loaded(app, pilot)
+        on_briefing = [hit.text async for hit in StationProvider(app.screen).discover()]
+        assert any("KDEN" in text for text in on_briefing) and any("EGLL" in text for text in on_briefing)
+        await pilot.press("question_mark")
+        await pilot.pause()
+        assert isinstance(app.screen, HelpScreen)
+        assert [hit async for hit in StationProvider(app.screen).discover()] == []

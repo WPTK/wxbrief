@@ -28,7 +28,9 @@ TAF_INTERVAL = 1800.0
 AWAY_INTERVAL = 1800.0
 BACKOFF_CAP = 3600.0
 RETRY_FIRST = 60.0  # the wait before the first retry of a failed fetch
-STALE_AFTER = timedelta(minutes=75)
+STALE_AFTER = timedelta(minutes=55)  # routine METARs come hourly: past this the next one is overdue
+FEED_STALE_AFTER = 300.0  # seconds: the least a product may go unfetched before the feed reads STALE
+FEED_STALE_FACTOR = 1.5  # ... and a product is overdue only past this many of its own poll intervals
 
 
 class Freshness(StrEnum):
@@ -37,7 +39,7 @@ class Freshness(StrEnum):
 
 
 def freshness(observed: datetime | None, now: datetime) -> Freshness:
-    """A report is fresh for 75 minutes after its observation time; one without a time is stale."""
+    """A report is fresh for 55 minutes after its observation time; one without a time is stale."""
     if observed is None or now - observed >= STALE_AFTER:
         return Freshness.STALE
     return Freshness.FRESH
@@ -166,6 +168,20 @@ class PollScheduler:
                 continue
             track.due = max(self.hold_until, min(track.due, normal))
         self._wake.set()
+
+    def feed_age(self) -> tuple[float, bool] | None:
+        """``(seconds, stale)`` on the scheduler's monotonic clock; ``None`` before the first success.
+
+        ``seconds`` is how long ago the most overdue product last succeeded (the newest success while none is
+        overdue). A product is overdue once ``max(FEED_STALE_AFTER, FEED_STALE_FACTOR * its interval)`` has passed
+        since its last success, so the 600 s METAR poll is not "stale" in the middle of a normal cycle.
+        """
+        now = self._clock()
+        ages = {p: max(0.0, now - t.fetched) for p, t in self._tracks.items() if t.fetched is not None}
+        if not ages:
+            return None
+        overdue = {p: a for p, a in ages.items() if a > max(FEED_STALE_AFTER, FEED_STALE_FACTOR * self._interval(p))}
+        return (max(overdue.values()), True) if overdue else (min(ages.values()), False)
 
     def hold_remaining(self) -> float:
         """Seconds left of a rate-limit hold (0 when nothing is on hold)."""

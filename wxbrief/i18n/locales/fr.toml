@@ -850,11 +850,17 @@ days = "{days} j {hours} h"
 fresh = "récent"
 stale = "périmé"
 
+[ui.palette]
+add_station = "Ajouter une station"
+go_to = "Aller à {station}"
+
 [ui.status]
 offline = "hors ligne"
 cached = "(en cache)"
 away = "en arrière-plan"
 next_poll = "prochaine interrogation {time}"
+live = "en direct"
+feed_stale = "sans MAJ {age}"
 requests = "requêtes {used}/{limit}"
 polling_off = "interrogation désactivée"
 demo = "données de démo, pas en direct"

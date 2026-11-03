@@ -22,7 +22,7 @@ from wxbrief.i18n import Translator
 from wxbrief.i18n.keys import K
 from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
-from wxbrief.ui.fcat import category_colors
+from wxbrief.ui.fcat import CategoryColors, category_colors
 from wxbrief.ui.strip import StripCell, group_cells, hour_step, strip_for
 
 HATCH = "▒"
@@ -39,6 +39,16 @@ LETTER_KEYS = {
 def category_letter(t: Translator, category: FlightCategory | None) -> str:
     """The one-letter mark of a flight category in a strip cell, ``?`` when there is none."""
     return t.t(LETTER_KEYS[category]) if category is not None else "?"
+
+
+def overlay_segment(
+    t: Translator, colors: CategoryColors, category: FlightCategory | None, width: int, *, starts: bool
+) -> Text:
+    """One cell of the temporary-group row: ``▀`` in the worst category's colour, and at the start of a run the
+    category letter too, so IFR, LIFR and MVFR differ without colour."""
+    if not starts:
+        return Text(OVERLAY_MARK * width, style=Style(color=colors.fill_of(category)))
+    return Text(category_letter(t, category).ljust(width), style=colors.style(category))
 
 
 def cell_width(step: int) -> int:
@@ -237,6 +247,7 @@ class TafTimeline(Widget, can_focus=True):
         ticks = tick_labels(self.cells, width, ctx, self._icao, every_cell=self.step > 1)
         body, overlay, cursor = Text(no_wrap=True), Text(no_wrap=True), Text(no_wrap=True)
         previous: FlightCategory | None = None
+        previous_overlay: FlightCategory | None = None
         for index, cell in enumerate(self.cells):
             if cell.becoming:
                 worst = cell.worst_category
@@ -248,9 +259,13 @@ class TafTimeline(Widget, can_focus=True):
                 body.append(mark.ljust(width), style=colors.style(cell.category))
             previous = cell.category
             if cell.overlay:
-                overlay.append(OVERLAY_MARK * width, style=Style(color=colors.fill_of(cell.overlay_category)))
+                starts = previous_overlay is None or cell.overlay_category != previous_overlay
+                overlay.append_text(
+                    overlay_segment(ctx.translator, colors, cell.overlay_category, width, starts=starts)
+                )
             else:
                 overlay.append(" " * width)
+            previous_overlay = cell.overlay_category if cell.overlay else None
         cursor.append(" " * (self.cursor * width))
         cursor.append(CURSOR_MARK.ljust(width), style="bold")
         legend = Text(no_wrap=True)
