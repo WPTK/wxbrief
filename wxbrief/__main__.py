@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, TextIO
+from typing import TYPE_CHECKING, Any, TextIO
 
 from wxbrief import __version__
 from wxbrief.config import LAYOUTS, TIME_MODES, Config, LoadedConfig, clean_watchlist, load_config
@@ -119,10 +119,28 @@ def _first_positional(argv: Sequence[str]) -> str | None:
     return None
 
 
+class _PlainHelpFormatter(argparse.HelpFormatter):
+    """Python 3.14 colours help when it can: it asks ``sys.stdout.fileno()``, which raises if stdout is closed or has no
+    descriptor. Help here is plain, and never asking makes that crash impossible."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        if sys.version_info >= (3, 14):
+            kwargs["color"] = False
+        super().__init__(*args, **kwargs)
+
+
+class _Parser(argparse.ArgumentParser):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        kwargs.setdefault("formatter_class", _PlainHelpFormatter)
+        if sys.version_info >= (3, 14):
+            kwargs.setdefault("color", False)  # the parser asks again when it prints help
+        super().__init__(*args, **kwargs)
+
+
 def build_tui_parser(t: Translator | None = None) -> argparse.ArgumentParser:
     """The parser for ``wxbrief [ICAO ...]``, which opens the TUI; its help is in the language ``t``."""
     t = t or Translator.load(DEFAULT_LANGUAGE)
-    parser = argparse.ArgumentParser(
+    parser = _Parser(
         prog="wxbrief", description=t.t(K.CLI_DESCRIPTION), epilog=t.t(K.CLI_EPILOG) + " " + t.t(K.COMMON_NOTICE)
     )
     _add_global_flags(parser, t)
@@ -133,7 +151,7 @@ def build_tui_parser(t: Translator | None = None) -> argparse.ArgumentParser:
 def build_parser(t: Translator | None = None) -> argparse.ArgumentParser:
     """Return the top-level argument parser."""
     t = t or Translator.load(DEFAULT_LANGUAGE)
-    parser = argparse.ArgumentParser(prog="wxbrief", description=t.t(K.CLI_DESCRIPTION))
+    parser = _Parser(prog="wxbrief", description=t.t(K.CLI_DESCRIPTION))
     _add_global_flags(parser, t)
     commands = parser.add_subparsers(dest="command", metavar="command")
 
