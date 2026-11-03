@@ -269,7 +269,8 @@ parser_error = "Lecture impossible : {text}"
 legacy_format = "Ancien groupe horaire, lu tel qu'écrit : {text}"
 missing_time = "Aucune heure indiquée pour {text}"
 outside_period = "Le groupe de changement commence hors de la période de validité et ne figure pas sur la chronologie : {text}"
-change_out_of_order = "Le groupe de changement est hors ordre chronologique ou se termine après la période de validité : {text}"
+change_out_of_order = "Les groupes de changement sont hors ordre chronologique : {text}"
+becmg_past_period = "Le groupe de changement se termine après la période de validité : {text}"
 
 [trend]
 nosig = "Aucun changement significatif attendu dans les 2 prochaines heures"

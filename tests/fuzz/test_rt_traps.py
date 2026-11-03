@@ -336,7 +336,7 @@ def test_rt04_fm_groups_out_of_time_order_are_warned() -> None:
 
 def test_rt04_becmg_window_ending_after_the_valid_period_is_warned() -> None:
     t = parse_taf("TAF KDEN 312320Z 0100/0103 18010KT P6SM SCT050 BECMG 0102/0104 BKN010", TAF_REF)
-    assert [(w.code, w.text) for w in t.warnings] == [("change_out_of_order", "BECMG")]
+    assert [(w.code, w.text) for w in t.warnings] == [("becmg_past_period", "BECMG")]
 
 
 def test_rt06_a_pasted_markdown_fence_is_not_a_report() -> None:

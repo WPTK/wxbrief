@@ -277,7 +277,8 @@ parser_error = "Konnte nicht gelesen werden: {text}"
 legacy_format = "Alte Zeitgruppe, wie geschrieben gelesen: {text}"
 missing_time = "Keine Zeit angegeben für {text}"
 outside_period = "Die Änderungsgruppe beginnt außerhalb des Gültigkeitszeitraums und fehlt im Zeitverlauf: {text}"
-change_out_of_order = "Die Änderungsgruppe ist zeitlich nicht geordnet oder endet nach dem Gültigkeitszeitraum: {text}"
+change_out_of_order = "Die Änderungsgruppen sind zeitlich nicht geordnet: {text}"
+becmg_past_period = "Die Änderungsgruppe endet nach dem Gültigkeitszeitraum: {text}"
 
 [trend]
 nosig = "In den nächsten 2 Stunden werden keine bedeutsamen Änderungen erwartet"

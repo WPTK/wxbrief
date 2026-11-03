@@ -16,12 +16,7 @@ _VARIATION = re.compile(r"^(\d{3})V(\d{3})$")
 _UNITS = {"KT": SpeedUnit.KT, "MPS": SpeedUnit.MPS, "KMH": SpeedUnit.KMH}
 
 
-def wind_from_text(text: str) -> Wind | None:
-    """Decode one wind group from its text (``27015G25KT``); ``None`` if it is not one."""
-    return _decode(text)[0]
-
-
-def _decode(text: str) -> tuple[Wind | None, bool]:
+def decode_wind(text: str) -> tuple[Wind | None, bool]:
     """The wind in ``text``, and whether its gust was dropped for not being above the mean wind."""
     match = _WIND.match(text)
     if match is None:
@@ -52,15 +47,20 @@ def _decode(text: str) -> tuple[Wind | None, bool]:
     return wind, ignored
 
 
+def wind_kind(gust_ignored: bool) -> SemanticKind:
+    """How to tag a wind token: a gust is a peak above the mean wind, so a dropped one leaves the group ``UNKNOWN``,
+    which every caller reports as an unrecognised group."""
+    return SemanticKind.UNKNOWN if gust_ignored else SemanticKind.WIND
+
+
 def parse_wind(cur: Cursor) -> Wind | None:
     token = cur.peek()
     if token is None:
         return None
-    wind, gust_ignored = _decode(token.text)
+    wind, gust_ignored = decode_wind(token.text)
     if wind is None:
         return None
-    # A gust is a peak above the mean wind: keep the wind, drop the gust, and leave the group tagged for a warning.
-    cur.take(SemanticKind.UNKNOWN if gust_ignored else SemanticKind.WIND)
+    cur.take(wind_kind(gust_ignored))
     return wind
 
 

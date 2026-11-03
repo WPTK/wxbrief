@@ -155,6 +155,7 @@ _WARNING_KEYS = {
     "missing_time": K.WARN_MISSING_TIME,
     "outside_period": K.WARN_OUTSIDE_PERIOD,
     "change_out_of_order": K.WARN_CHANGE_OUT_OF_ORDER,
+    "becmg_past_period": K.WARN_BECMG_PAST_PERIOD,
 }
 
 
