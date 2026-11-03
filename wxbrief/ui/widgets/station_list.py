@@ -124,14 +124,14 @@ class StationList(OptionList):
             theirs = ctx.awc_differs(entry)
             if theirs:
                 line.append(f" {glyphs.differs}{theirs}", style=palette.stale)
+            marks = report_marks(entry.metar)
+            if marks:  # before the conditions: a narrow list clips the end of the row, and these must survive
+                line.append(f" {marks}", style=palette.stale)
             conditions = short_conditions(entry.metar)
             if conditions:
                 line.append(" " + conditions)
             elif entry.metar is None:
                 line.append(" " + ctx.translator.t(K.UI_DETAIL_NO_REPORT), style=palette.muted)
-            marks = report_marks(entry.metar)
-            if marks:
-                line.append(f" {marks}", style=palette.stale)
             station = ctx.station(entry.icao) if self._named else None
             if station is not None:
                 line.append(f"  {station.name}", style=palette.muted)

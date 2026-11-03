@@ -40,8 +40,12 @@ class StationProvider(Provider):
     """``KDEN`` or ``Denver`` in the palette selects that station of the watchlist."""
 
     def _stations(self) -> list[tuple[str, str]]:
+        """The watchlist, or nothing when the palette was opened over Help, Settings or a detail: the selection would
+        change out of sight."""
         app = cast("WxBriefApp", self.app)
-        found = []
+        found: list[tuple[str, str]] = []
+        if not isinstance(self.screen, BriefingScreen):
+            return found
         for icao in app.state.ids:
             station = app.ctx.station(icao)
             found.append((icao, f"{icao} {station.name}" if station else icao))

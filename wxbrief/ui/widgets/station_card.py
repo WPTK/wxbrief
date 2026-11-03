@@ -86,10 +86,11 @@ class StationCard(Static):
         if name:
             head.append(f" {name}", style=palette.muted)
         conditions = short_conditions(metar) or (ctx.translator.t(K.UI_DETAIL_NO_REPORT) if metar is None else "")
-        detail = Text(conditions, style=palette.muted)
+        detail = Text()
         marks = report_marks(metar)
-        if marks:
-            detail.append(f" {marks}" if conditions else marks, style=palette.stale)
+        if marks:  # first: the end of a long line is what a narrow card clips
+            detail.append(f"{marks} ", style=palette.stale)
+        detail.append(conditions, style=palette.muted)
         lines = [head, detail]
         taf = entry.taf if isinstance(entry.taf, Taf) else None
         hours = strip_for(taf)[1] if taf is not None else ()
