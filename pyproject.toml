@@ -103,7 +103,7 @@ check_untyped_defs = true
 # The decoder and the translation layer are typed end to end: the per-module flags that make up `--strict`.
 # (`strict = true` inside an override is applied to every module by mypy, so the flags are spelled out.)
 [[tool.mypy.overrides]]
-module = ["wxbrief.decode.*", "wxbrief.i18n.*"]
+module = ["wxbrief.decode.*", "wxbrief.i18n.*", "wxbrief.calc.*"]
 disallow_any_generics = true
 disallow_subclassing_any = true
 disallow_untyped_calls = true
