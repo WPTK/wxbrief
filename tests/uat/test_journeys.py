@@ -131,7 +131,7 @@ async def test_timeline_markers_differ_without_colour() -> None:
             await pilot.press("3")
             await pilot.pause(0.2)
             timeline = app.screen.query_one(TafTimeline)
-            _ticks, body, overlay, _cursor, legend = plain(timeline).split("\n")
+            _ticks, body, _worst, overlay, _cursor, legend = plain(timeline).split("\n")
             assert HATCH != OVERLAY_MARK
             assert HATCH in body and OVERLAY_MARK not in body  # the becoming cells, on the category row
             assert OVERLAY_MARK in overlay and HATCH not in overlay  # the temporary marks, on their own row

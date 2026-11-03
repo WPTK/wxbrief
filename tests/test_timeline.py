@@ -293,3 +293,44 @@ def test_the_span_falls_back_to_the_groups_when_the_header_has_no_period() -> No
     timeline = expand_timeline(forecast)
     assert forecast.valid_from is None
     assert timeline.start == at(31, 8) and timeline.end == at(31, 10)
+
+
+# --- the hourly worst case: every layer covering the hour, flattened ----------------------------------------------------
+
+
+def hourly(body: str, header: str = "3106/3118") -> list[tuple[int, FlightCategory | None, FlightCategory | None]]:
+    forecast = parse_taf(f"TAF KDEN 310500Z {header} {body}", REF)
+    return [(c.start.hour, c.category, c.worst_category) for c in hourly_cells(expand_timeline(forecast))]
+
+
+def test_tempo_over_a_becmg_window_takes_the_worst_of_both() -> None:
+    cells = hourly("18010KT 9999 SKC BECMG 3108/3112 4SM BR OVC008 TEMPO 3109/3111 BKN002")
+    assert [c[2] for c in cells[:8]] == [VFR, VFR, IFR, LIFR, LIFR, IFR, IFR, IFR]
+    assert cells[2][1] is VFR  # the BECMG has not landed: prevailing stays VFR, the worst case is IFR
+
+
+def test_prob_counts_as_worst_case_but_not_as_prevailing() -> None:
+    cells = hourly("18010KT 9999 SKC PROB30 3110/3112 1SM BR")
+    assert [c[1] for c in cells] == [VFR] * 12
+    assert [c[2] for c in cells[4:6]] == [IFR, IFR] and cells[3][2] is VFR and cells[6][2] is VFR
+
+
+def test_hours_run_across_midnight() -> None:
+    cells = hourly("18010KT 9999 SKC TEMPO 0100/0102 BKN004", header="3122/0106")
+    assert [c[0] for c in cells] == [22, 23, 0, 1, 2, 3, 4, 5]
+    assert [c[2] for c in cells] == [VFR, VFR, LIFR, LIFR, VFR, VFR, VFR, VFR]
+
+
+def test_hours_run_across_the_end_of_a_month() -> None:
+    forecast = parse_taf("TAF KDEN 301100Z 3012/0112 18010KT 9999 SKC TEMPO 3123/0102 BKN004", REF)
+    cells = hourly_cells(expand_timeline(forecast))
+    assert len(cells) == 48
+    assert cells[0].start.day == 30 and cells[-1].start.day == 1 and cells[-1].start.month == 11
+    assert [c.worst_category for c in cells[34:39]] == [VFR] + [LIFR] * 3 + [VFR]  # 31 22, then 31 23, 01 00, 01 01, then 01 02
+
+
+def test_a_gap_in_the_forecast_has_no_category() -> None:
+    forecast = parse_taf("TAF KDEN 310500Z 3106/3112 FM310900 18010KT 9999 SKC", REF)
+    cells = hourly_cells(expand_timeline(forecast))
+    assert [c.category for c in cells] == [None, None, None, VFR, VFR, VFR]
+    assert [c.worst_category for c in cells] == [None, None, None, VFR, VFR, VFR]

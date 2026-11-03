@@ -1,7 +1,8 @@
 """The TAF timeline: a strip of hourly cells over the valid period.
 
 Rows, top to bottom: tick labels (hours in the chosen time mode), the cells (background = prevailing flight category,
-hatched while a ``BECMG`` is under way), a thin row for temporary groups (coloured by their worst case), the cursor and
+hatched while a ``BECMG`` is under way), the worst case of every layer that covers the hour (``+`` where it is worse
+than what prevails), a thin row for temporary groups (coloured by their worst case), the cursor and
 a legend. The mouse (hover or click) and ``Left``/``Right`` move the cursor; ``TafTimeline.Moved`` tells the detail
 pane which period to describe. In a narrow terminal, or when hourly cells would not fit, a cell spans three hours.
 """
@@ -28,6 +29,7 @@ from wxbrief.ui.strip import StripCell, group_cells, hour_step, strip_for
 HATCH = "▒"
 OVERLAY_MARK = "▀"
 CURSOR_MARK = "▲"
+RAISED_MARK = "+"
 LETTER_KEYS = {
     FlightCategory.VFR: K.TIMELINE_LETTER_VFR,
     FlightCategory.MVFR: K.TIMELINE_LETTER_MVFR,
@@ -49,6 +51,18 @@ def overlay_segment(
     if not starts:
         return Text(OVERLAY_MARK * width, style=Style(color=colors.fill_of(category)))
     return Text(category_letter(t, category).ljust(width), style=colors.style(category))
+
+
+def worst_segment(
+    t: Translator, colors: CategoryColors, cell: StripCell, width: int, *, starts: bool
+) -> Text:
+    """One cell of the worst-case row: filled in the worst category's colour, its letter at the start of a run, and
+    ``+`` where the worst case is worse than what prevails (a temporary group or a ``BECMG`` that may land), so a
+    raised hour differs from a prevailing one without colour."""
+    worst = cell.worst_category
+    raised = worst != cell.category
+    letter = category_letter(t, worst) if starts else " "
+    return Text((letter + (RAISED_MARK if raised else " ")).ljust(width), style=colors.style(worst))
 
 
 def cell_width(step: int) -> int:
@@ -245,8 +259,10 @@ class TafTimeline(Widget, can_focus=True):
         muted = ctx.palette.muted
         width = cell_width(self.step)
         ticks = tick_labels(self.cells, width, ctx, self._icao, every_cell=self.step > 1)
-        body, overlay, cursor = Text(no_wrap=True), Text(no_wrap=True), Text(no_wrap=True)
+        body, worst_row = Text(no_wrap=True), Text(no_wrap=True)
+        overlay, cursor = Text(no_wrap=True), Text(no_wrap=True)
         previous: FlightCategory | None = None
+        previous_worst: tuple[FlightCategory | None, bool] | None = None
         previous_overlay: FlightCategory | None = None
         for index, cell in enumerate(self.cells):
             if cell.becoming:
@@ -258,6 +274,10 @@ class TafTimeline(Widget, can_focus=True):
                 mark = letter if cell.category != previous or index == 0 else " "
                 body.append(mark.ljust(width), style=colors.style(cell.category))
             previous = cell.category
+            worst_key = (cell.worst_category, cell.worst_category != cell.category)
+            starts = worst_key != previous_worst
+            worst_row.append_text(worst_segment(ctx.translator, colors, cell, width, starts=starts))
+            previous_worst = worst_key
             if cell.overlay:
                 starts = previous_overlay is None or cell.overlay_category != previous_overlay
                 overlay.append_text(
@@ -272,5 +292,7 @@ class TafTimeline(Widget, can_focus=True):
         legend.append(HATCH, style=muted)
         legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_BECOMING)}   ", style=muted)
         legend.append(OVERLAY_MARK, style=muted)
-        legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_TEMPORARY)}", style=muted)
-        return Text("\n", no_wrap=True, overflow="crop").join([ticks, body, overlay, cursor, legend])
+        legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_TEMPORARY)}   ", style=muted)
+        legend.append(RAISED_MARK, style=muted)
+        legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_WORST)}", style=muted)
+        return Text("\n", no_wrap=True, overflow="crop").join([ticks, body, worst_row, overlay, cursor, legend])
