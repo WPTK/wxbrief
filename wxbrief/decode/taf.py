@@ -63,6 +63,7 @@ WARN_LEGACY_FORMAT = "legacy_format"
 WARN_MISSING_TIME = "missing_time"
 WARN_OUTSIDE_PERIOD = "outside_period"
 WARN_CHANGE_OUT_OF_ORDER = "change_out_of_order"
+WARN_BECMG_PAST_PERIOD = "becmg_past_period"
 MAX_VALID_PERIOD = timedelta(hours=30)  # ICAO Annex 3: no TAF is valid for longer
 MAX_VALID_LEAD = timedelta(hours=24)  # a period starts at or soon after its issue, never a day or more later
 
@@ -152,7 +153,7 @@ def _resolve_valid(draft: _Draft, token: Token, start: tuple[int, int], end: tup
     """Set the valid period from ``(day, hour)`` pairs: the end is the first such moment after the start."""
     if draft.issue_time is not None:
         moment, warning = resolve_day_time(start[0], start[1], 0, draft.issue_time)
-    else:  # no issue time: the period is read against the moment the TAF is read, which it cannot lie far after
+    else:  # no issue time: read the period against the moment the TAF is read; its lead is not judged without one
         moment, warning = resolve_report_time(start[0], start[1], 0, draft.reference)
     if moment is None and warning is not None:
         draft.warn(warning, token)
@@ -305,7 +306,8 @@ def _open_group(cur: Cursor, draft: _Draft, *, base: bool) -> _Group:
 
 
 def _check_inside_period(cur: Cursor, draft: _Draft, group: _Group) -> None:
-    """Warn about a change group that starts outside the valid period: the timeline cannot place it."""
+    """Warn about a change group the timeline cannot place: outside the valid period, a BECMG that ends after it, or an
+    FM that starts before an earlier FM."""
     if group.change is ChangeType.BASE or group.start is None:
         return
     before = draft.valid_from is not None and group.start < draft.valid_from
@@ -319,10 +321,13 @@ def _check_inside_period(cur: Cursor, draft: _Draft, group: _Group) -> None:
         and group.end is not None
         and group.end > draft.valid_to
     )
+    if runs_past:
+        draft.warn(WARN_BECMG_PAST_PERIOD, cur.token_at(group.first))
+        return
     earlier = group.change is ChangeType.FM and any(
         p.change is ChangeType.FM and p.start is not None and p.start > group.start for p in draft.groups
     )
-    if runs_past or earlier:
+    if earlier:
         draft.warn(WARN_CHANGE_OUT_OF_ORDER, cur.token_at(group.first))
 
 

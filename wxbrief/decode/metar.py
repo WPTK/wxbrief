@@ -300,7 +300,11 @@ def _has_coded_color(group: ColorStateGroup | None) -> bool:
 def _decode_remarks(cur: Cursor, draft: _Draft, rmk: Token) -> None:
     """Decode everything after ``RMK``; if that fails, the rest stays plain ``REMARK`` tokens and a warning."""
     try:
+        first = cur.pos
         draft.remarks = parse_remarks(cur, Context(draft.observed))
+        for index in range(first, cur.pos):  # a remark wind that dropped its gust is left UNKNOWN, as in the body
+            if cur.kind_at(index) is SemanticKind.UNKNOWN:
+                draft.warn(WARN_UNKNOWN_TOKEN, cur.token_at(index))
     except Exception:
         draft.remarks = []
         draft.warn(WARN_PARSER_ERROR, rmk)

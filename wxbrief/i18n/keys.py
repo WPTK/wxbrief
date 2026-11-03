@@ -755,6 +755,7 @@ class K:
     WARN_MISSING_TIME = "warn.missing_time"
     WARN_OUTSIDE_PERIOD = "warn.outside_period"
     WARN_CHANGE_OUT_OF_ORDER = "warn.change_out_of_order"
+    WARN_BECMG_PAST_PERIOD = "warn.becmg_past_period"
     WARN_PARSER_ERROR = "warn.parser_error"
     WARN_UNKNOWN_TOKEN = "warn.unknown_token"
 

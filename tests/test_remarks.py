@@ -476,3 +476,23 @@ def test_a_remarks_failure_cannot_escape(monkeypatch: pytest.MonkeyPatch) -> Non
     assert metar.remarks == ()
     assert [warning.code for warning in metar.warnings] == ["parser_error"]
     assert all(tok.kind is SemanticKind.REMARK for tok in metar.tokens[-3:])  # nothing lost
+
+
+@pytest.mark.parametrize(
+    ("rmk", "kind", "unknown"),
+    [
+        ("RWY17L 02008G05KT", RunwayWind, "02008G05KT"),
+        ("R06/31008G08MPS", RunwayWind, "R06/31008G08MPS"),
+        ("WIND 2600FT 19040G30KT", WindAtHeight, "19040G30KT"),
+    ],
+)
+def test_a_remark_wind_gust_not_above_the_mean_is_dropped_with_a_warning(rmk: str, kind: type, unknown: str) -> None:
+    m = parse_metar(f"KDEN 311853Z 18012KT 10SM CLR 12/10 A2992 RMK AO2 {rmk}", SIX_HOUR)
+    found = [r for r in m.remarks if isinstance(r, kind)]
+    assert len(found) == 1 and found[0].wind.gust is None and found[0].wind.speed is not None
+    assert [(w.code, w.text) for w in m.warnings] == [("unknown_token", unknown)]
+
+
+def test_a_remark_wind_gust_above_the_mean_raises_no_warning() -> None:
+    m = parse_metar("KDEN 311853Z 18012KT 10SM CLR 12/10 A2992 RMK AO2 RWY17L 02008G15KT", SIX_HOUR)
+    assert m.warnings == ()

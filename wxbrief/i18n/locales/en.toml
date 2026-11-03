@@ -271,7 +271,8 @@ parser_error = "Could not read: {text}"
 legacy_format = "Old-style time group, read as written: {text}"
 missing_time = "No time given for {text}"
 outside_period = "Change group starts outside the forecast period and is not on the timeline: {text}"
-change_out_of_order = "Change group is out of time order or ends after the forecast period: {text}"
+change_out_of_order = "Forecast change groups are out of time order: {text}"
+becmg_past_period = "Change group ends after the forecast period: {text}"
 
 [trend]
 nosig = "No significant change expected in the next 2 hours"

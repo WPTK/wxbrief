@@ -222,3 +222,22 @@ def test_an_unknown_language_is_refused(capsys: pytest.CaptureFixture[str]) -> N
 def test_tui_help_text_is_translated() -> None:
     parser_help = {lang: Translator.load(lang).t(K.CLI_HELP_DEMO) for lang in LANGUAGES}
     assert len(set(parser_help.values())) == len(LANGUAGES)
+
+
+@pytest.mark.parametrize(
+    ("lang", "out_of_order", "becmg_past"),
+    [
+        ("en", "Forecast change groups are out of time order: FM010600", "Change group ends after the forecast period: BECMG"),
+        ("de", "Die Änderungsgruppen sind zeitlich nicht geordnet: FM010600", "Die Änderungsgruppe endet nach dem Gültigkeitszeitraum: BECMG"),
+        ("es", "Los grupos de cambio están fuera de orden cronológico: FM010600", "El grupo de cambio termina después del período de validez: BECMG"),
+        ("fr", "Les groupes de changement sont hors ordre chronologique : FM010600", "Le groupe de changement se termine après la période de validité : BECMG"),
+        ("pt", "Os grupos de mudança estão fora de ordem cronológica: FM010600", "O grupo de mudança termina depois do período de validade: BECMG"),
+    ],
+)
+def test_the_two_taf_change_order_warnings_have_their_own_text(lang: str, out_of_order: str, becmg_past: str) -> None:
+    from wxbrief.decode.model import ParseWarning
+    from wxbrief.render import phrases
+
+    t = Translator.load(lang)
+    assert phrases.describe_warning(t, ParseWarning("change_out_of_order", 0, 8, "FM010600")) == out_of_order
+    assert phrases.describe_warning(t, ParseWarning("becmg_past_period", 0, 5, "BECMG")) == becmg_past
