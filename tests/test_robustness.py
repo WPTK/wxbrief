@@ -646,12 +646,14 @@ def test_help_and_usage_errors_are_plain_whatever_the_colour_variables_say(
     assert "usage: wxbrief" in out and "error: the following arguments are required: ICAO" in err
 
 
-def test_help_and_a_usage_error_end_quietly_on_a_closed_stdout(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize(("words", "code"), [(["--help"], 0), (["get", "--no-such-flag"], 2)])
+def test_help_and_a_usage_error_end_quietly_on_a_closed_stdout(
+    monkeypatch: pytest.MonkeyPatch, words: list[str], code: int
+) -> None:
     monkeypatch.setattr(sys, "stdout", _ClosedPipe(BrokenPipeError()))
-    for words, code in ((["--help"], 0), (["get", "--no-such-flag"], 2)):
-        with pytest.raises(SystemExit) as ended:
-            main(words)
-        assert ended.value.code == code
+    with pytest.raises(SystemExit) as ended:
+        main(words)
+    assert ended.value.code == code
 
 
 def test_an_empty_taf_answer_is_believed_for_a_forecast_with_no_readable_end() -> None:
