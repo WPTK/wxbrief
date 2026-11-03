@@ -11,7 +11,7 @@ from textual.widgets import OptionList
 from textual.widgets.option_list import Option
 
 from wxbrief.data.poll import Freshness
-from wxbrief.decode.model import Metar, SemanticKind
+from wxbrief.decode.model import Flag, Metar, SemanticKind
 from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
@@ -31,6 +31,14 @@ def short_conditions(metar: Metar | None) -> str:
         elif vis:
             break
     return " ".join(part for part in (wind, " ".join(vis)) if part)
+
+
+def report_marks(metar: Metar | None) -> str:
+    """``SPECI`` for an unscheduled report and ``$`` for a station asking for maintenance: what a scan must not miss."""
+    if metar is None:
+        return ""
+    marks = [("SPECI", Flag.SPECIAL_REPORT), ("$", Flag.MAINTENANCE)]
+    return " ".join(text for text, flag in marks if flag in metar.flags)
 
 
 LIST_MIN, LIST_MAX = 38, 56  # columns: the list takes a quarter of the terminal, between these
@@ -116,6 +124,9 @@ class StationList(OptionList):
             theirs = ctx.awc_differs(entry)
             if theirs:
                 line.append(f" {glyphs.differs}{theirs}", style=palette.stale)
+            marks = report_marks(entry.metar)
+            if marks:  # before the conditions: a narrow list clips the end of the row, and these must survive
+                line.append(f" {marks}", style=palette.stale)
             conditions = short_conditions(entry.metar)
             if conditions:
                 line.append(" " + conditions)

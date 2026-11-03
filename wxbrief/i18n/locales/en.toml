@@ -847,11 +847,17 @@ days = "{days} d {hours} h"
 fresh = "fresh"
 stale = "stale"
 
+[ui.palette]
+add_station = "Add station"
+go_to = "Go to {station}"
+
 [ui.status]
 offline = "offline"
 cached = "(cached)"
 away = "away"
 next_poll = "next poll {time}"
+live = "live"
+feed_stale = "no update for {age}"
 requests = "req {used}/{limit}"
 polling_off = "polling off"
 demo = "demo data, not live"

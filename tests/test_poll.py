@@ -261,10 +261,10 @@ def test_rate_budget_sliding_window() -> None:
     assert budget.try_acquire(100)
 
 
-def test_freshness_threshold_is_75_minutes() -> None:
+def test_freshness_threshold_is_55_minutes() -> None:
     now = datetime(2026, 10, 31, 12, 0, tzinfo=UTC)
-    assert freshness(now - timedelta(minutes=74), now) is Freshness.FRESH
-    assert freshness(now - timedelta(minutes=75), now) is Freshness.STALE
+    assert freshness(now - timedelta(minutes=54), now) is Freshness.FRESH
+    assert freshness(now - timedelta(minutes=55), now) is Freshness.STALE
     assert freshness(None, now) is Freshness.STALE
 
 

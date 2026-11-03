@@ -80,6 +80,12 @@ class StatusBar(Static):
                 if scheduler.away
                 else t.t(K.UI_STATUS_NEXT_POLL, time=countdown(scheduler.next_due_in()))
             )
+            feed = None if scheduler.away or offline else scheduler.feed_age()  # away polls slowly; offline says so
+            if feed is not None and feed[1]:
+                stale = t.t(K.UI_STATUS_FEED_STALE, age=age_text(timedelta(seconds=feed[0]), t))
+                text.append(f" | {stale}", style=palette.stale)
+            elif feed is not None:
+                text.append(f" | {t.t(K.UI_STATUS_LIVE)}", style=palette.fresh)
             used = t.t(K.UI_STATUS_REQUESTS, used=scheduler.budget.used, limit=scheduler.budget.limit)
             text.append(f" | {wait} | {used}", style=palette.muted)
         else:
