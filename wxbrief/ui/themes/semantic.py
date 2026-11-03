@@ -31,8 +31,8 @@ SEMANTIC_DEFAULTS: dict[str, str] = {
 FLIGHT_CATEGORY_COLORS: dict[str, tuple[str, str]] = {
     "vfr": ("#3ddc6a", "#1b7f2a"),
     "mvfr": ("#4d9dff", "#1e5fd6"),
-    "ifr": ("#ff5c5c", "#c4161c"),
-    "lifr": ("#ff5cf0", "#a8007f"),
+    "ifr": ("#ff4040", "#c4161c"),
+    "lifr": ("#ffb3f8", "#a8007f"),
 }
 
 # NATO colour states, from best to worst.
