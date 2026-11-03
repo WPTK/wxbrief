@@ -178,6 +178,12 @@
       "hpa": null
     }
   ],
+  "remark_spans": [
+    [
+      11,
+      12
+    ]
+  ],
   "flavor": "ICAO",
   "military": false,
   "ceiling": null,

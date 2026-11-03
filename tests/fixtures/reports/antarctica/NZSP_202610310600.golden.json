@@ -212,6 +212,12 @@
       "text": "CLN AIR 28009KT ALL WNDS GRID SDF/HDF"
     }
   ],
+  "remark_spans": [
+    [
+      12,
+      19
+    ]
+  ],
   "flavor": "MIXED",
   "military": false,
   "ceiling": {

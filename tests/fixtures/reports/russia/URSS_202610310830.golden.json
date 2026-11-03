@@ -274,6 +274,20 @@
       "hpa": null
     }
   ],
+  "remark_spans": [
+    [
+      14,
+      15
+    ],
+    [
+      15,
+      17
+    ],
+    [
+      17,
+      18
+    ]
+  ],
   "flavor": "ICAO",
   "military": false,
   "ceiling": {

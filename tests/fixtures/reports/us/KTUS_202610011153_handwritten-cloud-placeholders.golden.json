@@ -168,6 +168,12 @@
       "precipitation_discriminator": true
     }
   ],
+  "remark_spans": [
+    [
+      12,
+      13
+    ]
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": null,

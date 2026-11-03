@@ -326,6 +326,28 @@
       "variation": null
     }
   ],
+  "remark_spans": [
+    [
+      13,
+      15
+    ],
+    [
+      15,
+      17
+    ],
+    [
+      17,
+      19
+    ],
+    [
+      19,
+      21
+    ],
+    [
+      21,
+      23
+    ]
+  ],
   "flavor": "ICAO",
   "military": false,
   "ceiling": {

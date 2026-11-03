@@ -236,6 +236,12 @@
       "hpa": 1008
     }
   ],
+  "remark_spans": [
+    [
+      14,
+      15
+    ]
+  ],
   "flavor": "ICAO",
   "military": false,
   "ceiling": {
