@@ -30,6 +30,13 @@ def wind_from_text(text: str) -> Wind | None:
     unit = _UNITS[match.group("unit")]
     speed = None if match.group("spd") == "//" else Speed(int(match.group("spd")), unit)
     gust = Speed(int(match.group("gst")), unit) if match.group("gst") else None
+    if (
+        speed is not None
+        and gust is not None
+        and not (match.group("above") or match.group("gabove"))
+        and gust.value <= speed.value
+    ):
+        return None  # a gust is a peak above the mean wind, so this is not a wind group
     return Wind(
         direction,
         speed,

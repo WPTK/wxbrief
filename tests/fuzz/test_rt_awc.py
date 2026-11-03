@@ -86,7 +86,7 @@ async def test_damaged_answers_raise_awc_error_never_a_json_error(response: http
         (None, 60.0),
         ("", 60.0),
         ("0", 0.0),
-        ("-5", 0.0),
+        ("-5", 60.0),
         ("nan", 60.0),
         ("inf", 60.0),
         ("1e999", 60.0),
@@ -94,7 +94,7 @@ async def test_damaged_answers_raise_awc_error_never_a_json_error(response: http
         ("30, 60", 60.0),
         ("  45  ", 45.0),
         ("7200", 3600.0),
-        ("5.5", 5.5),
+        ("5.5", 60.0),
         ("0x10", 60.0),
     ],
 )
@@ -116,7 +116,6 @@ def test_retry_after_http_date_in_the_past_or_naive_is_not_negative(stamp: str) 
     assert 0.0 <= value <= 3600.0
 
 
-@pytest.mark.xfail(strict=True, reason="RT-03")
 @pytest.mark.parametrize("header", ["1e3", "1_0", "+5", "5.", ".5"])
 def test_rt03_retry_after_is_delta_seconds_or_an_http_date_only(header: str) -> None:
     """RFC 9110: delta-seconds is 1*DIGIT. float() also takes exponents, underscores and signs."""

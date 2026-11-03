@@ -278,45 +278,38 @@ def test_cavok_base_with_tempo_visibility_spells_out_cavok() -> None:
 # --- findings (strict xfail) ---------------------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(strict=True, reason="RT-01")
 @pytest.mark.parametrize("wind", ["18012G10KT", "18012G12KT", "18012G00KT"])
 def test_rt01_a_gust_not_above_the_mean_wind_is_flagged(wind: str) -> None:
     m = decode(f"{wind} 10SM CLR 12/10 A2992")
     assert m.warnings or m.wind.gust is None
 
 
-@pytest.mark.xfail(strict=True, reason="RT-02")
 @pytest.mark.parametrize("group", ["A9999", "A0000", "A0100", "Q0000", "Q0001", "Q9999"])
 def test_rt02_an_impossible_pressure_is_not_accepted_silently(group: str) -> None:
     m = decode(f"18012KT 10SM CLR 12/10 {group}")
     assert m.warnings or not m.altimeters
 
 
-@pytest.mark.xfail(strict=True, reason="RT-04")
 def test_rt04_fm_groups_out_of_time_order_are_warned() -> None:
     t = parse_taf("TAF KDEN 312320Z 0100/0124 18010KT P6SM SCT050 FM011200 18010KT FM010600 18005KT", TAF_REF)
     assert t.warnings
 
 
-@pytest.mark.xfail(strict=True, reason="RT-04")
 def test_rt04_becmg_window_ending_after_the_valid_period_is_warned() -> None:
     t = parse_taf("TAF KDEN 312320Z 0100/0103 18010KT P6SM SCT050 BECMG 0102/0104 BKN010", TAF_REF)
     assert t.warnings
 
 
-@pytest.mark.xfail(strict=True, reason="RT-06")
 def test_rt06_a_pasted_markdown_fence_is_not_a_report() -> None:
     reports = parse_any("```\nKDEN 311853Z 18012KT 10SM CLR 12/10 A2992\n```", REF)
     assert len(reports) == 1
 
 
-@pytest.mark.xfail(strict=True, reason="RT-07")
 def test_rt07_two_reports_on_one_line_without_keywords_are_two_reports() -> None:
     raw = "KDEN 311853Z 18012KT 10SM CLR 12/10 A2992 KJFK 311851Z 18012KT 10SM CLR 12/10 A2992"
     assert [r.station for r in parse_any(raw, REF)] == ["KDEN", "KJFK"]
 
 
-@pytest.mark.xfail(strict=True, reason="RT-08")
 @pytest.mark.parametrize("prob", ["PROB10", "PROB50", "PROB90"])
 def test_rt08_only_prob30_and_prob40_exist(prob: str) -> None:
     """ICAO Annex 3 App. 5 and the FAA TAF code allow PROB30 and PROB40 only."""

@@ -301,7 +301,13 @@ def _check_inside_period(cur: Cursor, draft: _Draft, group: _Group) -> None:
         return
     before = draft.valid_from is not None and group.start < draft.valid_from
     after = draft.valid_to is not None and group.start >= draft.valid_to
-    if before or after:
+    runs_past = (
+        group.change is ChangeType.BECMG and draft.valid_to is not None and group.end is not None and group.end > draft.valid_to
+    )
+    earlier = group.change is ChangeType.FM and any(
+        p.change is ChangeType.FM and p.start is not None and p.start > group.start for p in draft.groups
+    )
+    if before or after or runs_past or earlier:
         draft.warn(WARN_OUTSIDE_PERIOD, cur.token_at(group.first))
 
 

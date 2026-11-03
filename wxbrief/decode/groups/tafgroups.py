@@ -39,7 +39,7 @@ _LEGACY_VALID = re.compile(r"^(0[1-9]|[12]\d|3[01])([01]\d|2[0-3])(0\d|1\d|2[0-4
 _LEGACY_WINDOW = re.compile(r"^(0\d|1\d|2[0-4])(0\d|1\d|2[0-4])$")
 _FM = re.compile(r"^FM(\d{2})(\d{2})(\d{2})$")
 _LEGACY_FM = re.compile(r"^FM(\d{2})(\d{2})$")
-_PROB = re.compile(r"^PROB(\d{2})$")
+_PROB = re.compile(r"^PROB([34]0)$")  # only PROB30 and PROB40 exist (ICAO Annex 3 App. 5)
 _WIND_SHEAR = re.compile(
     r"^WS(?P<height>\d{3})/(?P<dir>\d{3}|VRB)(?P<spd>\d{2,3})(?:G(?P<gst>\d{2,3}))?(?P<unit>KT|MPS|KMH)$"
 )

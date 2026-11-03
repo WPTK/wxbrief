@@ -67,9 +67,9 @@ class TransportError(AwcError):
 def _retry_after(response: httpx.Response) -> float:
     """Seconds from a ``Retry-After`` header (a number or an HTTP date), at most an hour; a default when unusable."""
     value = response.headers.get("Retry-After", "").strip()
-    try:
+    if value.isascii() and value.isdigit():  # RFC 9110 delta-seconds is 1*DIGIT; float() also takes "1e3", "+5", "1_0"
         seconds = float(value)
-    except ValueError:
+    else:
         try:
             seconds = (parsedate_to_datetime(value) - datetime.now(UTC)).total_seconds()
         except (TypeError, ValueError):

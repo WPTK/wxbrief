@@ -38,6 +38,7 @@ _MODIFIERS = frozenset({"AMD", "COR", "CNL", "NIL", "RTD", "AUTO", "CCA", "CCB",
 _STATION = re.compile(r"^[A-Z][A-Z0-9]{3}$")
 _CONTINUATION = re.compile(r"^(?:FM\d|BECMG|TEMPO|INTER|PROB\d|T[XN]M?\d|RMK|NOSIG)", re.IGNORECASE)
 _ISSUE_TIME = re.compile(r"^\d{6}Z$")
+_FENCE = re.compile(r"^\s*(?:`{3,}|~{3,})[\w+-]*\s*$")  # a pasted Markdown code fence: formatting, not a report
 _VALID_PERIOD = re.compile(r"^\d{4}/\d{4}$")
 _TAF_GROUP = re.compile(r"^(?:FM\d{6}|PROB[1-9]0)$")
 _TEMPERATURE_DEW_POINT = re.compile(r"^(?:M?\d{2}|//)/(?:M?\d{2}|//)$")
@@ -67,6 +68,20 @@ def _full_head(words: list[str]) -> bool:
     return _STATION.match(word) is not None and _ISSUE_TIME.match(next(rest, "")) is not None
 
 
+def _is_bare_head(upper: list[str], position: int) -> bool:
+    """Whether a station and issue time at ``position`` open a second report on the line (``... A2992 KJFK 311851Z``).
+
+    A station straight after a keyword or modifier (``TAF AMD KDEN 311853Z``) is the head of the report it is in.
+    """
+    return (
+        _STATION.match(upper[position]) is not None
+        and position + 1 < len(upper)
+        and _ISSUE_TIME.match(upper[position + 1]) is not None
+        and upper[position - 1] not in _KEYWORDS
+        and (upper[position - 1] not in _MODIFIERS or upper[position - 1] in ("NIL", "CNL"))
+    )
+
+
 def _split_keywords(line: str, in_remarks: bool = False) -> list[str]:
     """Cut a line in front of a keyword that starts a second report on it (``... A3001 TAF KDEN 1312/...``)."""
     words = list(_WORD.finditer(line))
@@ -74,6 +89,8 @@ def _split_keywords(line: str, in_remarks: bool = False) -> list[str]:
     cuts: list[int] = []
     for position, word in enumerate(words[1:], start=1):
         in_remarks = in_remarks or upper[position - 1] == "RMK"
+        if _is_bare_head(upper, position):
+            cuts.append(word.start())
         if upper[position] not in _KEYWORDS:
             continue
         previous = upper[position - 1]
@@ -136,6 +153,9 @@ def _split_chunk(chunk: str) -> list[str]:
     reports: list[_Open] = []
     current: _Open | None = None
     for line in chunk.split("\n"):
+        if _FENCE.match(line):
+            current = None  # a fence ends the report before it, like a blank line, and is part of no report
+            continue
         in_remarks = current is not None and current.in_remarks
         for piece in _split_keywords(line, in_remarks):
             if not piece.strip():

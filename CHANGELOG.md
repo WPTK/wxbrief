@@ -5,6 +5,10 @@
 ### Fixed
 
 - Warn when a TAF is valid for more than 30 hours or starts a day or more after it was issued, which also catches a 29 February that does not exist (#284)
+- Reject a gust that is not above the mean wind and an altimeter or QNH outside 20.00-32.00 inHg or 850-1100 hPa, as unrecognised groups (#279, #280)
+- Read `Retry-After` as whole seconds or an HTTP date only (#281)
+- Warn about `FM` groups out of time order and a `BECMG` that ends after the valid period (#282)
+- Drop pasted Markdown code fences, split two keywordless reports on one line, and read only `PROB30` and `PROB40` as probabilities (#286, #287, #289)
 
 ## 0.3.0 - 2026-10-31
 
