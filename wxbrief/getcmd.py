@@ -7,6 +7,7 @@ import asyncio
 import json
 import sys
 from datetime import UTC, datetime
+from typing import Any
 
 from wxbrief.config import station_id
 from wxbrief.data.awc import AwcClient, AwcError
@@ -25,7 +26,7 @@ from wxbrief.solar import is_daylight
 from wxbrief.state import decode_taf_row
 
 
-def add_get_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser], t: Translator) -> None:
+def add_get_parser(commands: argparse._SubParsersAction[Any], t: Translator) -> None:
     get = commands.add_parser("get", help=t.t(K.CLI_HELP_GET), description=t.t(K.CLI_HELP_GET_DESCRIPTION))
     get.add_argument("stations", nargs="+", metavar="ICAO", help=t.t(K.CLI_HELP_GET_STATIONS))
     output = get.add_mutually_exclusive_group()
