@@ -40,10 +40,11 @@ def test_duplicates_collapse_including_aliases() -> None:
 
 def test_invalid_ids_are_rejected_not_dropped() -> None:
     assert parse_route("KDEN ZZZZ KORD ZZZZ", resolve) == Route(("KDEN", "KORD"), ("ZZZZ",))
-    assert parse_route("QQQQ ZZZZ", resolve) == Route((), ("QQQQ", "ZZZZ"))
 
 
-@pytest.mark.parametrize("text", ["", "   ", "Denver", "Denver KORD", "KD", "ZZZZ", "KDEN KORDX", ">>"])
+@pytest.mark.parametrize(
+    "text", ["", "   ", "Denver", "Denver KORD", "KD", "ZZZZ", "KDEN KORDX", ">>", "dark mode", "add stat", "ZZZZ QQQQ"]
+)
 def test_plain_searches_are_not_routes(text: str) -> None:
     assert parse_route(text, resolve) is None
 
@@ -98,7 +99,7 @@ async def test_route_with_an_unknown_id_says_why_and_changes_nothing(tmp_path) -
         assert any("ZZZZ" in str(n.message) for n in app._notifications)
 
 
-async def test_route_stops_at_the_station_limit(tmp_path) -> None:  # type: ignore[no-untyped-def]
+async def test_route_into_a_full_watchlist_adds_nothing(tmp_path) -> None:  # type: ignore[no-untyped-def]
     full = [f"K{a}{b}{c}" for a in "ABC" for b in "ABCDEFGHIJ" for c in "ABCDEFGHIJ"][:WATCHLIST_CAP]
     app = make_app(tmp_path, [], watchlist=full)
     app.options.use_config = True
@@ -133,3 +134,35 @@ async def test_no_route_is_offered_over_a_modal(tmp_path) -> None:  # type: igno
         assert isinstance(app.screen, HelpScreen)
         titles = await _palette(app, pilot, "KORD KJFK")
         assert not any("route" in t.lower() for t in titles)
+
+
+async def test_route_that_does_not_fit_adds_none_of_it(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    almost = [f"K{a}{b}{c}" for a in "ABC" for b in "ABCDEFGHIJ" for c in "ABCDEFGHIJ"][: WATCHLIST_CAP - 1]
+    app = make_app(tmp_path, [], watchlist=almost)
+    app.options.use_config = True
+    async with app.run_test(size=(80, 24)) as pilot:
+        await pilot.pause()
+        app.show_route(["KORD", "KJFK", "KDEN"])
+        await pilot.pause()
+        assert len(app.state.watchlist) == WATCHLIST_CAP - 1
+        assert not {"KORD", "KJFK", "KDEN"} & set(app.state.ids)
+        assert any("full" in str(n.message).lower() for n in app._notifications)
+
+
+async def test_route_is_saved_once_with_every_new_station(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    import tomllib
+
+    app = make_app(tmp_path, [])
+    app.options.use_config = True
+    saves: list[bool] = []
+    original = app._save
+    app._save = lambda: saves.append(True) or original()  # type: ignore[method-assign]
+    async with app.run_test(size=(80, 24)) as pilot:
+        await pilot.pause()
+        saves.clear()
+        app.show_route(["KORD", "KJFK", "KDEN"])
+        await pilot.pause()
+        assert len(saves) == 1
+        saved = tomllib.loads((tmp_path / "config.toml").read_text(encoding="utf-8"))
+        assert saved["stations"]["watchlist"] == ["KORD", "KJFK", "KDEN"]
+        assert briefing(app).selected == "KORD"

@@ -850,7 +850,7 @@ stale = "stale"
 add_station = "Add station"
 go_to = "Go to {station}"
 route = "Show route {route}"
-route_rejected = "Cannot route: unknown {codes}"
+route_rejected = "Cannot route: {codes} unknown or ambiguous (use ICAO ids)"
 
 [ui.status]
 offline = "offline"

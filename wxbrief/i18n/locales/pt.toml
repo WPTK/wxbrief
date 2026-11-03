@@ -854,7 +854,7 @@ stale = "desatualizado"
 add_station = "Adicionar estação"
 go_to = "Ir para {station}"
 route = "Mostrar rota {route}"
-route_rejected = "Rota impossível: desconhecida {codes}"
+route_rejected = "Rota impossível: {codes} desconhecida ou ambígua (use códigos ICAO)"
 
 [ui.status]
 offline = "off-line"

@@ -862,7 +862,7 @@ stale = "veraltet"
 add_station = "Station hinzufügen"
 go_to = "Gehe zu {station}"
 route = "Route anzeigen: {route}"
-route_rejected = "Keine Route: unbekannt {codes}"
+route_rejected = "Keine Route: {codes} unbekannt oder mehrdeutig (ICAO-Kennungen verwenden)"
 
 [ui.status]
 offline = "offline"

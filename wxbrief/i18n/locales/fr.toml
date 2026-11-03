@@ -854,7 +854,7 @@ stale = "périmé"
 add_station = "Ajouter une station"
 go_to = "Aller à {station}"
 route = "Afficher l'itinéraire {route}"
-route_rejected = "Itinéraire impossible : inconnu {codes}"
+route_rejected = "Itinéraire impossible : {codes} inconnu ou ambigu (utilisez les codes OACI)"
 
 [ui.status]
 offline = "hors ligne"

@@ -35,9 +35,10 @@ class Route:
 def parse_route(text: str, resolve: Callable[[str], str | None]) -> Route | None:
     """``KDEN KORD KJFK``, ``KDEN>KJFK`` or ``kden-kjfk`` as a ``Route``; ``None`` when the text is not a route.
 
-    ``resolve`` turns a typed code into an ICAO id (``None`` when it names no station). A single code is a route only
-    when it resolves, so typing ``KD`` or ``Denver`` stays a plain search. Two or more code-shaped words are a route
-    even if some do not resolve: they come back in ``rejected`` so the palette can say why. Repeats collapse.
+    ``resolve`` turns a typed code into an ICAO id (``None`` when it names no station). Text is a route only when
+    every word is code-shaped and at least one resolves, so ``KD``, ``Denver`` and ``dark mode`` stay plain searches.
+    Words that do not resolve (unknown, or an IATA/FAA code shared by two stations) come back in ``rejected`` so the
+    palette can say why. Repeats collapse.
     """
     words = [w for w in SEPARATORS.split(text.strip().upper()) if w]
     if not words or not all(CODE_SHAPE.fullmatch(w) for w in words):
@@ -51,7 +52,7 @@ def parse_route(text: str, resolve: Callable[[str], str | None]) -> Route | None
                 rejected.append(word)
         elif icao not in found:
             found.append(icao)
-    if len(words) == 1 and not found:
+    if not found:  # "dark mode" or "add stat" are searches; a route needs at least one real station
         return None
     return Route(tuple(found), tuple(rejected))
 
