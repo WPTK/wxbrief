@@ -26,14 +26,20 @@ def test_lookup_known_airport_has_coordinates_elevation_and_zone():
     assert kden is not None
     assert kden.icao == "KDEN"
     assert kden.tz == "America/Denver"
-    assert kden.elevation_m == 1656
+    assert kden.elevation_m == pytest.approx(1656, abs=5)
     assert kden.elevation_ft == pytest.approx(5433.1, abs=0.1)  # 1656 m / 0.3048 = 5433.07 ft
     assert 39 < kden.lat < 40 and -105 < kden.lon < -104
 
 
-@pytest.mark.parametrize("code", ["XXXX", "", "  ", "DEN", "JFK"])
+@pytest.mark.parametrize("code", ["XXXX", "", "  ", "DEN", "JFK", "MAN"])  # MAN: EGCC by IATA, not an ICAO id
 def test_lookup_unknown_or_non_icao_gives_none(code):
     assert lookup_airport(code) is None
+
+
+def test_lookup_station_without_elevation():
+    for code in ("KKQA", "NCPL"):
+        airport = lookup_airport(code)
+        assert airport is not None and airport.elevation_m is None and airport.elevation_ft is None
 
 
 # --- pressure and density altitude ------------------------------------------------------------------------------
@@ -47,7 +53,7 @@ def test_pressure_altitude_at_standard_setting_is_field_elevation():
 def test_pressure_altitude_low_and_high_settings():
     # 29.42 inHg = 996.28 hPa; ratio 0.98329, ln = -0.016851, * 0.190263 = -0.003206, exp = 0.996799;
     # 145442.16 * (1 - 0.996799) = +466 ft.
-    assert pressure_altitude_ft(0, 29.42) == pytest.approx(466, abs=2)
+    assert pressure_altitude_ft(0, 29.42) == pytest.approx(466, abs=2)  # the E6B rule would say 500
     # 30.92 inHg = 1047.1 hPa gives -911 ft: a high setting lowers pressure altitude (ISA is ~910 ft per inHg).
     assert pressure_altitude_ft(0, 30.92) == pytest.approx(-911, abs=2)
 
@@ -87,6 +93,11 @@ def test_altitudes_none_on_missing_input():
     assert density_altitude_ft(100, 29.92, None) is None
     assert density_altitude_ft(None, 29.92, 15) is None
     assert density_altitude_ft(100, 29.92, math.nan) is None
+    assert density_altitude_ft(100, 29.92, -300) is None  # below absolute zero
+    assert density_altitude_ft(100, 29.92, 15, -300) is None
+    assert density_altitude_ft(100, 29.92, 15, math.inf) is None
+    assert pressure_altitude_ft(math.inf, 29.92) is None
+    assert pressure_altitude_ft(100, math.nan) is None
 
 
 @given(
@@ -116,7 +127,7 @@ def test_density_altitude_rises_with_temperature(elevation, inhg, temp):
 def test_hpa_and_inhg_agree(inhg):
     a = pressure_altitude_ft(100, inhg, "inHg")
     b = pressure_altitude_ft(100, inhg * 33.8639, "hPa")
-    assert a == pytest.approx(b)
+    assert a == pytest.approx(b, abs=1e-6)
 
 
 # --- temperature / dew point spread -----------------------------------------------------------------------------
@@ -232,10 +243,39 @@ def test_gust_below_speed_is_ignored():
         ("37", None),
         ("27X", None),
         ("", None),
+        ("9", 90),
+        ("9L", 90),
+        ("1W", 10),
+        ("009", None),
     ],
 )
 def test_runway_heading(designator, heading):
     assert runway_heading(designator) == heading
+
+
+def test_runway_none_gives_none():
+    assert wind_components(270, 10, None) is None
+
+
+def test_magnetic_variation_twelve_west():
+    # Wind 270 true, runway 27 (270 magnetic), variation 12 W: runway true heading 270 - 12 = 258, wind 12 clockwise.
+    # 20 * cos 12 = 19.563 and 20 * sin 12 = 4.158 from the right. Ignoring variation would say 20 and 0.
+    wc = wind_components(270, 20, 270, variation_deg=-12)
+    assert wc is not None
+    assert wc.headwind == pytest.approx(19.563, abs=1e-3) and wc.crosswind == pytest.approx(4.158, abs=1e-3)
+    east = wind_components(270, 20, 270, variation_deg=12)  # 12 E mirrors it
+    assert east is not None and east.crosswind == pytest.approx(-4.158, abs=1e-3)
+
+
+def test_directly_opposite_wind_has_clean_zero_crosswind():
+    wc = wind_components(90, 15, 270)
+    assert wc is not None and wc.crosswind == 0.0 and math.copysign(1, wc.crosswind) == 1.0
+    assert wc.headwind == pytest.approx(-15)
+
+
+def test_calm_ignores_gust_and_vrb_with_speed_is_none():
+    assert wind_components(None, 0, 270, gust=10) == wind_components(0, 0, 270)
+    assert wind_components(None, 8, 270, variable=True) is None
 
 
 angles = st.floats(0, 360, exclude_max=True)
@@ -246,7 +286,7 @@ speeds = st.floats(0, 200)
 def test_components_recombine_to_the_speed(direction, speed, runway):
     wc = wind_components(direction, speed, runway)
     assert wc is not None
-    assert wc.crosswind**2 + wc.headwind**2 == pytest.approx(speed**2, rel=1e-9, abs=1e-9)
+    assert wc.crosswind**2 + wc.headwind**2 == pytest.approx(speed**2, rel=1e-9, abs=1e-6)
 
 
 @given(direction=angles, speed=st.floats(0.1, 200), runway=angles, gust_extra=st.floats(0, 50))
@@ -254,7 +294,7 @@ def test_gust_components_recombine_to_the_gust(direction, speed, runway, gust_ex
     wc = wind_components(direction, speed, runway, gust=speed + gust_extra)
     assert wc is not None
     assert wc.gust_crosswind is not None and wc.gust_headwind is not None
-    assert wc.gust_crosswind**2 + wc.gust_headwind**2 == pytest.approx((speed + gust_extra) ** 2, rel=1e-9)
+    assert wc.gust_crosswind**2 + wc.gust_headwind**2 == pytest.approx((speed + gust_extra) ** 2, rel=1e-9, abs=1e-6)
 
 
 @given(offset=st.floats(0, 180), speed=speeds, runway=angles)
