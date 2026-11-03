@@ -136,6 +136,21 @@ async def test_a_deeply_nested_body_is_a_client_error() -> None:
             await client.metars(["KDEN"])
 
 
+@pytest.mark.parametrize("content", [b"[[]]", b'[{"a": 1}, [1]]', b"[" * 50 + b"]" * 50])
+async def test_a_row_that_is_a_list_is_a_client_error_at_any_stack_size(content: bytes) -> None:
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, content=content))
+    async with AwcClient(client=httpx.AsyncClient(transport=transport)) as client:
+        with pytest.raises(ClientError, match="list of objects"):
+            await client.metars(["KDEN"])
+
+
+@pytest.mark.parametrize("content", [b"[1]", b"[null]", b'["x", {}]'])
+async def test_a_stray_scalar_row_is_dropped_not_the_whole_reply(content: bytes) -> None:
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, content=content))
+    async with AwcClient(client=httpx.AsyncClient(transport=transport)) as client:
+        assert await client.metars(["KDEN"]) == []
+
+
 def test_a_client_that_cannot_be_built_is_a_transport_error(monkeypatch: pytest.MonkeyPatch) -> None:
     def refuse(*args: object, **kwargs: object) -> None:
         raise ImportError("Using SOCKS proxy, but the 'socksio' package is not installed.")
@@ -612,6 +627,33 @@ def test_a_flush_that_fails_on_a_closed_pipe_ends_quietly(monkeypatch: pytest.Mo
     monkeypatch.setattr(sys, "stdout", _ClosedPipe(OSError(errno.EIO, "I/O error")))  # any other error still shows
     with pytest.raises(OSError):
         main(["get", "KDEN"])
+
+
+@pytest.mark.parametrize("variable", ["FORCE_COLOR", "NO_COLOR"])
+def test_help_and_usage_errors_are_plain_whatever_the_colour_variables_say(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], variable: str
+) -> None:
+    monkeypatch.setenv(variable, "1")
+    with pytest.raises(SystemExit) as helped:
+        main(["--help"])
+    with pytest.raises(SystemExit) as sub_helped:
+        main(["get", "--help"])
+    with pytest.raises(SystemExit) as refused:
+        main(["get", "--no-such-flag"])
+    out, err = capsys.readouterr()
+    assert (helped.value.code, sub_helped.value.code, refused.value.code) == (0, 0, 2)
+    assert "\x1b" not in out + err
+    assert "usage: wxbrief" in out and "error: the following arguments are required: ICAO" in err
+
+
+@pytest.mark.parametrize(("words", "code"), [(["--help"], 0), (["get", "--no-such-flag"], 2)])
+def test_help_and_a_usage_error_end_quietly_on_a_closed_stdout(
+    monkeypatch: pytest.MonkeyPatch, words: list[str], code: int
+) -> None:
+    monkeypatch.setattr(sys, "stdout", _ClosedPipe(BrokenPipeError()))
+    with pytest.raises(SystemExit) as ended:
+        main(words)
+    assert ended.value.code == code
 
 
 def test_an_empty_taf_answer_is_believed_for_a_forecast_with_no_readable_end() -> None:
