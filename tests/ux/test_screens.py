@@ -168,3 +168,23 @@ async def test_decoded_values_start_in_one_column(tmp_path: Path) -> None:
                 starts[match.group(1)] = match.start(2)
         assert set(starts) == {"Station", "Wind", "Flight category"}, starts
         assert len(set(starts.values())) == 1, starts
+
+
+@pytest.mark.parametrize("size", SIZES, ids=lambda s: f"{s[0]}x{s[1]}")
+async def test_timeline_worst_case_row_is_readable(tmp_path: Path, size: tuple[int, int]) -> None:
+    """The timeline draws a worst-case row under the prevailing one: a category letter on every hour of a run, and
+    ``+`` marks the hours where it is worse than what prevails, all inside the pane and above the cursor row."""
+    from wxbrief.ui.widgets.taf_timeline import RAISED_MARK, TafTimeline
+
+    app, before = build("long", tmp_path)
+    async with app.run_test(size=size) as pilot:
+        await before(pilot)
+        timeline = app.screen.query_one(TafTimeline)
+        assert timeline.display and timeline.cells
+        plain = timeline.render().plain.split("\n")
+        assert len(plain) == 6 and timeline.size.height >= 6
+        width = 2 if timeline.step == 1 else 4
+        assert plain[2].strip() and len(plain[2].rstrip()) <= len(timeline.cells) * width
+        raised = [c.worst_category != c.category for c in timeline.cells]
+        assert (RAISED_MARK in plain[2]) == any(raised)
+        assert plain[2][:width].strip()  # the first cell always names its category

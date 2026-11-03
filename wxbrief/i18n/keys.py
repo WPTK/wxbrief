@@ -579,6 +579,7 @@ class K:
     TIMELINE_EXPIRED = "timeline.expired"
     TIMELINE_LEGEND_BECOMING = "timeline.legend_becoming"
     TIMELINE_LEGEND_TEMPORARY = "timeline.legend_temporary"
+    TIMELINE_LEGEND_WORST = "timeline.legend_worst"
     TIMELINE_LETTER_IFR = "timeline.letter.IFR"
     TIMELINE_LETTER_LIFR = "timeline.letter.LIFR"
     TIMELINE_LETTER_MVFR = "timeline.letter.MVFR"
