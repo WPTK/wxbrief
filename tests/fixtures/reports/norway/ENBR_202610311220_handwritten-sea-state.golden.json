@@ -186,6 +186,7 @@
     "wave_height_m": null
   },
   "remarks": [],
+  "remark_spans": [],
   "flavor": "ICAO",
   "military": false,
   "ceiling": null,

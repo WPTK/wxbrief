@@ -999,6 +999,8 @@ class Metar:
     wind_shear: tuple[WindShearRunway, ...] = ()
     sea_state: SeaState | None = None
     remarks: tuple[Remark, ...] = ()
+    # per remark, the ``tokens`` indices it covers: (first, end)
+    remark_spans: tuple[tuple[int, int], ...] = ()
     flavor: Flavor = Flavor.UNKNOWN
     military: bool = False
     ceiling: Distance | None = None

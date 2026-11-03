@@ -845,18 +845,23 @@ _PARSERS: tuple[Parser, ...] = (
 )
 
 
-def parse_remarks(cur: Cursor, ctx: Context) -> list[Remark]:
+def parse_remarks(cur: Cursor, ctx: Context, spans: list[tuple[int, int]] | None = None) -> list[Remark]:
     """Decode every remark from the cursor to the end of the tokens, tagging them.
+
+    When ``spans`` is given, each remark appends the ``(first, end)`` token indices it covers, in step with the result.
 
     A token the known patterns do not claim becomes part of a ``FreeText`` remark and is tagged ``REMARK``; the
     report terminator is tagged ``TERMINATOR``. Never raises: a parser that fails is skipped for that position.
     """
     remarks: list[Remark] = []
     pending: list[Token] = []
+    first = 0  # the cursor position of the first pending free-text token
 
     def flush() -> None:
         if pending:
             remarks.append(FreeText(" ".join(token.text for token in pending)))
+            if spans is not None:
+                spans.append((first, first + len(pending)))
             pending.clear()
 
     while (token := cur.peek()) is not None:
@@ -876,7 +881,11 @@ def parse_remarks(cur: Cursor, ctx: Context) -> list[Remark]:
         if decoded is not None:
             flush()
             remarks.append(decoded)
+            if spans is not None:
+                spans.append((mark, cur.pos))
         else:
+            if not pending:
+                first = cur.pos
             pending.append(cur.take(SemanticKind.REMARK))
     flush()
     return remarks

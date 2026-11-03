@@ -6,9 +6,11 @@ from datetime import datetime
 from typing import Any
 
 from rich.text import Text
+from textual import events
 from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.events import Resize
+from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Collapsible, DataTable, Label, Static
 
@@ -16,6 +18,7 @@ from wxbrief.data.poll import Freshness
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.i18n.keys import K
 from wxbrief.render import phrases
+from wxbrief.render.pairs import TokenPair, token_pairs
 from wxbrief.render.plain import DecodeBlock, DecodeRow, decode_rows, taf_blocks, taf_header_rows, warning_lines
 from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
@@ -83,14 +86,120 @@ class FlagsRow(Static):
 class RawReport(Static):
     """The raw METAR and TAF text, each token coloured by its group."""
 
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self._parts: list[Text] = []
+        self._selected: tuple[int, int] | None = None
+
     def show(self, entry: StationReports, ctx: ViewContext) -> None:
         parts: list[Text] = []
         if entry.metar is not None:
             parts.append(ctx.palette.raw_text(entry.metar))
         if entry.taf is not None:
             parts.append(ctx.palette.raw_text(entry.taf))
-        self.update(Text("\n\n").join(parts))
+        self._parts = parts
+        self._selected = None
+        self._draw()
         self.display = bool(parts)  # nothing held: the header says so, and there is no raw section to show
+
+    def select(self, span: tuple[int, int] | None) -> None:
+        """Mark ``raw[start:end]`` of the METAR (the first report) as the selected token; ``None`` clears it."""
+        if span != self._selected:
+            self._selected = span
+            self._draw()
+
+    def _draw(self) -> None:
+        parts = self._parts
+        if self._selected is not None and parts:
+            first = parts[0].copy()
+            first.stylize("reverse bold", *self._selected)
+            parts = [first, *parts[1:]]
+        self.update(Text("\n\n").join(parts))
+
+
+class TokenTable(DataTable[Text]):
+    """Every raw token of the METAR beside its meaning; the row cursor selects the token in the raw line.
+
+    From ``SIDE_BY_SIDE`` terminal columns the token, its group and its meaning are columns; narrower, each token
+    stands on a line of its own with its meaning indented below it.
+    """
+
+    SIDE_BY_SIDE = 100
+
+    class Picked(Message):
+        """The token under the cursor (``None`` when the table has lost the keyboard)."""
+
+        def __init__(self, pair: TokenPair | None) -> None:
+            super().__init__()
+            self.pair = pair
+
+    def __init__(self, **kwargs: Any) -> None:
+        super().__init__(show_header=False, cursor_type="row", zebra_stripes=False, **kwargs)
+        self._pairs: list[TokenPair] = []
+        self._ctx: ViewContext | None = None
+
+    @property
+    def selected(self) -> TokenPair | None:
+        row = self.cursor_row
+        return self._pairs[row] if 0 <= row < len(self._pairs) else None
+
+    def set_pairs(self, pairs: list[TokenPair], ctx: ViewContext) -> None:
+        self._pairs = pairs
+        self._ctx = ctx
+        self._fill()
+
+    def _fill(self) -> None:
+        ctx = self._ctx
+        row = self.cursor_row
+        self.clear(columns=True)
+        if ctx is None or not self._pairs:
+            return
+        palette = ctx.palette
+        side_by_side = self.app.size.width >= self.SIDE_BY_SIDE
+        inner = max(20, self.size.width - 6)
+        token_width = min(max(len(p.text) for p in self._pairs), 18)
+        label_width = max(len(p.label) for p in self._pairs)
+        meaning_width = max(12, inner - token_width - label_width - 2)
+        if side_by_side:
+            self.add_column("Token", width=token_width)
+            self.add_column("Group", width=label_width)
+            self.add_column("Meaning", width=meaning_width)
+        else:
+            self.add_column("Token", width=inner)
+        for pair in self._pairs:
+            style = palette.style("wx.warning") if pair.unknown else palette.style(pair.style)
+            meaning = pair.meaning or "-"
+            kept = style if pair.unknown else ""
+            if side_by_side:
+                self.add_row(
+                    Text("\n".join(wrap(pair.text, token_width)), style=style),
+                    Text(pair.label, style=palette.muted),
+                    Text("\n".join(wrap(meaning, meaning_width)), style=kept),
+                    height=None,
+                )
+            else:
+                head = Text(pair.text, style=style)
+                if pair.label:
+                    head.append(f"  {pair.label}", style=palette.muted)
+                body = Text("\n".join(f"  {line}" for line in wrap(meaning, inner - 2)), style=kept)
+                self.add_row(Text("\n").join([head, body]), height=None)
+        if self.row_count:
+            self.move_cursor(row=min(max(row, 0), self.row_count - 1), animate=False)
+
+    def on_resize(self, event: Resize) -> None:
+        if self._pairs:
+            self._fill()
+
+    def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
+        event.stop()
+        if self.has_focus:
+            self.post_message(self.Picked(self.selected))
+
+    def on_focus(self, event: events.Focus) -> None:
+        self.post_message(self.Picked(self.selected))
+
+    def on_blur(self, event: events.Blur) -> None:
+        self.post_message(self.Picked(None))
 
 
 class DecodedTable(DataTable[Text]):
@@ -147,6 +256,7 @@ class DetailPane(VerticalScroll):
         bind("1", "jump('raw')", K.UI_BINDING_JUMP_RAW),
         bind("2", "jump('decoded')", K.UI_BINDING_JUMP_DECODED),
         bind("3", "jump('taf')", K.UI_BINDING_JUMP_TAF),
+        bind("4", "jump('tokens')", K.UI_BINDING_JUMP_TOKENS, show=False),
         bind("left", "timeline(-1)", K.UI_BINDING_EARLIER, show=False),
         bind("right", "timeline(1)", K.UI_BINDING_LATER, show=False),
         bind("c", "screen.copy_metar", K.UI_BINDING_COPY_METAR),
@@ -166,6 +276,8 @@ class DetailPane(VerticalScroll):
         yield RawReport(id="raw")
         yield Label(classes="section", id="decoded-title")
         yield DecodedTable(id="decoded")
+        yield Label(classes="section", id="tokens-title")
+        yield TokenTable(id="tokens")
         with Collapsible(id="remarks-box", collapsed=True):
             yield Static(id="remarks")
         yield Label(classes="section", id="taf-title")
@@ -204,6 +316,7 @@ class DetailPane(VerticalScroll):
         raw_title.display = entry.metar is not None or entry.taf is not None  # RawReport hides itself on the same test
         self.query_one("#decoded-title", Label).update(t.t(K.UI_SECTION_DECODED))
         self.query_one("#taf-title", Label).update(t.t(K.UI_SECTION_FORECAST))
+        self.query_one("#tokens-title", Label).update(t.t(K.UI_SECTION_TOKENS))
         metar = entry.metar
         self.query_one(StationHeader).show(entry, ctx, now)
         self.query_one(FlagsRow).show(metar, ctx)
@@ -222,6 +335,11 @@ class DetailPane(VerticalScroll):
             self._release_focus(table)
         self.query_one("#decoded-title").display = metar is not None
         table.display = metar is not None
+        tokens = self.query_one(TokenTable)
+        if metar is None:
+            self._release_focus(tokens)
+        tokens.set_pairs(token_pairs(metar, t, ctx.units) if metar else [], ctx)
+        self.query_one("#tokens-title").display = tokens.display = metar is not None
         remarks = [r for r in rows if r.label in remark_labels]
         box = self.query_one("#remarks-box", Collapsible)
         if not remarks:
@@ -307,6 +425,12 @@ class DetailPane(VerticalScroll):
         if focused is not None and focused is not self and (focused is hidden or hidden in focused.ancestors):
             self.focus()
 
+    def on_token_table_picked(self, message: TokenTable.Picked) -> None:
+        """Mark the selected token in the raw line."""
+        message.stop()
+        pair = message.pair
+        self.query_one(RawReport).select((pair.start, pair.end) if pair is not None else None)
+
     def on_taf_timeline_moved(self, message: TafTimeline.Moved) -> None:
         """Show the forecast for the cell the cursor is on."""
         message.stop()
@@ -323,7 +447,8 @@ class DetailPane(VerticalScroll):
 
     def jump(self, section: str) -> None:
         """Scroll to ``raw``, ``decoded`` or ``taf``; the forecast also takes the keyboard focus (cursor keys)."""
-        target = {"raw": "#raw-title", "decoded": "#decoded-title", "taf": "#taf-title"}[section]
+        titles = {"raw": "#raw-title", "decoded": "#decoded-title", "tokens": "#tokens-title", "taf": "#taf-title"}
+        target = titles[section]
         widget = self.query_one(target)
         entry, ctx = self._entry, self._ctx
         empty = entry is not None and entry.metar is None and entry.taf is None
@@ -334,5 +459,7 @@ class DetailPane(VerticalScroll):
             self.app.notify(ctx.translator.t(key), severity="warning")
             return
         self.scroll_to_widget(widget, top=True, animate=False)
+        if section == "tokens" and self.query_one(TokenTable).display:
+            self.query_one(TokenTable).focus(scroll_visible=False)
         if section == "taf" and self.query_one(TafTimeline).display:
             self.query_one(TafTimeline).focus(scroll_visible=False)  # the jump has placed the section

@@ -188,6 +188,20 @@
       "text": "902 HZY SC"
     }
   ],
+  "remark_spans": [
+    [
+      10,
+      11
+    ],
+    [
+      11,
+      12
+    ],
+    [
+      12,
+      15
+    ]
+  ],
   "flavor": "MIXED",
   "military": false,
   "ceiling": null,

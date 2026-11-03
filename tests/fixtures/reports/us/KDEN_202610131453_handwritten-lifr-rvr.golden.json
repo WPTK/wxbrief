@@ -177,6 +177,16 @@
       "text": "SFC"
     }
   ],
+  "remark_spans": [
+    [
+      11,
+      12
+    ],
+    [
+      12,
+      13
+    ]
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

@@ -178,6 +178,12 @@
       "text": "TCU OHD AND NE-SE"
     }
   ],
+  "remark_spans": [
+    [
+      11,
+      15
+    ]
+  ],
   "flavor": "US",
   "military": false,
   "ceiling": {

@@ -199,6 +199,12 @@
       "text": "OBST OBSC"
     }
   ],
+  "remark_spans": [
+    [
+      12,
+      14
+    ]
+  ],
   "flavor": "ICAO",
   "military": false,
   "ceiling": {
