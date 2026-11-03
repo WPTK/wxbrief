@@ -642,7 +642,7 @@ def test_help_and_usage_errors_are_plain_whatever_the_colour_variables_say(
         main(["get", "--no-such-flag"])
     out, err = capsys.readouterr()
     assert (helped.value.code, sub_helped.value.code, refused.value.code) == (0, 0, 2)
-    assert "" not in out + err
+    assert "\x1b" not in out + err
     assert "usage: wxbrief" in out and "error: the following arguments are required: ICAO" in err
 
 
