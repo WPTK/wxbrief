@@ -853,6 +853,8 @@ stale = "périmé"
 [ui.palette]
 add_station = "Ajouter une station"
 go_to = "Aller à {station}"
+route = "Afficher l'itinéraire {route}"
+route_rejected = "Itinéraire impossible : inconnu {codes}"
 
 [ui.status]
 offline = "hors ligne"

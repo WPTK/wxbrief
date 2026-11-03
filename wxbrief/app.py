@@ -354,6 +354,22 @@ class WxBriefApp(App[None]):
         self.briefing.select(code)
         self.briefing.refresh_view()
 
+    def show_route(self, icaos: Iterable[str]) -> None:
+        """Add the stations of a typed route that are not listed yet and select the first one.
+
+        Each goes through ``add_station`` (limit, persistence, poll), so a full watchlist stops the route there with
+        its usual warning; the first station of the route is selected if it is listed.
+        """
+        route = list(icaos)
+        for code in route:
+            if code not in self.state.ids:
+                before = len(self.state.ids)
+                self.add_station(code)
+                if len(self.state.ids) == before:
+                    break
+        if route and route[0] in self.state.ids:
+            self.briefing.select(route[0])
+
     def remove_station(self, icao: str) -> None:
         if self.state.remove(icao):
             self._save()

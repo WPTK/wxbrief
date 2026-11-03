@@ -854,6 +854,8 @@ stale = "caducado"
 [ui.palette]
 add_station = "Añadir estación"
 go_to = "Ir a {station}"
+route = "Mostrar ruta {route}"
+route_rejected = "Ruta imposible: desconocida {codes}"
 
 [ui.status]
 offline = "sin conexión"

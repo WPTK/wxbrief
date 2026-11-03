@@ -853,6 +853,8 @@ stale = "desatualizado"
 [ui.palette]
 add_station = "Adicionar estação"
 go_to = "Ir para {station}"
+route = "Mostrar rota {route}"
+route_rejected = "Rota impossível: desconhecida {codes}"
 
 [ui.status]
 offline = "off-line"

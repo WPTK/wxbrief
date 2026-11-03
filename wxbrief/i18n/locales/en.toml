@@ -849,6 +849,8 @@ stale = "stale"
 [ui.palette]
 add_station = "Add station"
 go_to = "Go to {station}"
+route = "Show route {route}"
+route_rejected = "Cannot route: unknown {codes}"
 
 [ui.status]
 offline = "offline"
