@@ -96,7 +96,7 @@ def _shape(char: str) -> str:
 
 @pytest.mark.parametrize(
     "glyph_set",
-    [pytest.param(s, marks=pytest.mark.xfail(strict=True, reason="UX-04")) if s == "emoji" else s for s in GLYPH_SETS],
+    GLYPH_SETS,
 )
 def test_freshness_marks_differ_in_shape_not_only_colour(glyph_set: str) -> None:
     g = glyphs_for(glyph_set)
@@ -104,7 +104,6 @@ def test_freshness_marks_differ_in_shape_not_only_colour(glyph_set: str) -> None
     assert len(set(shapes)) == 3, shapes
 
 
-@pytest.mark.xfail(strict=True, reason="UX-05")
 async def test_timeline_overlay_row_has_a_non_colour_category_marker(tmp_path) -> None:  # type: ignore[no-untyped-def]
     from ux_kit import load, rows
 

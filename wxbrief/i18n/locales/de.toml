@@ -858,11 +858,17 @@ days = "{days} T. {hours} Std."
 fresh = "aktuell"
 stale = "veraltet"
 
+[ui.palette]
+add_station = "Station hinzufügen"
+go_to = "Gehe zu {station}"
+
 [ui.status]
 offline = "offline"
 cached = "(zwischengespeichert)"
 away = "im Hintergrund"
 next_poll = "nächste Abfrage {time}"
+live = "live"
+feed_stale = "Feed veraltet, letzte Aktualisierung vor {age}"
 requests = "Anfragen {used}/{limit}"
 polling_off = "Abfrage aus"
 demo = "Demodaten, nicht live"

@@ -28,7 +28,8 @@ TAF_INTERVAL = 1800.0
 AWAY_INTERVAL = 1800.0
 BACKOFF_CAP = 3600.0
 RETRY_FIRST = 60.0  # the wait before the first retry of a failed fetch
-STALE_AFTER = timedelta(minutes=75)
+STALE_AFTER = timedelta(minutes=55)  # routine METARs come hourly: past this the next one is overdue
+FEED_STALE_AFTER = 300.0  # seconds without a successful fetch before the feed reads STALE
 
 
 class Freshness(StrEnum):
@@ -37,7 +38,7 @@ class Freshness(StrEnum):
 
 
 def freshness(observed: datetime | None, now: datetime) -> Freshness:
-    """A report is fresh for 75 minutes after its observation time; one without a time is stale."""
+    """A report is fresh for 55 minutes after its observation time; one without a time is stale."""
     if observed is None or now - observed >= STALE_AFTER:
         return Freshness.STALE
     return Freshness.FRESH
@@ -166,6 +167,11 @@ class PollScheduler:
                 continue
             track.due = max(self.hold_until, min(track.due, normal))
         self._wake.set()
+
+    def feed_age(self) -> float | None:
+        """Seconds (on the scheduler's monotonic clock) since the last successful fetch of either product."""
+        fetched = [track.fetched for track in self._tracks.values() if track.fetched is not None]
+        return max(0.0, self._clock() - max(fetched)) if fetched else None
 
     def hold_remaining(self) -> float:
         """Seconds left of a rate-limit hold (0 when nothing is on hold)."""

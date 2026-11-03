@@ -1,6 +1,6 @@
 """(f) What the app says about data age today: fresh/stale on observation time, offline after two network failures.
 
-There is no LIVE/STALE(300 s)/OFFLINE feed state on time.monotonic; the scheduler uses it only to schedule.
+A feed state (LIVE, STALE after 300 s) runs on the scheduler's monotonic clock, apart from the observation age.
 """
 
 from __future__ import annotations
@@ -8,7 +8,6 @@ from __future__ import annotations
 import re
 from datetime import timedelta
 
-import pytest
 from test_app_smoke import NOW, online_client
 from ux_kit import load, make_app, rows
 
@@ -20,13 +19,12 @@ from wxbrief.ui.widgets.status_bar import StatusBar
 OBS = NOW - timedelta(minutes=11)
 
 
-def test_freshness_boundary_is_75_minutes_today() -> None:
-    assert freshness(OBS, OBS + timedelta(minutes=74)) is Freshness.FRESH
+def test_freshness_boundary_is_55_minutes() -> None:
+    assert freshness(OBS, OBS + timedelta(minutes=54)) is Freshness.FRESH
     assert freshness(OBS, OBS + STALE_AFTER) is Freshness.STALE
     assert freshness(None, NOW) is Freshness.STALE
 
 
-@pytest.mark.xfail(strict=True, reason="UX-01")
 def test_an_observation_older_than_55_minutes_is_not_called_fresh() -> None:
     """Hourly METARs are due about every 60 min; at 56 min the routine report is overdue yet the header says fresh."""
     assert freshness(OBS, OBS + timedelta(minutes=56)) is not Freshness.FRESH
@@ -67,7 +65,6 @@ async def test_maintenance_flag_shows_as_a_chip_in_the_detail_pane(tmp_path) -> 
         assert "needs maintenance" in str(app.screen.query_one(FlagsRow).render())
 
 
-@pytest.mark.xfail(strict=True, reason="UX-03")
 async def test_station_list_row_marks_maintenance_and_special_reports(tmp_path) -> None:  # type: ignore[no-untyped-def]
     """The list is where a pilot scans; a `$` (sensors unreliable) or SPECI is visible only after opening the station."""
     app = make_app(tmp_path, ["KDEN"])
@@ -78,7 +75,6 @@ async def test_station_list_row_marks_maintenance_and_special_reports(tmp_path) 
         assert "$" in line or "SPECI" in line, line
 
 
-@pytest.mark.xfail(strict=True, reason="UX-02")
 async def test_status_bar_reports_feed_age_when_polls_stop_succeeding(tmp_path) -> None:  # type: ignore[no-untyped-def]
     """No success for 400 s (> 300 s) and no failure recorded: the bar only counts down to the next poll."""
     clock = [1000.0]

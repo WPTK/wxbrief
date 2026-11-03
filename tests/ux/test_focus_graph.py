@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 from ux_kit import briefing, load, make_app, rows
 
 from wxbrief.ui.screens.help import HelpScreen
@@ -105,7 +104,6 @@ async def test_command_palette_opens_and_closes_with_focus_restored(tmp_path) ->
         assert app.focused is before
 
 
-@pytest.mark.xfail(strict=True, reason="UX-06")
 async def test_command_palette_offers_the_apps_own_commands(tmp_path) -> None:  # type: ignore[no-untyped-def]
     """Today the palette lists only Textual's defaults: Theme, Quit, Keys, Maximize, Screenshot."""
     app = make_app(tmp_path, ["KDEN", "EGLL"])

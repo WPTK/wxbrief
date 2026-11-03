@@ -11,7 +11,7 @@ from textual.widgets import OptionList
 from textual.widgets.option_list import Option
 
 from wxbrief.data.poll import Freshness
-from wxbrief.decode.model import Metar, SemanticKind
+from wxbrief.decode.model import Flag, Metar, SemanticKind
 from wxbrief.i18n.keys import K
 from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
@@ -31,6 +31,14 @@ def short_conditions(metar: Metar | None) -> str:
         elif vis:
             break
     return " ".join(part for part in (wind, " ".join(vis)) if part)
+
+
+def report_marks(metar: Metar | None) -> str:
+    """``SPECI`` for an unscheduled report and ``$`` for a station asking for maintenance: what a scan must not miss."""
+    if metar is None:
+        return ""
+    marks = [("SPECI", Flag.SPECIAL_REPORT), ("$", Flag.MAINTENANCE)]
+    return " ".join(text for text, flag in marks if flag in metar.flags)
 
 
 LIST_MIN, LIST_MAX = 38, 56  # columns: the list takes a quarter of the terminal, between these
@@ -121,6 +129,9 @@ class StationList(OptionList):
                 line.append(" " + conditions)
             elif entry.metar is None:
                 line.append(" " + ctx.translator.t(K.UI_DETAIL_NO_REPORT), style=palette.muted)
+            marks = report_marks(entry.metar)
+            if marks:
+                line.append(f" {marks}", style=palette.stale)
             station = ctx.station(entry.icao) if self._named else None
             if station is not None:
                 line.append(f"  {station.name}", style=palette.muted)

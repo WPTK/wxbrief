@@ -19,7 +19,7 @@ class Glyphs:
 _SETS = {
     "ascii": Glyphs(fresh="*", stale="!", missing="-", error="x", differs="!="),
     "unicode": Glyphs(fresh="●", stale="◐", missing="○", error="✖", differs="≠"),
-    "emoji": Glyphs(fresh="🟢", stale="🟠", missing="⚪", error="❌", differs="≠"),
+    "emoji": Glyphs(fresh="🟢", stale="🔶", missing="⬜", error="❌", differs="≠"),
     "nerd": Glyphs(fresh="", stale="", missing="", error="", differs="≠"),
 }
 
