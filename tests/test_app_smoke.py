@@ -477,8 +477,14 @@ async def test_flight_category_row_wraps_in_a_narrow_pane(tmp_path: Path) -> Non
         await wait_for(pilot, lambda: app.state.stations.get("KDEN") and app.state.stations["KDEN"].metar)
         await pilot.pause()
         table = app.screen.query_one(DecodedTable)
-        cells = [row[1].plain for row in (table.get_row_at(i) for i in range(table.row_count))]
-        category = next(c for c in cells if "LIFR" in c)
+
+        def category_cell() -> str:
+            cells = [row[1].plain for row in (table.get_row_at(i) for i in range(table.row_count))]
+            return next((c for c in cells if "LIFR" in c), "")
+
+        # the table first fills before the pane has its width, then again on the Resize that follows: wait for that
+        await wait_for(pilot, lambda: category_cell().count("\n") >= 2, "the category wrapped to the pane width")
+        category = category_cell()
         lines = category.split("\n")
         width = list(table.columns.values())[1].width
         assert len(lines) >= 3  # wrapped onto several lines, not one long one
