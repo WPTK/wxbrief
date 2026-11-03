@@ -201,8 +201,8 @@ class AwcClient:
             body = json.loads(content)
         except (ValueError, RecursionError) as exc:
             raise ClientError("response is not JSON") from exc
-        if not isinstance(body, list):
-            raise ClientError("response is not a list")
+        if not isinstance(body, list) or not all(isinstance(row, dict) for row in body):
+            raise ClientError("response is not a list of objects")
         etag, modified = response.headers.get("ETag"), response.headers.get("Last-Modified")
         if etag or modified:
             self._stored[key] = _Stored(body, etag, modified)
