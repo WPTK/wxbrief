@@ -392,3 +392,12 @@ def test_a_period_that_ends_where_it_starts_is_an_invalid_time() -> None:
     taf = decode("TAF KDEN 131120Z 1312/1312 18010KT P6SM SKC", utc(13, 12))
     assert codes(taf) == ["invalid_time"]
     assert taf.valid_from == utc(13, 12) and taf.valid_to is None
+
+
+def test_a_period_is_not_judged_against_the_readers_clock_when_there_is_no_issue_time() -> None:
+    taf = decode("TAF KDEN 1312/1412 18010KT P6SM SKC", utc(13, 12))
+    assert codes(taf) == [] and taf.valid_from == utc(13, 12)
+
+
+def test_a_period_that_starts_a_day_after_a_real_issue_time_is_an_invalid_time() -> None:
+    assert codes(decode("TAF KDEN 121120Z 1312/1412 18010KT P6SM SKC", utc(12, 12))) == ["invalid_time"]
