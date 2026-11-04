@@ -36,6 +36,7 @@ commands are executed (see below).
 | `Build (wheel and sdist)` | `python -m build` works and `twine check --strict` passes on both files |
 | `Install wheel/sdist (os)` | the built file installs into a clean venv outside the checkout; `scripts/ci_check_install.py` runs `wxbrief --version`, `--help`, `decode`, `--selftest`, `python -m wxbrief`, and reads the locales, `app.tcss`, the station database, the demo reports and the theme modules from the installed copy through `importlib.resources` |
 | `README commands (os)` | `scripts/readme_commands.py` runs every command in the README's fenced blocks and the `pip install` line of the release table in an empty directory. Each command needs a rule in the script (run, run with a stated substitution, or skip with a reason); a README command without a rule, a rule that matches nothing, or a README version that differs from `__version__` fails. Only the GitHub-release download is replaced, by the wheel built in the job |
+| `Lowest direct dependencies` | wxbrief's own direct dependencies are reinstalled at the lowest versions `pyproject.toml` allows (`uv pip install --resolution lowest-direct`) and the suite runs on Python 3.12 (not the pty suite). A floor that no longer works fails here: raise the floor in `pyproject.toml` |
 | `Dependency audit` | `pip-audit` on the resolved runtime dependencies (not the dev tools) finds no known vulnerability. Fix it by raising the bound, or file an issue; do not add an ignore without one |
 
 `post-release.yml` runs after a release is published (and by hand: Actions, Post-release, tag input). It downloads the
@@ -43,6 +44,33 @@ published files from their public URLs, checks `SHA256SUMS` and the build attest
 executables (`--version`, `--help`, `--selftest`, `decode`, then `--demo` in a pseudo-terminal and `q`) and fails
 loudly. It also runs when the Release workflow completes, because a release made with `GITHUB_TOKEN` does not start
 workflows on the `release` event.
+
+## Fault proxy (tests against the unmodified program)
+
+The app has no base-URL setting and no test hook, by design. `tests/uat_kit/faultproxy/` stands in for the AWC API
+instead: a CONNECT proxy plus a local TLS server whose certificate comes from a throwaway CA. Start the program with
+`HTTPS_PROXY` and `SSL_CERT_FILE` pointing at it and it talks to the fake as it would to the real feed, source or built
+exe alike. Faults (`5xx`, `429:30`, `reset`, `slow:2000`, `badjson`, `empty200`, `304`, `drop:120`, ...) are switched per
+product at run time over a small JSON control channel; the proxy tunnels only the one host and answers 502 to any
+other, so it cannot reach the real network. Use it in a test through `uat_kit.faultproxy.FaultProxy` (see
+`tests/uat/journey_kit.py` and `tests/fuzz/test_rt_awc.py`), or by hand with
+`python -m uat_kit.faultproxy --fixtures tests/fixtures/awc` (run from `tests/`), which prints the environment to use.
+`tests/uat_kit/faultproxy/test_faultproxy.py` tests the proxy itself.
+
+## What the tests cannot cover
+
+These need hardware, a clock or a hook the shipped program does not have. Each was weighed and left, with the reason:
+
+* **A second display scale (DPI) on Windows.** The hosted runner is 1024x768 at 96 dpi and cannot change it, so the
+  Windows Terminal list screen at a large font (59 columns) is untested; the narrow-terminal behaviour itself is covered
+  by the pty matrix at four sizes. Needs a self-hosted or VM runner.
+* **Real iTerm2 and Terminal.app cells on macOS.** A driver that clicks and types into the real apps failed on
+  different cells each run on the hosted macOS images and was not merged. macOS gets the pty suite (a real pty), and the
+  Release workflow runs the macOS binaries.
+* **A Windows clock jump or sleep and resume.** Linux and macOS can be shifted with `libfaketime` and `SIGSTOP`; Windows
+  has no way to move the clock under an unmodified exe, and a clock hook in the product is not approved.
+* **The crash-log path.** There is no crash log in the product yet (#216); every payload the fault proxy can send is
+  handled, so no test reaches an unguarded path. When a crash log exists, add a test that forces it.
 
 ## Layout
 
