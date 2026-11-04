@@ -30,6 +30,7 @@ def _plain_screenshots(monkeypatch: pytest.MonkeyPatch) -> None:
     original = _doc.take_svg_screenshot
     monkeypatch.setattr(_doc, "take_svg_screenshot", lambda *a, **k: _EXPORT_COMMENT.sub("", original(*a, **k)))
     monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setenv("COLORTERM", "truecolor")  # the picture must not depend on how many colours the CI terminal has
 
 
 def longest_metar_rows() -> tuple[str, list[dict[str, Any]]]:

@@ -46,7 +46,6 @@ def bar_of(term: Any) -> str:
 # -- J11 --------------------------------------------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(strict=True, reason="#236: first run with the network down shows no reason for about a minute")
 def test_J11_first_run_with_the_network_down_says_why_within_5_seconds(session: Session) -> None:
     _fp, term = session.live(fresh=False, rules=BOTH_DOWN)
     term.hold(5.0)
@@ -181,7 +180,6 @@ def select(term: Any, index: int) -> None:
     calm(term, 0.3)
 
 
-@pytest.mark.xfail(strict=True, reason="#253: a station with no TAF: the detail pane never says there is no forecast")
 def test_J14_a_station_with_no_taf_says_so_in_the_detail_pane(session: Session) -> None:
     _fp, term = session.live(mutate=only_metar("KPIT"))
     select(term, 1)
@@ -286,7 +284,6 @@ def test_J17_get_retries_once_when_the_first_request_fails(session: Session) -> 
     assert [r["status"] for r in fp.requests("metar")].count("reset") == 1 and len(fp.requests("metar")) == 2
 
 
-@pytest.mark.xfail(strict=True, reason="#254: wxbrief get prints raw ConnectError text when the network is down")
 def test_J17_get_with_the_network_down_gives_a_plain_message(session: Session) -> None:
     fp = session.feed()
     dead = "http://127.0.0.1:9"  # nothing listens: the connection is refused, as with no network

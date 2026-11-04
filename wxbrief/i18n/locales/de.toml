@@ -657,6 +657,7 @@ worst = "Ungünstigster Fall in diesem Fenster:"
 legend_becoming = "Übergang"
 legend_temporary = "vorübergehend"
 legend_worst = "schlechter als vorherrschend"
+legend_cursor = "gewählte Stunde"
 none = "Keine Zeitleiste: Die Vorhersage hat keinen nutzbaren Gültigkeitszeitraum."
 no_taf = "kein TAF"
 expired = "TAF abgelaufen"
@@ -765,6 +766,8 @@ description = "METAR/TAF-Kurzinfo im Terminal, mit Farbschemata und Übersetzung
 epilog = "Befehle: decode (Text ohne Oberfläche dekodieren), get (einmal abrufen und ausgeben). Starten Sie 'wxbrief decode --help' oder 'wxbrief get --help'."
 no_metar = "{icao}: kein METAR in den letzten 2 Stunden"
 metar_failed = "{icao}: METAR nicht verfügbar (der Abruf ist fehlgeschlagen)"
+no_terminal = "wxbrief braucht ein interaktives Terminal. Für reine Textausgabe `wxbrief get` oder `wxbrief decode` verwenden (siehe --help)."
+unreachable = "aviationweather.gov ist nicht erreichbar; Netzwerkverbindung und Proxy-Einstellung prüfen"
 metar_stale = "{icao}: dieses METAR ist {minutes} Min. alt, über der Frischegrenze von {limit} Minuten"
 
 [cli.help]
@@ -777,6 +780,7 @@ time = "angezeigte Zeit: station, local oder zulu"
 lang = "Sprache des Klartexts: {languages} (Standard: die der Konfiguration, en; decode und get: en)"
 config = "diese Konfigurationsdatei lesen und speichern"
 no_config = "die Konfigurationsdatei ignorieren und nie schreiben"
+diagnose = "Version, Plattform, Terminal-Fähigkeiten und Dateipfade für einen Fehlerbericht ausgeben und beenden"
 demo = "mit den mitgelieferten Beispielmeldungen für zehn Stationen starten: vollständig offline, nichts wird geladen, gespeichert oder zwischengespeichert"
 decode = "METAR-, SPECI- und TAF-Text aus Argumenten oder von stdin entschlüsseln"
 decode_description = "METAR-, SPECI- und TAF-Meldungen in Klartext entschlüsseln. Jede Meldung als ein Argument in Anführungszeichen übergeben (Wörter ohne Anführungszeichen werden zu einer Meldung verbunden) oder Text über stdin einspeisen: ein Block mit mehreren Meldungen, über mehrere Zeilen umbrochene TAFs, durch Leerzeilen oder '=' getrennte Meldungen, in Groß- oder Kleinschreibung. Eine Gruppe wie -RA wird als Option gelesen, wenn die Meldung nicht in Anführungszeichen steht oder nicht auf -- folgt."
@@ -847,6 +851,9 @@ groups = "Alle Vorhersagegruppen ({n})"
 [ui.detail]
 no_stations = "Noch keine Stationen. Drücken Sie [b]a[/b], um eine hinzuzufügen."
 no_report = "Noch keine Meldung"
+no_metar = "Noch kein METAR"
+observed = "Beobachtet {time}"
+demo_sample = "Demo-Beispiel"
 refresh_hint = "Mit r aktualisieren."
 observed_ago = "Beobachtet {time}, vor {age}"
 cached_ago = "(zwischengespeichert vor {age})"
@@ -876,10 +883,13 @@ away = "im Hintergrund"
 next_poll = "nächste Abfrage {time}"
 live = "live"
 feed_stale = "ohne Daten {age}"
+source_empty = "{product}-Liste ist leer eingegangen"
+source_missing = "{product} nicht verfügbar"
 requests = "Anfragen {used}/{limit}"
 polling_off = "Abfrage aus"
 demo = "Demodaten, nicht live"
 saved_from = "gespeicherte Daten von vor {age}"
+nothing_saved = "noch nichts gespeichert"
 feed_problem = "Problem mit aviationweather.gov, gespeicherte Daten werden angezeigt"
 
 [ui.list]
@@ -891,12 +901,14 @@ grid = "Rasteransicht"
 
 [ui.toast]
 demo = "Demo: feste Beispielmeldungen, kein Netzwerk"
+jump_shown = "{section} ist bereits sichtbar"
 unknown_theme = "Unbekanntes Design {theme}; textual-dark wird verwendet"
 theme_title = "Design"
 stations_title = "Stationen"
 config_title = "Konfiguration"
 fetch_failed = "{product} konnte nicht abgerufen werden; gespeicherte Daten werden angezeigt"
 unreachable = "aviationweather.gov nicht erreichbar; gespeicherte Daten werden angezeigt"
+quit_hint = "Zum Beenden {binding} drücken"
 polling_off = "Die regelmäßige Abfrage ist ausgeschaltet"
 demo_refresh = "Demodaten: nichts zu aktualisieren"
 refreshing = "Wird aktualisiert"
@@ -949,6 +961,7 @@ body = """\
 [b]Stationen[/b]
   Hoch/Runter  j/k   eine Station wählen (Raster: Pfeile über die Karten; j/k auch ohne Liste)
   Enter              ins Detailfenster wechseln (Raster: die Station öffnen)
+  Klick, Doppelklick wählt eine Station, öffnet sie (andere Tasten und Ziehen tun nichts)
   a                  eine Station hinzufügen (Code oder Name)
   d                  die gewählte Station entfernen
   r                  jetzt aktualisieren

@@ -31,7 +31,6 @@ def leaks(text: str) -> list[str]:
 
 
 @pytest.mark.timeout(90)
-@pytest.mark.xfail(strict=True, reason="#254: wxbrief get prints raw ConnectError text when the network is down")
 def test_L2_get_with_the_network_blocked_shows_no_internals(tmp_path) -> None:  # type: ignore[no-untyped-def]
     import os
 

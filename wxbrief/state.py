@@ -38,7 +38,10 @@ def decode_taf_row(row: AwcTaf, fallback_issued: datetime) -> Taf:
     return parse_taf(row.raw, row.issued or fallback_issued, row.modifiers)
 
 
-OFFLINE_AFTER = 2  # consecutive network failures of one product before the app says it is offline
+# Consecutive network failures of one product (METAR or TAF, each counted on its own) before the app says it is offline:
+# the second poll in a row that fails. A change to the station list starts the count again, since the next fetch asks
+# for different stations.
+OFFLINE_AFTER = 2
 
 
 @dataclass(slots=True)
@@ -88,6 +91,9 @@ class AppState:
         self.errors: dict[Product, str] = {}
         self.offline: set[Product] = set()  # products whose last failure was the network, not the server or the disk
         self.transport_failures: dict[Product, int] = {}  # consecutive network failures per product since any success
+        # Products whose last answer gave nothing, until that product answers with reports: "failed" (the fetch did
+        # not work) or "empty" (it worked and the list was empty). The network-wide clearing of ``errors`` leaves it.
+        self.silent: dict[Product, str] = {}
 
     # --- the list -----------------------------------------------------------------------------------------------
 
@@ -106,10 +112,12 @@ class AppState:
             self.watchlist.append(code)
             if code in self.session:
                 self.session.remove(code)
+            self.transport_failures.clear()
             return True
         if code in self.ids:
             return False
         self.session.append(code)
+        self.transport_failures.clear()
         return True
 
     def remove(self, icao: str) -> bool:
@@ -121,10 +129,11 @@ class AppState:
             self.session.remove(code)
         else:
             return False
+        self.transport_failures.clear()
         if not self.ids:  # nothing left to fetch, so no fetch will ever clear an old failure
             self.errors.clear()
             self.offline.clear()
-            self.transport_failures.clear()
+            self.silent.clear()
         return True
 
     def is_saved(self, icao: str) -> bool:
@@ -167,11 +176,16 @@ class AppState:
             self.errors.pop(down, None)
         self.offline.clear()
         self.transport_failures.clear()
+        if rows:
+            self.silent.pop(product, None)
         if product is Product.TAF and not rows and any(self._holds_taf(icao, now) for icao in asked if icao in listed):
             # An empty answer (a 204, an empty list, or rows that did not parse) while a forecast we hold is still
             # in its validity window is the feed having nothing to say, not every forecast having been withdrawn:
             # the held forecasts and the cache stay. Once they have expired the answer is believed and they go.
+            self.silent.pop(product, None)
             return
+        if not rows:
+            self.silent[product] = "empty"
         if product is Product.METAR:
             for row in latest_by_station(rows).values():
                 self._set_metar(row, now, from_cache=False)
@@ -187,6 +201,14 @@ class AppState:
             for row in rows:
                 self._set_taf(row, now, from_cache=False)
         self._write_cache(product, now)
+
+    def holds(self, product: Product) -> bool:
+        """True when any listed station has a report of this product, from the cache or from a fetch."""
+        return any(
+            (entry := self.stations.get(icao)) is not None
+            and (entry.awc_metar if product is Product.METAR else entry.awc_taf) is not None
+            for icao in self.ids
+        )
 
     def _holds_taf(self, icao: str, now: datetime) -> bool:
         """True when a forecast is held for the station and has not yet expired (no readable end counts as expired)."""
@@ -285,6 +307,7 @@ class AppState:
         else:
             self.transport_failures.pop(product, None)
         self.errors[product] = message
+        self.silent[product] = "failed"
         self.offline.discard(product)
         if offline:
             self.offline.add(product)

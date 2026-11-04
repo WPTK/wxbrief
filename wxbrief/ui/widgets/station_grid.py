@@ -16,6 +16,7 @@ from wxbrief.state import StationReports
 from wxbrief.ui.bindings import bind, localize
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.widgets.station_card import StationCard
+from wxbrief.ui.widgets.taf_timeline import legend_text
 
 CARD_WIDTH = 38  # the least width a card gets; a wider pane fits more columns
 
@@ -56,6 +57,7 @@ class StationGrid(VerticalScroll, can_focus=True):
     def compose(self) -> ComposeResult:
         yield Static(id="empty")  # the text is set in set_stations, in the language in use
         yield Container(id="cards")
+        yield Static(id="legend")  # the key to the cards' forecast strips, one row under them
 
     def on_mount(self) -> None:
         localize(self)
@@ -82,6 +84,9 @@ class StationGrid(VerticalScroll, can_focus=True):
         empty = self.query_one("#empty", Static)
         empty.update(ctx.translator.t(K.UI_DETAIL_NO_STATIONS))
         empty.display = not ids
+        legend = self.query_one("#legend", Static)
+        legend.display = bool(ids)
+        legend.update(legend_text(ctx, letters=True))
         if ids != self.ids:
             self.ids = ids
             # Keep the cards that stay, remove the ones that went, mount the new ones, then put them in order. Cards
@@ -164,7 +169,7 @@ class StationGrid(VerticalScroll, can_focus=True):
     def on_station_card_clicked(self, message: StationCard.Clicked) -> None:
         message.stop()
         self.focus()
-        if message.icao == self.selected:
-            self.post_message(self.Opened(message.icao))
-        else:
+        if message.icao != self.selected:
             self.post_message(self.Selected(message.icao))
+        if message.chain > 1:
+            self.post_message(self.Opened(message.icao))

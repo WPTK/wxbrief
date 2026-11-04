@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from wxbrief.config import station_id
-from wxbrief.data.awc import AwcClient, AwcError
+from wxbrief.data.awc import AwcClient, AwcError, ClientSetupError, TransportError
 from wxbrief.data.models import AwcMetar, AwcTaf, latest_by_station
 from wxbrief.data.poll import STALE_AFTER, Freshness, freshness
 from wxbrief.data.stations import bundled
@@ -49,10 +49,13 @@ def resolve_ids(codes: list[str]) -> tuple[list[str], list[str]]:
     return ids, rejected
 
 
-async def _fetch(ids: list[str]) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf], dict[str, str]]:
+async def _fetch(
+    ids: list[str], t: Translator
+) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf], dict[str, str]]:
     """Fetch each product on its own, so one failing does not hide what the other returned.
 
-    The third item maps each product that failed (``METAR``, ``TAF``) to why.
+    The third item maps each product that failed (``METAR``, ``TAF``) to why, in words a person can act on: a network
+    failure is said as that (never as ``ConnectError``); the other errors already carry a plain reason.
     """
     errors: dict[str, str] = {}
     metars: list[AwcMetar] = []
@@ -60,17 +63,26 @@ async def _fetch(ids: list[str]) -> tuple[dict[str, AwcMetar], dict[str, AwcTaf]
     try:
         client = AwcClient()
     except AwcError as exc:  # the HTTP client could not be built (a proxy or CA setting)
-        return {}, {}, {"METAR": str(exc), "TAF": str(exc)}
+        reason = _reason(exc, t)
+        return {}, {}, {"METAR": reason, "TAF": reason}
     async with client:
         try:
             metars = await client.metars(ids)
         except AwcError as exc:
-            errors["METAR"] = str(exc)
+            errors["METAR"] = _reason(exc, t)
         try:
             tafs = await client.tafs(ids)
         except AwcError as exc:
-            errors["TAF"] = str(exc)
+            errors["TAF"] = _reason(exc, t)
     return latest_by_station(metars), {taf.icao: taf for taf in tafs}, errors
+
+
+def _reason(error: AwcError, t: Translator) -> str:
+    return (
+        t.t(K.CLI_UNREACHABLE)
+        if isinstance(error, TransportError) and not isinstance(error, ClientSetupError)
+        else str(error)
+    )
 
 
 def run_get(args: argparse.Namespace) -> int:
@@ -85,9 +97,11 @@ def run_get(args: argparse.Namespace) -> int:
             else "wxbrief get: no station given\n"
         )
         return 2
-    metars, tafs, errors = asyncio.run(_fetch(ids))
-    for product, message in errors.items():
-        sys.stderr.write(f"wxbrief get: {product}: {message}\n")
+    translator = Translator.load(getattr(args, "lang", None) or DEFAULT_LANGUAGE)
+    metars, tafs, errors = asyncio.run(_fetch(ids, translator))
+    for message in dict.fromkeys(errors.values()):  # one line when both products failed the same way
+        failed = ", ".join(product for product, why in errors.items() if why == message)
+        sys.stderr.write(f"wxbrief get: {failed}: {message}\n")
     empty = [icao for icao in ids if icao not in metars and icao not in tafs]
     if empty and not errors and args.json:  # the text output names each empty station itself; JSON has only nulls
         sys.stderr.write(f"wxbrief get: no report for {', '.join(empty)}\n")
@@ -116,7 +130,6 @@ def run_get(args: argparse.Namespace) -> int:
         return status
 
     units = UnitsMode(args.units or args.tui_units or (UnitsMode.US.value if args.discord else UnitsMode.MIXED.value))
-    translator = Translator.load(getattr(args, "lang", None) or DEFAULT_LANGUAGE)
     db = bundled()
     blocks: list[str] = []
     for icao in ids:

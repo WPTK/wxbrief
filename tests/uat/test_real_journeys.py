@@ -290,15 +290,14 @@ def test_J7_keys_1_2_3_on_every_demo_station_never_do_nothing_silently(session: 
     assert not failures, f"silent key presses ({focus} focus): {failures}"
 
 
-@pytest.mark.xfail(strict=True, reason="#245: keys 1 and 2 give no visible change when all detail sections fit on screen")
 def test_J7b_keys_1_2_3_when_all_sections_fit_on_screen(session: Session) -> None:
-    term = session.start(280, 70, ["--demo", "--layout", "list"])
+    term = session.start(280, 84, ["--demo", "--layout", "list"])
     for index in range(3):  # three stations whose three sections fit one screen
         if index:
             term.send_keys("j")
             calm(term)
         assert not detail_overflows(term), f"precondition: the detail pane must not scroll:\n{term.screen_text()}"
-        assert not silent_presses(term, "280x70"), f"{detail_station(term.screen())}: a key press did nothing"
+        assert not silent_presses(term, "280x84"), f"{detail_station(term.screen())}: a key press did nothing"
 
 
 # -- J8 ---------------------------------------------------------------------------------------------------------------
@@ -392,7 +391,8 @@ def test_J10_per_run_flags_apply_to_this_run_and_are_never_saved(session: Sessio
     before = config.read_bytes()
     term = session.start(120, 30, FLAGS, root=tmp_path, ready="Stationen")
     screen = term.screen()
-    assert "╭" in screen.text or "┏" in screen.text, "--layout grid did not draw cards"
+    drawn = "╭" in screen.text or "┏" in screen.text or re.search(r"\+-{8,}\+", screen.text)  # --glyphs ascii: + - |
+    assert drawn, "--layout grid did not draw cards"
     assert "Hinzufügen" in footer(screen), "--lang de did not translate the key bar"
     term.send_keys("S")
     shown = term.wait_for(lambda s: "Einstellungen" in s, 10, "the settings screen").text
@@ -431,7 +431,7 @@ def test_J10_no_config_reads_and_writes_nothing(session: Session, tmp_path: Path
 
 @pytest.mark.parametrize(
     "layout",
-    [pytest.param("list", marks=pytest.mark.xfail(strict=True, reason="#255: key bar stays the detail pane's after a shrink and back")),
+    [pytest.param("list", marks=pytest.mark.xfail(strict=False, reason="#259: the pty screen keeps stale rows after a resize storm; #255 itself is pinned in test_ui_screen_fixes")),
         pytest.param("grid", marks=pytest.mark.xfail(strict=False, reason="#259: intermittent, stale grid and wrapped key bar after a resize storm")),
     ],
 )
@@ -448,7 +448,8 @@ def test_J16_resize_storm_keeps_the_selection_and_the_key_bar(session: Session, 
     screen = term.settle(0.6)
     assert term.alive() and "Traceback" not in screen.text
     assert "larger" not in screen.text.lower(), f"stuck on the too-small screen:\n{screen.text}"
-    assert "d Remove" in footer(screen) and "esc Back" not in footer(screen), f"key bar after the storm: {footer(screen)}" + chr(10) + screen.text
+    bars = [line for line in screen.lines if "a Add" in line]  # #259 may leave a stale copy below the real one: judge each
+    assert bars and all("d Remove" in line and "esc Back" not in line for line in bars), f"key bar after the storm: {bars}" + chr(10) + screen.text
     assert position(screen) == (4, 10)
     term.resize(40, 10)  # below the minimum: a message, not a crash
     small = term.wait_for(lambda s: "larger" in s.text.lower() or "too small" in s.text.lower(), 10, "the too-small message")
@@ -471,7 +472,6 @@ def test_J18_ctrl_q_quits_and_ctrl_c_says_how(session: Session) -> None:
     assert term.wait_exit(15) == 0, term.screen_text()
 
 
-@pytest.mark.xfail(strict=True, reason="#258: the Ctrl-C hint shows its markup tags literally")
 def test_J18_ctrl_c_hint_is_plain_text(session: Session) -> None:
     term = session.start(120, 30, ["--demo"])
     term.send_raw("\x03")
@@ -480,7 +480,6 @@ def test_J18_ctrl_c_hint_is_plain_text(session: Session) -> None:
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX signals")
-@pytest.mark.xfail(strict=True, reason="#265: SIGTERM and SIGHUP leave mouse tracking, bracketed paste and the alternate screen on")
 @pytest.mark.parametrize("sig", ["SIGTERM", "SIGHUP"])
 def test_J18_signals_end_the_program_and_restore_the_terminal(session: Session, sig: str) -> None:
     import os

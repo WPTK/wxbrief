@@ -16,9 +16,8 @@ REASON = re.compile(r"offline|problem|fail|error|unavailable|retry|empty|no data
 WITHIN = 25  # seconds for a failing source to show its state
 
 
-SILENT = pytest.mark.xfail(strict=True, reason="#262: a dropped connection or an empty list gets no reason on screen")
 CASES = [
-    pytest.param(product, behaviour, marks=[SILENT] if (product, behaviour) in {("metar", "drop:99"), ("metar", "empty_list"), ("taf", "drop:99"), ("taf", "empty_list")} else [])
+    pytest.param(product, behaviour)
     for product in ("metar", "taf")
     for behaviour in ("5xx", "badjson", "empty_list", "drop:99")
 ]

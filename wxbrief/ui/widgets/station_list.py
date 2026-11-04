@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any
 
 from rich.text import Text
-from textual.events import Click, Resize
+from textual.events import Click, MouseDown, Resize
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
 
@@ -67,6 +67,7 @@ class StationList(OptionList):
         self._last: tuple[list[StationReports], ViewContext, datetime, str | None] | None = None
         self._named = False  # the rows carry the station name
         self._height = 0  # the height the highlight was last kept in view for
+        self._pressed: int | None = None  # the row the left button went down on
 
     def on_mount(self) -> None:
         localize(self)
@@ -80,14 +81,19 @@ class StationList(OptionList):
             option = self.highlighted_option
             self.set_stations(reports, ctx, now, option.id if option else None)
 
+    def on_mouse_down(self, event: MouseDown) -> None:
+        self._pressed = event.style.meta.get("option") if event.button == 1 else None
+
     def on_click(self, event: Click) -> None:
-        """A click looks at a station and leaves the keyboard in the list; Enter or a double click opens its detail.
+        """A left click looks at a station and leaves the keyboard in the list; Enter or a double click opens its
+        detail. The other buttons do nothing, and a drag does nothing: a click counts only where the button went down
+        and came up.
 
         OptionList would also select the row, and the briefing treats selecting as Enter: the focus jumped to the
         detail pane and the key bar changed under the pointer."""
         event.prevent_default()
         index = event.style.meta.get("option")
-        if index is None or self.options[index].disabled:
+        if event.button != 1 or index is None or index != self._pressed or self.options[index].disabled:
             return
         self.highlighted = index
         if event.chain > 1:

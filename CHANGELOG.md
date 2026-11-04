@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Add `wxbrief --diagnose` (version, platform, terminal capabilities, config, cache and log paths) and a crash log whose path is printed instead of a traceback (#216)
+- Say why a source gave nothing: a first failed fetch with nothing saved shows offline at once, and an empty or failed METAR or TAF answer is named in the status bar (#236, #262)
+
+### Fixed
+
+- Switch every terminal mode off when the program ends, including on SIGTERM and SIGHUP (#265)
+- Tell a run without a terminal to use `wxbrief get` or `wxbrief decode`, on stderr, with a non-zero exit (#256)
+- Say "can't reach aviationweather.gov" in `wxbrief get` instead of the raw `ConnectError` (#254)
+- Show the Ctrl+C quit hint as plain text (#258)
+- Draw only ASCII with `--glyphs ascii`, and use the terminal's own colours under `NO_COLOR` and in 16-colour mode (#234, #247, #248)
+- Fix the UI screens: hand the keyboard back to the list after a narrow-terminal trip (#255), say "no TAF" in the detail pane and answer keys 1, 2 and 3 when a section is already on screen or a product is missing (#253, #245, #230), pin the station header while the report scrolls (#198), give the demo header "demo sample" instead of an age (#257), make clicks the same in the list and the grid and ignore the other buttons and drags (#232, #249), let a dismissed toast be raised again (#231), restart the offline count when the stations change (#233), add a legend to the grid (#201) and lift theme colours that fell below the contrast floor (#260)
+
 ## 0.4.0 - 2026-11-03
 
 ### Changed

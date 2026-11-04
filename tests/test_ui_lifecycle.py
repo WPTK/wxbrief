@@ -49,6 +49,7 @@ def later(app: app_module.WxBriefApp, delta: timedelta) -> None:
 async def test_the_station_screen_moves_with_the_clock(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(station_detail, "REDRAW_SECONDS", 0.05)
     app = demo_app("--layout", "grid")
+    app.ctx.demo = False  # the demo header names no age and no freshness (#257); this is about a live header
     async with app.run_test(size=(140, 40)) as pilot:
         await settle(pilot)
         await pilot.press("enter")

@@ -649,6 +649,7 @@ worst = "Pire cas dans cette fenêtre :"
 legend_becoming = "évolution"
 legend_temporary = "temporaire"
 legend_worst = "pire que le prévalent"
+legend_cursor = "heure choisie"
 none = "Pas de frise chronologique : la prévision n'a pas de période de validité exploitable."
 no_taf = "pas de TAF"
 expired = "TAF expiré"
@@ -757,6 +758,8 @@ description = "Synthèse METAR/TAF dans le terminal, avec palettes de couleurs e
 epilog = "commandes : decode (décode du texte sans l'interface), get (télécharge une fois et affiche). Lancez 'wxbrief decode --help' ou 'wxbrief get --help'."
 no_metar = "{icao} : pas de METAR depuis 2 heures"
 metar_failed = "{icao} : METAR indisponible (la requête a échoué)"
+no_terminal = "wxbrief a besoin d'un terminal interactif. Pour une sortie texte, utilisez `wxbrief get` ou `wxbrief decode` (voir --help)."
+unreachable = "aviationweather.gov est injoignable ; vérifiez la connexion réseau et le réglage du proxy"
 metar_stale = "{icao} : ce METAR date de {minutes} min, au-delà de la limite de fraîcheur de {limit} minutes"
 
 [cli.help]
@@ -769,6 +772,7 @@ time = "heure affichée : station, local ou zulu"
 lang = "langue du texte en langage clair : {languages} (par défaut : celle de la configuration, en; decode et get : en)"
 config = "lire et enregistrer ce fichier de configuration"
 no_config = "ignorer le fichier de configuration et ne jamais l'écrire"
+diagnose = "afficher la version, la plateforme, les capacités du terminal et les chemins de fichiers pour un rapport de bogue, puis quitter"
 demo = "ouvrir avec les messages d'exemple fournis pour dix stations : entièrement hors ligne, rien n'est téléchargé, enregistré ni mis en cache"
 decode = "décoder du texte METAR, SPECI et TAF donné en arguments ou sur stdin"
 decode_description = "Décode des messages METAR, SPECI et TAF en langage clair. Passez chaque message en un argument entre guillemets (les mots sans guillemets sont réunis en un seul message) ou envoyez le texte sur stdin : un bloc de plusieurs messages, des TAF répartis sur plusieurs lignes, des messages séparés par des lignes vides ou par '=', en majuscules ou minuscules. Un groupe comme -RA est lu comme une option, sauf si le message est entre guillemets ou suit --."
@@ -839,6 +843,9 @@ groups = "Tous les groupes de prévision ({n})"
 [ui.detail]
 no_stations = "Aucune station pour l'instant. Appuyez sur [b]a[/b] pour en ajouter une."
 no_report = "Pas encore de message"
+no_metar = "Pas encore de METAR"
+observed = "Observé {time}"
+demo_sample = "exemple de démonstration"
 refresh_hint = "Appuyez sur r pour actualiser."
 observed_ago = "Observé {time}, il y a {age}"
 cached_ago = "(en cache depuis {age})"
@@ -868,10 +875,13 @@ away = "en arrière-plan"
 next_poll = "prochaine interrogation {time}"
 live = "en direct"
 feed_stale = "sans MAJ {age}"
+source_empty = "la liste {product} est arrivée vide"
+source_missing = "{product} indisponible"
 requests = "requêtes {used}/{limit}"
 polling_off = "interrogation désactivée"
 demo = "données de démo, pas en direct"
 saved_from = "données enregistrées d'il y a {age}"
+nothing_saved = "rien d'enregistré pour l'instant"
 feed_problem = "problème avec aviationweather.gov, données enregistrées affichées"
 
 [ui.list]
@@ -883,12 +893,14 @@ grid = "Affichage en grille"
 
 [ui.toast]
 demo = "Démo : messages d'exemple figés, sans réseau"
+jump_shown = "{section} est déjà affiché"
 unknown_theme = "Thème inconnu {theme}; textual-dark est utilisé"
 theme_title = "Thème"
 stations_title = "Stations"
 config_title = "Configuration"
 fetch_failed = "Impossible d'obtenir {product} ; données enregistrées affichées"
 unreachable = "aviationweather.gov injoignable ; données enregistrées affichées"
+quit_hint = "Appuyez sur {binding} pour quitter"
 polling_off = "L'interrogation périodique est désactivée"
 demo_refresh = "Données de démo : rien à actualiser"
 refreshing = "Actualisation"
@@ -941,6 +953,7 @@ body = """\
 [b]Stations[/b]
   Haut/Bas  j/k      choisir une station (grille : flèches sur les cartes ; j/k aussi sans liste)
   Entrée             entrer dans le panneau de détail (grille : ouvrir la station)
+  Clic, double clic  choisir une station, l'ouvrir (les autres boutons et le glissement ne font rien)
   a                  ajouter une station (code ou nom)
   d                  retirer la station choisie
   r                  actualiser maintenant

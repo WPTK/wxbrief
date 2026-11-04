@@ -21,12 +21,13 @@ _EXPORT_COMMENT = re.compile(r"[ \t]*<!-- Generated with Rich [^>]*-->\r?\n")
 
 @pytest.fixture(autouse=True)
 def _plain_screenshots(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Keep the exporter's credit comment out of the stored SVGs, and make the picture independent of NO_COLOR."""
+    """Keep the exporter's credit comment out of the stored SVGs, and make the picture independent of NO_COLOR and of the terminal colour depth."""
     from textual import _doc
 
     original = _doc.take_svg_screenshot
     monkeypatch.setattr(_doc, "take_svg_screenshot", lambda *a, **k: _EXPORT_COMMENT.sub("", original(*a, **k)))
     monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setenv("COLORTERM", "truecolor")  # the picture must not depend on how many colours the CI terminal has
 
 
 @pytest.mark.parametrize("theme", ["textual-dark", "paper-chart", "phosphor-green"])

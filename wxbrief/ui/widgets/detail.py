@@ -56,8 +56,14 @@ class StationHeader(Static):
             mark = ctx.glyphs.fresh if state is Freshness.FRESH else ctx.glyphs.stale
             style = ctx.palette.fresh if state is Freshness.FRESH else ctx.palette.stale
             t = ctx.translator
-            when = t.t(K.UI_DETAIL_OBSERVED_AGO, time=ctx.clock(observed, entry.icao), age=age_text(now - observed, t))
-            line = Text.assemble(f"{when}  ", (f"{mark} {t.t(STATE_KEYS[state])}", style))
+            if ctx.demo:  # a fixed sample on a fixed clock: how long ago, and whether it is fresh, mean nothing
+                when = t.t(K.UI_DETAIL_OBSERVED, time=ctx.clock(observed, entry.icao))
+                sample = t.t(K.UI_DETAIL_DEMO_SAMPLE)
+                line = Text.assemble(f"{when}  ", (f"{ctx.glyphs.missing} {sample}", ctx.palette.muted))
+            else:
+                age = age_text(now - observed, t)
+                when = t.t(K.UI_DETAIL_OBSERVED_AGO, time=ctx.clock(observed, entry.icao), age=age)
+                line = Text.assemble(f"{when}  ", (f"{mark} {t.t(STATE_KEYS[state])}", style))
             if entry.from_cache and entry.updated is not None:
                 cached = t.t(K.UI_DETAIL_CACHED_AGO, age=age_text(now - entry.updated, t))
                 line.append(f"  {cached}", style=ctx.palette.muted)
@@ -97,6 +103,8 @@ class RawReport(Static):
             parts.append(ctx.palette.raw_text(entry.metar))
         if entry.taf is not None:
             parts.append(ctx.palette.raw_text(entry.taf))
+        elif entry.metar is not None:  # the forecast's own section is far below: say here, where it would be read
+            parts.append(Text(ctx.translator.t(K.TIMELINE_NO_TAF), style=ctx.palette.muted))
         self._parts = parts
         self._selected = None
         self._draw()
@@ -436,7 +444,12 @@ class DetailPane(VerticalScroll):
         period = self.query_one(PeriodDetail)
         note = self.query_one("#taf-note", Static)
         if taf is None:
-            timeline.display = period.display = note.display = False
+            # a station with a METAR and no forecast says so, or "no forecast" looks like "not loaded yet"
+            said = entry.metar is not None
+            self.query_one("#taf-title").display = said
+            timeline.display = period.display = False
+            note.display = said
+            note.update(Text(t.t(K.TIMELINE_NO_TAF), style=ctx.palette.muted))
             timeline.set_taf(None, ctx, entry.icao, now)
             self._release_focus(timeline)
             return
@@ -488,20 +501,40 @@ class DetailPane(VerticalScroll):
         self.jump(section)
 
     def jump(self, section: str) -> None:
-        """Scroll to ``raw``, ``decoded`` or ``taf``; the forecast also takes the keyboard focus (cursor keys)."""
+        """Scroll to ``raw``, ``decoded`` or ``taf``; the forecast also takes the keyboard focus (cursor keys).
+
+        A key must show something: when the section is absent the toast says which product is missing, and when it
+        is already on screen (nothing to scroll) the toast says so."""
         titles = {"raw": "#raw-title", "decoded": "#decoded-title", "tokens": "#tokens-title", "taf": "#taf-title"}
-        target = titles[section]
-        widget = self.query_one(target)
+        names = {"raw": K.UI_SECTION_RAW, "decoded": K.UI_SECTION_DECODED, "tokens": K.UI_SECTION_TOKENS}
+        widget = self.query_one(titles[section])
         entry, ctx = self._entry, self._ctx
-        empty = entry is not None and entry.metar is None and entry.taf is None
-        if entry is not None and ctx is not None and (empty or not widget.display):
-            # nothing to go to: say so, a key that does nothing looks broken
-            no_taf = section == "taf" and entry.taf is None and entry.metar is not None
-            key = K.TIMELINE_NO_TAF if no_taf else K.UI_DETAIL_NO_REPORT
-            self.app.notify(ctx.translator.t(key), severity="warning")
+        if entry is not None and ctx is not None and not widget.display:
+            t = ctx.translator
+            if entry.metar is None and entry.taf is None:
+                key = K.UI_DETAIL_NO_REPORT
+            elif section == "taf":
+                key = K.TIMELINE_NO_TAF
+            else:  # the raw report is there (the forecast's), so it is the decoded METAR that is missing
+                key = K.UI_DETAIL_NO_METAR
+            self.app.notify(t.t(key), severity="warning")
             return
+        before = self.scroll_y
         self.scroll_to_widget(widget, top=True, animate=False)
+        if entry is not None and ctx is not None and section == "taf" and entry.taf is None:
+            self.app.notify(ctx.translator.t(K.TIMELINE_NO_TAF), severity="warning")  # the pane's note is shown too
+            return
         if section == "tokens" and self.query_one(TokenTable).display:
             self.query_one(TokenTable).focus(scroll_visible=False)
-        if section == "taf" and self.query_one(TafTimeline).display:
-            self.query_one(TafTimeline).focus(scroll_visible=False)  # the jump has placed the section
+        timeline = self.query_one(TafTimeline)
+        moved_focus = section == "taf" and timeline.display and not timeline.has_focus
+        if section == "taf" and timeline.display:
+            timeline.focus(scroll_visible=False)  # the jump has placed the section
+        if entry is not None and ctx is not None and not moved_focus:
+            label = ctx.translator.t(names.get(section, K.UI_SECTION_FORECAST))
+            self.call_after_refresh(self._confirm_jump, before, ctx.translator.t(K.UI_TOAST_JUMP_SHOWN, section=label))
+
+    def _confirm_jump(self, before: float, message: str) -> None:
+        """Nothing moved (the section was already in place): say so, a key that changes nothing looks broken."""
+        if self.scroll_y == before:
+            self.app.notify(message)

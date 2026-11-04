@@ -651,6 +651,7 @@ worst = "Worst case in this window:"
 legend_becoming = "becoming"
 legend_temporary = "temporary"
 legend_worst = "worse than prevailing"
+legend_cursor = "selected hour"
 none = "No timeline: the forecast has no usable valid period."
 no_taf = "no TAF"
 expired = "TAF expired"
@@ -753,6 +754,8 @@ description = "Terminal METAR/TAF briefing with colorways and plain-language tra
 epilog = "commands: decode (decode text without the TUI), get (fetch once and print). Run 'wxbrief decode --help' or 'wxbrief get --help'."
 no_metar = "{icao}: no METAR in the last 2 hours"
 metar_failed = "{icao}: METAR unavailable (the fetch failed)"
+no_terminal = "wxbrief needs an interactive terminal. For plain output use `wxbrief get` or `wxbrief decode` (see --help)."
+unreachable = "can't reach aviationweather.gov; check the network connection and any proxy setting"
 metar_stale = "{icao}: this METAR is {minutes} min old, past the {limit}-minute freshness limit"
 
 [cli.help]
@@ -765,6 +768,7 @@ time = "time shown: station, local or zulu"
 lang = "language of the plain-language text: {languages} (default: from config, en; decode and get: en)"
 config = "read and save this config file"
 no_config = "ignore the config file and never write it"
+diagnose = "print the version, platform, terminal capabilities and file paths for a bug report, then exit"
 demo = "open with the bundled sample reports of ten stations: fully offline, nothing is fetched, cached or saved"
 decode = "decode METAR, SPECI and TAF text given as arguments or on stdin"
 decode_description = "Decode METAR, SPECI and TAF reports into plain language. Pass each report as one quoted argument (unquoted words are joined into a single report), or pipe text on stdin: a blob with several reports, TAFs wrapped over several lines, reports separated by blank lines or '=', in upper or lower case. A group such as -RA is read as an option unless the report is quoted or follows --."
@@ -835,6 +839,9 @@ groups = "All forecast groups ({n})"
 [ui.detail]
 no_stations = "No stations yet. Press [b]a[/b] to add one."
 no_report = "No report yet"
+no_metar = "No METAR yet"
+observed = "Observed {time}"
+demo_sample = "demo sample"
 refresh_hint = "Press r to refresh."
 observed_ago = "Observed {time}, {age} ago"
 cached_ago = "(cached {age} ago)"
@@ -864,10 +871,13 @@ away = "away"
 next_poll = "next poll {time}"
 live = "live"
 feed_stale = "no update for {age}"
+source_empty = "{product} list came back empty"
+source_missing = "{product} not available"
 requests = "req {used}/{limit}"
 polling_off = "polling off"
 demo = "demo data, not live"
 saved_from = "showing saved data from {age} ago"
+nothing_saved = "nothing saved yet"
 feed_problem = "aviationweather.gov problem, showing saved data"
 
 [ui.list]
@@ -879,12 +889,14 @@ grid = "Grid layout"
 
 [ui.toast]
 demo = "Demo: fixed sample reports, no network"
+jump_shown = "{section} is already on screen"
 unknown_theme = "Unknown theme {theme}; using textual-dark"
 theme_title = "Theme"
 stations_title = "Stations"
 config_title = "Config"
 fetch_failed = "Could not fetch {product}; showing saved data"
 unreachable = "Can't reach aviationweather.gov; showing saved data"
+quit_hint = "Press {binding} to quit the app"
 polling_off = "Polling is off"
 demo_refresh = "Demo data: nothing to refresh"
 refreshing = "Refreshing"
@@ -937,6 +949,7 @@ body = """\
 [b]Stations[/b]
   Up/Down  j/k       select a station (the grid: arrows over the cards; j/k also work with no list)
   Enter              move into the detail pane (the grid: open the station)
+  Click, 2x click    select a station, open it (the other buttons and dragging do nothing)
   a                  add a station (code or name)
   d                  remove the selected station
   r                  refresh now

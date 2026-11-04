@@ -50,19 +50,21 @@ def strip_lines(cells: Sequence[StripCell], colors: CategoryColors, t: Translato
 
 
 class StationCard(Static):
-    """One station in the grid layout. Clicking it selects it; clicking the selected card opens its detail."""
+    """One station in the grid layout. A left click selects it; a double click opens its detail, as in the list."""
 
     class Clicked(Message):
-        def __init__(self, icao: str) -> None:
+        def __init__(self, icao: str, chain: int = 1) -> None:
             super().__init__()
             self.icao = icao
+            self.chain = chain  # 2 for a double click
 
     def __init__(self, icao: str) -> None:
         super().__init__()
         self.icao = icao
 
     def on_click(self, event: Click) -> None:
-        self.post_message(self.Clicked(self.icao))
+        if event.button == 1:  # middle and right clicks do nothing
+            self.post_message(self.Clicked(self.icao, event.chain))
 
     def show(self, entry: StationReports, ctx: ViewContext, now: datetime, *, selected: bool) -> None:
         self.set_class(selected, "-selected")

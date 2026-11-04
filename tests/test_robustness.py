@@ -615,7 +615,9 @@ class _ClosedPipe:
         raise ValueError("no descriptor")
 
 
-def test_a_flush_that_fails_on_a_closed_pipe_ends_quietly(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_flush_that_fails_on_a_closed_pipe_ends_quietly(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     import errno
 
     monkeypatch.setattr(cli, "run_get", lambda args: 0)  # wrote and returned: the failure comes at the flush
@@ -624,9 +626,11 @@ def test_a_flush_that_fails_on_a_closed_pipe_ends_quietly(monkeypatch: pytest.Mo
     monkeypatch.setattr(sys, "platform", "win32")  # the CRT reports a closed pipe as EINVAL
     monkeypatch.setattr(sys, "stdout", _ClosedPipe(OSError(errno.EINVAL, "Invalid argument")))
     assert main(["get", "KDEN"]) == 1
+    monkeypatch.setenv("WXBRIEF_LOG_DIR", str(tmp_path / "logs"))
     monkeypatch.setattr(sys, "stdout", _ClosedPipe(OSError(errno.EIO, "I/O error")))  # any other error still shows
-    with pytest.raises(OSError):
-        main(["get", "KDEN"])
+    assert main(["get", "KDEN"]) == 1
+    assert "OSError" in capsys.readouterr().err
+    assert "I/O error" in (tmp_path / "logs" / "wxbrief.log").read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("variable", ["FORCE_COLOR", "NO_COLOR"])
