@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import shutil
 import time
 from collections.abc import Callable, Iterable
@@ -36,14 +37,17 @@ from wxbrief.data.demo import load_demo
 from wxbrief.data.poll import PollScheduler, Product
 from wxbrief.data.stations import bundled
 from wxbrief.decode.units import UnitsMode
+from wxbrief.diagnostics import crash_message, write_crash_log
 from wxbrief.i18n import LANGUAGES, Translator
 from wxbrief.i18n.keys import K
 from wxbrief.render.palette import Palette
 from wxbrief.state import AppState
+from wxbrief.ui.asciify import to_ascii
 from wxbrief.ui.bindings import bind, localize, relabel_tree
 from wxbrief.ui.commands import HIDDEN, StationProvider, app_commands
 from wxbrief.ui.context import ViewContext
 from wxbrief.ui.glyphs import GLYPH_SETS, glyphs_for
+from wxbrief.ui.greys import TerminalGreys
 from wxbrief.ui.screens.briefing import BriefingScreen
 from wxbrief.ui.screens.paste import PasteDecodeScreen
 from wxbrief.ui.screens.station_detail import StationDetailScreen
@@ -94,7 +98,9 @@ class WxBriefApp(App[None]):
     ]
 
     def __init__(self, options: AppOptions | None = None) -> None:
-        super().__init__()
+        # NO_COLOR: no colours at all, so the terminal's own foreground and background show. Textual does this (its
+        # ``NoColor`` filter) only when told its colours are the terminal's own, which is true of none of ours.
+        super().__init__(ansi_color=True if "NO_COLOR" in os.environ else None)
         self.options = options or AppOptions()
         view = self.options.view
         for theme in AVIATION_THEMES:
@@ -165,9 +171,41 @@ class WxBriefApp(App[None]):
 
     # --- start up --------------------------------------------------------------------------------------------------
 
+    def _fatal_error(self) -> None:
+        """An unhandled exception: the traceback goes to the log file, the screen gets its path in plain words."""
+        from rich.text import Text
+
+        error = self._exception
+        path = write_crash_log(error)
+        log.error("unhandled exception", exc_info=error)
+        self._exit_renderables.append(Text(crash_message(error, path).rstrip()))
+        self._close_messages_no_wait()
+
+    def action_help_quit(self) -> None:
+        """Ctrl-C does not quit: say which key does, in plain text (Textual's own toast shows its markup tags)."""
+        for key, active in self.active_bindings.items():
+            if active.binding.action in ("quit", "app.quit"):
+                self.notify(self.ctx.translator.t(K.UI_TOAST_QUIT_HINT, binding=key))
+                return
+
+    def _ascii_output(self) -> None:
+        """Map what the driver writes to ASCII while the ascii glyph set is on (borders, scrollbars, tables)."""
+        driver = self._driver
+        if driver is None:
+            return
+        write = driver.write
+
+        def filtered(data: str) -> None:
+            write(to_ascii(data) if self.glyph_set == "ascii" else data)
+
+        driver.write = filtered  # type: ignore[method-assign]
+
     def on_mount(self) -> None:
         t = self.ctx.translator
         localize(self)
+        self._ascii_output()
+        if self.console.color_system in ("standard", "windows"):  # 16 colours cannot show our greys: use the terminal's
+            self._filters.append(TerminalGreys())
         if self.options.demo:
             self.state.load_demo(load_demo())
             self.notify(t.t(K.UI_TOAST_DEMO), timeout=6)
@@ -292,6 +330,8 @@ class WxBriefApp(App[None]):
             return  # the stations it was for are gone from the list: nothing will fetch again to clear this
         first = product not in self.state.errors
         offline = isinstance(error, TransportError)
+        # With no report of this product to fall back on, waiting for a second failure only delays the reason.
+        certain = certain or (offline and not self.state.holds(product))
         raw = f"{product.value}: {error}" if str(error) else f"{product.value}: {type(error).__name__}"
         log.warning("fetch failed: %s", raw)  # the raw text is for the log; the screen says it in plain words
         if not self.state.record_error(product, raw, offline=offline, certain=certain):
@@ -489,6 +529,7 @@ class WxBriefApp(App[None]):
             case "glyph_set":
                 self.glyph_set = value
                 self.ctx.glyphs = glyphs_for(value)
+                self.screen.refresh(layout=True)  # unchanged cells are not sent again: send them all in the new set
             case _:
                 raise ValueError(f"not a view setting: {name}")
         setattr(self.options.view, name, value)

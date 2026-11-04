@@ -46,7 +46,6 @@ def bar_of(term: Any) -> str:
 # -- J11 --------------------------------------------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(strict=True, reason="#236: first run with the network down shows no reason for about a minute")
 def test_J11_first_run_with_the_network_down_says_why_within_5_seconds(session: Session) -> None:
     _fp, term = session.live(fresh=False, rules=BOTH_DOWN)
     term.hold(5.0)
@@ -286,7 +285,6 @@ def test_J17_get_retries_once_when_the_first_request_fails(session: Session) -> 
     assert [r["status"] for r in fp.requests("metar")].count("reset") == 1 and len(fp.requests("metar")) == 2
 
 
-@pytest.mark.xfail(strict=True, reason="#254: wxbrief get prints raw ConnectError text when the network is down")
 def test_J17_get_with_the_network_down_gives_a_plain_message(session: Session) -> None:
     fp = session.feed()
     dead = "http://127.0.0.1:9"  # nothing listens: the connection is refused, as with no network

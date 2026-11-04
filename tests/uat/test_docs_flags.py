@@ -49,7 +49,7 @@ def test_L4_version_prints_a_version(flag: str) -> None:
     assert done.returncode == 0 and re.search(r"\d+\.\d+\.\d+", done.stdout + done.stderr)
 
 
-SUBCOMMAND_FLAGS = {"--version", "--plain", "--json", "--discord", "--date", "--no-color", "--output"}
+SUBCOMMAND_FLAGS = {"--version", "--diagnose", "--plain", "--json", "--discord", "--date", "--no-color", "--output"}
 VALUES = {
     "--theme": ["nord"],
     "--glyphs": ["ascii"],

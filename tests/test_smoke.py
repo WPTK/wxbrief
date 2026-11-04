@@ -24,9 +24,10 @@ def test_version_flag_in_process(capsys: pytest.CaptureFixture[str]) -> None:
     assert capsys.readouterr().out.strip() == f"wxbrief {wxbrief.__version__}"
 
 
-def test_no_arguments_prints_help(capsys: pytest.CaptureFixture[str]) -> None:
-    assert main([]) == 0
-    assert capsys.readouterr().out.startswith("usage: wxbrief")
+def test_no_arguments_without_a_terminal_fails_and_says_why(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main([]) == 2
+    shown = capsys.readouterr()
+    assert shown.out == "" and "interactive terminal" in shown.err
 
 
 def test_version_flag_as_module() -> None:

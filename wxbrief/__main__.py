@@ -93,6 +93,7 @@ def _add_global_flags(parser: argparse.ArgumentParser, t: Translator) -> None:
     parser.add_argument("--config", type=Path, metavar="FILE", help=t.t(K.CLI_HELP_CONFIG))
     parser.add_argument("--no-config", action="store_true", help=t.t(K.CLI_HELP_NO_CONFIG))
     parser.add_argument("--demo", action="store_true", help=t.t(K.CLI_HELP_DEMO))
+    parser.add_argument("--diagnose", action="store_true", help=t.t(K.CLI_HELP_DIAGNOSE))
 
 
 def _add_language_flag(parser: argparse.ArgumentParser, t: Translator) -> None:
@@ -254,16 +255,25 @@ def _run_decode(args: argparse.Namespace) -> int:
 
 
 def _run_tui(args: argparse.Namespace, translator: Translator) -> int:
-    """Open the TUI. Without a terminal there is nothing to draw on, so print the help instead."""
+    """Open the TUI. Without a terminal there is nothing to draw on: say so on stderr and fail, so a script can tell."""
     if not (sys.stdin.isatty() and sys.stdout.isatty()):
-        sys.stdout.write(build_tui_parser(translator).format_help())
-        return 0
+        sys.stderr.write(f"{translator.t(K.CLI_NO_TERMINAL)}\n")
+        return 2
     from wxbrief.app import WxBriefApp
+    from wxbrief.terminal import restore_on_exit
 
     options = tui_options(args)
     app = WxBriefApp(options)
-    app.run()
+    with restore_on_exit(app):
+        app.run()
     return app.return_code or 0
+
+
+def _run_diagnose(args: argparse.Namespace) -> int:
+    from wxbrief.diagnostics import diagnose_text
+
+    sys.stdout.write(diagnose_text(args.config))
+    return 0
 
 
 def tui_options(args: argparse.Namespace) -> AppOptions:
@@ -323,6 +333,16 @@ def _reader_went_away(exc: OSError) -> bool:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the command line and return the process exit code."""
+    try:
+        return _main(argv)
+    except Exception as exc:  # a bug: the traceback goes to the log, the screen gets a short message and the log's path
+        from wxbrief.diagnostics import crash_message, write_crash_log
+
+        sys.stderr.write(crash_message(exc, write_crash_log(exc)))
+        return 1
+
+
+def _main(argv: Sequence[str] | None) -> int:
     words = list(sys.argv[1:] if argv is None else argv)
     if words == ["--selftest"]:  # hidden: the smoke test of a built binary
         from wxbrief.selftest import run_selftest
@@ -336,8 +356,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     translator = _help_translator(words)
     if _first_positional(words) not in COMMANDS:
         tui_args = build_tui_parser(translator).parse_args(words)
+        if tui_args.diagnose:
+            return _run_diagnose(tui_args)
         return _run_tui(tui_args, translator)
     args = build_parser(translator).parse_args(words)
+    if args.diagnose:
+        return _run_diagnose(args)
     try:
         status = _run_decode(args) if args.command == "decode" else run_get(args)
         sys.stdout.flush()  # inside the try: output under the buffer size is otherwise written after this handler

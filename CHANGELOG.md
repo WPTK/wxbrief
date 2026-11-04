@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Add `wxbrief --diagnose` (version, platform, terminal capabilities, config, cache and log paths) and a crash log whose path is printed instead of a traceback (#216)
+- Say why a source gave nothing: a first failed fetch with nothing saved shows offline at once, and an empty or failed METAR or TAF answer is named in the status bar (#236, #262)
+
+### Fixed
+
+- Switch every terminal mode off when the program ends, including on SIGTERM and SIGHUP (#265)
+- Tell a run without a terminal to use `wxbrief get` or `wxbrief decode`, on stderr, with a non-zero exit (#256)
+- Say "can't reach aviationweather.gov" in `wxbrief get` instead of the raw `ConnectError` (#254)
+- Show the Ctrl+C quit hint as plain text (#258)
+- Draw only ASCII with `--glyphs ascii`, and use the terminal's own colours under `NO_COLOR` and in 16-colour mode (#234, #247, #248)
+
 ## 0.4.0
 
 ### Changed

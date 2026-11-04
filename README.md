@@ -88,7 +88,8 @@ Press `?` in the app for the keys. The main ones:
 
 Settings you change in the app are saved to `config.toml` in your user config folder. A command-line flag such as
 `--theme`, `--glyphs`, `--units`, `--time` or `--lang` applies to that run only and is never saved. `--no-config`
-reads and writes no config file. `WXBRIEF_CACHE_DIR` moves the cache folder. `wxbrief --help` lists every flag.
+reads and writes no config file. `WXBRIEF_CACHE_DIR` moves the cache folder and `WXBRIEF_LOG_DIR` the crash log. `wxbrief --diagnose` prints the version,
+platform, terminal capabilities and file paths to include in a bug report. `wxbrief --help` lists every flag.
 
 Stations given on the command line or in the config are passed through as typed. A station that the bundled database
 does not know can still be watched; it just has no name or time zone.
