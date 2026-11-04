@@ -57,7 +57,7 @@ def restore_on_exit(app: WxBriefApp) -> Iterator[None]:
     """
     previous: dict[int, object] = {}
 
-    def on_signal(number: int, frame: FrameType | None) -> None:
+    def on_signal(number: int, _frame: FrameType | None) -> None:
         restore()
         loop = getattr(app, "_loop", None)
         if loop is not None and not loop.is_closed():
