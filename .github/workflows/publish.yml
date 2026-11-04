@@ -1,0 +1,62 @@
+name: Publish to PyPI
+
+# Run by hand from the Actions tab, on the ref to publish (default main; use the release tag, for example v0.4.0).
+# Production only: the `pypi` environment holds the trusted publisher, so no token is stored anywhere.
+# release.yml publishes automatically on a version tag; this workflow is for publishing a ref by hand.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit to build and publish
+        type: string
+        default: main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build and check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -c .github/release-constraints.txt "build>=1,<2" twine
+      - run: python -m build --outdir dist
+      - run: python -m twine check --strict dist/*
+      - name: Check the wheel version equals the source version
+        run: |
+          version=$(sed -n 's/^__version__ = "\(.*\)"$/\1/p' wxbrief/__init__.py)
+          if [ -z "$version" ]; then echo "::error::no __version__ in wxbrief/__init__.py"; exit 1; fi
+          wheels=(dist/wxbrief-*.whl)
+          if [ "${#wheels[@]}" -ne 1 ]; then echo "::error::expected one wheel, found ${#wheels[@]}"; exit 1; fi
+          if [ "${wheels[0]}" != "dist/wxbrief-$version-py3-none-any.whl" ]; then
+            echo "::error::built ${wheels[0]}, but the source version is $version"; exit 1
+          fi
+          if [ ! -f "dist/wxbrief-$version.tar.gz" ]; then echo "::error::no sdist for $version"; exit 1; fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    name: Upload to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

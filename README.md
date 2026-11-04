@@ -1,17 +1,17 @@
 # wxbrief
 
 [![CI](https://github.com/WPTK/wxbrief/actions/workflows/ci.yml/badge.svg)](https://github.com/WPTK/wxbrief/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/WPTK/wxbrief/blob/main/LICENSE)
 
 A terminal app for reading METARs and TAFs. It fetches the reports from aviationweather.gov, decodes them with its own
 parser, and shows each station with the raw report, a plain-language translation and a TAF timeline. The colours are
 switchable, and the text is available in English, Spanish, French, German and Portuguese.
 
-![wxbrief on its bundled demo reports: the station list, decoded METAR, TAF timeline, grid layout and a colorway change](docs/img/demo.gif)
+![wxbrief on its bundled demo reports: the station list, decoded METAR, TAF timeline, grid layout and a colorway change](https://raw.githubusercontent.com/WPTK/wxbrief/main/docs/img/demo.gif)
 
 *Recorded from the real app running on its bundled `--demo` reports (fixed demo data, not live weather).*
 
-![Station list on the left, the decoded METAR and the start of the TAF on the right](docs/img/briefing.png)
+![Station list on the left, the decoded METAR and the start of the TAF on the right](https://raw.githubusercontent.com/WPTK/wxbrief/main/docs/img/briefing.png)
 
 Version 0.4.0. The project uses ZeroVer, so the version stays 0.x and anything may still change.
 
@@ -23,7 +23,7 @@ Version 0.4.0. The project uses ZeroVer, so the version stays 0.x and anything m
   groups. Anything it cannot decode is shown as it was reported, not guessed.
 - Shows a TAF timeline per station. A cursor moves through the periods and the period under it is decoded below.
 - Has a list layout and a grid layout (`v` switches), and works down to 60 columns by 16 rows.
-- Offers 18 colorways (`t` cycles them, `T` opens a picker with live preview). See [docs/themes.md](docs/themes.md).
+- Offers 18 colorways (`t` cycles them, `T` opens a picker with live preview). See [docs/themes.md](https://github.com/WPTK/wxbrief/blob/main/docs/themes.md).
 - Decodes pasted reports offline (`p`).
 - Copies a report as a Discord code block (`c`), or prints one from the command line.
 - Prints plain text or JSON from the `decode` and `get` commands.
@@ -34,9 +34,9 @@ Version 0.4.0. The project uses ZeroVer, so the version stays 0.x and anything m
 wxbrief is not a substitute for an official weather briefing, and not for flight planning alone. Get an official briefing
 before you fly. The same notice is in `wxbrief --help` and the in-app help (`?`).
 
-![The TAF timeline with the cursor on the first period, in paper-chart](docs/img/forecast.png)
+![The TAF timeline with the cursor on the first period, in paper-chart](https://raw.githubusercontent.com/WPTK/wxbrief/main/docs/img/forecast.png)
 
-![The grid layout: one card per station with a small forecast strip](docs/img/grid.png)
+![The grid layout: one card per station with a small forecast strip](https://raw.githubusercontent.com/WPTK/wxbrief/main/docs/img/grid.png)
 
 ## Install
 
@@ -136,13 +136,13 @@ wxbrief is a reading aid. Do not use it as the only source for a flight decision
 
 ## More
 
-- [docs/themes.md](docs/themes.md): the colorways and how the weather colours are chosen.
-- [docs/i18n.md](docs/i18n.md): languages, and how to add or fix a translation.
-- [docs/decoding.md](docs/decoding.md): how the decoder works and how to add a test report.
-- [docs/development.md](docs/development.md): setup, checks, tests, snapshots and screenshots.
-- [docs/release.md](docs/release.md): cutting a release.
-- [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CHANGELOG.md](CHANGELOG.md).
+- [docs/themes.md](https://github.com/WPTK/wxbrief/blob/main/docs/themes.md): the colorways and how the weather colours are chosen.
+- [docs/i18n.md](https://github.com/WPTK/wxbrief/blob/main/docs/i18n.md): languages, and how to add or fix a translation.
+- [docs/decoding.md](https://github.com/WPTK/wxbrief/blob/main/docs/decoding.md): how the decoder works and how to add a test report.
+- [docs/development.md](https://github.com/WPTK/wxbrief/blob/main/docs/development.md): setup, checks, tests, snapshots and screenshots.
+- [docs/release.md](https://github.com/WPTK/wxbrief/blob/main/docs/release.md): cutting a release.
+- [CONTRIBUTING.md](https://github.com/WPTK/wxbrief/blob/main/CONTRIBUTING.md), [SECURITY.md](https://github.com/WPTK/wxbrief/blob/main/SECURITY.md), [CHANGELOG.md](https://github.com/WPTK/wxbrief/blob/main/CHANGELOG.md).
 
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](https://github.com/WPTK/wxbrief/blob/main/LICENSE).
