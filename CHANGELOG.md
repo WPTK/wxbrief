@@ -15,7 +15,7 @@
 - Show the Ctrl+C quit hint as plain text (#258)
 - Draw only ASCII with `--glyphs ascii`, and use the terminal's own colours under `NO_COLOR` and in 16-colour mode (#234, #247, #248)
 
-## 0.4.0
+## 0.4.0 - 2026-11-03
 
 ### Changed
 
