@@ -37,9 +37,12 @@ DetailPane #placeholder {
     color: $text-muted;
 }
 
+/* The station's code, name and category stay at the top of the pane while the report scrolls under them. */
 StationHeader {
+    dock: top;
     height: auto;
     padding-top: 1;
+    background: $surface;
 }
 
 FlagsRow {
@@ -364,6 +367,13 @@ StationGrid:focus {
 BriefingScreen.-roomy StationCard {
     height: 9;
     padding: 1 1;
+}
+
+/* The legend stays at the foot of the grid while the cards scroll. */
+StationGrid #legend {
+    dock: bottom;
+    height: 1;
+    background: $surface;
 }
 
 StationGrid #empty {

@@ -651,6 +651,7 @@ worst = "Worst case in this window:"
 legend_becoming = "becoming"
 legend_temporary = "temporary"
 legend_worst = "worse than prevailing"
+legend_cursor = "selected hour"
 none = "No timeline: the forecast has no usable valid period."
 no_taf = "no TAF"
 expired = "TAF expired"
@@ -835,6 +836,9 @@ groups = "All forecast groups ({n})"
 [ui.detail]
 no_stations = "No stations yet. Press [b]a[/b] to add one."
 no_report = "No report yet"
+no_metar = "No METAR yet"
+observed = "Observed {time}"
+demo_sample = "demo sample"
 refresh_hint = "Press r to refresh."
 observed_ago = "Observed {time}, {age} ago"
 cached_ago = "(cached {age} ago)"
@@ -879,6 +883,7 @@ grid = "Grid layout"
 
 [ui.toast]
 demo = "Demo: fixed sample reports, no network"
+jump_shown = "{section} is already on screen"
 unknown_theme = "Unknown theme {theme}; using textual-dark"
 theme_title = "Theme"
 stations_title = "Stations"
@@ -937,6 +942,7 @@ body = """\
 [b]Stations[/b]
   Up/Down  j/k       select a station (the grid: arrows over the cards; j/k also work with no list)
   Enter              move into the detail pane (the grid: open the station)
+  Click, 2x click    select a station, open it (the other buttons and dragging do nothing)
   a                  add a station (code or name)
   d                  remove the selected station
   r                  refresh now

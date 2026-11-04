@@ -649,6 +649,7 @@ worst = "Pior caso nesta janela:"
 legend_becoming = "passando a"
 legend_temporary = "temporário"
 legend_worst = "pior que o predominante"
+legend_cursor = "hora escolhida"
 none = "Sem linha do tempo: a previsão não tem um período de validade utilizável."
 no_taf = "sem TAF"
 expired = "TAF expirado"
@@ -839,6 +840,9 @@ groups = "Todos os grupos da previsão ({n})"
 [ui.detail]
 no_stations = "Ainda não há estações. Pressione [b]a[/b] para adicionar uma."
 no_report = "Ainda sem mensagem"
+no_metar = "Ainda sem METAR"
+observed = "Observado {time}"
+demo_sample = "amostra de demonstração"
 refresh_hint = "Pressione r para atualizar."
 observed_ago = "Observado {time}, há {age}"
 cached_ago = "(em cache há {age})"
@@ -883,6 +887,7 @@ grid = "Exibição em grade"
 
 [ui.toast]
 demo = "Demonstração: mensagens de exemplo fixas, sem rede"
+jump_shown = "{section} já está visível"
 unknown_theme = "Tema desconhecido {theme}; usando textual-dark"
 theme_title = "Tema"
 stations_title = "Estações"
@@ -941,6 +946,7 @@ body = """\
 [b]Estações[/b]
   Acima/Abaixo   j/k   escolher uma estação (grade: setas sobre os cartões; j/k também sem lista)
   Enter              entrar no painel de detalhes (grade: abrir a estação)
+  Clique, 2 cliques  escolher uma estação, abri-la (os outros botões e arrastar não fazem nada)
   a                  adicionar uma estação (código ou nome)
   d                  remover a estação escolhida
   r                  atualizar agora

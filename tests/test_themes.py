@@ -67,7 +67,11 @@ def test_semantic_variables_resolve(theme: Theme) -> None:
     for key in (*SEMANTIC_DEFAULTS, *semantic_variables(theme.dark)):
         color = palette.color(key)
         assert color.a == 1.0, key
-    assert palette.hex("fcat-ifr") == FLIGHT_CATEGORY_COLORS["ifr"][0 if theme.dark else 1]
+    fixed = FLIGHT_CATEGORY_COLORS["ifr"][0 if theme.dark else 1]
+    ifr = palette.color("fcat-ifr")
+    assert ifr.r > ifr.g and ifr.r > ifr.b  # still red: a theme whose panel is too close lightens it, never recolours it
+    if theme.name in ("textual-dark", "textual-light"):
+        assert palette.hex("fcat-ifr") == fixed  # a theme the colour already reads on keeps it exactly
 
 
 @pytest.mark.parametrize("theme", ALL_THEMES, ids=lambda theme: theme.name)
@@ -176,7 +180,8 @@ def test_ansi_themes_are_not_offered() -> None:
 @pytest.mark.parametrize("theme", ALL_THEMES, ids=lambda theme: theme.name)
 def test_every_theme_builds_css_variables(theme: Theme) -> None:
     variables = Palette.from_theme(theme).css_variables()
-    assert set(variables) == {*SEMANTIC_DEFAULTS, *semantic_variables(theme.dark)}
+    wanted = {*SEMANTIC_DEFAULTS, *semantic_variables(theme.dark)}
+    assert wanted <= set(variables) <= {*wanted, "foreground", "text-muted"}  # the last two only when a theme needs them
     assert all(value.startswith("#") for value in variables.values())
 
 

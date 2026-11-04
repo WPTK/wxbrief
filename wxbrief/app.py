@@ -80,6 +80,7 @@ class WxBriefApp(App[None]):
     CSS_PATH = "ui/app.tcss"
     TITLE = "wxbrief"
     HORIZONTAL_BREAKPOINTS = [(0, "-narrow"), (90, "-normal"), (140, "-wide")]
+    TOAST_SETTLE = 0.25  # seconds a toast just posted counts as showing, before Textual has listed it
     VERTICAL_BREAKPOINTS = [(0, "-short"), (24, "-tall"), (40, "-roomy")]
     COMMANDS = App.COMMANDS | {StationProvider}
     BINDINGS = [
@@ -101,7 +102,7 @@ class WxBriefApp(App[None]):
             self.register_theme(theme)
         for name in [name for name, theme in self.available_themes.items() if theme.ansi]:
             self.unregister_theme(name)  # the terminal's own colours have no RGB palette for the highlight colours
-        self._toast_until: dict[tuple[str, str, str], float] = {}  # when each toast now showing goes away
+        self._toast_posted: dict[tuple[str, str, str], float] = {}  # when each toast was last posted
         self._previewing = False  # the theme picker is open: a highlighted theme is a preview, not a choice
         translator = Translator.load(view.lang)
         self._theme_notice = ""
@@ -158,9 +159,11 @@ class WxBriefApp(App[None]):
         A toast that is already showing with the same text is not raised again: a held key would stack copies."""
         key = (message, title, severity)
         now = time.monotonic()
-        if self._toast_until.get(key, 0.0) > now:
-            return
-        self._toast_until[key] = now + (self.NOTIFICATION_TIMEOUT if timeout is None else timeout)
+        if now < self._toast_posted.get(key, 0.0) or any(
+            n.message == message and n.title == title and n.severity == severity for n in self._notifications
+        ):
+            return  # on screen now (the live list: a dismissed toast can be raised again), or posted this tick
+        self._toast_posted[key] = now + self.TOAST_SETTLE
         super().notify(message, title=title, severity=severity, timeout=timeout, markup=False)
 
     # --- start up --------------------------------------------------------------------------------------------------

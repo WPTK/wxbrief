@@ -17,6 +17,7 @@ from wxbrief.data.demo import DEMO_NOW, demo_ids, demo_text, load_demo
 from wxbrief.data.poll import Freshness
 from wxbrief.decode.model import Metar, Taf
 from wxbrief.decode.split import parse_any
+from wxbrief.i18n.keys import K
 from wxbrief.ui.screens.briefing import BriefingScreen
 from wxbrief.ui.screens.station_detail import StationDetailScreen
 from wxbrief.ui.widgets.detail import DecodedTable, DetailPane
@@ -204,7 +205,10 @@ async def test_station_without_a_taf_shows_no_timeline() -> None:
         briefing.select("EGLL")
         await settle(pilot)
         assert not briefing.query_one(TafTimeline).display
-        assert not briefing.query_one("#taf-title").display
+        assert not briefing.query_one(PeriodDetail).display
+        note = briefing.query_one("#taf-note")  # #253: the pane says there is no forecast instead of ending silently
+        assert briefing.query_one("#taf-title").display and note.display
+        assert text_of(note) == app.ctx.translator.t(K.TIMELINE_NO_TAF)
 
 
 # --- the grid ------------------------------------------------------------------------------------------------------

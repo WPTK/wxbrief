@@ -7,8 +7,6 @@ import pytest
 from wxbrief.render.palette import Palette, all_themes, contrast_ratio
 from wxbrief.ui.themes import THEME_CYCLE
 
-KNOWN_BAD = {"textual-light", "nord", "gruvbox", "catppuccin-mocha", "catppuccin-latte", "tokyo-night", "solarized-dark", "solarized-light"}
-
 
 def failures(name: str) -> list[str]:
     """Text needs 4.5:1 on the surface and the panel; the bold flight-category and colour-state colours need 3:1."""
@@ -28,14 +26,6 @@ def failures(name: str) -> list[str]:
     return found
 
 
-@pytest.mark.parametrize(
-    "theme",
-    [
-        pytest.param(name, marks=pytest.mark.xfail(strict=True, reason="#260: text or category colours below the contrast floor"))
-        if name in KNOWN_BAD
-        else name
-        for name in THEME_CYCLE
-    ],
-)
+@pytest.mark.parametrize("theme", THEME_CYCLE)
 def test_L5_every_text_style_is_legible_in_every_theme(theme: str) -> None:
     assert not failures(theme), failures(theme)

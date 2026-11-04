@@ -181,7 +181,6 @@ def select(term: Any, index: int) -> None:
     calm(term, 0.3)
 
 
-@pytest.mark.xfail(strict=True, reason="#253: a station with no TAF: the detail pane never says there is no forecast")
 def test_J14_a_station_with_no_taf_says_so_in_the_detail_pane(session: Session) -> None:
     _fp, term = session.live(mutate=only_metar("KPIT"))
     select(term, 1)

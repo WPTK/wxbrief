@@ -17,6 +17,7 @@
 
 ### Fixed
 
+- Fix the UI screens: hand the keyboard back to the list after a narrow-terminal trip (#255), say "no TAF" in the detail pane and answer keys 1, 2 and 3 when a section is already on screen or a product is missing (#253, #245, #230), pin the station header while the report scrolls (#198), give the demo header "demo sample" instead of an age (#257), make clicks the same in the list and the grid and ignore the other buttons and drags (#232, #249), let a dismissed toast be raised again (#231), restart the offline count when the stations change (#233), add a legend to the grid (#201) and lift theme colours that fell below the contrast floor (#260)
 - Warn when a TAF is valid for more than 30 hours or starts a day or more after it was issued, which also catches a 29 February that does not exist (#284)
 - Drop a gust that is not above the mean wind, with a warning, in the report body, TAF groups and wind remarks (runway and height winds), and reject an altimeter or QNH outside 20.00-32.00 inHg or 850-1100 hPa, as unrecognised groups (#279, #280)
 - Read `Retry-After` as whole seconds or an HTTP date only (#281)

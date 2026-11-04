@@ -160,7 +160,7 @@ def test_keys_1_2_3_scroll_the_sections_into_view(start: Start, focus: str) -> N
             f"key {key} to change the screen and show {title!r}",
         )
         if key == "1":
-            assert (heading_row(term.screen(), "Raw") or 99) <= 3, term.screen_text()
+            assert (heading_row(term.screen(), "Raw") or 99) <= 5, term.screen_text()  # the pinned header takes the first rows
     assert position(term.screen()) is not None
 
 

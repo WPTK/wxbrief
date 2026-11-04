@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, cast
 
 from textual.app import ComposeResult
 from textual.containers import Horizontal
-from textual.events import Resize
+from textual.events import DescendantFocus, Resize
 from textual.widgets import OptionList
 
 from wxbrief.i18n.keys import K
@@ -57,6 +57,7 @@ class BriefingScreen(StationScreen):
         self._ids: list[str] = []  # the stations as last drawn: where a removed selection sat
         self.layout_mode = "list"  # "list" (station list and detail) or "grid" (cards)
         self._ready = False
+        self._pane_chosen = False  # the user, not a hidden list, put the keyboard in the detail pane
 
     @property
     def wx(self) -> WxBriefApp:
@@ -152,12 +153,25 @@ class BriefingScreen(StationScreen):
         self.refresh_bindings()
 
     def _fix_focus(self) -> None:
-        """With the station list hidden the keyboard belongs in the detail pane; once it is there, leave it."""
-        if self.layout_mode == "list" and not self.query_one(StationList).display:
-            pane = self.query_one(DetailPane)
-            focused = self.focused
-            if focused is None or pane not in focused.ancestors_with_self:
+        """With the station list hidden the keyboard belongs in the detail pane; once it is there, leave it. When the
+        list comes back and the pane only has the keyboard because the list was hidden, hand it back: the user never
+        chose the pane."""
+        if self.layout_mode != "list":
+            return
+        pane = self.query_one(DetailPane)
+        focused = self.focused
+        in_pane = focused is not None and pane in focused.ancestors_with_self
+        if not self.query_one(StationList).display:
+            if not in_pane:
                 pane.focus()
+        elif in_pane and not self._pane_chosen:
+            self.query_one(StationList).focus()
+
+    def on_descendant_focus(self, event: DescendantFocus) -> None:
+        """Note where the keyboard goes while the list is on screen: that is a choice. Textual moving it to the pane
+        because the list was hidden is not, and is undone when the list is back."""
+        if self._ready and self.query_one(StationList).display:
+            self._pane_chosen = self.query_one(DetailPane) in event.widget.ancestors_with_self
 
     # --- layout ----------------------------------------------------------------------------------------------------
 

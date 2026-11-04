@@ -649,6 +649,7 @@ worst = "Pire cas dans cette fenêtre :"
 legend_becoming = "évolution"
 legend_temporary = "temporaire"
 legend_worst = "pire que le prévalent"
+legend_cursor = "heure choisie"
 none = "Pas de frise chronologique : la prévision n'a pas de période de validité exploitable."
 no_taf = "pas de TAF"
 expired = "TAF expiré"
@@ -839,6 +840,9 @@ groups = "Tous les groupes de prévision ({n})"
 [ui.detail]
 no_stations = "Aucune station pour l'instant. Appuyez sur [b]a[/b] pour en ajouter une."
 no_report = "Pas encore de message"
+no_metar = "Pas encore de METAR"
+observed = "Observé {time}"
+demo_sample = "exemple de démonstration"
 refresh_hint = "Appuyez sur r pour actualiser."
 observed_ago = "Observé {time}, il y a {age}"
 cached_ago = "(en cache depuis {age})"
@@ -883,6 +887,7 @@ grid = "Affichage en grille"
 
 [ui.toast]
 demo = "Démo : messages d'exemple figés, sans réseau"
+jump_shown = "{section} est déjà affiché"
 unknown_theme = "Thème inconnu {theme}; textual-dark est utilisé"
 theme_title = "Thème"
 stations_title = "Stations"
@@ -941,6 +946,7 @@ body = """\
 [b]Stations[/b]
   Haut/Bas  j/k      choisir une station (grille : flèches sur les cartes ; j/k aussi sans liste)
   Entrée             entrer dans le panneau de détail (grille : ouvrir la station)
+  Clic, double clic  choisir une station, l'ouvrir (les autres boutons et le glissement ne font rien)
   a                  ajouter une station (code ou nom)
   d                  retirer la station choisie
   r                  actualiser maintenant

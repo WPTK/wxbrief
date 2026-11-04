@@ -657,6 +657,7 @@ worst = "Ungünstigster Fall in diesem Fenster:"
 legend_becoming = "Übergang"
 legend_temporary = "vorübergehend"
 legend_worst = "schlechter als vorherrschend"
+legend_cursor = "gewählte Stunde"
 none = "Keine Zeitleiste: Die Vorhersage hat keinen nutzbaren Gültigkeitszeitraum."
 no_taf = "kein TAF"
 expired = "TAF abgelaufen"
@@ -847,6 +848,9 @@ groups = "Alle Vorhersagegruppen ({n})"
 [ui.detail]
 no_stations = "Noch keine Stationen. Drücken Sie [b]a[/b], um eine hinzuzufügen."
 no_report = "Noch keine Meldung"
+no_metar = "Noch kein METAR"
+observed = "Beobachtet {time}"
+demo_sample = "Demo-Beispiel"
 refresh_hint = "Mit r aktualisieren."
 observed_ago = "Beobachtet {time}, vor {age}"
 cached_ago = "(zwischengespeichert vor {age})"
@@ -891,6 +895,7 @@ grid = "Rasteransicht"
 
 [ui.toast]
 demo = "Demo: feste Beispielmeldungen, kein Netzwerk"
+jump_shown = "{section} ist bereits sichtbar"
 unknown_theme = "Unbekanntes Design {theme}; textual-dark wird verwendet"
 theme_title = "Design"
 stations_title = "Stationen"
@@ -949,6 +954,7 @@ body = """\
 [b]Stationen[/b]
   Hoch/Runter  j/k   eine Station wählen (Raster: Pfeile über die Karten; j/k auch ohne Liste)
   Enter              ins Detailfenster wechseln (Raster: die Station öffnen)
+  Klick, Doppelklick wählt eine Station, öffnet sie (andere Tasten und Ziehen tun nichts)
   a                  eine Station hinzufügen (Code oder Name)
   d                  die gewählte Station entfernen
   r                  jetzt aktualisieren

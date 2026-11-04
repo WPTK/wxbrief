@@ -86,6 +86,13 @@ Press `?` in the app for the keys. The main ones:
 | `S` | settings, including the language |
 | `q` | quit |
 
+The mouse works the same in the list and the grid: a click selects a station and leaves the keyboard where it was, a
+double click opens its detail (Enter does the same). Only the left button does anything; the middle and right buttons,
+and a drag that ends on another row or card, are ignored. A key that has nothing to show says so in a message: `1` `2`
+`3` name the missing report, or say the section is already on screen. The demo reports are fixed samples, so the demo
+header says "demo sample" instead of an age. The offline notice appears on the second failed poll in a row for the same
+product (METAR or TAF), and adding or removing a station starts that count again.
+
 Settings you change in the app are saved to `config.toml` in your user config folder. A command-line flag such as
 `--theme`, `--glyphs`, `--units`, `--time` or `--lang` applies to that run only and is never saved. `--no-config`
 reads and writes no config file. `WXBRIEF_CACHE_DIR` moves the cache folder. `wxbrief --help` lists every flag.

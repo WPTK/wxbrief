@@ -38,7 +38,10 @@ def decode_taf_row(row: AwcTaf, fallback_issued: datetime) -> Taf:
     return parse_taf(row.raw, row.issued or fallback_issued, row.modifiers)
 
 
-OFFLINE_AFTER = 2  # consecutive network failures of one product before the app says it is offline
+# Consecutive network failures of one product (METAR or TAF, each counted on its own) before the app says it is offline:
+# the second poll in a row that fails. A change to the station list starts the count again, since the next fetch asks
+# for different stations.
+OFFLINE_AFTER = 2
 
 
 @dataclass(slots=True)
@@ -106,10 +109,12 @@ class AppState:
             self.watchlist.append(code)
             if code in self.session:
                 self.session.remove(code)
+            self.transport_failures.clear()
             return True
         if code in self.ids:
             return False
         self.session.append(code)
+        self.transport_failures.clear()
         return True
 
     def remove(self, icao: str) -> bool:
@@ -121,10 +126,10 @@ class AppState:
             self.session.remove(code)
         else:
             return False
+        self.transport_failures.clear()
         if not self.ids:  # nothing left to fetch, so no fetch will ever clear an old failure
             self.errors.clear()
             self.offline.clear()
-            self.transport_failures.clear()
         return True
 
     def is_saved(self, icao: str) -> bool:

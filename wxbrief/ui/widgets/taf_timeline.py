@@ -65,6 +65,33 @@ def worst_segment(
     return Text((letter + (RAISED_MARK if raised else " ")).ljust(width), style=colors.style(worst))
 
 
+def legend_text(ctx: ViewContext, *, cursor: bool = False, letters: bool = False, width: int = 0) -> Text:
+    """The key to the forecast marks: the cursor (timeline only), hatching, the temporary row and ``+``, and for the
+    grid the category letters in their colours. One line, shared by the timeline and the grid. The cursor entry goes
+    first and is left out when ``width`` is given and the line would not fit: the entries after it matter more."""
+    t = ctx.translator
+    muted = ctx.palette.muted
+    legend = Text(no_wrap=True, overflow="crop")
+    if letters:
+        colors = category_colors(ctx.palette)
+        for category in LETTER_KEYS:
+            legend.append(f" {category_letter(t, category)} ", style=colors.style(category))
+        legend.append("  ")
+    tail = Text(no_wrap=True, overflow="crop")
+    tail.append(HATCH, style=muted)
+    tail.append(f" {t.t(K.TIMELINE_LEGEND_BECOMING)}   ", style=muted)
+    tail.append(OVERLAY_MARK, style=muted)
+    tail.append(f" {t.t(K.TIMELINE_LEGEND_TEMPORARY)}   ", style=muted)
+    tail.append(RAISED_MARK, style=muted)
+    tail.append(f" {t.t(K.TIMELINE_LEGEND_WORST)}", style=muted)
+    if cursor:
+        mark = Text(f"{CURSOR_MARK} {t.t(K.TIMELINE_LEGEND_CURSOR)}   ", style=muted)
+        if not width or legend.cell_len + mark.cell_len + tail.cell_len <= width:
+            legend.append_text(mark)
+    legend.append_text(tail)
+    return legend
+
+
 def cell_width(step: int) -> int:
     """Columns per cell: two for an hour, four for three hours."""
     return 2 if step == 1 else 4
@@ -256,7 +283,6 @@ class TafTimeline(Widget, can_focus=True):
         if ctx is None or not self.cells:
             return Text("")
         colors = category_colors(ctx.palette)
-        muted = ctx.palette.muted
         width = cell_width(self.step)
         ticks = tick_labels(self.cells, width, ctx, self._icao, every_cell=self.step > 1)
         body, worst_row = Text(no_wrap=True), Text(no_wrap=True)
@@ -288,11 +314,5 @@ class TafTimeline(Widget, can_focus=True):
             previous_overlay = cell.overlay_category if cell.overlay else None
         cursor.append(" " * (self.cursor * width))
         cursor.append(CURSOR_MARK.ljust(width), style="bold")
-        legend = Text(no_wrap=True)
-        legend.append(HATCH, style=muted)
-        legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_BECOMING)}   ", style=muted)
-        legend.append(OVERLAY_MARK, style=muted)
-        legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_TEMPORARY)}   ", style=muted)
-        legend.append(RAISED_MARK, style=muted)
-        legend.append(f" {ctx.translator.t(K.TIMELINE_LEGEND_WORST)}", style=muted)
+        legend = legend_text(ctx, cursor=True, width=self.size.width)
         return Text("\n", no_wrap=True, overflow="crop").join([ticks, body, worst_row, overlay, cursor, legend])
