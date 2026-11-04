@@ -20,6 +20,8 @@ async def test_refresh_with_a_changed_value_keeps_cursor_scroll_and_untouched_ro
         await pilot.pause()
         pane = app.screen.query_one(DetailPane)
         table = app.screen.query_one(DecodedTable)
+        while pane.max_scroll_y < 6:  # laid out a frame or more after the load; a scroll before it clamps to 0
+            await pilot.pause(0.02)
         table.cursor_type = "row"  # the table is read-only today; the cursor is how a refresh would show a reset
         table.move_cursor(row=4, animate=False)
         pane.scroll_to(y=6, animate=False)
