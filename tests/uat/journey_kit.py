@@ -256,7 +256,7 @@ def seed_config(stations: list[str], extra: str = "") -> Callable[[Path], None]:
 def detail_station(screen: Screen) -> str | None:
     """The station the detail pane is about: the id that starts the header line on the right of the list."""
     for line in screen.lines[:4]:
-        pane = line.partition("▎")[2].strip() if "▎" in line else ""
+        pane = line.partition("▎")[2].strip() if "▎" in line else "|".join(line.split("|")[2:]).strip()  # "|": ascii set
         found = re.match(r"([A-Z0-9]{4})\s{2}\S", pane)
         if found:
             return found[1]

@@ -73,6 +73,10 @@ class TransportError(AwcError):
     """Timeout, DNS, connection or TLS failure."""
 
 
+class ClientSetupError(TransportError):
+    """The HTTP client could not be built (a proxy or CA setting): the message already says what to fix."""
+
+
 def _retry_after(response: httpx.Response) -> float:
     """Seconds from a ``Retry-After`` header (a number or an HTTP date), at most an hour; a default when unusable."""
     value = response.headers.get("Retry-After", "").strip()
@@ -145,7 +149,7 @@ class AwcClient:
             try:
                 client = httpx.AsyncClient(timeout=timeout, headers={"User-Agent": USER_AGENT})
             except Exception as exc:  # what httpx raises here depends on the environment (proxy and CA variables)
-                raise TransportError(f"cannot set up the HTTP client: {type(exc).__name__}: {exc}") from exc
+                raise ClientSetupError(f"cannot set up the HTTP client: {type(exc).__name__}: {exc}") from exc
         self._client = client
 
     async def __aenter__(self) -> Self:

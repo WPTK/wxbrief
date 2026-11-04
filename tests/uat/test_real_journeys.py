@@ -391,7 +391,8 @@ def test_J10_per_run_flags_apply_to_this_run_and_are_never_saved(session: Sessio
     before = config.read_bytes()
     term = session.start(120, 30, FLAGS, root=tmp_path, ready="Stationen")
     screen = term.screen()
-    assert "╭" in screen.text or "┏" in screen.text, "--layout grid did not draw cards"
+    drawn = "╭" in screen.text or "┏" in screen.text or re.search(r"\+-{8,}\+", screen.text)  # --glyphs ascii: + - |
+    assert drawn, "--layout grid did not draw cards"
     assert "Hinzufügen" in footer(screen), "--lang de did not translate the key bar"
     term.send_keys("S")
     shown = term.wait_for(lambda s: "Einstellungen" in s, 10, "the settings screen").text
@@ -471,7 +472,6 @@ def test_J18_ctrl_q_quits_and_ctrl_c_says_how(session: Session) -> None:
     assert term.wait_exit(15) == 0, term.screen_text()
 
 
-@pytest.mark.xfail(strict=True, reason="#258: the Ctrl-C hint shows its markup tags literally")
 def test_J18_ctrl_c_hint_is_plain_text(session: Session) -> None:
     term = session.start(120, 30, ["--demo"])
     term.send_raw("\x03")
@@ -480,7 +480,6 @@ def test_J18_ctrl_c_hint_is_plain_text(session: Session) -> None:
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="POSIX signals")
-@pytest.mark.xfail(strict=True, reason="#265: SIGTERM and SIGHUP leave mouse tracking, bracketed paste and the alternate screen on")
 @pytest.mark.parametrize("sig", ["SIGTERM", "SIGHUP"])
 def test_J18_signals_end_the_program_and_restore_the_terminal(session: Session, sig: str) -> None:
     import os

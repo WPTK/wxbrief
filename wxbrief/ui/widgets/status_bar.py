@@ -92,4 +92,8 @@ class StatusBar(Static):
             text.append(f" | {t.t(K.UI_STATUS_DEMO if ctx.demo else K.UI_STATUS_POLLING_OFF)}", style=palette.muted)
         if failed is not None and not offline:  # the message can be long: last, so a narrow bar cuts it
             text.append(f" ({t.t(K.UI_STATUS_FEED_PROBLEM)})", style=palette.muted)
+        for product, reason in state.silent.items():  # a product that gave nothing, in words, whatever else shows
+            if reason == "empty" or product not in state.errors:
+                key = K.UI_STATUS_SOURCE_EMPTY if reason == "empty" else K.UI_STATUS_SOURCE_MISSING
+                text.append(f" ({t.t(key, product=product.value.upper())})", style=palette.stale)
         self.update(text)

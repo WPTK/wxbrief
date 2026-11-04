@@ -32,6 +32,20 @@ def test_no_color_draws_no_colour(start: Start) -> None:
     assert not coloured, f"NO_COLOR is set but the screen uses colours: {sorted(coloured)[:5]}"
 
 
+def test_no_color_uses_the_terminals_own_background(start: Start) -> None:
+    term = start(env={"NO_COLOR": "1"})
+    painted = {c.bg for c in all_cells(term) if c.bg not in ("", "default")}
+    assert not painted, f"NO_COLOR is set but the app paints its own background: {sorted(painted)[:5]}"
+
+
+def test_16_colour_terminals_keep_the_terminals_default_background(start: Start) -> None:
+    term = start(env={"TEXTUAL_COLOR_SYSTEM": "standard", "TERM": "xterm", "COLORTERM": ""})
+    backgrounds = [c.bg for c in all_cells(term)]
+    plain = sum(1 for bg in backgrounds if bg in ("", "default"))
+    assert plain / len(backgrounds) > 0.8, f"16-colour mode paints its own background on {len(backgrounds) - plain} cells"
+    assert any(bg not in ("", "default") for bg in backgrounds), "the selection and category colours are still drawn"
+
+
 @pytest.mark.parametrize(
     ("term_name", "colorterm"),
     [("xterm-256color", "truecolor"), ("xterm-256color", ""), ("xterm", ""), ("linux", ""), ("vt100", "")],
@@ -46,7 +60,6 @@ def test_colour_environments_start_and_quit(start: Start, term_name: str, colort
     assert term.wait_exit(15) == 0
 
 
-@pytest.mark.xfail(strict=True, reason="#234: --glyphs ascii still draws block characters")
 def test_ascii_glyph_set_draws_only_ascii_symbols(start: Start) -> None:
     term = start(args=["--glyphs", "ascii"])
     odd = {ch for line in term.screen().lines for ch in line if ord(ch) > 127 and not ch.isalpha() and ch != "°"}
@@ -63,7 +76,10 @@ def test_too_small_terminal_says_so_and_recovers(start: Start) -> None:
 
 
 @pytest.mark.xfail(
-    sys.platform == "win32", strict=True, reason="#235: exit leaves focus reporting on (seen on Windows only; clean on Linux and macOS)"
+    sys.platform == "win32",
+    strict=True,
+    reason="#235: ConPTY itself reports focus events on for every program, even one that writes nothing (checked with "
+    "python -c 'time.sleep(1)'), and ignores ?1004l; wxbrief writes it, so this is not the program leaving it on",
 )
 def test_exit_leaves_the_terminal_clean(start: Start) -> None:
     term = start()
