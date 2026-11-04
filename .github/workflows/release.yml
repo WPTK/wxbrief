@@ -19,6 +19,9 @@ jobs:
     name: Verify tag and changelog
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -30,6 +33,17 @@ jobs:
         run: |
           if ! git merge-base --is-ancestor "$TAG_SHA" origin/main; then
             echo "::error::the tagged commit is not on main"; exit 1
+          fi
+      # CI runs on every push to main, so the tagged commit has a run unless the push touched only docs, the changelog
+      # or the licence. Then tag a commit that CI ran on, or run CI by hand first.
+      - name: Check CI passed on the tagged commit
+        env:
+          TAG_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ok=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --commit "$TAG_SHA" --status success --json databaseId --jq length)
+          if [ "${ok:-0}" -lt 1 ]; then
+            echo "::error::no successful CI run for $TAG_SHA; wait for CI on main to finish and pass, then tag again"; exit 1
           fi
       - name: Check the tag against the version and the changelog
         env:
@@ -66,12 +80,12 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
-      - run: python -m pip install "build>=1,<2"
+      - run: python -m pip install -c .github/release-constraints.txt "build>=1,<2"
       - run: python -m build --outdir dist
       - name: Check the wheel installs and runs
         run: |
           python -m venv wheel-check
-          wheel-check/bin/python -m pip install dist/*.whl
+          wheel-check/bin/python -m pip install -c .github/release-constraints.txt dist/*.whl
           wheel-check/bin/wxbrief --version
           wheel-check/bin/wxbrief --selftest
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -112,7 +126,9 @@ jobs:
         with:
           python-version: "3.12"
       # `binary` adds tzdata so every binary carries its own zone files.
-      - run: python -m pip install ".[binary]" "pyinstaller>=6.22,<7"
+      # Built from the pinned versions in .github/release-constraints.txt, so a dependency release between two tags
+      # cannot change what ships.
+      - run: python -m pip install -c .github/release-constraints.txt ".[binary]" "pyinstaller>=6.22,<7"
       - run: python -m PyInstaller wxbrief.spec --noconfirm --clean --workpath .pyi-build --distpath dist
       - name: Smoke test
         shell: bash

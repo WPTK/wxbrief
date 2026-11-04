@@ -39,6 +39,24 @@ jobs:
       - run: python -m wxbrief --version
       - run: python -m wxbrief decode --plain "METAR KDEN 131453Z 06007KT 3/4SM R35L/P6000FT BR OVC003 09/08 A3001 RMK AO2 SFC"
 
+  lowest:
+    name: Lowest direct dependencies (ubuntu, 3.12)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      # The floors in pyproject.toml are claims: this installs the dev tools, then reinstalls only wxbrief's own
+      # direct dependencies at their lowest allowed versions and runs the suite. The pseudo-terminal suite is covered
+      # by the main matrix; it does not depend on a dependency floor.
+      - run: python -m pip install -e ".[dev]" uv
+      - run: uv pip install --system --resolution lowest-direct --reinstall -e .
+      - run: python -m pip freeze
+      - run: python -m pytest -n auto -m "not pty"
+
   build:
     name: Build (wheel and sdist)
     runs-on: ubuntu-latest

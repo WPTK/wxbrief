@@ -9,9 +9,10 @@ when the owner says so.
 1. Set `__version__` in `wxbrief/__init__.py` (minor for features, patch for fixes).
 2. Add the `## 0.x.y - YYYY-MM-DD` section to `CHANGELOG.md` (Common Changelog; see [CONTRIBUTING.md](../CONTRIBUTING.md)). Commit both in a PR
    and merge it once CI is green.
-3. Optionally build and test the Windows binary locally: `scripts\build_exe.ps1` (see below).
-4. On `main` at the merged commit: `git tag v0.x.y` then `git push origin v0.x.y`.
-5. Watch the run in the Actions tab. When it is green, do the manual smoke checklist on the published files.
+3. When a dependency moved, regenerate `.github/release-constraints.txt` (the command is at the top of the file) and commit it with the version.
+4. Optionally build and test the Windows binary locally: `scripts\build_exe.ps1` (see below).
+5. On `main` at the merged commit: `git tag v0.x.y` then `git push origin v0.x.y`.
+6. Watch the run in the Actions tab. When it is green, do the manual smoke checklist on the published files.
 
 If the run fails before the `publish` job, nothing was released: fix the cause, delete the tag
 (`git push origin :refs/tags/v0.x.y`, `git tag -d v0.x.y`), and tag again. If a release was created and is bad, mark it
@@ -21,9 +22,9 @@ as a draft or delete it and fix forward with a patch version.
 
 | Job | What it does |
 | --- | --- |
-| `verify` | The tag must be `v0.MINOR.PATCH`, equal `v` plus `__version__`, and `CHANGELOG.md` must have a `## <version> - date` section with entries. That section becomes the release notes. |
-| `dist` | Builds the wheel and sdist with `python -m build`, installs the wheel in a clean venv and runs `--version` and `--selftest`. |
-| `binary` | Builds one-file PyInstaller binaries from `wxbrief.spec` and runs `--version` and `--selftest` on each: Windows x86_64 (`.exe`), Linux x86_64 and arm64 (built in `python:3.12-bullseye` for an old glibc), macOS arm64 and x86_64. Linux and macOS files are `.tar.gz`. |
+| `verify` | The tagged commit must be on `main` and have a successful `ci.yml` run (so a tag on a commit CI skipped or failed is refused). The tag must be `v0.MINOR.PATCH`, equal `v` plus `__version__`, and `CHANGELOG.md` must have a `## <version> - date` section with entries. That section becomes the release notes. |
+| `dist` | Builds the wheel and sdist (build tools and dependencies pinned by `.github/release-constraints.txt`) with `python -m build`, installs the wheel in a clean venv and runs `--version` and `--selftest`. |
+| `binary` | Builds one-file PyInstaller binaries from `wxbrief.spec` with the versions pinned in `.github/release-constraints.txt`, and runs `--version` and `--selftest` on each: Windows x86_64 (`.exe`), Linux x86_64 and arm64 (built in `python:3.12-bullseye` for an old glibc), macOS arm64 and x86_64. Linux and macOS files are `.tar.gz`. |
 | `publish` | Collects every file, writes `SHA256SUMS`, attests build provenance for each file, and creates the GitHub release for the tag with the changelog section as its notes. Only this job has write permissions. |
 
 Nothing is uploaded to PyPI. There is no self-updater.
@@ -42,7 +43,7 @@ It runs PyInstaller on `wxbrief.spec` (output in `dist\`, work files in `.pyi-bu
 `dist\wxbrief.exe --selftest` and prints the SHA-256.
 
 `--selftest` is hidden. It checks that all five catalogs load, the station database opens with a valid time zone, `app.tcss`
-is bundled, a METAR and a TAF decode and render, and the demo reports load. It prints one line per check and exits 0 only
+is bundled, a METAR and a TAF decode and render, the demo reports load, the real app mounts headless on them and the live-feed client is built. It prints one line per check and exits 0 only
 if all pass; it never uses the network, config or cache.
 
 ## Manual smoke checklist
@@ -50,7 +51,7 @@ if all pass; it never uses the network, config or cache.
 On each platform you can reach, with the downloaded file (not a dev install):
 
 - [ ] `wxbrief --version` prints the tag's version.
-- [ ] `wxbrief --selftest` exits 0 with six `ok` lines.
+- [ ] `wxbrief --selftest` exits 0 with eight `ok` lines.
 - [ ] `wxbrief decode --plain "METAR KDEN 131453Z 06007KT 3/4SM BR OVC003 09/08 A3001"` shows LIFR.
 - [ ] `wxbrief decode --lang de ...` prints German with no English labels.
 - [ ] `wxbrief --demo` opens the TUI offline, shows ten stations, `t` changes the colorway, `v` switches layouts, `?`
