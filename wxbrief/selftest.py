@@ -85,6 +85,43 @@ def _app() -> str:
     return "TUI modules and rich"
 
 
+def _mount() -> str:
+    """Mounts the real app headless on the bundled demo reports and checks the briefing screen has its stations."""
+    import asyncio
+
+    from wxbrief.app import AppOptions, WxBriefApp
+    from wxbrief.data.demo import demo_ids
+    from wxbrief.ui.screens.briefing import BriefingScreen
+
+    async def mount() -> int:
+        options = AppOptions(demo=True, use_config=False, use_cache=False, poll=False)
+        app = WxBriefApp(options)
+        async with app.run_test(size=(120, 40)) as pilot:
+            await pilot.pause()
+            if not isinstance(app.screen, BriefingScreen):
+                raise RuntimeError(f"the app opened {type(app.screen).__name__}, not the briefing screen")
+            return len(app.state.stations)
+
+    count = asyncio.run(mount())
+    if count != len(demo_ids()):
+        raise RuntimeError(f"the app mounted with {count} stations")
+    return f"app mounted with {count} stations"
+
+
+def _client() -> str:
+    """Builds the live-feed client (httpx, hishel and stamina are imported and wired); makes no request."""
+    import asyncio
+
+    from wxbrief.data.awc import AwcClient
+
+    async def build() -> None:
+        client = AwcClient()
+        await client.aclose()
+
+    asyncio.run(build())
+    return "AwcClient built"
+
+
 CHECKS: tuple[tuple[str, Callable[[], str]], ...] = (
     ("app", _app),
     ("catalogs", _catalogs),
@@ -92,6 +129,8 @@ CHECKS: tuple[tuple[str, Callable[[], str]], ...] = (
     ("assets", _assets),
     ("decode", _decode),
     ("demo", _demo),
+    ("mount", _mount),
+    ("client", _client),
 )
 
 

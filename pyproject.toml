@@ -13,7 +13,7 @@ authors = [{ name = "Bill Kane" }]
 keywords = ["metar", "taf", "aviation", "weather", "tui", "terminal", "textual"]
 
 dependencies = [
-    "textual>=8.2,<9",
+    "textual>=8.2.5,<9",
     "httpx>=0.28,<1",
     "hishel[async]>=1.4,<2",
     "anysqlite>=0.0.5,<1",
@@ -21,7 +21,7 @@ dependencies = [
     "platformdirs>=4,<5",
     "tomli-w>=1,<2",
     "pyperclip>=1.9,<2",
-    "tzdata; sys_platform == 'win32'",
+    "tzdata>=2025.2; sys_platform == 'win32'",
 ]
 
 [project.urls]
@@ -51,7 +51,7 @@ dev = [
     "tui-test==0.1.1",
 ]
 # Installed only when building a standalone binary, so every binary carries its own zone files.
-binary = ["tzdata>=2024.1"]
+binary = ["tzdata>=2025.2"]
 
 [project.scripts]
 wxbrief = "wxbrief.__main__:main"
