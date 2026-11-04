@@ -247,3 +247,23 @@ async def test_the_timeline_legend_names_the_cursor_when_there_is_room(size: tup
         timeline = app.screen.query_one("#timeline")
         legend = timeline.render().plain.splitlines()[-1]  # type: ignore[attr-defined]
         assert app.ctx.translator.t(K.TIMELINE_LEGEND_CURSOR) in legend
+
+
+# --- offline with nothing held says what is shown instead ---------------------------------------------------------------
+
+
+async def test_offline_with_nothing_held_says_nothing_is_saved() -> None:
+    app = demo_app()
+    async with app.run_test(size=(120, 30)) as pilot:
+        await settle(pilot)
+        briefing = app.screen
+        assert isinstance(briefing, BriefingScreen)
+        entry = app.state.stations["KDEN"]
+        entry.metar = entry.awc_metar = entry.taf = entry.awc_taf = None
+        entry.metar_updated = entry.taf_updated = None
+        briefing.select("KDEN")
+        app.state.record_error(Product.METAR, "metar: down", offline=True, certain=True)
+        briefing.refresh_view()
+        await settle(pilot)
+        status = text_of(briefing.query_one("#status"))
+        assert f"offline, {app.ctx.translator.t(K.UI_STATUS_NOTHING_SAVED)}" in status

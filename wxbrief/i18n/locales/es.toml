@@ -882,6 +882,7 @@ requests = "peticiones {used}/{limit}"
 polling_off = "consulta desactivada"
 demo = "datos de demostración, no en vivo"
 saved_from = "mostrando datos guardados de hace {age}"
+nothing_saved = "aún no hay datos guardados"
 feed_problem = "problema con aviationweather.gov, se muestran datos guardados"
 
 [ui.list]

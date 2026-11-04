@@ -877,6 +877,7 @@ requests = "req {used}/{limit}"
 polling_off = "polling off"
 demo = "demo data, not live"
 saved_from = "showing saved data from {age} ago"
+nothing_saved = "nothing saved yet"
 feed_problem = "aviationweather.gov problem, showing saved data"
 
 [ui.list]

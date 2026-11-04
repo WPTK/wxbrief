@@ -725,6 +725,7 @@ class K:
     UI_STATUS_POLLING_OFF = "ui.status.polling_off"
     UI_STATUS_REQUESTS = "ui.status.requests"
     UI_STATUS_SAVED_FROM = "ui.status.saved_from"
+    UI_STATUS_NOTHING_SAVED = "ui.status.nothing_saved"
     UI_STATUS_SOURCE_EMPTY = "ui.status.source_empty"
     UI_STATUS_SOURCE_MISSING = "ui.status.source_missing"
     UI_THEMES_HINT = "ui.themes.hint"

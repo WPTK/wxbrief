@@ -889,6 +889,7 @@ requests = "Anfragen {used}/{limit}"
 polling_off = "Abfrage aus"
 demo = "Demodaten, nicht live"
 saved_from = "gespeicherte Daten von vor {age}"
+nothing_saved = "noch nichts gespeichert"
 feed_problem = "Problem mit aviationweather.gov, gespeicherte Daten werden angezeigt"
 
 [ui.list]
