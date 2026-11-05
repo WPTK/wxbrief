@@ -27,7 +27,11 @@ as a draft or delete it and fix forward with a patch version.
 | `binary` | Builds one-file PyInstaller binaries from `wxbrief.spec` with the versions pinned in `.github/release-constraints.txt`, and runs `--version` and `--selftest` on each: Windows x86_64 (`.exe`), Linux x86_64 and arm64 (built in `python:3.12-bullseye` for an old glibc), macOS arm64 and x86_64. Linux and macOS files are `.tar.gz`. |
 | `publish` | Collects every file, writes `SHA256SUMS`, attests build provenance for each file, and creates the GitHub release for the tag with the changelog section as its notes. Only this job has write permissions. |
 
-Nothing is uploaded to PyPI. There is no self-updater.
+| `pypi` | After the release exists, uploads the wheel and sdist from the `dist` job (not rebuilt) to PyPI by trusted publishing, in the `pypi` environment. Only this job has `id-token: write` besides `publish`. |
+
+`publish.yml` (Actions tab, run by hand, input `ref`) builds a ref, runs `twine check`, fails unless the wheel version
+equals `__version__`, and uploads to PyPI through the same `pypi` environment. Use it only to publish a ref that
+`release.yml` did not. PyPI refuses a second upload of the same version. There is no self-updater.
 
 To check a download: `sha256sum -c SHA256SUMS --ignore-missing`, and
 `gh attestation verify <file> --repo WPTK/wxbrief`.
