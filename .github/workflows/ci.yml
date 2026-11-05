@@ -124,8 +124,8 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install "build>=1,<2"
       - run: python -m build --wheel --outdir wheel
-      # Runs every command of the README in an empty directory. Only the GitHub-release download is replaced (by the
-      # wheel built above); the pipx/uv routes and the .exe/.tar.gz downloads are not in the README, and the binaries
+      # Runs every command of the README in an empty directory. Only the PyPI and GitHub-release downloads are
+      # replaced (by the wheel built above); the .exe/.tar.gz downloads are not in the README commands, and the binaries
       # are smoke-tested by the Release workflow and by post-release.yml.
       - run: python scripts/readme_commands.py --wheel-dir wheel
 

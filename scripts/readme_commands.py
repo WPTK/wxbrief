@@ -8,7 +8,8 @@ no rule covers fails, and so does a rule that matches nothing in the README, so 
 
 `--wheel-dir` holds the wheel built from this checkout. The release-download step is the only thing replaced: the
 README's `pip install wxbrief-X.Y.Z-py3-none-any.whl` runs against the locally built wheel, and fails if the README
-names a different version from `wxbrief/__init__.py`.
+names a different version from `wxbrief/__init__.py`. `pipx install wxbrief` is replaced the same way (the version on
+PyPI only exists after the tag), by a plain `pip install` of the wheel in a fresh venv.
 """
 
 from __future__ import annotations
@@ -38,6 +39,7 @@ class Rule:
 
 
 RULES = [
+    Rule("pipx install wxbrief", "run-substituted", "the locally built wheel replaces the PyPI download"),
     Rule("git clone https://github.com/WPTK/wxbrief.git", "run-substituted", "the URL is replaced by this checkout"),
     Rule("cd wxbrief", "run", ""),
     Rule("python -m venv .venv", "run", ""),
@@ -208,13 +210,14 @@ def main() -> int:
             results.append((cmd, "skipped", rule.note))
             print(f"skip  {cmd}  ({rule.note})")
             continue
-        if cmd.startswith("pip install wxbrief-"):
-            wheels = list(args.wheel_dir.glob(cmd.split()[-1]))
+        if cmd.startswith("pip install wxbrief-") or cmd == "pipx install wxbrief":
+            wheel_name = f"wxbrief-{version}-py3-none-any.whl" if cmd == "pipx install wxbrief" else cmd.split()[-1]
+            wheels = list(args.wheel_dir.glob(wheel_name))
             if not wheels:
                 built = [p.name for p in args.wheel_dir.iterdir()]
-                fail(f"README names {cmd.split()[-1]} but the build produced {built}")
+                fail(f"README names {wheel_name} but the build produced {built}")
                 continue
-            venv = base / "wheel-venv"
+            venv = base / ("pipx-venv" if cmd.startswith("pipx") else "wheel-venv")
             subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True)
             py = venv / ("Scripts" if WIN else "bin") / "python"
             proc = subprocess.run([str(py), "-m", "pip", "install", str(wheels[0])], capture_output=True, text=True)

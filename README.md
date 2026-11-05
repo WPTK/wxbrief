@@ -40,7 +40,15 @@ before you fly. The same notice is in `wxbrief --help` and the in-app help (`?`)
 
 ## Install
 
-There is no PyPI package. Each [release](https://github.com/WPTK/wxbrief/releases) has these files:
+wxbrief is on PyPI. The recommended way to install it is [pipx](https://pipx.pypa.io/), with Python 3.12 or newer:
+
+```sh
+pipx install wxbrief
+```
+
+To upgrade, run `pipx upgrade wxbrief`. To remove it, run `pipx uninstall wxbrief`.
+
+Each [release](https://github.com/WPTK/wxbrief/releases) also has these files:
 
 | File | For |
 | --- | --- |
@@ -50,7 +58,7 @@ There is no PyPI package. Each [release](https://github.com/WPTK/wxbrief/release
 | `wxbrief-0.4.0-py3-none-any.whl` | any platform with Python 3.12 or newer: `pip install wxbrief-0.4.0-py3-none-any.whl` |
 | `SHA256SUMS` | checking the downloads; each file also has a build provenance attestation |
 
-To run from source instead, you need Python 3.12 or newer:
+To run the development version from source instead, you need Python 3.12 or newer:
 
 ```sh
 git clone https://github.com/WPTK/wxbrief.git
