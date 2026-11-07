@@ -37,7 +37,6 @@ def test_L4_every_flag_in_the_readme_is_in_help() -> None:
     assert not (in_readme - in_help), f"README names flags --help does not: {sorted(in_readme - in_help)}"
 
 
-@pytest.mark.xfail(strict=True, reason="#263: README does not name --config and --layout")
 def test_L4_every_flag_in_help_is_in_the_readme() -> None:
     in_help, in_readme = help_flags(), readme_flags()
     assert not (in_help - in_readme), f"--help lists flags the README does not: {sorted(in_help - in_readme)}"
