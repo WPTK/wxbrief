@@ -102,9 +102,14 @@ header says "demo sample" instead of an age. The offline notice appears on the s
 product (METAR or TAF), and adding or removing a station starts that count again.
 
 Settings you change in the app are saved to `config.toml` in your user config folder. A command-line flag such as
-`--theme`, `--glyphs`, `--units`, `--time` or `--lang` applies to that run only and is never saved. `--no-config`
-reads and writes no config file. `WXBRIEF_CACHE_DIR` moves the cache folder and `WXBRIEF_LOG_DIR` the crash log. `wxbrief --diagnose` prints the version,
+`--theme`, `--glyphs`, `--units`, `--time`, `--lang` or `--layout {list,grid}` applies to that run only and is never saved.
+`--config FILE` uses that config file instead of the default one. `--no-config` reads and writes no config file. `WXBRIEF_CACHE_DIR` moves the cache folder and `WXBRIEF_LOG_DIR` the crash log. `wxbrief --diagnose` prints the version,
 platform, terminal capabilities and file paths to include in a bug report. `wxbrief --help` lists every flag.
+
+Platforms: CI runs the tests on the latest Windows, Ubuntu and macOS runners (`windows-latest`, `ubuntu-latest`,
+`macos-latest`). The Windows binary is built on `windows-latest` and targets Windows 11 (earlier versions are not tested).
+The Linux binaries (x86_64 and arm64) are built on Debian 11, so they need glibc 2.31 or newer. Alpine and other musl-based
+systems are not supported; use the pip or pipx install there at your own risk.
 
 Stations given on the command line or in the config are passed through as typed. A station that the bundled database
 does not know can still be watched; it just has no name or time zone.
