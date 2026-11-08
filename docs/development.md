@@ -40,7 +40,8 @@ commands are executed (see below).
 | `Dependency audit` | `pip-audit` on the resolved runtime dependencies (not the dev tools) finds no known vulnerability. Fix it by raising the bound, or file an issue; do not add an ignore without one |
 
 `post-release.yml` runs after a release is published (and by hand: Actions, Post-release, tag input). It downloads the
-published files from their public URLs, checks `SHA256SUMS` and the build attestations, runs the Linux and Windows
+published files from their public URLs, checks `SHA256SUMS` and the build attestations (through the shared
+`verify-published.yml`, which also runs all five binaries), runs the Linux and Windows
 executables (`--version`, `--help`, `--selftest`, `decode`, then `--demo` in a pseudo-terminal and `q`) and fails
 loudly. It also runs when the Release workflow completes, because a release made with `GITHUB_TOKEN` does not start
 workflows on the `release` event.

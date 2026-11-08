@@ -24,9 +24,29 @@ as a draft or delete it and fix forward with a patch version.
 | --- | --- |
 | `verify` | The tagged commit must be on `main` and have a successful `ci.yml` run (so a tag on a commit CI skipped or failed is refused). The tag must be `v0.MINOR.PATCH`, equal `v` plus `__version__`, and `CHANGELOG.md` must have a `## <version> - date` section with entries. That section becomes the release notes. |
 | `dist` | Builds the wheel and sdist (build tools and dependencies pinned by `.github/release-constraints.txt`) with `python -m build`, installs the wheel in a clean venv and runs `--version` and `--selftest`. |
-| `binary` | Builds one-file PyInstaller binaries from `wxbrief.spec` with the versions pinned in `.github/release-constraints.txt`, and runs `--version` and `--selftest` on each: Windows x86_64 (`.exe`), Linux x86_64 and arm64 (built in `python:3.12-bullseye` for an old glibc), macOS arm64 and x86_64. Linux and macOS files are `.tar.gz`. |
-| `publish` | Collects every file, writes `SHA256SUMS`, attests build provenance for each file, and creates the GitHub release for the tag with the changelog section as its notes. Only this job has write permissions. |
-| `pypi` | After the release exists and the `pypi` environment is approved, uploads the wheel and sdist from the `dist` job (not rebuilt) to PyPI by trusted publishing, in the `pypi` environment. Only this job has `id-token: write` besides `publish`. |
+| `binary` | Calls `binaries.yml` (below). |
+| `check` | Calls the shared `check-release.yml`: the build produced exactly the seven expected files (wheel, sdist and the five binaries), and the tag still points at the built commit. Runs before anything is attested. |
+| `attest` | Attests build provenance for each file. It runs in this workflow, not in the shared one, because the certificate names the workflow that ran it and `gh attestation verify --signer-workflow` expects `release.yml`. |
+| `publish` | Calls the shared `publish-release.yml`: checks the file set again, writes `SHA256SUMS`, confirms the tag still points at the built commit and creates the GitHub release (as a draft, uploads the files, then publishes it) with the changelog section as its notes. Only this job has write permissions. |
+| `pypi` | After the release exists and the `pypi` environment is approved, uploads the wheel and sdist from the `dist` job (not rebuilt) to PyPI by trusted publishing, in the `pypi` environment. Only this job has `id-token: write` besides `attest`. |
+
+`binaries.yml` calls the shared `build-binaries.yml` (from [WPTK/release-workflows](https://github.com/WPTK/release-workflows),
+also used by the other WPTK apps). It builds one-file PyInstaller binaries from `wxbrief.spec` with the versions pinned
+in `.github/release-constraints.txt`, one per platform on its own kind of runner, and runs `--version` and `--selftest`
+on each: Windows x86_64 (`.exe`), Linux x86_64 and arm64 (built in `python:3.12-bullseye`, pinned by digest, and checked
+to need no glibc symbol newer than 2.31), macOS arm64 and x86_64. Files are named `wxbrief-<version>-<os>-<arch>`;
+Linux and macOS files are `.tar.gz`, so the executable bit survives. It also runs by hand (Actions tab, Run workflow)
+and on pull requests that touch the build (`wxbrief.spec`, `pyproject.toml`, the package, the pins), which is how the
+build is proved without a release. It publishes nothing and has no secrets.
+
+`post-release.yml` runs after a release is published and by hand against an existing tag (input `tag`). Its `published`
+job calls the shared `verify-published.yml`: it downloads every published file from its public URL, checks the file
+set, `SHA256SUMS` and each build attestation (signed by `release.yml` at the tag), then runs each of the five binaries
+on a runner of its own kind with nothing of ours installed (`--version`, `--selftest`). Its `run` job then drives the
+published Linux and Windows executables through `scripts/post_release_check.py`.
+
+The shared workflows are pinned by commit SHA in `binaries.yml`, `release.yml` and `post-release.yml`; to take a change,
+move the SHA in all three together. All third-party actions are pinned to a commit SHA too.
 
 `publish.yml` (Actions tab, run by hand, input `ref`) builds a ref, runs `twine check`, fails unless the wheel version
 equals `__version__`, and uploads to PyPI through the same `pypi` environment. Use it only to publish a ref that
