@@ -50,40 +50,31 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
 
-  assets:
-    name: Published files and checksums
+  # The shared workflow downloads every published file, checks SHA256SUMS and each attestation (signed by this
+  # repository's release.yml), then runs each binary on a runner of its own kind with nothing of ours installed.
+  published:
+    name: Published files and binaries
     needs: tag
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      TAG: ${{ needs.tag.outputs.tag }}
-      VERSION: ${{ needs.tag.outputs.version }}
-      GH_TOKEN: ${{ github.token }}
-    steps:
-      - name: Download every published file from its public URL
-        run: |
-          mkdir dl && cd dl
-          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG"
-          curl -fsSL --retry 3 -O "$base/SHA256SUMS"
-          expected=$(awk '{print $2}' SHA256SUMS | sed 's/^\*//')
-          [ -n "$expected" ] || { echo "::error::SHA256SUMS lists no files"; exit 1; }
-          for f in $expected; do curl -fsSL --retry 3 -O "$base/$f" || { echo "::error::cannot download $f from $base"; exit 1; }; done
-          # Everything the release holds is listed in SHA256SUMS, and the other way round.
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -vx SHA256SUMS | sort > ../published.txt
-          printf '%s\n' $expected | sort > ../listed.txt
-          diff ../published.txt ../listed.txt || { echo "::error::SHA256SUMS and the published files differ"; exit 1; }
-      - name: Verify SHA256SUMS
-        run: cd dl && sha256sum -c SHA256SUMS
-      - name: Verify the build provenance attestation of each file
-        run: |
-          cd dl
-          for f in $(awk '{print $2}' SHA256SUMS | sed 's/^\*//'); do
-            gh attestation verify "$f" --repo "$GITHUB_REPOSITORY" || { echo "::error::no valid attestation for $f"; exit 1; }
-          done
-      - name: Check the wheel and sdist are for this version
-        run: |
-          cd dl
-          ls "wxbrief-$VERSION-py3-none-any.whl" "wxbrief-$VERSION.tar.gz"
+    permissions:
+      contents: read
+      attestations: read
+    uses: WPTK/release-workflows/.github/workflows/verify-published.yml@48ad720b496558ebdf47c0a0529475b6bf3b4517 # v0.1.0
+    with:
+      tag: ${{ needs.tag.outputs.tag }}
+      app: wxbrief
+      asset-prefix: wxbrief-${{ needs.tag.outputs.version }}
+      expected-files: |
+        wxbrief-${{ needs.tag.outputs.version }}-py3-none-any.whl
+        wxbrief-${{ needs.tag.outputs.version }}.tar.gz
+        wxbrief-${{ needs.tag.outputs.version }}-windows-x86_64.exe
+        wxbrief-${{ needs.tag.outputs.version }}-linux-x86_64.tar.gz
+        wxbrief-${{ needs.tag.outputs.version }}-linux-arm64.tar.gz
+        wxbrief-${{ needs.tag.outputs.version }}-macos-arm64.tar.gz
+        wxbrief-${{ needs.tag.outputs.version }}-macos-x86_64.tar.gz
+      smoke-command: |
+        out=$("$BIN" --version | tr -d '\r'); echo "$out"
+        [ "$out" = "wxbrief ${{ needs.tag.outputs.version }}" ] || { echo "::error::expected 'wxbrief ${{ needs.tag.outputs.version }}'"; exit 1; }
+        "$BIN" --selftest
 
   run:
     name: Run the published executable (${{ matrix.os }})
